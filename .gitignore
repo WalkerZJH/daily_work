@@ -1,0 +1,90 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editors
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# Local AI agents and assistant tooling
+.agents/
+.codex/
+.claude/
+.cursor/
+.continue/
+.aider*
+.obsidian/
+.workbuddy/
+AGENTS.local.md
+CLAUDE.local.md
+
+# Codex generated memory/session artifacts
+**/.codex/memories/
+**/.codex/memory*/
+**/.codex/rollout_summaries/
+**/.codex/sessions/
+**/.codex/history*
+**/.codex/logs/
+**/.codex/plugins/cache/
+
+# Temporary and lock files
+*.tmp
+*.temp
+*.bak
+*.old
+*.orig
+*.log
+~$*
+*.lock
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.local
+*.secret
+*.secrets
+credentials.*
+!credentials.example.*
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# JavaScript / Node.js
+node_modules/
+.npm/
+.pnpm-store/
+coverage/
+
+# Generated output and caches
+build/
+dist/
+out/
+output/
+outputs/
+tmp/
+temp/
+.cache/
+
+# Compressed packages (remove a rule when the archive is source material)
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+
+!.gitkeep
