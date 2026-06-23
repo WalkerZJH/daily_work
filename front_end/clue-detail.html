@@ -1,0 +1,527 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>线索详情 — 终端不丢智能体</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* 浅色页头（克制留白：详情页非英雄锚点，不用深色） */
+.detail-hero {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 22px 24px; margin-bottom: 18px;
+  position: relative; overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.detail-hero::before {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 4px; height: 100%; background: var(--red);
+}
+.detail-hero.lv-orange::before { background: var(--orange); }
+.detail-hero .hospital { font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+.detail-hero .meta-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.detail-hero .meta-sub { font-size: 13px; color: var(--text-sub); }
+.detail-hero .diagnosis-quote {
+  background: var(--blue-pale); border-radius: 8px;
+  padding: 12px 16px; margin-top: 16px;
+  font-size: 14px; line-height: 1.6; color: var(--text-main);
+  border-left: 3px solid var(--red);
+}
+/* 关键指标三联 */
+.hero-metrics {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 12px; margin-top: 16px;
+}
+.hero-metric {
+  background: #fafafa; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 16px;
+}
+.hero-metric .lab { font-size: 12px; color: var(--text-sub); margin-bottom: 4px; }
+.hero-metric .val { font-size: 30px; font-weight: 900; line-height: 1; color: var(--navy); letter-spacing: -.5px; }
+.hero-metric .sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.hero-metric.metric-score .val { color: var(--red); }
+.hero-metric.metric-palive .val { color: var(--orange); }
+.hero-metric.metric-value .val { color: var(--green); }
+/* 次级信息条 */
+.hero-tags { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.hero-tag {
+  font-size: 12px; color: var(--text-sub);
+  background: #f4f4f5; border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 10px;
+}
+.hero-tag b { color: var(--text-main); }
+
+/* 自适应宽度：填满主区，不再锁死窄列 */
+.detail-flow { width: 100%; }
+
+/* 主体两栏：左=分析流（自适应伸缩）  右=处置抽屉 */
+.detail-body { display: flex; gap: 18px; align-items: flex-start; }
+.detail-main { flex: 1; min-width: 0; }
+.detail-main .section-card:last-child { margin-bottom: 0; }
+
+/* ── 右侧处置抽屉 ── */
+.detail-aside {
+  width: 340px; flex-shrink: 0;
+  position: sticky; top: 76px;
+  transition: width .25s ease;
+}
+.drawer-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.drawer-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px; border-bottom: 1px solid var(--border);
+  background: var(--blue-pale);
+}
+.drawer-title { font-size: 14px; font-weight: 700; color: var(--navy); }
+.drawer-toggle {
+  font-size: 12px; color: var(--blue); background: #fff;
+  border: 1px solid var(--blue-border); border-radius: 6px;
+  padding: 3px 10px; cursor: pointer; transition: background .15s;
+}
+.drawer-toggle:hover { background: var(--blue-pale2); }
+.drawer-body { padding: 16px; }
+.drawer-section + .drawer-section { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.drawer-section h3 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+
+/* 抽屉内状态机缩紧，纵向操作按钮 */
+.drawer-body .status-machine { margin: 4px 0 10px; }
+.drawer-body .status-circle { width: 26px; height: 26px; font-size: 11px; }
+.drawer-body .status-label { font-size: 10px; max-width: 52px; }
+.drawer-body .status-line { margin-top: -13px; }
+.drawer-actions { display: flex; flex-direction: column; gap: 8px; }
+.drawer-actions .btn { width: 100%; justify-content: center; }
+.drawer-body .disposition-group .btn { flex: 1; min-width: 92px; }
+
+/* 折叠态：收成竖向手柄（默认展开） */
+.drawer-rail { display: none; }
+.detail-aside.collapsed { width: 44px; }
+.detail-aside.collapsed .drawer-panel { display: none; }
+.detail-aside.collapsed .drawer-rail {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  writing-mode: vertical-rl;
+  width: 44px; min-height: 220px; padding: 18px 0;
+  background: var(--blue-pale); border: 1px solid var(--blue-border);
+  border-radius: var(--radius); color: var(--blue-deep);
+  font-size: 13px; font-weight: 700; letter-spacing: 3px; cursor: pointer;
+  transition: background .15s;
+}
+.detail-aside.collapsed .drawer-rail:hover { background: var(--blue-pale2); }
+
+/* P(alive) 图表容器：自适应填满列宽 */
+.palive-chart { width: 100%; }
+.palive-chart svg { display: block; width: 100%; height: auto; }
+
+/* 窄屏：抽屉降为顺排全宽 */
+@media (max-width: 920px) {
+  .detail-body { flex-direction: column; }
+  .detail-aside { width: 100% !important; position: static; }
+  .detail-aside.collapsed { width: 100% !important; }
+  .detail-aside.collapsed .drawer-panel { display: block; }
+  .detail-aside.collapsed .drawer-rail { display: none; }
+}
+.full-evidence-item {
+  display: flex; gap: 14px; padding: 14px;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); margin-bottom: 10px;
+}
+.full-evidence-num {
+  min-width: 48px; height: 48px; border-radius: 10px;
+  background: var(--red); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 900; flex-shrink: 0;
+}
+.full-evidence-num.orange-bg { background: var(--orange); }
+.contrib-bar-track {
+  height: 8px; background: var(--blue-pale2); border-radius: 4px; margin: 6px 0;
+}
+.contrib-bar-fill { height: 100%; border-radius: 4px; background: var(--red); }
+.contrib-bar-fill.orange { background: var(--orange); }
+
+/* Disposition branch buttons */
+.disposition-group { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.btn-claimed  { background:#16a34a; color:#fff; border:none; }
+.btn-claimed:hover { background:#15803d; }
+.btn-lost     { background:#50657f; color:#fff; border:none; }
+.btn-lost:hover { background:#4b5563; }
+.btn-misreport { background:#f59e0b; color:#fff; border:none; }
+.btn-misreport:hover { background:#d97706; }
+
+/* Misreport inline modal */
+.misreport-panel {
+  background:#fffbeb; border:1px solid #fde68a; border-radius:8px;
+  padding:14px; margin-top:10px; display:none;
+}
+.misreport-panel.open { display:block; }
+.misreport-option {
+  display:block; width:100%; text-align:left;
+  background:#fff; border:1px solid #fde68a; border-radius:6px;
+  padding:8px 14px; margin-bottom:6px; font-size:13px;
+  cursor:pointer; transition:background .15s;
+}
+.misreport-option:hover { background:#fef9c3; }
+
+/* Verify pending note */
+.verify-pending-note {
+  background:var(--blue-pale); border:1px solid var(--blue-border); border-radius:6px;
+  padding:10px 14px; font-size:12px; color:var(--blue-deep);
+  margin-top:10px; display:none;
+}
+/* Disposition result */
+.disposition-result {
+  background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px;
+  padding:10px 14px; font-size:12px; color:#15803d;
+  margin-top:10px; display:none;
+}
+/* 订单表：行可点击高亮 */
+.order-table tbody tr { cursor: pointer; }
+</style>
+</head>
+<body>
+<!-- Root marker for JS detection -->
+<div id="clue-detail-root" style="display:none"></div>
+
+<div data-layout-topbar></div>
+
+<div class="layout">
+  <div data-layout-sidebar data-active="clues"></div>
+
+  <main class="main">
+    <a class="back-link" href="clues.html">← 返回全部线索</a>
+
+    <div class="detail-flow">
+
+    <!-- HERO（浅色页头） -->
+    <div class="detail-hero" id="detail-hero">
+      <div class="hospital" id="detail-hospital">北京协和医院 · A产品线（心血管）</div>
+      <div class="meta-row">
+        <span id="detail-level" class="badge badge-red" style="font-size:13px;padding:4px 12px">🔴 红色预警</span>
+        <span class="meta-sub">三甲 · 华北 · 2026-06-12 巡检</span>
+      </div>
+      <div class="hero-metrics">
+        <div class="hero-metric metric-score">
+          <div class="lab">风险分</div>
+          <div class="val" id="detail-score">78</div>
+          <div class="sub">橙→红临界</div>
+        </div>
+        <div class="hero-metric metric-palive">
+          <div class="lab">P(alive) 存活概率</div>
+          <div class="val" id="detail-palive">0.34↓</div>
+          <div class="sub">低危区间</div>
+        </div>
+        <div class="hero-metric metric-value">
+          <div class="lab">挽回价值</div>
+          <div class="val" id="detail-value">¥87万</div>
+          <div class="sub">优先干预</div>
+        </div>
+      </div>
+      <div class="diagnosis-quote" id="detail-diagnosis">
+        近3月采购间隔28→41→63天，月量1200→900→520盒，品规从4个缩至1个。P(alive)降至0.34并持续下行，3个独立信号族印证，竞品替代迹象明显。
+      </div>
+      <div class="hero-tags">
+        <span class="hero-tag">产品线 / 类别：<b id="detail-product">A产品线</b></span>
+        <span class="hero-tag">根因分类：<b id="detail-root">需求型</b></span>
+        <span class="hero-tag">独立信号族（经FDR过滤）：<b id="detail-signals">3 族印证</b></span>
+      </div>
+    </div>
+
+    <div class="detail-body">
+      <div class="detail-main">
+
+        <!-- P(alive) Trend -->
+        <div class="section-card">
+          <h2>P(alive) 近期趋势</h2>
+          <div class="palive-chart">
+          <svg viewBox="0 0 340 140" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block">
+            <line x1="40" y1="20" x2="40" y2="110" stroke="#d2e2f5" stroke-width="1"/>
+            <line x1="40" y1="20" x2="320" y2="20"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+            <line x1="40" y1="47" x2="320" y2="47"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+            <line x1="40" y1="74" x2="320" y2="74"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+            <line x1="40" y1="110" x2="320" y2="110" stroke="#d2e2f5" stroke-width="1"/>
+            <text x="34" y="23"  text-anchor="end" font-size="10" fill="#8499b5">1.0</text>
+            <text x="34" y="50"  text-anchor="end" font-size="10" fill="#8499b5">0.7</text>
+            <text x="34" y="77"  text-anchor="end" font-size="10" fill="#8499b5">0.4</text>
+            <text x="34" y="113" text-anchor="end" font-size="10" fill="#8499b5">0.0</text>
+            <rect x="40" y="74" width="280" height="36" fill="#fee2e2" opacity="0.4"/>
+            <text x="43" y="87" font-size="9" fill="#e5484d">危险区 P &lt; 0.4</text>
+            <!-- P(alive) polyline — updated by JS -->
+            <polyline class="palive-line" points="55,36 101,43 147,49 193,55 239,63 285,71 320,79" fill="none" stroke="#e5484d" stroke-width="2.5" stroke-linejoin="round"/>
+            <polygon class="palive-area" points="55,36 101,43 147,49 193,55 239,63 285,71 320,79 320,110 55,110" fill="rgba(229,72,77,0.08)"/>
+            <!-- Dots — updated by JS -->
+            <circle class="palive-dot" cx="55"  cy="36" r="4" fill="#e5484d" stroke="#fff" stroke-width="2"/>
+            <circle class="palive-dot" cx="101" cy="43" r="4" fill="#e5484d" stroke="#fff" stroke-width="2"/>
+            <circle class="palive-dot" cx="147" cy="49" r="4" fill="#e5484d" stroke="#fff" stroke-width="2"/>
+            <circle class="palive-dot" cx="193" cy="55" r="4" fill="#e5484d" stroke="#fff" stroke-width="2"/>
+            <circle class="palive-dot" cx="239" cy="63" r="4" fill="#e5484d" stroke="#fff" stroke-width="2"/>
+            <circle class="palive-dot" cx="285" cy="71" r="4" fill="#e5484d" stroke="#fff" stroke-width="2"/>
+            <circle class="palive-dot" cx="320" cy="79" r="5" fill="#e5484d" stroke="#fff" stroke-width="2.5"/>
+            <!-- Current value label -->
+            <rect id="palive-current-rect" x="300" y="64" width="35" height="16" rx="3" fill="#e5484d"/>
+            <text id="palive-current-label" x="317" y="76" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">0.34</text>
+            <!-- X-axis labels — evenly spaced, updated by JS -->
+            <text class="palive-x-label" x="55"  y="126" text-anchor="middle" font-size="9" fill="#8499b5">11-10</text>
+            <text class="palive-x-label" x="101" y="126" text-anchor="middle" font-size="9" fill="#8499b5">12-11</text>
+            <text class="palive-x-label" x="147" y="126" text-anchor="middle" font-size="9" fill="#8499b5">01-09</text>
+            <text class="palive-x-label" x="193" y="126" text-anchor="middle" font-size="9" fill="#8499b5">02-07</text>
+            <text class="palive-x-label" x="239" y="126" text-anchor="middle" font-size="9" fill="#8499b5">03-06</text>
+            <text class="palive-x-label" x="285" y="126" text-anchor="middle" font-size="9" fill="#8499b5">04-08</text>
+            <text class="palive-x-label" x="320" y="126" text-anchor="middle" font-size="9" fill="#e5484d" font-weight="700">今日</text>
+          </svg>
+          </div>
+          <div class="chart-legend">
+            <div class="chart-legend-item">
+              <div class="chart-legend-line" style="background:#e5484d"></div> P(alive)趋势
+            </div>
+            <div class="chart-legend-item" style="color:#e5484d">
+              ↓ 持续下行，当前 <span id="palive-legend-val">0.34</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evidence Chain full -->
+        <div class="section-card">
+          <h2>证据链 · 各探测器贡献</h2>
+          <div id="detail-evidence">
+            <!-- Populated by JS -->
+            <div class="full-evidence-item">
+              <div class="full-evidence-num">+32</div>
+              <div style="flex:1">
+                <div style="font-size:14px;font-weight:700;color:#0b2a4a">采购节奏异常（IPI）</div>
+                <div style="font-size:12px;color:#3e5878;margin-top:4px">近3次采购间隔：<b>28天→41天→63天</b>（历史中位30天，MAD=4.8天）</div>
+                <div style="font-size:12px;color:#3e5878">超期天数距今 +33天，鲁棒 z = <b>2.2</b></div>
+                <div class="contrib-bar-track"><div class="contrib-bar-fill" style="width:80%"></div></div>
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:#8499b5">
+                  <span>0</span><span>贡献分：32 / 最大100</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 融合计算 -->
+          <div style="background:#eaf2fd;border:1px solid var(--border);border-radius:6px;padding:12px;margin-top:8px">
+            <div style="font-size:12px;font-weight:700;color:#3e5878;margin-bottom:6px">融合计算（L3）</div>
+            <div style="font-size:12px;color:#3e5878">主干分 = (1−P(alive))×100</div>
+            <div style="font-size:12px;color:#3e5878">印证系数 = 1 + 0.5×(信号族数−1)（上限封顶）</div>
+            <div style="font-size:12px;color:#3e5878">最终分 = min(主干×印证, 100)（同侪确认特异）</div>
+          </div>
+        </div>
+
+        <!-- 去伪校正 -->
+        <div class="section-card">
+          <h2>去伪校正（L2）</h2>
+          <div class="dedup-section" style="margin-bottom:8px">
+            ✓ 同侪对照：同地区同等级三甲医院本期中位采购量稳定，无系统性下滑，本院属特异下滑。
+          </div>
+          <div class="dedup-section">
+            ✓ 政策排查：非国采中标相关下滑，无集采落标记录，非价格阶跃型中断，非季节性周期。
+          </div>
+          <div style="font-size:12px;color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:9px 12px;margin-top:8px">
+            结论：无假流失理由，风险真实有效，未被L2压制（SUPPRESS_F未触发）。
+          </div>
+        </div>
+
+        <!-- 建议动作 -->
+        <div class="section-card">
+          <h2>建议动作 &amp; 根因</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <span class="badge badge-red" id="detail-roottag-big" style="font-size:12px;padding:5px 12px">需求型风险</span>
+            <span class="badge badge-blue" style="font-size:12px;padding:5px 12px">竞品替代迹象</span>
+          </div>
+          <div class="recommend-section" id="detail-recommend" style="margin-bottom:8px">
+            💡 <b>建议动作</b>：区域经理2日内回访，核实竞品情况。
+          </div>
+        </div>
+
+        <!-- 可溯源订单 -->
+        <div class="section-card">
+          <h2>可溯源订单（近6条）</h2>
+          <div class="data-table-wrap" style="border:none;box-shadow:none">
+            <table class="order-table">
+              <thead>
+                <tr>
+                  <th>订单号</th>
+                  <th>下单日期</th>
+                  <th>采购量（盒）</th>
+                  <th>金额（万）</th>
+                  <th>配送率</th>
+                </tr>
+              </thead>
+              <tbody id="clue-orders">
+                <tr onclick="location.href='order-detail.html?id=ORD-2026-04-9234'">
+                  <td><a href="order-detail.html?id=ORD-2026-04-9234" class="text-blue">ORD-2026-04-9234</a></td>
+                  <td>2026-04-08</td>
+                  <td>520</td>
+                  <td>¥11.2万</td>
+                  <td><span class="text-green">0.97</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="font-size:11px;color:#8499b5;margin-top:8px" id="clue-orders-note">
+            采购间隔序列：32→27→29→28→41→63天 ← 末两次明显拉长
+          </div>
+        </div>
+
+      </div><!-- end detail-main -->
+
+      <!-- 右侧处置抽屉（状态机 + 操作合并，默认展开，可收起） -->
+      <aside class="detail-aside" id="clue-drawer">
+        <button class="drawer-rail" id="drawer-expand" title="展开处置面板">展开处置 ⟨</button>
+        <div class="drawer-panel">
+          <div class="drawer-head">
+            <span class="drawer-title">⚑ 处置与操作</span>
+            <button class="drawer-toggle" id="drawer-collapse" title="收起处置面板">收起 ⟩</button>
+          </div>
+          <div class="drawer-body">
+
+            <!-- 状态机 -->
+            <div class="drawer-section">
+              <h3>线索状态机</h3>
+              <div class="status-machine">
+                <div class="status-node">
+                  <div class="status-circle done">✓</div>
+                  <div class="status-label done">待处理</div>
+                </div>
+                <div class="status-line done"></div>
+                <div class="status-node">
+                  <div class="status-circle active">➜</div>
+                  <div class="status-label active">跟进中</div>
+                </div>
+                <div class="status-line"></div>
+                <div class="status-node">
+                  <div class="status-circle">3</div>
+                  <div class="status-label">已处置</div>
+                </div>
+                <div class="status-line"></div>
+                <div class="status-node">
+                  <div class="status-circle">4</div>
+                  <div class="status-label">兑现核验（系统自动）</div>
+                </div>
+              </div>
+              <div style="font-size:12px;color:#3e5878;margin:8px 0">
+                当前状态：<b>跟进中</b> · 已转发给王磊（协和片区）· 2026-06-11 08:32
+              </div>
+
+              <!-- 处置选择区 — 三分支 -->
+              <div id="disposition-buttons">
+                <div style="font-size:12px;font-weight:700;color:#3e5878;margin-bottom:6px">选择处置结果：</div>
+                <div class="disposition-group">
+                  <button class="btn btn-sm btn-claimed btn-advance-status"
+                          data-step="2" data-disposition="claimed"
+                          style="background:#16a34a;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600">
+                    ✓ 声称挽回
+                  </button>
+                  <button class="btn btn-sm btn-advance-status"
+                          data-step="2" data-disposition="lost"
+                          style="background:#50657f;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600">
+                    ✗ 确认流失
+                  </button>
+                  <button class="btn btn-sm btn-advance-status"
+                          data-step="2" data-disposition="false"
+                          style="background:#f59e0b;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600">
+                    ⚠ 误报
+                  </button>
+                </div>
+                <div style="font-size:11px;color:#8499b5;margin-top:6px">
+                  「声称挽回」→ 系统自动核验兑现（不可刷）；「确认流失」→ 终态归档；「误报」→ 选择原因后终态归档
+                </div>
+              </div>
+
+              <!-- 兑现核验等待提示 -->
+              <div class="verify-pending-note" id="verify-pending-note">
+                ⏳ 系统将在 7-14 天后（下轮巡检）自动比对新增订单，回填兑现/未兑现结果。声称挽回但无新订单 → 自动翻红重开。
+              </div>
+
+              <!-- 处置结果显示 -->
+              <div class="disposition-result" id="disposition-result"></div>
+
+              <!-- 误报原因面板 -->
+              <div id="misreport-modal" class="misreport-panel">
+                <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px">⚠ 选择误报原因（将用于模型校准）</div>
+                <button class="misreport-option" data-reason="集采落标">📋 集采落标，合理减少</button>
+                <button class="misreport-option" data-reason="季节性波动">🌤 季节性波动，非持续下行</button>
+                <button class="misreport-option" data-reason="数据滞后">⏱ 数据滞后，订单已录入</button>
+                <button class="misreport-option" data-reason="正常库存调整">📦 正常库存调整</button>
+                <button class="misreport-option" data-reason="其他">📝 其他原因</button>
+              </div>
+            </div>
+
+            <!-- 操作 -->
+            <div class="drawer-section">
+              <h3>操作</h3>
+              <div class="drawer-actions">
+                <button class="btn btn-primary btn-forward" data-hospital="北京协和医院" data-product="A产品线">📤 转发企微</button>
+                <button class="btn btn-gray btn-observe">👁 标记观察</button>
+                <button class="btn btn-danger btn-inaccurate">✕ 这条不准</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </aside>
+
+    </div><!-- end detail-body -->
+
+    </div><!-- end detail-flow -->
+
+  </main>
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="forward-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeForwardModal()">✕</button>
+    <div class="modal-title">📤 转发风险线索到企微</div>
+    <div style="font-size:12px;color:#3e5878;margin-bottom:16px;padding:8px 12px;background:#eef4fc;border-radius:6px">
+      线索：<b id="modal-hospital-name">北京协和医院 · A产品线</b>
+    </div>
+    <div class="modal-field">
+      <label>收件人 <span class="modal-smart-tag">✦ 智能默认</span></label>
+      <select id="modal-recipient">
+        <option value="wanglei">王磊（协和片区）★ 智能推荐</option>
+        <option value="lina">李娜（华东区）</option>
+        <option value="zhangwei">张伟（华西区）</option>
+        <option value="chengang">陈刚（华中区）</option>
+        <option value="suyang">苏洋（华南区）</option>
+        <option value="zhaomei">赵美（东北区）</option>
+        <option value="wangfang">王芳（华北区）</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>消息内容（可修改）</label>
+      <textarea id="modal-msg" rows="7"></textarea>
+    </div>
+    <div class="modal-field">
+      <label>加一句（可选）</label>
+      <input type="text" id="modal-extra" placeholder="例：上次拜访中提到心内科主任在评估竞品，需重点核实">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" id="btn-cancel-modal">取消</button>
+      <button class="btn btn-primary" id="btn-send-wechat">📱 发送到企微</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="feedback-modal">
+  <div class="feedback-modal">
+    <button class="modal-close" style="position:absolute;top:12px;right:12px" onclick="document.getElementById('feedback-modal').classList.remove('open')">✕</button>
+    <div style="font-size:14px;font-weight:700;color:#0b2a4a;margin-bottom:14px">这条预警不准，原因是？</div>
+    <div class="feedback-option" data-reason="集采落标">📋 集采落标，合理减少</div>
+    <div class="feedback-option" data-reason="我早知道，已自行处理">✅ 我早知道，已自行处理</div>
+    <div class="feedback-option" data-reason="数据有误">⚠️ 数据有误</div>
+    <div class="feedback-option" data-reason="正常波动">📊 正常波动</div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+<script type="module" src="layout/layout.js"></script>
+</body>
+</html>
+
+
+
+
+

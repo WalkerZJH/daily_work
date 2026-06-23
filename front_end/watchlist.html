@@ -1,0 +1,314 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>观察清单（黄）— 终端不丢智能体</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div data-layout-topbar></div>
+
+<div class="layout">
+  <div data-layout-sidebar data-active="watchlist"></div>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>观察清单（黄色预警）</h1>
+      <div class="subtitle">苗头初现，单一信号族命中，暂不需要立即干预，持续日频跟踪。一旦升级为橙/红，自动进入工作台。</div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kpi-card" style="border-left:4px solid var(--yellow)">
+        <div class="kpi-label">黄色观察中</div>
+        <div class="kpi-value">14<span class="unit">条</span></div>
+        <div class="kpi-meta"><span class="badge badge-yellow">苗头初现</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">本周升级为橙/红</div>
+        <div class="kpi-value">3<span class="unit">条</span></div>
+        <div class="kpi-meta"><span class="text-orange">↑ 需关注</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">平均P(alive)</div>
+        <div class="kpi-value">0.64</div>
+        <div class="kpi-meta"><span class="text-muted">中等风险区间</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">合计潜在价值敞口</div>
+        <div class="kpi-value">¥280<span class="unit">万</span></div>
+        <div class="kpi-meta"><span class="text-muted">如升级为红则触发</span></div>
+      </div>
+    </div>
+
+    <!-- 说明条 -->
+    <div style="background:linear-gradient(90deg,#fefce8,#fef9c3);border:1px solid #fde68a;border-radius:var(--radius);padding:12px 18px;margin-bottom:16px;font-size:13px;color:#854d0e">
+      <b>⚠ 观察清单说明：</b> 黄色线索为「单一信号族命中/苗头初现」，算法信心不足以升橙，VP无需立即干预。系统每日自动重评——一旦有第二信号族印证或P(alive)跌破0.4，自动升橙并推入工作台，届时再决策。
+    </div>
+
+    <!-- TABLE -->
+    <div class="data-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>医院名称</th>
+            <th>产品线</th>
+            <th>风险分</th>
+            <th>P(alive)</th>
+            <th>触发信号</th>
+            <th>首次出现</th>
+            <th>已观察天数</th>
+            <th>潜在价值</th>
+            <th>趋势</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="td-hospital">郑州大学第一附属医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="text-bold" style="color:#b45309">43</span></td>
+            <td><span class="palive-badge mid">0.62↓</span></td>
+            <td>品规收窄（3→2）</td>
+            <td>2026-06-01</td>
+            <td style="color:#854d0e;font-weight:700">11天</td>
+            <td>¥34万</td>
+            <td><span class="badge badge-yellow">→持平</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">苏州大学附属第一医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="text-bold" style="color:#b45309">39</span></td>
+            <td><span class="palive-badge mid">0.66↓</span></td>
+            <td>节奏轻微拉长（z=1.6）</td>
+            <td>2026-06-03</td>
+            <td style="color:#854d0e;font-weight:700">9天</td>
+            <td>¥28万</td>
+            <td><span class="badge badge-yellow">→持平</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">吉林大学第一医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="text-bold" style="color:#b45309">41</span></td>
+            <td><span class="palive-badge mid">0.63↓</span></td>
+            <td>量轻微下行（MK p=0.09）</td>
+            <td>2026-06-05</td>
+            <td style="color:#854d0e;font-weight:700">7天</td>
+            <td>¥22万</td>
+            <td><span class="badge" style="background:#fee2e2;color:#b91c1c">↑升温</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">河北医科大学第二医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="text-bold" style="color:#b45309">38</span></td>
+            <td><span class="palive-badge mid">0.68</span></td>
+            <td>频次轻微下降（rate=0.65）</td>
+            <td>2026-06-07</td>
+            <td>5天</td>
+            <td>¥18万</td>
+            <td><span class="badge badge-yellow">→持平</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">浙江大学医学院附属邵逸夫医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="text-bold" style="color:#b45309">44</span></td>
+            <td><span class="palive-badge mid">0.61↓</span></td>
+            <td>品规收窄（4→3）</td>
+            <td>2026-06-04</td>
+            <td>8天</td>
+            <td>¥31万</td>
+            <td><span class="badge" style="background:#fee2e2;color:#b91c1c">↑升温</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">山西省人民医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="text-bold" style="color:#b45309">36</span></td>
+            <td><span class="palive-badge mid">0.70</span></td>
+            <td>节奏轻微拉长（z=1.5）</td>
+            <td>2026-06-08</td>
+            <td>4天</td>
+            <td>¥15万</td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">→稳定</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">陕西省人民医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="text-bold" style="color:#b45309">40</span></td>
+            <td><span class="palive-badge mid">0.64↓</span></td>
+            <td>量轻微下行</td>
+            <td>2026-06-06</td>
+            <td>6天</td>
+            <td>¥19万</td>
+            <td><span class="badge badge-yellow">→持平</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">昆明医科大学第一附属医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="text-bold" style="color:#b45309">37</span></td>
+            <td><span class="palive-badge mid">0.67</span></td>
+            <td>频次轻微下降</td>
+            <td>2026-06-09</td>
+            <td>3天</td>
+            <td>¥12万</td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">→稳定</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">兰州大学第二医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="text-bold" style="color:#b45309">42</span></td>
+            <td><span class="palive-badge mid">0.62↓</span></td>
+            <td>品规收窄（3→2）</td>
+            <td>2026-06-02</td>
+            <td>10天</td>
+            <td>¥16万</td>
+            <td><span class="badge" style="background:#fee2e2;color:#b91c1c">↑升温</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">南昌大学第一附属医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="text-bold" style="color:#b45309">35</span></td>
+            <td><span class="palive-badge mid">0.69</span></td>
+            <td>节奏轻微拉长</td>
+            <td>2026-06-10</td>
+            <td>2天</td>
+            <td>¥14万</td>
+            <td><span class="badge badge-yellow">→持平</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">合肥市第一人民医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="text-bold" style="color:#b45309">38</span></td>
+            <td><span class="palive-badge mid">0.66</span></td>
+            <td>量轻微下行（MK p=0.08）</td>
+            <td>2026-06-05</td>
+            <td>7天</td>
+            <td>¥11万</td>
+            <td><span class="badge badge-yellow">→持平</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">太原市中心医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="text-bold" style="color:#b45309">34</span></td>
+            <td><span class="palive-badge mid">0.71</span></td>
+            <td>频次轻微下降</td>
+            <td>2026-06-11</td>
+            <td>1天</td>
+            <td>¥9万</td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">→稳定</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">无锡市人民医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="text-bold" style="color:#b45309">39</span></td>
+            <td><span class="palive-badge mid">0.65</span></td>
+            <td>品规收窄（苗头）</td>
+            <td>2026-06-10</td>
+            <td>2天</td>
+            <td>¥13万</td>
+            <td><span class="badge badge-yellow">→持平</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+          <tr>
+            <td class="td-hospital">温州医科大学附属第一医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="text-bold" style="color:#b45309">41</span></td>
+            <td><span class="palive-badge mid">0.63</span></td>
+            <td>节奏拉长（z=1.6）</td>
+            <td>2026-06-08</td>
+            <td>4天</td>
+            <td>¥10万</td>
+            <td><span class="badge badge-yellow">→持平</span></td>
+            <td><button class="btn btn-sm btn-outline btn-observe" style="margin-right:4px">+标记</button><button class="btn btn-sm btn-view-detail btn-primary">详情</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:12px;font-size:12px;color:#8499b5;text-align:right">
+      14条黄色观察线索 · 合计潜在价值敞口 ¥280万 · 其中3条升温需重点关注 · 按初次出现日期倒排
+    </div>
+
+  </main>
+</div>
+
+<!-- DISTRIBUTOR BANNER -->
+<div class="distributor-banner" id="distributor-banner" style="margin:16px 24px 0 calc(240px + 24px)">
+  <span class="icon">⚠️</span>
+  <div>
+    <div class="text">配送商系统性失约预警：ZZ医药 影响7家医院（配送率↓0.61，低于健康线0.80）</div>
+    <div class="sub">部分黄色线索可能源于配送问题，排查前勿轻易升级为需求型流失。</div>
+  </div>
+  <a href="distributor.html" class="btn btn-outline btn-sm" style="flex-shrink:0">单独查看 →</a>
+</div>
+
+<!-- FORWARD MODAL -->
+<div class="modal-overlay" id="forward-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeForwardModal()">✕</button>
+    <div class="modal-title">📤 转发风险线索到企微</div>
+    <div style="font-size:12px;color:#3e5878;margin-bottom:16px;padding:8px 12px;background:#eef4fc;border-radius:6px">
+      线索：<b id="modal-hospital-name">—</b>
+    </div>
+    <div class="modal-field">
+      <label>收件人 <span class="modal-smart-tag">✦ 智能默认</span></label>
+      <select id="modal-recipient">
+        <option value="wanglei">王磊（协和片区）★ 智能推荐</option>
+        <option value="lina">李娜（华东区）</option>
+        <option value="zhangwei">张伟（华西区）</option>
+        <option value="chengang">陈刚（华中区）</option>
+        <option value="suyang">苏洋（华南区）</option>
+        <option value="zhaomei">赵美（东北区）</option>
+        <option value="wangfang">王芳（华北区）</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>消息内容</label>
+      <textarea id="modal-msg" rows="6"></textarea>
+    </div>
+    <div class="modal-field">
+      <label>加一句（可选）</label>
+      <input type="text" id="modal-extra" placeholder="补充说明…">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" id="btn-cancel-modal">取消</button>
+      <button class="btn btn-primary" id="btn-send-wechat">📱 发送到企微</button>
+    </div>
+  </div>
+</div>
+
+<!-- FEEDBACK MODAL -->
+<div class="modal-overlay" id="feedback-modal">
+  <div class="feedback-modal">
+    <button class="modal-close" style="position:absolute;top:12px;right:12px" onclick="document.getElementById('feedback-modal').classList.remove('open')">✕</button>
+    <div style="font-size:14px;font-weight:700;color:#0b2a4a;margin-bottom:14px">这条预警不准，原因是？</div>
+    <div class="feedback-option" data-reason="集采落标">📋 集采落标，合理减少</div>
+    <div class="feedback-option" data-reason="我早知道，已自行处理">✅ 我早知道，已自行处理</div>
+    <div class="feedback-option" data-reason="数据有误">⚠️ 数据有误</div>
+    <div class="feedback-option" data-reason="正常波动">📊 正常波动</div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+<script type="module" src="layout/layout.js"></script>
+</body>
+</html>
+
+
+
+
+

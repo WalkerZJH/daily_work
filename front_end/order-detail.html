@@ -1,0 +1,149 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>订单详情 — 终端不丢智能体</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* 浅色页头 */
+.ord-hero {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 22px 24px; margin-bottom: 18px;
+  position: relative; overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.ord-hero::before {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 4px; height: 100%; background: var(--blue);
+}
+.ord-hero .ord-id { font-size: 22px; font-weight: 800; color: var(--navy); letter-spacing: .3px; }
+.ord-hero .ord-sub { font-size: 13px; color: var(--text-sub); margin-top: 6px; }
+.ord-metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 18px; }
+.ord-metric { background:#fafafa; border:1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
+.ord-metric .lab { font-size:12px; color: var(--text-sub); margin-bottom: 4px; }
+.ord-metric .val { font-size: 24px; font-weight: 800; line-height: 1; color: var(--navy); letter-spacing:-.4px; }
+.ord-metric .val .unit { font-size: 13px; font-weight: 600; color: var(--text-sub); margin-left: 2px; }
+
+.detail-flow { max-width: 980px; }
+
+/* 信息双列（键值对） */
+.kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 28px; }
+.kv-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+.kv-row .k { font-size: 13px; color: var(--text-sub); flex-shrink: 0; }
+.kv-row .v { font-size: 13px; color: var(--text-main); font-weight: 600; text-align: right; }
+
+/* 时间线 */
+.timeline { position: relative; padding-left: 22px; margin-top: 6px; }
+.timeline::before { content:''; position:absolute; left:6px; top:4px; bottom:4px; width:2px; background: var(--border); }
+.tl-item { position: relative; padding: 6px 0 14px; }
+.tl-item::before {
+  content:''; position:absolute; left:-22px; top:9px;
+  width:11px; height:11px; border-radius:50%;
+  background:#fff; border:2px solid var(--blue);
+}
+.tl-item.done::before { background: var(--blue); }
+.tl-item.green::before { border-color: var(--green); background: var(--green); }
+.tl-time { font-size: 12px; color: var(--text-muted); }
+.tl-title { font-size: 13px; font-weight: 700; color: var(--text-main); margin-top: 1px; }
+.tl-desc { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+</style>
+</head>
+<body>
+<!-- Root marker for JS detection -->
+<div id="order-detail-root" style="display:none"></div>
+
+<div data-layout-topbar></div>
+
+<div class="layout">
+  <div data-layout-sidebar data-active="clues"></div>
+
+  <main class="main">
+    <a class="back-link" id="ord-back-link" href="javascript:history.back()">← 返回线索详情</a>
+
+    <div class="detail-flow">
+
+      <!-- 订单概览 -->
+      <div class="ord-hero">
+        <div class="ord-id" id="ord-id">ORD-2026-04-9234</div>
+        <div class="ord-sub" id="ord-sub">北京协和医院 · A产品线（心血管）· 心血管内科</div>
+        <div style="margin-top:10px">
+          <span class="badge badge-green" id="ord-status" style="font-size:12px;padding:4px 12px">✓ 已签收</span>
+          <span class="badge badge-gray" id="ord-date-tag" style="font-size:12px;padding:4px 12px;margin-left:6px">下单 2026-04-08</span>
+        </div>
+        <div class="ord-metrics">
+          <div class="ord-metric">
+            <div class="lab">采购量</div>
+            <div class="val"><span id="ord-qty">520</span><span class="unit">盒</span></div>
+          </div>
+          <div class="ord-metric">
+            <div class="lab">订单金额</div>
+            <div class="val" id="ord-amount">¥11.2万</div>
+          </div>
+          <div class="ord-metric">
+            <div class="lab">配送率</div>
+            <div class="val" id="ord-rate" style="color:var(--green)">0.97</div>
+          </div>
+          <div class="ord-metric">
+            <div class="lab">配送时延</div>
+            <div class="val"><span id="ord-delay">2</span><span class="unit">天</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 订单明细 -->
+      <div class="section-card">
+        <h2>订单明细（品规行项）</h2>
+        <div class="data-table-wrap" style="border:none;box-shadow:none">
+          <table>
+            <thead>
+              <tr>
+                <th>品规</th>
+                <th>规格</th>
+                <th>数量（盒）</th>
+                <th>单价（元）</th>
+                <th>金额（万）</th>
+              </tr>
+            </thead>
+            <tbody id="ord-items"></tbody>
+          </table>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px" id="ord-items-note"></div>
+      </div>
+
+      <!-- 履约与配送 -->
+      <div class="section-card">
+        <h2>履约与配送</h2>
+        <div class="kv-grid" id="ord-fulfillment"></div>
+      </div>
+
+      <!-- 时间线 -->
+      <div class="section-card">
+        <h2>订单时间线</h2>
+        <div class="timeline" id="ord-timeline"></div>
+      </div>
+
+      <!-- 操作 -->
+      <div class="section-card">
+        <h2>操作</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn btn-outline btn-sm" id="ord-back-clue" href="clue-detail.html?id=xiehe">← 回到线索详情</a>
+          <button class="btn btn-gray btn-sm" onclick="showToast('已复制订单号到剪贴板','info')">📋 复制订单号</button>
+        </div>
+      </div>
+
+    </div><!-- end detail-flow -->
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+<script type="module" src="layout/layout.js"></script>
+</body>
+</html>
+
+
+
+
+

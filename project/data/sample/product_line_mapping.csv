@@ -1,0 +1,7 @@
+drug_code,product_line_code,product_line_name,mapping_rule,confidence
+D001,PL_A,Alpha Line,manual_seed,1.0
+D002,PL_A,Alpha Line,manual_seed,1.0
+D003,PL_A,Alpha Line,manual_seed,1.0
+D004,PL_B,Beta Line,manual_seed,1.0
+D005,PL_B,Beta Line,manual_seed,1.0
+D006,PL_B,Beta Line,manual_seed,1.0

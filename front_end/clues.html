@@ -1,0 +1,707 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全部风险线索 — 终端不丢智能体</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div data-layout-topbar></div>
+
+<div class="layout">
+  <div data-layout-sidebar data-active="clues"></div>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>全部风险线索</h1>
+      <div class="subtitle">红12 · 橙27 · 合计39条活跃线索 · 巡检覆盖3,847个「医院×产品线」单元</div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <div class="filter-group" data-type="level">
+        <span class="filter-label">等级：</span>
+        <span class="filter-chip active" data-value="">全部</span>
+        <span class="filter-chip red" data-value="红">🔴 红（12）</span>
+        <span class="filter-chip orange" data-value="橙">🟠 橙（27）</span>
+      </div>
+      <div class="filter-separator"></div>
+      <div class="filter-group" data-type="product">
+        <span class="filter-label">产品线：</span>
+        <span class="filter-chip active" data-value="">全部</span>
+        <span class="filter-chip" data-value="A">A（心血管）</span>
+        <span class="filter-chip" data-value="B">B（抗感染）</span>
+        <span class="filter-chip" data-value="C">C（肿瘤）</span>
+      </div>
+      <div class="filter-separator"></div>
+      <div class="filter-group" data-type="root">
+        <span class="filter-label">根因：</span>
+        <span class="filter-chip active" data-value="">全部</span>
+        <span class="filter-chip" data-value="需求型">需求型</span>
+        <span class="filter-chip" data-value="断供型">断供型</span>
+        <span class="filter-chip" data-value="双重">双重</span>
+        <span class="filter-chip" data-value="政策型">政策型</span>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="data-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>医院名称</th>
+            <th>产品线</th>
+            <th>等级</th>
+            <th>风险分</th>
+            <th>P(alive)</th>
+            <th>挽回价值</th>
+            <th>根因</th>
+            <th>地区</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="clues-tbody">
+          <!-- 红级 12条 -->
+          <tr data-level="红" data-product="A" data-root="需求型">
+            <td class="td-hospital">北京协和医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">78</td>
+            <td><span class="palive-badge low">0.34↓</span></td>
+            <td class="td-value">¥87万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华北</td>
+            <td><span class="badge badge-orange">跟进中</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="xiehe">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="北京协和医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="红" data-product="C" data-root="双重">
+            <td class="td-hospital">四川大学华西医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">91</td>
+            <td><span class="palive-badge low">0.18↓↓</span></td>
+            <td class="td-value">¥76万</td>
+            <td><span class="badge badge-orange">双重</span></td>
+            <td>西南</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="huaxi">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="四川大学华西医院" data-product="C产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="红" data-product="A" data-root="需求型">
+            <td class="td-hospital">上海仁济医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">83</td>
+            <td><span class="palive-badge low">0.28↓</span></td>
+            <td class="td-value">¥65万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华东</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="renji">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="上海仁济医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="红" data-product="C" data-root="需求型">
+            <td class="td-hospital">武汉同济医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">88</td>
+            <td><span class="palive-badge low">0.22↓↓</span></td>
+            <td class="td-value">¥48万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华中</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="tongji">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="武汉同济医院" data-product="C产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="红" data-product="B" data-root="双重">
+            <td class="td-hospital">北京天坛医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">79</td>
+            <td><span class="palive-badge low">0.31↓</span></td>
+            <td class="td-value">¥44万</td>
+            <td><span class="badge badge-orange">双重</span></td>
+            <td>华北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="tiantan">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="北京天坛医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="红" data-product="A" data-root="需求型">
+            <td class="td-hospital">浙大附属第一医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">77</td>
+            <td><span class="palive-badge low">0.36↓</span></td>
+            <td class="td-value">¥39万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华东</td>
+            <td><span class="badge badge-orange">跟进中</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="zheda">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="浙大附属第一医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="红" data-product="C" data-root="需求型">
+            <td class="td-hospital">中山大学附属肿瘤医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">85</td>
+            <td><span class="palive-badge low">0.24↓</span></td>
+            <td class="td-value">¥55万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华南</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="zhongshan">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="中山大学附属肿瘤医院" data-product="C产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="红" data-product="B" data-root="断供型">
+            <td class="td-hospital">成都市第一人民医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">72</td>
+            <td><span class="palive-badge low">0.38↓</span></td>
+            <td class="td-value">¥31万</td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>西南</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="chengdu">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="成都市第一人民医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="红" data-product="A" data-root="政策型">
+            <td class="td-hospital">山东省立医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">74</td>
+            <td><span class="palive-badge low">0.33↓</span></td>
+            <td class="td-value">¥36万</td>
+            <td><span class="badge badge-gray">政策型</span></td>
+            <td>华东</td>
+            <td><span class="badge badge-orange">跟进中</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="shandong">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="山东省立医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="红" data-product="C" data-root="需求型">
+            <td class="td-hospital">复旦大学附属华山医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">81</td>
+            <td><span class="palive-badge low">0.27↓</span></td>
+            <td class="td-value">¥42万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华东</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="huashan">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="复旦大学附属华山医院" data-product="C产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="红" data-product="B" data-root="断供型">
+            <td class="td-hospital">广州市第一人民医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">70</td>
+            <td><span class="palive-badge low">0.39↓</span></td>
+            <td class="td-value">¥27万</td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>华南</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="guangzhou">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="广州市第一人民医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="红" data-product="A" data-root="需求型">
+            <td class="td-hospital">天津医科大学总医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-red">🔴 红</span></td>
+            <td class="td-score">76</td>
+            <td><span class="palive-badge low">0.35↓</span></td>
+            <td class="td-value">¥33万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华北</td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">已处置</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="tianjin">查看</button>
+              <button class="btn btn-gray btn-sm">已转发</button>
+            </td>
+          </tr>
+
+          <!-- 橙级 27条（展示13条，剩余用省略行提示） -->
+          <tr data-level="橙" data-product="B" data-root="断供型">
+            <td class="td-hospital">河南省人民医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">66</td>
+            <td><span class="palive-badge mid">0.47↓</span></td>
+            <td class="td-value">¥52万</td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>华中</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="henan">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="河南省人民医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="A" data-root="需求型">
+            <td class="td-hospital">中南大学湘雅医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">59</td>
+            <td><span class="palive-badge mid">0.51↓</span></td>
+            <td class="td-value">¥41万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华南</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="xiangya">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="中南大学湘雅医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="B" data-root="需求型">
+            <td class="td-hospital">安徽省立医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">61</td>
+            <td><span class="palive-badge mid">0.44↓</span></td>
+            <td class="td-value">¥33万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华东</td>
+            <td><span class="badge badge-orange">跟进中</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="anhui">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="安徽省立医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="A" data-root="需求型">
+            <td class="td-hospital">南京鼓楼医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">53</td>
+            <td><span class="palive-badge mid">0.55↓</span></td>
+            <td class="td-value">¥28万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华东</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="nanjing">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="南京鼓楼医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="C" data-root="需求型">
+            <td class="td-hospital">重庆医科大学附属第一医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">57</td>
+            <td><span class="palive-badge mid">0.49↓</span></td>
+            <td class="td-value">¥38万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>西南</td>
+            <td><span class="badge badge-orange">跟进中</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="chongqing">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="重庆医科大学附属第一医院" data-product="C产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="A" data-root="断供型">
+            <td class="td-hospital">哈尔滨医科大学附属第二医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">54</td>
+            <td><span class="palive-badge mid">0.52↓</span></td>
+            <td class="td-value">¥24万</td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>东北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="haerbin">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="哈尔滨医科大学附属第二医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="B" data-root="需求型">
+            <td class="td-hospital">西安交通大学第一附属医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">62</td>
+            <td><span class="palive-badge mid">0.46↓</span></td>
+            <td class="td-value">¥29万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>西北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="xian">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="西安交通大学第一附属医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="C" data-root="双重">
+            <td class="td-hospital">福建医科大学附属第一医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">58</td>
+            <td><span class="palive-badge mid">0.50↓</span></td>
+            <td class="td-value">¥32万</td>
+            <td><span class="badge badge-orange">双重</span></td>
+            <td>华南</td>
+            <td><span class="badge badge-orange">跟进中</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="fujian">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="福建医科大学附属第一医院" data-product="C产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="A" data-root="需求型">
+            <td class="td-hospital">云南省第一人民医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">55</td>
+            <td><span class="palive-badge mid">0.53↓</span></td>
+            <td class="td-value">¥21万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>西南</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="yunnan">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="云南省第一人民医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="B" data-root="断供型">
+            <td class="td-hospital">新疆医科大学第一附属医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">56</td>
+            <td><span class="palive-badge mid">0.51↓</span></td>
+            <td class="td-value">¥19万</td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>西北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="xinjiang">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="新疆医科大学第一附属医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="A" data-root="政策型">
+            <td class="td-hospital">贵州省人民医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">52</td>
+            <td><span class="palive-badge mid">0.56↓</span></td>
+            <td class="td-value">¥17万</td>
+            <td><span class="badge badge-gray">政策型</span></td>
+            <td>西南</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="guizhou">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="贵州省人民医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="C" data-root="需求型">
+            <td class="td-hospital">内蒙古自治区医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">53</td>
+            <td><span class="palive-badge mid">0.54↓</span></td>
+            <td class="td-value">¥16万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华北</td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">已处置</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="neimenggu">查看</button>
+              <button class="btn btn-gray btn-sm">已转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="B" data-root="需求型">
+            <td class="td-hospital">宁夏医科大学总医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">50</td>
+            <td><span class="palive-badge mid">0.58↓</span></td>
+            <td class="td-value">¥14万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>西北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="ningxia">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="宁夏医科大学总医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+          <!-- 14条补全橙级线索 -->
+          <tr data-level="橙" data-product="A" data-root="需求型">
+            <td class="td-hospital">大连医科大学附属第一医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">51</td>
+            <td><span class="palive-badge mid">0.57↓</span></td>
+            <td class="td-value">¥13万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>东北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="dalian">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="大连医科大学附属第一医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="C" data-root="需求型">
+            <td class="td-hospital">甘肃省人民医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">49</td>
+            <td><span class="palive-badge mid">0.59↓</span></td>
+            <td class="td-value">¥12万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>西北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="gansu">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="甘肃省人民医院" data-product="C产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="B" data-root="断供型">
+            <td class="td-hospital">沈阳军区总医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">53</td>
+            <td><span class="palive-badge mid">0.55↓</span></td>
+            <td class="td-value">¥11万</td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>东北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="shenyang">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="沈阳军区总医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="A" data-root="政策型">
+            <td class="td-hospital">海南省人民医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">48</td>
+            <td><span class="palive-badge mid">0.60↓</span></td>
+            <td class="td-value">¥11万</td>
+            <td><span class="badge badge-gray">政策型</span></td>
+            <td>华南</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="hainan">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="海南省人民医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="C" data-root="需求型">
+            <td class="td-hospital">青海省人民医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">47</td>
+            <td><span class="palive-badge mid">0.61↓</span></td>
+            <td class="td-value">¥11万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>西北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="qinghai">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="青海省人民医院" data-product="C产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="B" data-root="需求型">
+            <td class="td-hospital">西藏自治区人民医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">46</td>
+            <td><span class="palive-badge mid">0.62</span></td>
+            <td class="td-value">¥10万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>西南</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="xizang">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="西藏自治区人民医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="A" data-root="需求型">
+            <td class="td-hospital">厦门大学附属第一医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">52</td>
+            <td><span class="palive-badge mid">0.56↓</span></td>
+            <td class="td-value">¥10万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华南</td>
+            <td><span class="badge badge-orange">跟进中</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="xiamen">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="厦门大学附属第一医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="C" data-root="双重">
+            <td class="td-hospital">中国医科大学附属盛京医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">54</td>
+            <td><span class="palive-badge mid">0.54↓</span></td>
+            <td class="td-value">¥10万</td>
+            <td><span class="badge badge-orange">双重</span></td>
+            <td>东北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="shengjing">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="中国医科大学附属盛京医院" data-product="C产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="A" data-root="断供型">
+            <td class="td-hospital">南宁市第一人民医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">48</td>
+            <td><span class="palive-badge mid">0.60</span></td>
+            <td class="td-value">¥9万</td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>华南</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="nanning">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="南宁市第一人民医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="B" data-root="需求型">
+            <td class="td-hospital">济南市中心医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">50</td>
+            <td><span class="palive-badge mid">0.58</span></td>
+            <td class="td-value">¥9万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华东</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="jinan">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="济南市中心医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="C" data-root="需求型">
+            <td class="td-hospital">石家庄市第一医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">47</td>
+            <td><span class="palive-badge mid">0.61</span></td>
+            <td class="td-value">¥9万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="shijiazhuang">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="石家庄市第一医院" data-product="C产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="A" data-root="需求型">
+            <td class="td-hospital">徐州医科大学附属医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">49</td>
+            <td><span class="palive-badge mid">0.59</span></td>
+            <td class="td-value">¥8万</td>
+            <td><span class="badge badge-red">需求型</span></td>
+            <td>华东</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="xuzhou">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="徐州医科大学附属医院" data-product="A产品线">转发</button>
+            </td>
+          </tr>
+          <tr data-level="橙" data-product="B" data-root="政策型">
+            <td class="td-hospital">乌鲁木齐市人民医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-orange">🟠 橙</span></td>
+            <td class="td-score">46</td>
+            <td><span class="palive-badge mid">0.62</span></td>
+            <td class="td-value">¥8万</td>
+            <td><span class="badge badge-gray">政策型</span></td>
+            <td>西北</td>
+            <td><span class="badge badge-red">待处理</span></td>
+            <td class="td-actions">
+              <button class="btn btn-primary btn-sm btn-view-detail" data-id="urumqi">查看</button>
+              <button class="btn btn-outline btn-sm btn-forward" data-hospital="乌鲁木齐市人民医院" data-product="B产品线">转发</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:12px;font-size:12px;color:#8499b5;text-align:right">
+      共39条 · 红12橙27 · 合计风险敞口 ¥1,240万 · 按挽回价值倒序排列
+    </div>
+
+  </main>
+</div>
+
+<!-- Forward Modal -->
+<div class="modal-overlay" id="forward-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeForwardModal()">✕</button>
+    <div class="modal-title">📤 转发风险线索到企微</div>
+    <div style="font-size:12px;color:#3e5878;margin-bottom:16px;padding:8px 12px;background:#eef4fc;border-radius:6px">
+      线索：<b id="modal-hospital-name">—</b>
+    </div>
+    <div class="modal-field">
+      <label>收件人 <span class="modal-smart-tag">✦ 智能默认</span></label>
+      <select id="modal-recipient">
+        <option value="wanglei">王磊（协和片区）★ 智能推荐</option>
+        <option value="lina">李娜（华东区）</option>
+        <option value="zhangwei">张伟（华西区）</option>
+        <option value="chengang">陈刚（华中区）</option>
+        <option value="suyang">苏洋（华南区）</option>
+        <option value="zhaomei">赵美（东北区）</option>
+        <option value="wangfang">王芳（华北区）</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>消息内容</label>
+      <textarea id="modal-msg" rows="6"></textarea>
+    </div>
+    <div class="modal-field">
+      <label>加一句（可选）</label>
+      <input type="text" id="modal-extra" placeholder="补充说明…">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" id="btn-cancel-modal">取消</button>
+      <button class="btn btn-primary" id="btn-send-wechat">📱 发送到企微</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="feedback-modal">
+  <div class="feedback-modal">
+    <button class="modal-close" style="position:absolute;top:12px;right:12px" onclick="document.getElementById('feedback-modal').classList.remove('open')">✕</button>
+    <div style="font-size:14px;font-weight:700;color:#0b2a4a;margin-bottom:14px">这条预警不准，原因是？</div>
+    <div class="feedback-option" data-reason="集采落标">📋 集采落标，合理减少</div>
+    <div class="feedback-option" data-reason="我早知道，已自行处理">✅ 我早知道，已自行处理</div>
+    <div class="feedback-option" data-reason="数据有误">⚠️ 数据有误</div>
+    <div class="feedback-option" data-reason="正常波动">📊 正常波动</div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+<script type="module" src="layout/layout.js"></script>
+</body>
+</html>
+
+
+
+
+

@@ -1,0 +1,4 @@
+org_code,org_name,org_level,region_code,region_name
+ORG_A,City Hospital A,tertiary,R001,East Region
+ORG_B,County Hospital B,secondary,R002,West Region
+ORG_C,Community Clinic C,primary,R003,North Region

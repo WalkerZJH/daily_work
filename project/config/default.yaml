@@ -1,0 +1,81 @@
+config_version: default-v0
+
+windows:
+  recent_days: 90
+  baseline_days: 365
+
+demand_shape:
+  adi_threshold: 1.32
+  cv2_threshold: 0.49
+  min_nonzero_periods: 3
+
+preprocessors:
+  temporal_window:
+    enabled: true
+    recent_days: 90
+    baseline_days: 365
+  unit_builder:
+    enabled: true
+    grains:
+      - product_line
+      - sku
+  demand_shape:
+    enabled: true
+    adi_threshold: 1.32
+    cv2_threshold: 0.49
+    min_nonzero_periods: 3
+  drug_grouping:
+    enabled: true
+    allow_missing_mapping: true
+  treatment_cycle:
+    enabled: true
+    allow_missing_cycle_prior: true
+  substitution_features:
+    enabled: true
+    allow_own_product_only: true
+  cohort_context:
+    enabled: false
+  seasonality:
+    enabled: false
+
+detectors:
+  ip_interval:
+    enabled: true
+    family: terminal_activity
+    z_hit: 1.5
+    z_full: 3.5
+    min_orders: 6
+  frequency_drop:
+    enabled: true
+    family: terminal_activity
+    drop_threshold: 0.6
+    min_base_monthly_orders: 1
+  sku_shrink:
+    enabled: true
+    family: assortment_change
+    shrink_threshold: 0.34
+    min_base_sku_count: 2
+  inactive_terminal:
+    enabled: true
+    family: terminal_activity
+    inactive_multiplier: 3.0
+    min_inactive_days: 90
+  new_terminal:
+    enabled: true
+    family: terminal_expansion
+  substitution_risk:
+    enabled: true
+    family: substitution
+    own_drop_threshold: 0.6
+    same_group_stable_threshold: 0.9
+  cycle_deviation:
+    enabled: true
+    family: cycle_prior
+    deviation_multiplier: 2.0
+    min_cycle_confidence: 0.3
+
+fusion:
+  red_score: 75
+  orange_score: 55
+  yellow_score: 35
+  min_confidence_for_alert: 0.3

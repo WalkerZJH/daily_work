@@ -1,0 +1,1447 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>算法配置管理 — 终端不丢智能体</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* ── Pipeline ── */
+.pipeline-wrap {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  padding: 24px 20px 18px;
+  margin-bottom: 22px;
+  overflow-x: auto;
+}
+.pipeline-title {
+  font-size: 15px; font-weight: 700; color: var(--navy);
+  margin-bottom: 18px;
+}
+.pipeline-flow {
+  display: flex; align-items: flex-start; gap: 0; min-width: 900px;
+}
+.pipeline-node {
+  display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 100px;
+}
+.pipeline-node-box {
+  width: 100%; max-width: 120px;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+  border-radius: 8px; padding: 8px 10px;
+  text-align: center; color: #fff; position: relative;
+}
+.pipeline-node-box.l0  { background: linear-gradient(135deg, #0f3460, #1a4a7a); }
+.pipeline-node-box.l05 { background: linear-gradient(135deg, #1d4ed8, #2563eb); }
+.pipeline-node-box.l1  { background: linear-gradient(135deg, #0b2a4a, #103d6b); }
+.pipeline-node-box.l2  { background: linear-gradient(135deg, #b45309, #d97706); }
+.pipeline-node-box.l3  { background: linear-gradient(135deg, #15803d, #16a34a); }
+.pipeline-node-box.l4  { background: linear-gradient(135deg, #7c2d12, #c2410c); }
+.pipeline-node-box.l45 { background: linear-gradient(135deg, #6b21a8, #9333ea); }
+.pipeline-node-box.l5  { background: linear-gradient(135deg, #0f766e, #0d9488); }
+.pipeline-node-label {
+  font-size: 11px; font-weight: 800; color: rgba(255,255,255,.9);
+  letter-spacing: .3px; margin-bottom: 3px;
+}
+.pipeline-node-name {
+  font-size: 10px; color: rgba(255,255,255,.8); line-height: 1.3; font-weight: 600;
+}
+.pipeline-node-desc {
+  font-size: 11px; color: var(--text-sub); text-align: center; margin-top: 8px;
+  line-height: 1.4; max-width: 120px; padding: 0 4px;
+}
+.pipeline-arrow {
+  display: flex; align-items: center; padding-top: 14px; flex-shrink: 0;
+  color: var(--text-muted); font-size: 18px; margin: 0 2px;
+}
+
+/* ── Algo Cards ── */
+.algo-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: box-shadow .2s;
+}
+.algo-card:hover { box-shadow: var(--shadow-md); }
+.algo-card-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; cursor: pointer;
+  background: #fff;
+}
+.algo-card-header:hover { background: var(--blue-pale); }
+.algo-layer-tag {
+  font-size: 10px; font-weight: 800; letter-spacing: .5px;
+  padding: 3px 8px; border-radius: 4px; flex-shrink: 0;
+  background: var(--navy); color: rgba(255,255,255,.85);
+}
+.algo-layer-tag.blue  { background: var(--blue); }
+.algo-layer-tag.orange { background: var(--orange); color: #fff; }
+.algo-layer-tag.green  { background: var(--green); color: #fff; }
+.algo-layer-tag.purple { background: #7c3aed; color: #fff; }
+.algo-layer-tag.teal   { background: #0f766e; color: #fff; }
+.algo-card-title {
+  flex: 1; font-size: 14px; font-weight: 700; color: var(--navy);
+}
+.algo-version-tag {
+  font-size: 11px; padding: 2px 8px; border-radius: 10px;
+  font-weight: 600; flex-shrink: 0;
+}
+.algo-version-tag.v1 { background: #dcfce7; color: #15803d; }
+.algo-version-tag.v2 { background: #fef3c7; color: #b45309; }
+.algo-toggle {
+  position: relative; width: 40px; height: 22px; flex-shrink: 0;
+}
+.algo-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.algo-toggle-slider {
+  position: absolute; inset: 0; border-radius: 11px;
+  background: #b9cce4; cursor: pointer;
+  transition: background .2s;
+}
+.algo-toggle-slider::before {
+  content: ''; position: absolute;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; top: 3px; left: 3px;
+  transition: transform .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.algo-toggle input:checked + .algo-toggle-slider { background: var(--blue); }
+.algo-toggle input:checked + .algo-toggle-slider::before { transform: translateX(18px); }
+.algo-toggle input:disabled + .algo-toggle-slider { background: #d2e2f5; cursor: not-allowed; }
+.algo-expand-btn {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--blue-pale);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 12px; color: var(--blue);
+  transition: transform .25s; flex-shrink: 0;
+}
+.algo-expand-btn.open { transform: rotate(180deg); background: var(--blue-pale2); }
+
+.algo-card-body {
+  display: none;
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--blue-border);
+  background: linear-gradient(180deg, var(--blue-pale) 0%, #fff 60%);
+}
+.algo-card-body.open { display: block; }
+
+.algo-purpose {
+  background: #eff6ff; border: 1px solid #bfdbfe;
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  font-size: 13px; color: #1d4ed8; margin: 14px 0 12px;
+  line-height: 1.5;
+}
+.algo-purpose b { color: var(--navy); }
+
+.algo-meta-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;
+}
+.algo-meta-item {
+  background: var(--card-bg); border-radius: var(--radius-sm);
+  border: 1px solid var(--border); padding: 9px 12px;
+}
+.algo-meta-label {
+  font-size: 11px; color: var(--text-muted); font-weight: 600;
+  letter-spacing: .4px; margin-bottom: 4px;
+}
+.algo-meta-value { font-size: 12px; color: var(--text-main); line-height: 1.4; }
+.algo-meta-value .tag {
+  display: inline-block; background: var(--blue-pale2); color: var(--blue);
+  border-radius: 4px; padding: 1px 6px; font-size: 11px; font-weight: 600;
+  margin: 2px 2px 0 0;
+}
+.algo-meta-value .tag.disabled { background: #fee2e2; color: #b91c1c; }
+
+.param-table-wrap {
+  margin-top: 12px;
+}
+.param-table-title {
+  font-size: 12px; font-weight: 700; color: var(--text-sub);
+  text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px;
+}
+.param-table {
+  width: 100%; border-collapse: collapse;
+  background: var(--card-bg); border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.param-table thead th {
+  font-size: 11px; background: var(--navy); color: rgba(255,255,255,.8);
+  padding: 8px 12px; text-align: left; letter-spacing: .3px;
+}
+.param-table thead th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+.param-table thead th:last-child  { border-radius: 0 var(--radius-sm) 0 0; }
+.param-table tbody td {
+  padding: 9px 12px; font-size: 12px; color: var(--text-main);
+  border-bottom: 1px solid var(--border); vertical-align: middle;
+}
+.param-table tbody tr:last-child td { border-bottom: none; }
+.param-table tbody tr:hover { background: var(--blue-pale); }
+.param-name { font-weight: 700; color: var(--navy); font-family: 'Courier New', monospace; }
+.param-input {
+  width: 80px; padding: 5px 8px;
+  border: 1px solid var(--border); border-radius: 4px;
+  font-size: 12px; color: var(--text-main); font-family: inherit;
+  background: #fff;
+  transition: border .15s;
+}
+.param-input:focus {
+  outline: none; border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(37,99,235,.1);
+}
+.param-range { font-size: 11px; color: var(--text-muted); }
+
+.algo-card-actions {
+  display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap;
+}
+
+/* ── Threshold Section ── */
+.threshold-section {
+  background: var(--card-bg); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+  padding: 20px; margin-bottom: 18px;
+}
+.threshold-section h2 {
+  font-size: 15px; font-weight: 700; color: var(--navy);
+  margin-bottom: 4px;
+}
+.threshold-sub {
+  font-size: 12px; color: var(--text-sub); margin-bottom: 16px;
+}
+.threshold-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  margin-bottom: 14px;
+}
+.threshold-item label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--text-sub); margin-bottom: 6px;
+}
+.threshold-item input[type="number"] {
+  width: 100%; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; color: var(--text-main); font-family: inherit;
+  transition: border .15s;
+}
+.threshold-item input[type="number"]:focus {
+  outline: none; border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+.threshold-item .hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+/* ── Baseline Section ── */
+.baseline-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  margin-bottom: 14px;
+}
+.baseline-item label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--text-sub); margin-bottom: 5px;
+}
+.baseline-item input, .baseline-item select {
+  width: 100%; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; color: var(--text-main); font-family: inherit;
+  transition: border .15s; background: #fff;
+}
+.baseline-item input:focus, .baseline-item select:focus {
+  outline: none; border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+
+/* ── Info banner for v2 cards ── */
+.v2-notice {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #fffbeb; border: 1px solid #fde68a;
+  border-radius: 6px; padding: 6px 12px;
+  font-size: 12px; color: #b45309; margin-bottom: 10px;
+}
+
+@media (max-width: 900px) {
+  .pipeline-flow { min-width: 700px; }
+  .algo-meta-grid { grid-template-columns: 1fr; }
+  .threshold-grid { grid-template-columns: 1fr 1fr; }
+  .baseline-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div data-layout-topbar></div>
+
+<div class="layout">
+  <div data-layout-sidebar data-active="algo-config"></div>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>算法配置管理</h1>
+      <div class="subtitle">后台巡检流水线的工作原理说明 · 参数调整 · 分级阈值配置 · 仅供高级用户使用</div>
+    </div>
+
+    <!-- ══ SECTION 1: 新版并行巡检架构总览 ══ -->
+    <div class="pipeline-wrap">
+      <div class="pipeline-title">新版并行巡检架构总览</div>
+      <div class="pipeline-flow">
+
+        <div class="pipeline-node">
+          <div class="pipeline-node-box l0">
+            <div class="pipeline-node-label">S1</div>
+            <div class="pipeline-node-name">数据接入<br>与规范化</div>
+          </div>
+          <div class="pipeline-node-desc">数据源 → Adapter → Canonical Schema → 标准视图 / 聚合视图</div>
+        </div>
+
+        <div class="pipeline-arrow">→</div>
+
+        <div class="pipeline-node">
+          <div class="pipeline-node-box l05">
+            <div class="pipeline-node-label">S2</div>
+            <div class="pipeline-node-name">特征工程</div>
+          </div>
+          <div class="pipeline-node-desc">Preprocessor Registry → Feature Store → Feature Snapshot</div>
+        </div>
+
+        <div class="pipeline-arrow">→</div>
+
+        <div class="pipeline-node">
+          <div class="pipeline-node-box l1">
+            <div class="pipeline-node-label">S3</div>
+            <div class="pipeline-node-name">算法检测</div>
+          </div>
+          <div class="pipeline-node-desc">Detector Registry 并行读取 FeatureSnapshot，输出标准 Detector Result</div>
+        </div>
+
+        <div class="pipeline-arrow">→</div>
+
+        <div class="pipeline-node">
+          <div class="pipeline-node-box l3">
+            <div class="pipeline-node-label">S4</div>
+            <div class="pipeline-node-name">线索生成</div>
+          </div>
+          <div class="pipeline-node-desc">Fusion → Evidence Builder → RiskClue，按 detector family 融合避免重复加分</div>
+        </div>
+
+        <div class="pipeline-arrow">→</div>
+
+        <div class="pipeline-node">
+          <div class="pipeline-node-box l5">
+            <div class="pipeline-node-label">S5</div>
+            <div class="pipeline-node-name">服务接口</div>
+          </div>
+          <div class="pipeline-node-desc">Inspection Service → Debug API / Dry-run API / Backtest API</div>
+        </div>
+
+      </div>
+      <div class="algo-purpose" style="margin-bottom:0">
+        <b>架构原则：</b>Preprocessor 负责生成可复用 FeatureSnapshot，Detector 只声明并读取 required_features，不直接访问原始订单表。药物分组、治疗周期、替代关系等未来可作为独立预处理模块扩展。
+      </div>
+    </div>
+
+    <!-- ══ SECTION 2: 算法卡片列表 ══ -->
+    <div class="section-header" style="margin-bottom:14px">
+      <div class="section-title">算法卡片列表
+        <span class="count">14个算法模块</span>
+      </div>
+      <span style="font-size:12px;color:var(--text-muted)">点击卡片展开查看参数 · v2标记的算法为规划中</span>
+    </div>
+
+    <!-- ─ 卡片1: 主干 P(alive)·BG/NBD ─ -->
+    <div class="algo-card" id="card-bgnbd">
+      <div class="algo-card-header" onclick="toggleAlgoCard('bgnbd')">
+        <span class="algo-layer-tag">L1主干</span>
+        <div class="algo-card-title">主干 P(alive) · BG/NBD</div>
+        <span class="algo-version-tag v1">v1 启用</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()" title="启用/禁用此算法">
+          <input type="checkbox" id="toggle-bgnbd" checked onchange="onToggle('bgnbd', this.checked)">
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-bgnbd">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-bgnbd">
+        <div class="algo-purpose">
+          <b>用途：</b>把"采购节奏放缓"数学化成可校准的存活概率，是最干净的领先指标。P(alive)持续下行就意味着医院正在逐渐淡出，是其他所有探测器的打分基础。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">输入字段</div>
+            <div class="algo-meta-value">每家医院 RFM：最近购买时间（Recency）、历史购买频次（Frequency）、首购距今（T）</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">命中信号 / 输出</div>
+            <div class="algo-meta-value">P(alive) 存活概率 + 主干风险分 = (1−P_alive)×100；P(alive)下行趋势斜率</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value">
+              <span class="tag">平稳</span><span class="tag">波动</span><span class="tag">间断</span><span class="tag">块状</span>
+              <div style="margin-top:4px;font-size:11px;color:var(--text-muted)">政策性断崖交L2处理，不让主干误判</div>
+            </div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">假设边界</div>
+            <div class="algo-meta-value">BG/NBD 假设非契约独立泊松。医院采购受集采/医保政策驱动时，政策性断崖须交L2掩码处理</div>
+          </div>
+        </div>
+        <div class="param-table-wrap">
+          <div class="param-table-title">参数表</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>当前值</th><th>说明</th><th>建议范围</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="param-name">重拟合周期</td>
+                <td><select class="param-input" style="width:90px" id="p-bgnbd-refit"><option value="季度" selected>季度</option><option value="月度">月度</option><option value="半年">半年</option></select></td>
+                <td>BG/NBD模型对全体医院重新拟合的频率</td>
+                <td class="param-range">月度–半年</td>
+              </tr>
+              <tr>
+                <td class="param-name">P_alive走势窗口</td>
+                <td><input type="number" class="param-input" id="p-bgnbd-slope" value="3" min="2" max="6"></td>
+                <td>取近N个巡检点斜率判断"下行"（个）</td>
+                <td class="param-range">2–6</td>
+              </tr>
+              <tr>
+                <td class="param-name">P_alive 低阈值</td>
+                <td><input type="number" class="param-input" id="p-bgnbd-low" value="0.4" min="0.1" max="0.6" step="0.05"></td>
+                <td>低于此值视为P_alive低（红级前提之一）</td>
+                <td class="param-range">0.25–0.55</td>
+              </tr>
+              <tr>
+                <td class="param-name">P_alive 中阈值上限</td>
+                <td><input type="number" class="param-input" id="p-bgnbd-mid" value="0.7" min="0.4" max="0.9" step="0.05"></td>
+                <td>P_alive处于[低阈值, 此值]之间为"中"（橙级条件）</td>
+                <td class="param-range">0.55–0.85</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="algo-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveCard('bgnbd')">保存</button>
+          <button class="btn btn-gray btn-sm" onclick="resetCard('bgnbd')">恢复默认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片2: L0.5 需求形态分类闸门 ─ -->
+    <div class="algo-card" id="card-sb">
+      <div class="algo-card-header" onclick="toggleAlgoCard('sb')">
+        <span class="algo-layer-tag blue">L0.5闸门</span>
+        <div class="algo-card-title">需求形态分类闸门 · Syntetos-Boylan</div>
+        <span class="algo-version-tag v1">v1 启用</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-sb" checked disabled>
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-sb">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-sb">
+        <div class="algo-purpose">
+          <b>用途：</b>强制前置——先把每个分析单元分成平稳/波动/间断/块状四种形态，再决定用哪套探测器。不分类就上探测器，间断型药品（比如季节性用药）会成为误报喷泉。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">输入字段</div>
+            <div class="algo-meta-value">下单时间序列 → 计算ADI（平均需求间隔）和 CV²（采购量变异系数平方）</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">路由规则</div>
+            <div class="algo-meta-value">
+              间断/块状型：<span class="tag disabled">禁用Mann-Kendall趋势检验</span>，改用Croston/SBA期望补货点；块状型仅保留P(alive)+期望补货点
+            </div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value"><span class="tag">全部形态</span> <span style="font-size:11px;color:var(--text-muted)">（此步骤本身就是形态判定入口，不可禁用）</span></div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">注意</div>
+            <div class="algo-meta-value">此模块为强制前置，不可关闭；调整ADI/CV²阈值会影响全量单元的探测器路由</div>
+          </div>
+        </div>
+        <div class="param-table-wrap">
+          <div class="param-table-title">参数表</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>当前值</th><th>说明</th><th>建议范围</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="param-name">ADI 阈值</td>
+                <td><input type="number" class="param-input" id="p-sb-adi" value="1.32" min="1.0" max="2.0" step="0.01"></td>
+                <td>平均需求间隔(ADI)高于此值视为间断/块状型</td>
+                <td class="param-range">1.1–1.6</td>
+              </tr>
+              <tr>
+                <td class="param-name">CV² 阈值</td>
+                <td><input type="number" class="param-input" id="p-sb-cv2" value="0.49" min="0.2" max="0.8" step="0.01"></td>
+                <td>采购量变异系数平方(CV²)高于此值视为波动/块状型</td>
+                <td class="param-range">0.3–0.7</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="algo-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveCard('sb')">保存</button>
+          <button class="btn btn-gray btn-sm" onclick="resetCard('sb')">恢复默认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片3: 探测器1 IPI ─ -->
+    <div class="algo-card" id="card-ipi">
+      <div class="algo-card-header" onclick="toggleAlgoCard('ipi')">
+        <span class="algo-layer-tag">探测器1</span>
+        <div class="algo-card-title">采购节奏异常（IPI）</div>
+        <span class="algo-version-tag v1">v1 启用</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-ipi" checked onchange="onToggle('ipi', this.checked)">
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-ipi">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-ipi">
+        <div class="algo-purpose">
+          <b>用途：</b>距上次下单天数超出该医院历史正常间隔就报警。这是最直接的节奏异常信号——医院该下单了，但它没有，可能是在观望或已换供应商。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">输入字段</div>
+            <div class="algo-meta-value">下单时间、药品编码、医疗机构编码</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">命中信号 / 输出</div>
+            <div class="algo-meta-value">鲁棒z分（距末次下单天数与历史中位MAD的偏差倍数），超Z_HIT命中，超Z_FULL满分</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value"><span class="tag">平稳</span><span class="tag">波动</span><span class="tag">间断→Croston改版</span><span class="tag">块状→Croston改版</span></div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">置信度机制</div>
+            <div class="algo-meta-value">c = min(n / N_CONF, 1)，历史订单数不足N_CONF单时置信度打折，不影响分级</div>
+          </div>
+        </div>
+        <div class="param-table-wrap">
+          <div class="param-table-title">参数表</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>当前值</th><th>说明</th><th>建议范围</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="param-name">Z_HIT</td>
+                <td><input type="number" class="param-input" id="p-ipi-zhit" value="1.5" min="0.5" max="3.0" step="0.1"></td>
+                <td>命中阈值（≈80分位），超出即触发探测器</td>
+                <td class="param-range">1.0–2.5</td>
+              </tr>
+              <tr>
+                <td class="param-name">Z_FULL</td>
+                <td><input type="number" class="param-input" id="p-ipi-zfull" value="3.5" min="2.0" max="6.0" step="0.1"></td>
+                <td>满分阈值，z≥Z_FULL时严重度s=100</td>
+                <td class="param-range">2.5–5.0</td>
+              </tr>
+              <tr>
+                <td class="param-name">MAD_FLOOR</td>
+                <td><input type="number" class="param-input" id="p-ipi-madfloor" value="3" min="1" max="10"></td>
+                <td>MAD最小值兜底（天），防止极低波动单元误报</td>
+                <td class="param-range">1–7</td>
+              </tr>
+              <tr>
+                <td class="param-name">N_CONF</td>
+                <td><input type="number" class="param-input" id="p-ipi-nconf" value="12" min="6" max="30"></td>
+                <td>达到满置信度所需历史订单数（单）</td>
+                <td class="param-range">8–20</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="algo-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveCard('ipi')">保存</button>
+          <button class="btn btn-gray btn-sm" onclick="resetCard('ipi')">恢复默认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片4: 探测器2 量/金额趋势衰减 ─ -->
+    <div class="algo-card" id="card-mk">
+      <div class="algo-card-header" onclick="toggleAlgoCard('mk')">
+        <span class="algo-layer-tag">探测器2</span>
+        <div class="algo-card-title">量/金额趋势衰减（Mann-Kendall + Theil-Sen + CUSUM）</div>
+        <span class="algo-version-tag v1">v1 启用</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-mk" checked onchange="onToggle('mk', this.checked)">
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-mk">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-mk">
+        <div class="algo-purpose">
+          <b>用途：</b>采购量持续单调下滑就报警。Mann-Kendall检验趋势显著性，Theil-Sen估算下滑斜率，CUSUM捕捉持续性均值下移——三种方法只要一个命中即触发。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">输入字段</div>
+            <div class="algo-meta-value">月度采购数量（去季节后）、采购金额、下单时间</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">命中信号 / 输出</div>
+            <div class="algo-meta-value">MK τ值+p值、Theil-Sen斜率（盒/月）、CUSUM累积偏差C⁻；三者OR合并命中</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value">
+              <span class="tag">平稳</span><span class="tag">波动</span>
+              <span class="tag disabled">间断—禁用</span><span class="tag disabled">块状—禁用</span>
+              <div style="margin-top:4px;font-size:11px;color:var(--text-muted)">间断/块状型禁用MK趋势检验，随机性会被误判为衰减</div>
+            </div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">严重度计算</div>
+            <div class="algo-meta-value">近3月相对下滑 drop = max(0, −slope×3/target)，s = min(100×drop/DROP_FULL, 100)</div>
+          </div>
+        </div>
+        <div class="param-table-wrap">
+          <div class="param-table-title">参数表</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>当前值</th><th>说明</th><th>建议范围</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="param-name">MK_P</td>
+                <td><input type="number" class="param-input" id="p-mk-p" value="0.1" min="0.01" max="0.3" step="0.01"></td>
+                <td>Mann-Kendall检验p值阈值，小于此值视为显著下行趋势</td>
+                <td class="param-range">0.05–0.2</td>
+              </tr>
+              <tr>
+                <td class="param-name">CUSUM k</td>
+                <td><input type="number" class="param-input" id="p-mk-k" value="0.5" min="0.1" max="1.5" step="0.1"></td>
+                <td>CUSUM容忍参数（标准差的倍数），控制对轻微下移的敏感度</td>
+                <td class="param-range">0.25–1.0</td>
+              </tr>
+              <tr>
+                <td class="param-name">CUSUM H</td>
+                <td><input type="number" class="param-input" id="p-mk-h" value="4" min="2" max="8"></td>
+                <td>CUSUM触发阈值（σ倍数），C⁻ ≥ H×σ即触发</td>
+                <td class="param-range">3–6</td>
+              </tr>
+              <tr>
+                <td class="param-name">DROP_FULL</td>
+                <td><input type="number" class="param-input" id="p-mk-drop" value="0.6" min="0.3" max="0.9" step="0.05"></td>
+                <td>满分对应的相对下滑比例，跌60%记严重度100分</td>
+                <td class="param-range">0.4–0.8</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="algo-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveCard('mk')">保存</button>
+          <button class="btn btn-gray btn-sm" onclick="resetCard('mk')">恢复默认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片5: 探测器3 采购频次衰减 ─ -->
+    <div class="algo-card" id="card-freq">
+      <div class="algo-card-header" onclick="toggleAlgoCard('freq')">
+        <span class="algo-layer-tag">探测器3</span>
+        <div class="algo-card-title">采购频次衰减（泊松/负二项到达率）</div>
+        <span class="algo-version-tag v1">v1 启用</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-freq" checked onchange="onToggle('freq', this.checked)">
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-freq">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-freq">
+        <div class="algo-purpose">
+          <b>用途：</b>近窗口下单频率比历史基线明显下降就报警。频次下降往往比采购量下降更早出现，常是"医院开始减少下单频率但每单量还撑着"的早期信号。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">输入字段</div>
+            <div class="algo-meta-value">订单编号、下单时间（聚合为月均下单次数λ）</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">命中信号 / 输出</div>
+            <div class="algo-meta-value">近窗口月均下单率λ_recent vs 基线期λ_base，rate_ratio = λ_recent/λ_base</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value"><span class="tag">平稳</span><span class="tag">波动</span><span class="tag">间断</span>
+            <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:4px">仅FREQ_MIN_BASE≥1月均单才启用此维度</span></div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">置信度机制</div>
+            <div class="algo-meta-value">c = min(λ_base/2, 1)，低频本身采购的单元此维度可信度低，不强行打分</div>
+          </div>
+        </div>
+        <div class="param-table-wrap">
+          <div class="param-table-title">参数表</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>当前值</th><th>说明</th><th>建议范围</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="param-name">FREQ_DROP</td>
+                <td><input type="number" class="param-input" id="p-freq-drop" value="0.6" min="0.3" max="0.9" step="0.05"></td>
+                <td>频次降到基线的比例低于此值即命中（rate_ratio ≤ FREQ_DROP）</td>
+                <td class="param-range">0.4–0.8</td>
+              </tr>
+              <tr>
+                <td class="param-name">FREQ_MIN_BASE</td>
+                <td><input type="number" class="param-input" id="p-freq-minbase" value="1" min="1" max="5"></td>
+                <td>基线期月均下单次数最低门槛，低于此值不启用频次维度（单/月）</td>
+                <td class="param-range">1–3</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="algo-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveCard('freq')">保存</button>
+          <button class="btn btn-gray btn-sm" onclick="resetCard('freq')">恢复默认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片6: 探测器4 品规收窄 ─ -->
+    <div class="algo-card" id="card-sku">
+      <div class="algo-card-header" onclick="toggleAlgoCard('sku')">
+        <span class="algo-layer-tag">探测器4</span>
+        <div class="algo-card-title">品规收窄 / 钱包份额</div>
+        <span class="algo-version-tag v1">v1 启用</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-sku" checked onchange="onToggle('sku', this.checked)">
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-sku">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-sku">
+        <div class="algo-purpose">
+          <b>用途：</b>在采品规数收缩是竞品逐个替代的最早前兆，常领先于总量下滑1–2个月。医院先停一个规格，再停另一个，最后全停——品规收窄是最早能抓到的那道裂缝。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">输入字段</div>
+            <div class="algo-meta-value">药品编码、规格、剂型（统计活跃品规distinct数）</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">命中信号 / 输出</div>
+            <div class="algo-meta-value">shrink = (sku_base − sku_recent)/sku_base，≥SKU_SHRINK且基线≥SKU_MIN_BASE即命中</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value"><span class="tag">平稳</span><span class="tag">波动</span><span class="tag">间断</span><span class="tag">块状</span>
+            <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:4px">本身单品规的医院此维度不适用（c自动趋0）</span></div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">信号价值</div>
+            <div class="algo-meta-value">品规逐个掉 = 竞品逐步替代，通常领先于总量下滑，是最早的可干预窗口信号</div>
+          </div>
+        </div>
+        <div class="param-table-wrap">
+          <div class="param-table-title">参数表</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>当前值</th><th>说明</th><th>建议范围</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="param-name">SKU_SHRINK</td>
+                <td><input type="number" class="param-input" id="p-sku-shrink" value="0.34" min="0.1" max="0.7" step="0.01"></td>
+                <td>品规收缩率阈值，≥1/3品规消失即命中</td>
+                <td class="param-range">0.2–0.5</td>
+              </tr>
+              <tr>
+                <td class="param-name">SKU_MIN_BASE</td>
+                <td><input type="number" class="param-input" id="p-sku-minbase" value="2" min="1" max="5"></td>
+                <td>基线期活跃品规最低数量，低于此不启用此维度</td>
+                <td class="param-range">2–4</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="algo-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveCard('sku')">保存</button>
+          <button class="btn btn-gray btn-sm" onclick="resetCard('sku')">恢复默认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片7: 探测器5 履约三段差 ─ -->
+    <div class="algo-card" id="card-fulfill">
+      <div class="algo-card-header" onclick="toggleAlgoCard('fulfill')">
+        <span class="algo-layer-tag orange">探测器5</span>
+        <div class="algo-card-title">履约三段差（断供前兆）</div>
+        <span class="algo-version-tag v2">v2 规划中</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-fulfill" onchange="onToggle('fulfill', this.checked)">
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-fulfill">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-fulfill">
+        <div class="v2-notice">⚠️ v2 高优先级规划中 · 数据字段确认后上线 · 当前处于关闭状态</div>
+        <div class="algo-purpose">
+          <b>用途：</b>用采购→配送→收货三段缺口，区分"医院不想买了（需求型流失）"和"医院想买但买不顺（断供型）"。这两类根因的干预动作完全不同：需求型找医院做客情，断供型找配送商修履约。混判会让一线跑错方向，是最贵的误报。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">输入字段</div>
+            <div class="algo-meta-value">采购数量×时间、配送数量×时间、收货数量×时间、配送企业编码</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">命中信号 / 输出</div>
+            <div class="algo-meta-value">配送率fill_rate趋势下行 / 配送时延dlag拉长 / 拒单率reject_rate ≥ 阈值；输出断供/需求/双重根因标签</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value"><span class="tag">平稳</span><span class="tag">波动</span><span class="tag">间断</span><span class="tag">块状</span></div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">核心产出</div>
+            <div class="algo-meta-value">断供型：根因归配送商，不计入医院需求流失主因；配送商≥SYS_MIN_HOSP家同时恶化则独立成配送商预警</div>
+          </div>
+        </div>
+        <div class="param-table-wrap">
+          <div class="param-table-title">参数表</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>当前值</th><th>说明</th><th>建议范围</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="param-name">REJECT_DAYS</td>
+                <td><input type="number" class="param-input" id="p-fulfill-rejectdays" value="7" min="3" max="14"></td>
+                <td>超过N天无配送记录即判定为拒单（天）</td>
+                <td class="param-range">5–14</td>
+              </tr>
+              <tr>
+                <td class="param-name">REJECT_RATE_HIT</td>
+                <td><input type="number" class="param-input" id="p-fulfill-rejectrate" value="0.15" min="0.05" max="0.4" step="0.01"></td>
+                <td>近90天拒单率达到此比例即命中</td>
+                <td class="param-range">0.10–0.25</td>
+              </tr>
+              <tr>
+                <td class="param-name">FILL_OK</td>
+                <td><input type="number" class="param-input" id="p-fulfill-fillok" value="0.8" min="0.5" max="0.95" step="0.01"></td>
+                <td>配送率"健康线"，低于此值视为履约恶化</td>
+                <td class="param-range">0.7–0.9</td>
+              </tr>
+              <tr>
+                <td class="param-name">SYS_MIN_HOSP</td>
+                <td><input type="number" class="param-input" id="p-fulfill-sysmhosp" value="5" min="3" max="15"></td>
+                <td>配送商系统性失约阈值：≥N家医院同时履约恶化才生成配送商专项预警</td>
+                <td class="param-range">3–10</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="algo-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveCard('fulfill')">保存</button>
+          <button class="btn btn-gray btn-sm" onclick="resetCard('fulfill')">恢复默认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片8: 探测器6 价格/竞争替代 ─ -->
+    <div class="algo-card" id="card-price">
+      <div class="algo-card-header" onclick="toggleAlgoCard('price')">
+        <span class="algo-layer-tag orange">探测器6</span>
+        <div class="algo-card-title">价格/竞争替代</div>
+        <span class="algo-version-tag v2">v2 规划中</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-price" onchange="onToggle('price', this.checked)">
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-price">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-price">
+        <div class="v2-notice">⚠️ v2 规划中 · 需跨院/跨省价格数据接入 · 当前处于关闭状态</div>
+        <div class="algo-purpose">
+          <b>用途：</b>同一药品跨院/跨省采购价格离散度突变，往往领先于量价下滑，是竞品降价进院或本品涨价失去竞争力的早期信号。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">输入字段</div>
+            <div class="algo-meta-value">采购价格、制剂价格、批准文号（跨院/跨省汇总）</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">命中信号 / 输出</div>
+            <div class="algo-meta-value">同药品跨院价格IQR/标准差突变，本院价格偏离同群中位，竞争替代预警标签</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value"><span class="tag">平稳</span><span class="tag">波动</span></div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">数据依赖</div>
+            <div class="algo-meta-value">需要同药品多院采购价格数据，单客户数据孤岛下效果受限；多客户汇聚后信号更准</div>
+          </div>
+        </div>
+        <div class="algo-card-actions">
+          <button class="btn btn-gray btn-sm" onclick="showToast('探测器6参数将在v2上线时开放配置', 'info')">参数待上线</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片9: 探测器7 同侪对照 ─ -->
+    <div class="algo-card" id="card-peer">
+      <div class="algo-card-header" onclick="toggleAlgoCard('peer')">
+        <span class="algo-layer-tag orange">探测器7</span>
+        <div class="algo-card-title">同侪对照（去伪）</div>
+        <span class="algo-version-tag v2">v2 规划中</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-peer" onchange="onToggle('peer', this.checked)">
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-peer">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-peer">
+        <div class="v2-notice">⚠️ v2 规划中 · 当前处于关闭状态</div>
+        <div class="algo-purpose">
+          <b>用途：</b>按等级+地区分群，群体整体稳而单院特异下滑才算真风险。这个机制能压掉行业性普跌的假警报——如果全省三甲医院都在减少采购，那大概率是政策/季节因素，而非某一家医院的问题。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">输入字段</div>
+            <div class="algo-meta-value">机构等级（三甲/二甲等）、所属地区（省/市）</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">命中信号 / 输出</div>
+            <div class="algo-meta-value">本院下滑分位 vs 同群中位；低于PEER_PCTL时视为群体共同下行，触发全局压制因子</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value"><span class="tag">平稳</span><span class="tag">波动</span><span class="tag">间断</span><span class="tag">块状</span></div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">压制机制</div>
+            <div class="algo-meta-value">suppress=True时：Score × SUPPRESS_F（默认0.4），即将风险分压到40%；作用于L3融合层</div>
+          </div>
+        </div>
+        <div class="param-table-wrap">
+          <div class="param-table-title">参数表</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>当前值</th><th>说明</th><th>建议范围</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="param-name">PEER_PCTL</td>
+                <td><select class="param-input" style="width:80px" id="p-peer-pctl"><option value="50%" selected>50%</option><option value="33%">33%</option><option value="25%">25%</option></select></td>
+                <td>本院相对同群分位低于此值时，视为群体共同下行，触发压制</td>
+                <td class="param-range">25%–50%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="algo-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveCard('peer')">保存</button>
+          <button class="btn btn-gray btn-sm" onclick="resetCard('peer')">恢复默认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片10: L2 去伪校正 ─ -->
+    <div class="algo-card" id="card-l2">
+      <div class="algo-card-header" onclick="toggleAlgoCard('l2')">
+        <span class="algo-layer-tag orange">L2校正</span>
+        <div class="algo-card-title">去伪校正（集采掩码 / 季节扣除 / 断供分流）</div>
+        <span class="algo-version-tag v1">v1 启用</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-l2" checked disabled>
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-l2">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-l2">
+        <div class="algo-purpose">
+          <b>用途：</b>融合前先扣掉"假流失"——集采落标的合法量跌打掩码、季节囤货扣除、配送商系统性失约单独成线索而不冤枉医院。这一步是证据链可信度的基础。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">输入字段</div>
+            <div class="algo-meta-value">医保目录类型（集采/非集采/普通）、量价阶跃突变时间点</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">三类校正</div>
+            <div class="algo-meta-value">① 集采落标→policy_masked打掩码不报；② 季节同比扣除；③ 配送商系统性失约→独立配送商线索，受影响医院流失分降权</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value"><span class="tag">全部形态</span></div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">注意</div>
+            <div class="algo-meta-value">此模块强制启用，不可关闭；集采目录数据需与医保系统对接后才能充分发挥</div>
+          </div>
+        </div>
+        <div class="algo-card-actions">
+          <span style="font-size:12px;color:var(--text-muted)">此模块无可配置参数，由数据接口自动维护</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片11: L3 融合与印证升级 ─ -->
+    <div class="algo-card" id="card-l3">
+      <div class="algo-card-header" onclick="toggleAlgoCard('l3')">
+        <span class="algo-layer-tag green">L3融合</span>
+        <div class="algo-card-title">融合与印证升级（多族交叉验证）</div>
+        <span class="algo-version-tag v1">v1 启用</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-l3" checked disabled>
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-l3">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-l3">
+        <div class="algo-purpose">
+          <b>用途：</b>分数以主干P(alive)为准，探测器只做"是否多族印证"来影响分级，避免多个相关探测器叠加导致虚高分数（相关污染）。越多独立信号族同时命中，越可信。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">印证系数公式</div>
+            <div class="algo-meta-value">印证系数 = min(1 + ALPHA×(k−1), CORR_CAP)，k=独立命中信号族数；分数 = 主干分×印证系数×压制因子</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">信号族定义</div>
+            <div class="algo-meta-value">F1=IPI节奏、F2=量趋势、F3=频次、F4=品规、F5=履约、F6=价格、F7=同侪；置信度c≥C_MIN才计入</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value"><span class="tag">全部形态</span></div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">封顶机制</div>
+            <div class="algo-meta-value">CORR_CAP = 2.0，即无论多少族命中，印证系数最高翻倍，防止夸大</div>
+          </div>
+        </div>
+        <div class="param-table-wrap">
+          <div class="param-table-title">参数表</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>当前值</th><th>说明</th><th>建议范围</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="param-name">ALPHA</td>
+                <td><input type="number" class="param-input" id="p-l3-alpha" value="0.5" min="0.1" max="1.0" step="0.1"></td>
+                <td>每增加一个独立命中族的增益系数</td>
+                <td class="param-range">0.3–0.8</td>
+              </tr>
+              <tr>
+                <td class="param-name">CORR_CAP</td>
+                <td><input type="number" class="param-input" id="p-l3-corrcap" value="2.0" min="1.2" max="3.0" step="0.1"></td>
+                <td>印证系数封顶值，防止多族叠加时分数过度虚高</td>
+                <td class="param-range">1.5–2.5</td>
+              </tr>
+              <tr>
+                <td class="param-name">C_MIN</td>
+                <td><input type="number" class="param-input" id="p-l3-cmin" value="0.4" min="0.2" max="0.8" step="0.05"></td>
+                <td>探测器最低置信度门槛，低于此值的命中不参与印证计数</td>
+                <td class="param-range">0.3–0.6</td>
+              </tr>
+              <tr>
+                <td class="param-name">SUPPRESS_F</td>
+                <td><input type="number" class="param-input" id="p-l3-suppressf" value="0.4" min="0.1" max="0.8" step="0.05"></td>
+                <td>同侪压制因子：被压制的单元分数乘以此系数</td>
+                <td class="param-range">0.2–0.6</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="algo-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveCard('l3')">保存</button>
+          <button class="btn btn-gray btn-sm" onclick="resetCard('l3')">恢复默认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片12: FDR BH ─ -->
+    <div class="algo-card" id="card-fdr">
+      <div class="algo-card-header" onclick="toggleAlgoCard('fdr')">
+        <span class="algo-layer-tag green">L3 FDR</span>
+        <div class="algo-card-title">FDR多重检验控制 · Benjamini-Hochberg</div>
+        <span class="algo-version-tag v1">v1 启用</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-fdr" checked disabled>
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-fdr">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-fdr">
+        <div class="algo-purpose">
+          <b>用途：</b>每天对数千个「医院×产品线」单元跑多个统计检验，纯随机情况下也会"发现"成百上千条假风险。BH法把错误发现率（FDR）控制在目标线以下，只有经过FDR过滤后存活的命中，才算"独立命中信号族"参与印证升级。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">工作原理</div>
+            <div class="algo-meta-value">对当日所有探测器p值按升序排列，用BH逐步过程确定每个检验是否"存活"，控制期望假阳率 ≤ q</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用范围</div>
+            <div class="algo-meta-value">全局作用：所有探测器的统计检验结果都经过此步骤，是信号质量的最后一道门</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">注意</div>
+            <div class="algo-meta-value">FDR强制启用，不可关闭；降低q值可减少假阳率但会漏掉部分真实风险，应通过回测校准</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">适用需求形态</div>
+            <div class="algo-meta-value"><span class="tag">全部形态</span></div>
+          </div>
+        </div>
+        <div class="param-table-wrap">
+          <div class="param-table-title">参数表</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>当前值</th><th>说明</th><th>建议范围</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="param-name">目标FDR q</td>
+                <td><input type="number" class="param-input" id="p-fdr-q" value="0.10" min="0.01" max="0.3" step="0.01"></td>
+                <td>期望错误发现率上限，q=0.10表示每天假风险不超过10%</td>
+                <td class="param-range">0.05–0.20</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="algo-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveCard('fdr')">保存</button>
+          <button class="btn btn-gray btn-sm" onclick="resetCard('fdr')">恢复默认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片13: L4 预警分级 ─ -->
+    <div class="algo-card" id="card-l4">
+      <div class="algo-card-header" onclick="toggleAlgoCard('l4')">
+        <span class="algo-layer-tag" style="background:#7c2d12;color:#fff">L4分级</span>
+        <div class="algo-card-title">预警分级（红/橙/黄 印证逻辑）</div>
+        <span class="algo-version-tag v1">v1 启用</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-l4" checked disabled>
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-l4">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-l4">
+        <div class="algo-purpose">
+          <b>用途：</b>把风险分翻译成红/橙/黄三个等级，给一线一个可操作的优先级。分级不是纯阈值切分，而是基于"是否多族印证"的逻辑规则，避免单一指标偶发波动就触发高等级误报。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">红级规则</div>
+            <div class="algo-meta-value">P_alive低（&lt;0.4）<br><b>且</b> ≥2个独立信号族（经FDR）<br><b>且</b> 未被L2解释（非集采/季节）</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">橙级规则</div>
+            <div class="algo-meta-value">P_alive中（0.4–0.7）<br><b>或</b> 1个强信号族 + 同侪对照确认特异</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">黄级规则</div>
+            <div class="algo-meta-value">单一信号族命中，P_alive未到低阈值；进入观察清单，暂不推到VP工作台</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">阈值可配置性</div>
+            <div class="algo-meta-value">P_alive阈值应由回测校准后设定，不应脱离实际流失率数据随意调整</div>
+          </div>
+        </div>
+        <div class="algo-card-actions">
+          <span style="font-size:12px;color:var(--text-muted)">阈值在下方"分级阈值配置"区单独调整</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ 卡片14: L5 概率校准 ─ -->
+    <div class="algo-card" id="card-l5">
+      <div class="algo-card-header" onclick="toggleAlgoCard('l5')">
+        <span class="algo-layer-tag teal">L5校准</span>
+        <div class="algo-card-title">概率校准 · Platt Scaling / Isotonic Regression</div>
+        <span class="algo-version-tag v1">v1 启用</span>
+        <label class="algo-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="toggle-l5" checked disabled>
+          <span class="algo-toggle-slider"></span>
+        </label>
+        <span class="algo-expand-btn" id="btn-l5">▼</span>
+      </div>
+      <div class="algo-card-body" id="body-l5">
+        <div class="algo-purpose">
+          <b>用途：</b>让风险分78真正对应约78%的流失率，否则分级阈值无意义。这是整个系统"说到做到"的校准层——处置反馈（兑现/未兑现）会持续回流，用于更新校准函数，使分数越来越名副其实。
+        </div>
+        <div class="algo-meta-grid">
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">校准方法</div>
+            <div class="algo-meta-value">Platt Scaling（逻辑回归校准，数据量少时）或 Isotonic Regression（数据量足时，非参数单调校准）</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">质量指标</div>
+            <div class="algo-meta-value">Brier分（综合准确度）、ECE期望校准误差（分箱校准偏差）、可靠性图（分布可视化）</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">数据来源</div>
+            <div class="algo-meta-value">线索状态机中"声称挽回→兑现/未兑现"的处置结果，配合下一巡检周期的实际订单回填</div>
+          </div>
+          <div class="algo-meta-item">
+            <div class="algo-meta-label">注意</div>
+            <div class="algo-meta-value">校准需要足够的标注数据（通常≥200条有结果的线索），v1初期校准效果有限，会随使用时间提升</div>
+          </div>
+        </div>
+        <div class="algo-card-actions">
+          <span style="font-size:12px;color:var(--text-muted)">校准参数由系统自动学习，无手动配置项</span>
+          <button class="btn btn-outline btn-sm" onclick="showToast('可靠性图与Brier分详见回测报告页', 'info')">查看校准报告 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SECTION 3: 分级阈值配置 ══ -->
+    <div class="threshold-section">
+      <h2>分级阈值配置</h2>
+      <div class="threshold-sub">调整红/橙/黄分级的核心参数 · 修改后需点击保存 · 建议基于回测报告校准后调整</div>
+      <div class="threshold-grid">
+        <div class="threshold-item">
+          <label>P_alive 红线（低阈值）
+            <span class="badge badge-red" style="font-size:10px;margin-left:4px">红级前提</span>
+          </label>
+          <input type="number" id="thr-palive-low" value="0.4" min="0.1" max="0.6" step="0.05">
+          <div class="hint">低于此值视为P_alive低，是红级必要条件之一；建议0.25–0.55</div>
+        </div>
+        <div class="threshold-item">
+          <label>P_alive 中线上限
+            <span class="badge badge-orange" style="font-size:10px;margin-left:4px">橙级区间</span>
+          </label>
+          <input type="number" id="thr-palive-mid" value="0.7" min="0.4" max="0.9" step="0.05">
+          <div class="hint">P_alive处于[红线, 此值]之间为"中"，是橙级条件之一；建议0.55–0.85</div>
+        </div>
+        <div class="threshold-item">
+          <label>红级所需独立信号族数 k
+            <span class="badge badge-red" style="font-size:10px;margin-left:4px">红级前提</span>
+          </label>
+          <input type="number" id="thr-k-red" value="2" min="1" max="4">
+          <div class="hint">红级要求命中的独立探测器族数≥k（经FDR过滤）；默认≥2，降低会增加红级数量</div>
+        </div>
+        <div class="threshold-item">
+          <label>目标FDR q（错误发现率上限）
+            <span class="badge badge-blue" style="font-size:10px;margin-left:4px">全局</span>
+          </label>
+          <input type="number" id="thr-fdr-q" value="0.10" min="0.01" max="0.3" step="0.01">
+          <div class="hint">每日批量检验的期望假阳率上限；0.10=每天红/橙中假风险≤10%</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary btn-sm" onclick="saveThresholds()">保存分级阈值</button>
+        <button class="btn btn-gray btn-sm" onclick="resetThresholds()">恢复默认</button>
+      </div>
+    </div>
+
+    <!-- ══ SECTION 4: 公共基线参数 ══ -->
+    <div class="threshold-section">
+      <h2>公共基线参数</h2>
+      <div class="threshold-sub">影响所有探测器的基线窗口和冷启动策略 · 调整前请评估对全量单元的连锁影响</div>
+      <div class="baseline-grid">
+        <div class="baseline-item">
+          <label>N_MIN（冷启动门槛）</label>
+          <input type="number" id="base-nmin" value="6" min="3" max="20">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">历史订单数低于此值时走冷启动先验，不建独立基线（单）</div>
+        </div>
+        <div class="baseline-item">
+          <label>近期窗口（recent）</label>
+          <input type="number" id="base-recent" value="90" min="30" max="180">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">用于计算近期指标的时间窗口（天）</div>
+        </div>
+        <div class="baseline-item">
+          <label>基线窗口（base）</label>
+          <input type="number" id="base-basewin" value="365" min="90" max="730">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">基线窗口结束点：近91天–此值天（基线窗≈base−91天）</div>
+        </div>
+        <div class="baseline-item">
+          <label>主干重拟合周期</label>
+          <select id="base-refit">
+            <option value="季度" selected>季度</option>
+            <option value="月度">月度</option>
+            <option value="半年">半年</option>
+          </select>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">BG/NBD模型重新拟合的频率</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary btn-sm" onclick="saveBaseline()">保存基线参数</button>
+        <button class="btn btn-gray btn-sm" onclick="resetBaseline()">恢复默认</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+<script>
+// ── Default parameter values (source of truth for 恢复默认) ──────
+const ALGO_DEFAULTS = {
+  bgnbd: {
+    'p-bgnbd-refit':  '季度',
+    'p-bgnbd-slope':  '3',
+    'p-bgnbd-low':    '0.4',
+    'p-bgnbd-mid':    '0.7'
+  },
+  sb: {
+    'p-sb-adi': '1.32',
+    'p-sb-cv2': '0.49'
+  },
+  ipi: {
+    'p-ipi-zhit':    '1.5',
+    'p-ipi-zfull':   '3.5',
+    'p-ipi-madfloor':'3',
+    'p-ipi-nconf':   '12'
+  },
+  mk: {
+    'p-mk-p':    '0.1',
+    'p-mk-k':    '0.5',
+    'p-mk-h':    '4',
+    'p-mk-drop': '0.6'
+  },
+  freq: {
+    'p-freq-drop':    '0.6',
+    'p-freq-minbase': '1'
+  },
+  sku: {
+    'p-sku-shrink':  '0.34',
+    'p-sku-minbase': '2'
+  },
+  fulfill: {
+    'p-fulfill-rejectdays': '7',
+    'p-fulfill-rejectrate': '0.15',
+    'p-fulfill-fillok':     '0.8',
+    'p-fulfill-sysmhosp':   '5'
+  },
+  peer: {
+    'p-peer-pctl': '50%'
+  },
+  l3: {
+    'p-l3-alpha':    '0.5',
+    'p-l3-corrcap':  '2.0',
+    'p-l3-cmin':     '0.4',
+    'p-l3-suppressf':'0.4'
+  },
+  fdr: {
+    'p-fdr-q': '0.10'
+  }
+};
+
+const THRESHOLD_DEFAULTS = {
+  'thr-palive-low': '0.4',
+  'thr-palive-mid': '0.7',
+  'thr-k-red':      '2',
+  'thr-fdr-q':      '0.10'
+};
+
+const BASELINE_DEFAULTS = {
+  'base-nmin':    '6',
+  'base-recent':  '90',
+  'base-basewin': '365',
+  'base-refit':   '季度'
+};
+
+// ── Card expand/collapse ──────────────────────────────────────
+function toggleAlgoCard(id) {
+  const body = document.getElementById('body-' + id);
+  const btn  = document.getElementById('btn-' + id);
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (btn) btn.classList.toggle('open', !isOpen);
+}
+
+// ── Toggle switch handler ──────────────────────────────────────
+function onToggle(id, enabled) {
+  const name = {
+    bgnbd:   '主干 P(alive) BG/NBD',
+    ipi:     '探测器1 采购节奏异常(IPI)',
+    mk:      '探测器2 量/金额趋势衰减',
+    freq:    '探测器3 采购频次衰减',
+    sku:     '探测器4 品规收窄',
+    fulfill: '探测器5 履约三段差',
+    price:   '探测器6 价格/竞争替代',
+    peer:    '探测器7 同侪对照'
+  }[id] || id;
+  if (enabled) {
+    showToast('已启用：' + name, 'success');
+  } else {
+    showToast('已禁用：' + name + '（下次巡检生效）', 'warn');
+  }
+}
+
+// ── Save card parameters ──────────────────────────────────────
+function saveCard(id) {
+  const defaults = ALGO_DEFAULTS[id];
+  if (!defaults) {
+    showToast('保存成功', 'success');
+    return;
+  }
+  let changed = false;
+  for (const key of Object.keys(defaults)) {
+    const el = document.getElementById(key);
+    if (el && el.value !== defaults[key]) { changed = true; break; }
+  }
+  if (changed) {
+    showToast('参数已保存，将在下次巡检周期生效', 'success');
+  } else {
+    showToast('参数未变更（与默认值相同）', 'info');
+  }
+}
+
+// ── Reset card to defaults ────────────────────────────────────
+function resetCard(id) {
+  const defaults = ALGO_DEFAULTS[id];
+  if (!defaults) return;
+  for (const [key, val] of Object.entries(defaults)) {
+    const el = document.getElementById(key);
+    if (!el) continue;
+    if (el.tagName === 'SELECT') {
+      for (let i = 0; i < el.options.length; i++) {
+        if (el.options[i].value === val) { el.selectedIndex = i; break; }
+      }
+    } else {
+      el.value = val;
+    }
+  }
+  showToast('已恢复为默认值', 'info');
+}
+
+// ── Save / reset thresholds ───────────────────────────────────
+function saveThresholds() {
+  const low = parseFloat(document.getElementById('thr-palive-low').value);
+  const mid = parseFloat(document.getElementById('thr-palive-mid').value);
+  if (mid <= low) {
+    showToast('中线上限必须大于红线值，请修正', 'warn');
+    return;
+  }
+  showToast('分级阈值已保存，将在下次巡检生效', 'success');
+}
+function resetThresholds() {
+  for (const [key, val] of Object.entries(THRESHOLD_DEFAULTS)) {
+    const el = document.getElementById(key);
+    if (el) el.value = val;
+  }
+  showToast('分级阈值已恢复默认', 'info');
+}
+
+// ── Save / reset baseline ─────────────────────────────────────
+function saveBaseline() {
+  const recent  = parseInt(document.getElementById('base-recent').value);
+  const basewin = parseInt(document.getElementById('base-basewin').value);
+  if (basewin <= recent + 30) {
+    showToast('基线窗口结束点应至少比近期窗口大30天，请修正', 'warn');
+    return;
+  }
+  showToast('公共基线参数已保存，将在下次巡检生效', 'success');
+}
+function resetBaseline() {
+  for (const [key, val] of Object.entries(BASELINE_DEFAULTS)) {
+    const el = document.getElementById(key);
+    if (!el) continue;
+    if (el.tagName === 'SELECT') {
+      for (let i = 0; i < el.options.length; i++) {
+        if (el.options[i].value === val) { el.selectedIndex = i; break; }
+      }
+    } else {
+      el.value = val;
+    }
+  }
+  showToast('公共基线参数已恢复默认', 'info');
+}
+</script>
+<script type="module" src="layout/layout.js"></script>
+</body>
+</html>
+
+
+
+
+

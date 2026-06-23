@@ -1,0 +1,7 @@
+drug_code,drug_name,spec,dosage_form,approval_no,manufacturer,insurance_type,product_line_code,product_line_name
+D001,Alpha Tablet 10mg,10mg*24,tablet,H20250001,Acme Pharma,A,PL_A,Alpha Line
+D002,Alpha Tablet 20mg,20mg*24,tablet,H20250002,Acme Pharma,A,PL_A,Alpha Line
+D003,Alpha Injection 2ml,2ml*10,injection,H20250003,Acme Pharma,B,PL_A,Alpha Line
+D004,Beta Capsule 5mg,5mg*30,capsule,H20250004,Acme Pharma,B,PL_B,Beta Line
+D005,Beta Capsule 10mg,10mg*30,capsule,H20250005,Acme Pharma,B,PL_B,Beta Line
+D006,Beta Injection 1ml,1ml*10,injection,H20250006,Acme Pharma,C,PL_B,Beta Line

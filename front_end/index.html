@@ -1,0 +1,633 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VP 工作台·今日 — 终端不丢智能体</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ═══ TOPBAR ═══════════════════════════════════════════════ -->
+<div data-layout-topbar></div>
+
+<div class="layout">
+  <div data-layout-sidebar data-active="index"></div>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+
+    <!-- ═══ 北极星英雄带 ═══ -->
+    <div class="hero-band">
+      <div class="hero-inner">
+        <div class="hero-topline">
+          <span class="hero-title">VP 工作台 · 今日</span>
+          <span class="hero-info-tag">2026-06-12 · 巡检 3,847 个「医院×产品线」单元完毕</span>
+          <span class="spacer"></span>
+          <span class="hero-info-tag wechat">📱 企微晨报已推 07:30</span>
+        </div>
+
+        <div class="hero-grid">
+          <!-- 左：风险敞口主数 -->
+          <div class="hero-main">
+            <div class="hero-main-label">风险敞口（红12 ＋ 橙27）</div>
+            <div class="hero-main-value">
+              ¥<span class="count-num" data-target="1240" data-duration="1100">0</span><span class="unit">万</span>
+            </div>
+            <div class="hero-chips">
+              <span class="hero-chip up">↑ 12% WoW</span>
+              <span class="hero-chip red">红 12</span>
+              <span class="hero-chip orange">橙 27</span>
+              <span class="hero-chip">待你处理 8 · 较昨日↑3</span>
+            </div>
+          </div>
+
+          <!-- 右：玻璃态 stat tiles -->
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <div class="s-label">本月已挽回（核验通过）</div>
+              <div class="s-value">¥<span class="count-num" data-target="380" data-duration="1100">0</span><span class="unit">万</span></div>
+              <div class="s-meta">6 家终端 · 6/12 声称兑现</div>
+            </div>
+            <div class="hero-stat kpi-core">
+              <div class="s-label">挽回兑现率 <span class="s-tag">核心反作弊KPI</span></div>
+              <div class="s-value"><span class="count-num" data-target="71" data-duration="1100">0</span><span class="unit">%</span></div>
+              <div class="s-meta">6/12 声称兑现 · 目标≥70% ✓</div>
+            </div>
+            <div class="hero-stat">
+              <div class="s-label">挽回 ROI（投入/挽回）</div>
+              <div class="s-value">1:4.8</div>
+              <div class="s-meta">干预成本 ¥79万 · 较上月↑0.7</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP N CLUE CARDS -->
+    <div class="section-header">
+      <div class="section-title">
+        Top 8 风险线索
+        <span class="count">按挽回价值排序</span>
+        <span class="badge badge-red" style="margin-left:10px;font-size:11px;padding:3px 10px">待你处理 8条 <span style="font-size:10px;font-weight:400">红4 橙4 · 较昨日↑3</span></span>
+      </div>
+      <a href="clues.html" class="section-action">查看全部 39 条 →</a>
+    </div>
+
+    <div class="clue-list">
+
+      <!-- CARD 1 · 协和 · A产品线 · 红 -->
+      <div class="clue-card fade-up">
+        <div class="clue-card-row">
+          <div class="level-bar red"></div>
+          <div class="clue-hospital">
+            <div class="name">北京协和医院</div>
+            <div class="line">A产品线（心血管）· <span class="badge badge-red" style="font-size:10px">红</span></div>
+          </div>
+          <div class="clue-diagnosis">
+            <div>采购间隔近3月异常拉长（28→41→63天），月量断崖式衰减，品规从4个缩至1个。P(alive) <b>0.34↓</b>，竞品替代迹象明显。</div>
+            <span class="root-tag badge badge-red" style="margin-top:6px">需求型</span>
+            <span class="badge badge-gray" style="margin-left:4px;font-size:10px">风险分 78</span>
+          </div>
+          <div class="clue-value">
+            <div class="amount">¥87万</div>
+            <div class="label">挽回价值</div>
+          </div>
+          <div class="clue-actions">
+            <button class="btn btn-primary btn-sm btn-forward" data-hospital="北京协和医院" data-product="A产品线">📤 转发</button>
+            <button class="clue-expand-btn" title="展开详情">▼</button>
+          </div>
+        </div>
+        <div class="clue-detail">
+          <div class="evidence-chain">
+            <div class="evidence-chain-title">证据链 · 触发探测器</div>
+            <div class="evidence-item">
+              <div class="evidence-score">+32</div>
+              <div style="flex:1">
+                <div class="evidence-name">采购节奏异常（IPI）</div>
+                <div class="evidence-fact">近3次采购间隔：28天→41天→63天（历史中位30天），超期 z=2.2</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:80%"></div></div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <div class="evidence-score">+24</div>
+              <div style="flex:1">
+                <div class="evidence-name">量趋势衰减（MK显著）</div>
+                <div class="evidence-fact">月采购量近3月：1200→900→520盒，MK检验显著下行（τ=-0.78, p=0.03），Theil-Sen斜率 -241盒/月</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:60%"></div></div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <div class="evidence-score">+22</div>
+              <div style="flex:1">
+                <div class="evidence-name">品规收窄（钱包份额）</div>
+                <div class="evidence-fact">在采品规：4个→1个，收缩率75%。品规逐步消失是竞品替代的最早信号。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:75%"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="dedup-section">
+            ✓ 去伪校正：同群三甲医院（北京地区，同等级8家）本期采购稳定，本院属特异下滑，非集采落标/季节因素影响。
+          </div>
+          <div class="recommend-section">
+            💡 建议动作：区域经理2日内回访协和，核实是否有竞品替代或院内处方集调整，重点了解心血管科主任态度变化。
+          </div>
+          <div class="order-links">
+            可溯源订单：<a href="order-detail.html?id=ORD-2026-03-8821">ORD-2026-03-8821</a><a href="order-detail.html?id=ORD-2026-02-7734">ORD-2026-02-7734</a><a href="order-detail.html?id=ORD-2026-01-6512">ORD-2026-01-6512</a><a href="order-detail.html?id=ORD-2025-12-5290">ORD-2025-12-5290</a>
+          </div>
+          <div class="clue-detail-actions">
+            <a href="clue-detail.html?id=xiehe" class="btn btn-primary btn-sm">📋 查看完整详情</a>
+            <button class="btn btn-outline btn-sm btn-forward" data-hospital="北京协和医院" data-product="A产品线">📤 转发企微</button>
+            <button class="btn btn-gray btn-sm btn-observe">👁 标记观察</button>
+            <button class="btn btn-danger btn-sm btn-inaccurate">✕ 这条不准</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2 · 华西 · C产品线 · 红 -->
+      <div class="clue-card fade-up">
+        <div class="clue-card-row">
+          <div class="level-bar red"></div>
+          <div class="clue-hospital">
+            <div class="name">四川大学华西医院</div>
+            <div class="line">C产品线（肿瘤）· <span class="badge badge-red" style="font-size:10px">红</span></div>
+          </div>
+          <div class="clue-diagnosis">
+            近2月停止采购，P(alive) <b>0.18↓↓</b>，同群对照特异（华西肿瘤科历史高频用量），月量1680→840→0盒，频次断崖。
+            <div><span class="root-tag badge badge-orange" style="margin-top:6px">双重风险</span>
+            <span class="badge badge-gray" style="margin-left:4px;font-size:10px">风险分 91</span></div>
+          </div>
+          <div class="clue-value">
+            <div class="amount">¥76万</div>
+            <div class="label">挽回价值</div>
+          </div>
+          <div class="clue-actions">
+            <button class="btn btn-primary btn-sm btn-forward" data-hospital="四川大学华西医院" data-product="C产品线">📤 转发</button>
+            <button class="clue-expand-btn">▼</button>
+          </div>
+        </div>
+        <div class="clue-detail">
+          <div class="evidence-chain">
+            <div class="evidence-chain-title">证据链 · 触发探测器</div>
+            <div class="evidence-item">
+              <div class="evidence-score">+38</div>
+              <div style="flex:1">
+                <div class="evidence-name">采购节奏异常（IPI）+ 停购</div>
+                <div class="evidence-fact">末次下单距今 67天，历史间隔中位22天。鲁棒 z=4.1，超 Z_FULL=3.5 上限。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:100%;background:#b91c1c"></div></div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <div class="evidence-score">+29</div>
+              <div style="flex:1">
+                <div class="evidence-name">量趋势衰减（MK显著）</div>
+                <div class="evidence-fact">月量1680→840→0盒，CUSUM累积超4σ触发，Theil-Sen斜率 -840盒/月。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:95%;background:#b91c1c"></div></div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <div class="evidence-score">+24</div>
+              <div style="flex:1">
+                <div class="evidence-name">配送履约三段差</div>
+                <div class="evidence-fact">近90天配送率0.89→0.72→0.58（低于健康线0.80），配送时延1→4→9天，配送商ZZ医药。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:65%;background:#f59e0b"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="dedup-section">
+            ✓ 去伪校正：非集采相关药品，同群成都地区三甲肿瘤科4家医院C产品线稳定，本院特异。无季节性规律。
+          </div>
+          <div class="recommend-section">
+            💡 建议动作：西区大客户经理立即联系华西肿瘤科主任，同时排查ZZ医药对华西配送情况，双线并进。
+          </div>
+          <div class="order-links">
+            可溯源订单：<a href="order-detail.html?id=ORD-2026-04-9012">ORD-2026-04-9012</a><a href="order-detail.html?id=ORD-2026-03-8103">ORD-2026-03-8103</a><a href="order-detail.html?id=ORD-2026-02-7001">ORD-2026-02-7001</a>
+          </div>
+          <div class="clue-detail-actions">
+            <a href="clue-detail.html?id=huaxi" class="btn btn-primary btn-sm">📋 查看完整详情</a>
+            <button class="btn btn-outline btn-sm btn-forward" data-hospital="四川大学华西医院" data-product="C产品线">📤 转发企微</button>
+            <button class="btn btn-danger btn-sm btn-inaccurate">✕ 这条不准</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3 · 仁济 · A产品线 · 红 -->
+      <div class="clue-card fade-up">
+        <div class="clue-card-row">
+          <div class="level-bar red"></div>
+          <div class="clue-hospital">
+            <div class="name">上海仁济医院</div>
+            <div class="line">A产品线（心血管）· <span class="badge badge-red" style="font-size:10px">红</span></div>
+          </div>
+          <div class="clue-diagnosis">
+            月量持续3月下行（2100→1540→980盒），品规4→2，频次近期月均1.2单（基准3.1单），P(alive) <b>0.28↓</b>。
+            <div><span class="root-tag badge badge-red" style="margin-top:6px">需求型</span>
+            <span class="badge badge-gray" style="margin-left:4px;font-size:10px">风险分 83</span></div>
+          </div>
+          <div class="clue-value">
+            <div class="amount">¥65万</div>
+            <div class="label">挽回价值</div>
+          </div>
+          <div class="clue-actions">
+            <button class="btn btn-primary btn-sm btn-forward" data-hospital="上海仁济医院" data-product="A产品线">📤 转发</button>
+            <button class="clue-expand-btn">▼</button>
+          </div>
+        </div>
+        <div class="clue-detail">
+          <div class="evidence-chain">
+            <div class="evidence-chain-title">证据链 · 触发探测器</div>
+            <div class="evidence-item">
+              <div class="evidence-score">+31</div>
+              <div style="flex:1">
+                <div class="evidence-name">量趋势衰减（MK显著）</div>
+                <div class="evidence-fact">月量2100→1540→980盒，下滑53%，MK检验 τ=-0.82, p=0.02。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:77%"></div></div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <div class="evidence-score">+25</div>
+              <div style="flex:1">
+                <div class="evidence-name">采购频次衰减</div>
+                <div class="evidence-fact">月均下单次数：基准3.1→近期1.2，频次比0.39（低于FREQ_DROP=0.6阈值）。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:65%"></div></div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <div class="evidence-score">+18</div>
+              <div style="flex:1">
+                <div class="evidence-name">品规收窄</div>
+                <div class="evidence-fact">在采品规4→2，收缩50%，达SKU_SHRINK=0.34阈值。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:50%"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="dedup-section">
+            ✓ 去伪校正：上海地区同等级三甲A产品线采购稳定（5家医院中位量稳定），本院特异下滑。非国采周期影响。
+          </div>
+          <div class="recommend-section">
+            💡 建议动作：华东区经理本周回访仁济心内科，了解是否有新竞品进入或处方医生变动。
+          </div>
+          <div class="order-links">
+            可溯源订单：<a href="order-detail.html?id=ORD-2026-04-9178">ORD-2026-04-9178</a><a href="order-detail.html?id=ORD-2026-03-8441">ORD-2026-03-8441</a><a href="order-detail.html?id=ORD-2026-02-7312">ORD-2026-02-7312</a>
+          </div>
+          <div class="clue-detail-actions">
+            <a href="clue-detail.html?id=renji" class="btn btn-primary btn-sm">📋 查看完整详情</a>
+            <button class="btn btn-outline btn-sm btn-forward" data-hospital="上海仁济医院" data-product="A产品线">📤 转发企微</button>
+            <button class="btn btn-danger btn-sm btn-inaccurate">✕ 这条不准</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4 · 河南省人民医院 · B产品线 · 橙 -->
+      <div class="clue-card fade-up">
+        <div class="clue-card-row">
+          <div class="level-bar orange"></div>
+          <div class="clue-hospital">
+            <div class="name">河南省人民医院</div>
+            <div class="line">B产品线（抗感染）· <span class="badge badge-orange" style="font-size:10px">橙</span></div>
+          </div>
+          <div class="clue-diagnosis">
+            采购间隔从25天拉至48天，P(alive) <b>0.47↓</b>，配送率近3月0.91→0.76→0.63（ZZ医药），断供迹象。
+            <div><span class="root-tag badge badge-orange" style="margin-top:6px">断供型</span>
+            <span class="badge badge-gray" style="margin-left:4px;font-size:10px">风险分 66</span></div>
+          </div>
+          <div class="clue-value">
+            <div class="amount">¥52万</div>
+            <div class="label">挽回价值</div>
+          </div>
+          <div class="clue-actions">
+            <button class="btn btn-primary btn-sm btn-forward" data-hospital="河南省人民医院" data-product="B产品线">📤 转发</button>
+            <button class="clue-expand-btn">▼</button>
+          </div>
+        </div>
+        <div class="clue-detail">
+          <div class="evidence-chain">
+            <div class="evidence-chain-title">证据链 · 触发探测器（断供型）</div>
+            <div class="evidence-item">
+              <div class="evidence-score">+28</div>
+              <div style="flex:1">
+                <div class="evidence-name">配送率恶化（履约三段差）</div>
+                <div class="evidence-fact">配送率0.91→0.76→0.63（低于健康线0.80），近90天拒单率18%，配送商ZZ医药。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:70%;background:#f59e0b"></div></div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <div class="evidence-score">+22</div>
+              <div style="flex:1">
+                <div class="evidence-name">采购节奏异常（IPI）</div>
+                <div class="evidence-fact">采购间隔25天→48天，但采购量相对稳定，提示"有单但货发不到"。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:55%;background:#f59e0b"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="dedup-section">
+            ✓ 根因判别：采购侧未见显著下滑，履约侧恶化明显→判定为「断供型风险」。医院并非根因，根因指向ZZ医药配送能力。
+          </div>
+          <div class="recommend-section">
+            💡 建议动作：商务团队立即联系ZZ医药核查郑州仓发货能力，必要时协调切换华润配送；勿按需求流失处置。同见「配送商专题预警」。
+          </div>
+          <div class="clue-detail-actions">
+            <a href="clue-detail.html?id=henan" class="btn btn-primary btn-sm">📋 查看完整详情</a>
+            <button class="btn btn-outline btn-sm btn-forward" data-hospital="河南省人民医院" data-product="B产品线">📤 转发企微</button>
+            <button class="btn btn-danger btn-sm btn-inaccurate">✕ 这条不准</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 5 · 武汉同济 · C产品线 · 红 -->
+      <div class="clue-card fade-up">
+        <div class="clue-card-row">
+          <div class="level-bar red"></div>
+          <div class="clue-hospital">
+            <div class="name">武汉同济医院</div>
+            <div class="line">C产品线（肿瘤）· <span class="badge badge-red" style="font-size:10px">红</span></div>
+          </div>
+          <div class="clue-diagnosis">
+            月量3600→2100→1200→480盒，连续4月衰减，品规从6→2，P(alive) <b>0.22↓↓</b>，存活概率极低。
+            <div><span class="root-tag badge badge-red" style="margin-top:6px">需求型</span>
+            <span class="badge badge-gray" style="margin-left:4px;font-size:10px">风险分 88</span></div>
+          </div>
+          <div class="clue-value">
+            <div class="amount">¥48万</div>
+            <div class="label">挽回价值</div>
+          </div>
+          <div class="clue-actions">
+            <button class="btn btn-primary btn-sm btn-forward" data-hospital="武汉同济医院" data-product="C产品线">📤 转发</button>
+            <button class="clue-expand-btn">▼</button>
+          </div>
+        </div>
+        <div class="clue-detail">
+          <div class="evidence-chain">
+            <div class="evidence-chain-title">证据链 · 触发探测器</div>
+            <div class="evidence-item">
+              <div class="evidence-score">+36</div>
+              <div style="flex:1">
+                <div class="evidence-name">量趋势衰减（MK+CUSUM双触发）</div>
+                <div class="evidence-fact">月量3600→2100→1200→480盒，4月连续下行，CUSUM累积 C⁻=5.8σ，MK τ=-1.0, p=0.008。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:90%;background:#b91c1c"></div></div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <div class="evidence-score">+28</div>
+              <div style="flex:1">
+                <div class="evidence-name">品规收窄</div>
+                <div class="evidence-fact">在采品规6→2，降幅67%，C产品线主力品规已消失。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:67%;background:#b91c1c"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="dedup-section">
+            ✓ 去伪：湖北省同类医院C产品线稳定，非集采/季节。同济特异衰减，需求端流失高概率。
+          </div>
+          <div class="recommend-section">
+            💡 建议动作：华中区大客户经理本周内拜访，重点了解同济肿瘤科是否有新用药方案或竞品临床准入。紧急度高。
+          </div>
+          <div class="clue-detail-actions">
+            <a href="clue-detail.html?id=tongji" class="btn btn-primary btn-sm">📋 查看完整详情</a>
+            <button class="btn btn-outline btn-sm btn-forward" data-hospital="武汉同济医院" data-product="C产品线">📤 转发企微</button>
+            <button class="btn btn-danger btn-sm btn-inaccurate">✕ 这条不准</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 6 · 湘雅医院 · A产品线 · 橙 -->
+      <div class="clue-card fade-up">
+        <div class="clue-card-row">
+          <div class="level-bar orange"></div>
+          <div class="clue-hospital">
+            <div class="name">中南大学湘雅医院</div>
+            <div class="line">A产品线（心血管）· <span class="badge badge-orange" style="font-size:10px">橙</span></div>
+          </div>
+          <div class="clue-diagnosis">
+            品规3→1（月内），采购间隔拉长至41天（历史中位28天），P(alive) <b>0.51↓</b>，同侪对照确认特异。
+            <div><span class="root-tag badge badge-red" style="margin-top:6px">需求型</span>
+            <span class="badge badge-gray" style="margin-left:4px;font-size:10px">风险分 59</span></div>
+          </div>
+          <div class="clue-value">
+            <div class="amount">¥41万</div>
+            <div class="label">挽回价值</div>
+          </div>
+          <div class="clue-actions">
+            <button class="btn btn-primary btn-sm btn-forward" data-hospital="中南大学湘雅医院" data-product="A产品线">📤 转发</button>
+            <button class="clue-expand-btn">▼</button>
+          </div>
+        </div>
+        <div class="clue-detail">
+          <div class="evidence-chain">
+            <div class="evidence-chain-title">证据链 · 触发探测器</div>
+            <div class="evidence-item">
+              <div class="evidence-score">+26</div>
+              <div style="flex:1">
+                <div class="evidence-name">品规收窄（最早信号）</div>
+                <div class="evidence-fact">A产品线在采品规3→1，降幅67%。此维度通常领先总量下滑1-2月，是竞品早期替代信号。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:67%;background:#f59e0b"></div></div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <div class="evidence-score">+22</div>
+              <div style="flex:1">
+                <div class="evidence-name">采购节奏异常（IPI）</div>
+                <div class="evidence-fact">采购间隔28→41天，z=1.7（超Z_HIT=1.5）。样本量16单，置信度0.8。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:55%;background:#f59e0b"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="dedup-section">
+            ✓ 同侪对照：湖南地区同等级三甲医院A产品线中位采购量稳定，湘雅本期下行属特异（相对同群分位 p=0.08）。
+          </div>
+          <div class="recommend-section">
+            💡 建议动作：华南区经理本周内拜访湘雅心内科，提前介入，避免品规进一步减少。
+          </div>
+          <div class="clue-detail-actions">
+            <a href="clue-detail.html?id=xiangya" class="btn btn-primary btn-sm">📋 查看完整详情</a>
+            <button class="btn btn-outline btn-sm btn-forward" data-hospital="中南大学湘雅医院" data-product="A产品线">📤 转发企微</button>
+            <button class="btn btn-danger btn-sm btn-inaccurate">✕ 这条不准</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 7 · 安徽省立医院 · B产品线 · 橙 -->
+      <div class="clue-card fade-up">
+        <div class="clue-card-row">
+          <div class="level-bar orange"></div>
+          <div class="clue-hospital">
+            <div class="name">安徽省立医院</div>
+            <div class="line">B产品线（抗感染）· <span class="badge badge-orange" style="font-size:10px">橙</span></div>
+          </div>
+          <div class="clue-diagnosis">
+            月采购量由1450降至820盒（近3月），频次由月均2.8单降至1.1单，P(alive) <b>0.44↓</b>。
+            <div><span class="root-tag badge badge-red" style="margin-top:6px">需求型</span>
+            <span class="badge badge-gray" style="margin-left:4px;font-size:10px">风险分 61</span></div>
+          </div>
+          <div class="clue-value">
+            <div class="amount">¥33万</div>
+            <div class="label">挽回价值</div>
+          </div>
+          <div class="clue-actions">
+            <button class="btn btn-primary btn-sm btn-forward" data-hospital="安徽省立医院" data-product="B产品线">📤 转发</button>
+            <button class="clue-expand-btn">▼</button>
+          </div>
+        </div>
+        <div class="clue-detail">
+          <div class="evidence-chain">
+            <div class="evidence-chain-title">证据链 · 触发探测器</div>
+            <div class="evidence-item">
+              <div class="evidence-score">+27</div>
+              <div style="flex:1">
+                <div class="evidence-name">量趋势衰减</div>
+                <div class="evidence-fact">月量1450→1100→820盒，近3月累计降幅43%，MK检验 p=0.07（橙级别）。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:60%;background:#f59e0b"></div></div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <div class="evidence-score">+20</div>
+              <div style="flex:1">
+                <div class="evidence-name">采购频次衰减</div>
+                <div class="evidence-fact">月均下单次数2.8→1.1，频次比0.39，超FREQ_DROP阈值。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:50%;background:#f59e0b"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="dedup-section">
+            ✓ 去伪：安徽省级同等级医院B产品线总体平稳，本院相对同群下滑分位 p=0.11，特异性中等，橙级合理。
+          </div>
+          <div class="recommend-section">
+            💡 建议动作：华东区经理将安徽省立纳入本月拜访计划，优先于低价值终端。
+          </div>
+          <div class="clue-detail-actions">
+            <a href="clue-detail.html?id=anhui" class="btn btn-primary btn-sm">📋 查看完整详情</a>
+            <button class="btn btn-outline btn-sm btn-forward" data-hospital="安徽省立医院" data-product="B产品线">📤 转发企微</button>
+            <button class="btn btn-danger btn-sm btn-inaccurate">✕ 这条不准</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 8 · 南京鼓楼医院 · A产品线 · 橙 -->
+      <div class="clue-card fade-up">
+        <div class="clue-card-row">
+          <div class="level-bar orange"></div>
+          <div class="clue-hospital">
+            <div class="name">南京鼓楼医院</div>
+            <div class="line">A产品线（心血管）· <span class="badge badge-orange" style="font-size:10px">橙</span></div>
+          </div>
+          <div class="clue-diagnosis">
+            近期采购间隔拉长至38天（历史中位26天），品规由3降至2，P(alive) <b>0.55↓</b>，苗头初现。
+            <div><span class="root-tag badge badge-orange" style="margin-top:6px">需求型</span>
+            <span class="badge badge-gray" style="margin-left:4px;font-size:10px">风险分 53</span></div>
+          </div>
+          <div class="clue-value">
+            <div class="amount">¥28万</div>
+            <div class="label">挽回价值</div>
+          </div>
+          <div class="clue-actions">
+            <button class="btn btn-primary btn-sm btn-forward" data-hospital="南京鼓楼医院" data-product="A产品线">📤 转发</button>
+            <button class="clue-expand-btn">▼</button>
+          </div>
+        </div>
+        <div class="clue-detail">
+          <div class="evidence-chain">
+            <div class="evidence-chain-title">证据链 · 触发探测器</div>
+            <div class="evidence-item">
+              <div class="evidence-score">+21</div>
+              <div style="flex:1">
+                <div class="evidence-name">采购节奏异常（IPI）</div>
+                <div class="evidence-fact">采购间隔26→38天，z=1.6（超Z_HIT阈值），MAD=4.2天，置信度0.9。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:45%;background:#f59e0b"></div></div>
+              </div>
+            </div>
+            <div class="evidence-item">
+              <div class="evidence-score">+19</div>
+              <div style="flex:1">
+                <div class="evidence-name">品规收窄（苗头）</div>
+                <div class="evidence-fact">在采品规3→2，收缩33%，刚达SKU_SHRINK阈值，早期信号。</div>
+                <div class="evidence-bar"><div class="evidence-bar-fill" style="width:40%;background:#f59e0b"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="dedup-section">
+            ✓ 同侪对照：江苏省同等级三甲医院A产品线整体平稳，南京鼓楼相对下滑属特异（p=0.15，橙级）。
+          </div>
+          <div class="recommend-section">
+            💡 建议动作：华东区经理本月内安排拜访，重点了解心内科新进竞品情况，提前防守。
+          </div>
+          <div class="clue-detail-actions">
+            <a href="clue-detail.html?id=nanjing" class="btn btn-primary btn-sm">📋 查看完整详情</a>
+            <button class="btn btn-outline btn-sm btn-forward" data-hospital="南京鼓楼医院" data-product="A产品线">📤 转发企微</button>
+            <button class="btn btn-gray btn-sm btn-observe">👁 标记观察</button>
+            <button class="btn btn-danger btn-sm btn-inaccurate">✕ 这条不准</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end clue-list -->
+
+    <!-- DISTRIBUTOR BANNER -->
+    <div class="distributor-banner" id="distributor-banner">
+      <span class="icon">⚠️</span>
+      <div>
+        <div class="text">配送商系统性失约预警：ZZ医药 影响7家医院（配送率↓0.61，低于健康线0.80）</div>
+        <div class="sub">建议优先修配送商，而非逐家医院做需求流失处置。7家医院风险敞口合计约¥210万。</div>
+      </div>
+      <a href="distributor.html" class="btn btn-outline btn-sm" style="flex-shrink:0">单独查看 →</a>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══ FORWARD MODAL ═══ -->
+<div class="modal-overlay" id="forward-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeForwardModal()">✕</button>
+    <div class="modal-title">📤 转发风险线索到企微</div>
+    <div style="font-size:12px;color:#3e5878;margin-bottom:16px;padding:8px 12px;background:#eef4fc;border-radius:6px">
+      线索：<b id="modal-hospital-name">北京协和医院 · A产品线</b>
+    </div>
+    <div class="modal-field">
+      <label>收件人 <span class="modal-smart-tag">✦ 智能默认</span></label>
+      <select id="modal-recipient">
+        <option value="wanglei">王磊（协和片区）★ 智能推荐</option>
+        <option value="lina">李娜（华东区）</option>
+        <option value="zhangwei">张伟（华西区）</option>
+        <option value="chengang">陈刚（华中区）</option>
+        <option value="suyang">苏洋（华南区）</option>
+        <option value="zhaomei">赵美（东北区）</option>
+        <option value="wangfang">王芳（华北区）</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>系统已拟好的消息（可修改）</label>
+      <textarea id="modal-msg" rows="7"></textarea>
+    </div>
+    <div class="modal-field">
+      <label>加一句（可选）</label>
+      <input type="text" id="modal-extra" placeholder="例：这家医院你上个月刚拜访过，注意对比…">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" id="btn-cancel-modal">取消</button>
+      <button class="btn btn-primary" id="btn-send-wechat">📱 发送到企微</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FEEDBACK MODAL ═══ -->
+<div class="modal-overlay" id="feedback-modal">
+  <div class="feedback-modal">
+    <button class="modal-close" style="position:absolute;top:12px;right:12px" onclick="document.getElementById('feedback-modal').classList.remove('open')">✕</button>
+    <div style="font-size:14px;font-weight:700;color:#0b2a4a;margin-bottom:14px">这条预警不准，原因是？</div>
+    <div class="feedback-option" data-reason="集采落标">📋 集采落标，合理减少</div>
+    <div class="feedback-option" data-reason="我早知道，已自行处理">✅ 我早知道，已自行处理</div>
+    <div class="feedback-option" data-reason="数据有误">⚠️ 数据有误，订单数据不对</div>
+    <div class="feedback-option" data-reason="正常波动，非风险">📊 正常波动，非风险</div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+<script type="module" src="layout/layout.js"></script>
+</body>
+</html>
+
+
+
+
+
