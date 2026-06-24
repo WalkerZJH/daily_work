@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.algorithm import RiskClue
+from app.schemas.algorithm import RiskCardCandidate, RiskClue
 
 
 class ApiModel(BaseModel):
@@ -13,8 +13,13 @@ class ApiModel(BaseModel):
 
 
 class DataSourceRequest(ApiModel):
+    source_type: Literal["csv", "database"] = "csv"
     dataset_name: str | None = "sample"
     csv_path: str | None = None
+    enterprise_code: str | None = None
+    province: str | None = None
+    province_code: str | None = None
+    row_limit: int | None = Field(default=None, ge=1)
 
 
 class DataQualityRequest(DataSourceRequest):
@@ -39,6 +44,7 @@ class DataQualityReport(ApiModel):
 
 class DryRunRequest(DataSourceRequest):
     as_of_date: date
+    user_id: str | None = None
 
 
 class DryRunResponse(ApiModel):
@@ -49,11 +55,13 @@ class DryRunResponse(ApiModel):
     clue_count: int
     risk_level_distribution: dict[str, int]
     detector_hit_distribution: dict[str, int]
-    top_risk_clues: list[RiskClue]
+    top_risk_clues: list[RiskClue | RiskCardCandidate]
+    risk_card_candidates: list[RiskCardCandidate] = Field(default_factory=list)
     enabled_preprocessors: list[str] = Field(default_factory=list)
     feature_count: int = 0
     detector_skipped_due_to_missing_features: int = 0
     warning_summary: dict[str, int] = Field(default_factory=dict)
+    backbone: dict[str, Any] = Field(default_factory=dict)
 
 
 class PreprocessRunRequest(DataSourceRequest):

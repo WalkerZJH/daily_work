@@ -81,6 +81,66 @@ class RiskClue(AlgorithmModel):
     debug_trace_id: str
 
 
+class DetectorEvidence(AlgorithmModel):
+    detector_id: str
+    category: str
+    family: str
+    hit: bool
+    severity: float = Field(ge=0, le=100)
+    confidence: float = Field(ge=0, le=1)
+    reason_code: str
+    evidence_items: list[dict[str, Any]] = Field(default_factory=list)
+    related_entities: dict[str, Any] = Field(default_factory=dict)
+    warnings: list[str] = Field(default_factory=list)
+    sample_order_ids: list[str] = Field(default_factory=list)
+    statistics: dict[str, Any] = Field(default_factory=dict)
+
+
+class BackboneSignal(AlgorithmModel):
+    backbone_model: Literal["palive_bgnbd", "not_available", "heuristic"] = "not_available"
+    p_alive: float | None = Field(default=None, ge=0, le=1)
+    backbone_risk_score: float | None = Field(default=None, ge=0, le=100)
+    backbone_confidence: float | None = Field(default=None, ge=0, le=1)
+    warnings: list[str] = Field(default_factory=lambda: ["PALIVE_NOT_IMPLEMENTED"])
+
+
+class EvidenceFamily(AlgorithmModel):
+    category: str
+    family: str
+    detector_ids: list[str] = Field(default_factory=list)
+    max_severity: float = Field(default=0, ge=0, le=100)
+    hit_count: int = 0
+    reason_codes: list[str] = Field(default_factory=list)
+
+
+class RiskCardCandidate(AlgorithmModel):
+    card_id: str
+    as_of_date: date
+    category: str
+    risk_level: RiskLevel
+    title: str
+    org_code: str
+    org_name: str | None = None
+    product_line_code: str
+    product_line_name: str | None = None
+    province: str | None = None
+    city: str | None = None
+    county: str | None = None
+    backbone: BackboneSignal
+    evidence_families: list[EvidenceFamily] = Field(default_factory=list)
+    detector_evidence: list[DetectorEvidence] = Field(default_factory=list)
+    related_entities: dict[str, Any] = Field(default_factory=dict)
+    suggested_action: str
+    warnings: list[str] = Field(default_factory=list)
+    debug_trace_id: str
+    rule_score: float | None = Field(default=None, ge=0, le=100)
+    risk_score_deprecated: float | None = Field(default=None, ge=0, le=100)
+    triggered_detectors: list[str] = Field(default_factory=list)
+    confidence: float = Field(default=0, ge=0, le=1)
+    evidence_summary_structured: dict[str, Any] = Field(default_factory=dict)
+    llm_context: dict[str, Any] = Field(default_factory=dict)
+
+
 class UnitInspectionResult(AlgorithmModel):
     profile: dict[str, Any]
     demand_shape: DemandShapeResult

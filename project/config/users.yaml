@@ -1,0 +1,49 @@
+users:
+  admin:
+    role: admin
+    permissions:
+      all_categories: true
+      all_provinces: true
+      allowed_categories: []
+      region_scope: []
+    preference:
+      enabled_detectors:
+        - inactive_terminal
+        - new_terminal
+        - ip_interval
+        - frequency_drop
+        - sku_shrink
+        - substitution_risk
+        - cycle_deviation
+        - price_spread
+  js_manager_001:
+    role: regional_manager
+    permissions:
+      all_categories: false
+      all_provinces: false
+      allowed_categories:
+        - terminal_change
+        - price_warning
+        - sales_fluctuation
+      region_scope:
+        - 江苏省
+    preference:
+      enabled_detectors:
+        - ip_interval
+        - frequency_drop
+        - sku_shrink
+        - low_price
+        - price_spread
+  sales_001:
+    role: salesperson
+    permissions:
+      all_categories: false
+      all_provinces: false
+      allowed_categories:
+        - terminal_change
+      region_scope:
+        - 江苏省
+    preference:
+      enabled_detectors:
+        - ip_interval
+        - inactive_terminal

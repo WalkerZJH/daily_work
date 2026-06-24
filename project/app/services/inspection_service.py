@@ -7,7 +7,9 @@ from hashlib import md5
 from typing import Any
 
 from app.adapters.base import DatasetBundle
+from app.adapters.quality import DataQualityChecker
 from app.detectors.fusion import fuse_detector_results as fuse_feature_detector_results
+from app.detectors.order_level import run_order_level_detectors
 from app.detectors.orchestrator import DetectorOrchestrator
 from app.detectors.registry import build_default_detector_registry
 from app.core.logging import log_inspection_summary
@@ -15,7 +17,9 @@ from app.features.snapshot import FeatureSnapshot
 from app.schemas.algorithm import RiskClue
 from app.schemas.api import DataSourceRequest, DryRunResponse
 from app.schemas.config import AppConfig
+from app.services.clue_management_service import ClueManagementService
 from app.services.feature_service import FeatureService
+from app.services.user_config_service import UserConfigService
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +43,22 @@ class InspectionService:
             as_of_date,
         )
 
-    def dry_run(self, source: DataSourceRequest, as_of_date: date) -> DryRunResponse:
-        feature_run = FeatureService(self.config).run_preprocess(source, as_of_date)
-        detector_run = DetectorOrchestrator(build_default_detector_registry()).run(
+    def dry_run(
+        self,
+        source: DataSourceRequest,
+        as_of_date: date,
+        user_id: str | None = None,
+    ) -> DryRunResponse:
+        user_config = UserConfigService().effective_detector_config(user_id or "admin")
+        scoped_source = self._apply_user_scope(source, user_config)
+        enabled_detectors = user_config["enabled_detectors"]
+        registry = build_default_detector_registry()
+        terminal_enabled = [name for name in enabled_detectors if name in registry.names()]
+        feature_run = FeatureService(self.config).run_preprocess(scoped_source, as_of_date)
+        detector_run = DetectorOrchestrator(registry).run(
             feature_run.snapshots,
             self.config,
+            enabled_detectors=terminal_enabled,
         )
         results_by_unit = defaultdict(list)
         detector_hits: Counter[str] = Counter()
@@ -52,20 +67,39 @@ class InspectionService:
             if detector_result.hit:
                 detector_hits[detector_result.detector_name] += 1
 
-        snapshots_by_unit = {snapshot.unit_id: snapshot for snapshot in feature_run.snapshots}
-        clue_candidates: list[RiskClue] = []
-        for unit_key, detector_results in results_by_unit.items():
-            snapshot = snapshots_by_unit.get(unit_key)
-            if snapshot is None or snapshot.analysis_grain != "product_line":
-                continue
-            fusion = fuse_feature_detector_results(detector_results, self.config)
-            if not fusion["triggered_detectors"] or fusion["risk_level"] == "none":
-                continue
-            clue_candidates.append(self._build_feature_risk_clue(snapshot, detector_results, fusion))
+        order_evidence_by_unit = run_order_level_detectors(
+            feature_run.prepared_orders,
+            as_of_date=as_of_date,
+            enabled_detectors=enabled_detectors,
+            recent_days=self.config.preprocessors.temporal_window.recent_days,
+        )
+        for evidence_list in order_evidence_by_unit.values():
+            for evidence in evidence_list:
+                if evidence.hit:
+                    detector_hits[evidence.detector_id] += 1
 
-        clue_candidates.sort(key=lambda clue: (clue.risk_score, clue.confidence), reverse=True)
+        snapshots_by_unit = {snapshot.unit_id: snapshot for snapshot in feature_run.snapshots}
+        risk_cards = ClueManagementService().build_candidates(
+            snapshots_by_unit=snapshots_by_unit,
+            terminal_results_by_unit=results_by_unit,
+            order_evidence_by_unit=order_evidence_by_unit,
+            prepared_orders=feature_run.prepared_orders,
+            as_of_date=as_of_date,
+            config_version=self.config.config_version,
+        )
+        clue_candidates = risk_cards
         level_counter = Counter({"red": 0, "orange": 0, "yellow": 0, "none": 0})
         level_counter.update(clue.risk_level for clue in clue_candidates)
+        warning_summary = Counter(feature_run.warning_summary)
+        for evidence_list in order_evidence_by_unit.values():
+            for evidence in evidence_list:
+                warning_summary.update(evidence.warnings)
+        quality_report = DataQualityChecker().check_orders(
+            feature_run.prepared_orders,
+            feature_run.dataset_name,
+        )
+        for issue in quality_report.issues:
+            warning_summary[issue.check_name] += issue.row_count
 
         response = DryRunResponse(
             dataset_name=feature_run.dataset_name,
@@ -76,10 +110,18 @@ class InspectionService:
             risk_level_distribution=dict(level_counter),
             detector_hit_distribution=dict(detector_hits),
             top_risk_clues=clue_candidates[:20],
+            risk_card_candidates=risk_cards[:20],
             enabled_preprocessors=feature_run.enabled_preprocessors,
             feature_count=feature_run.feature_count,
             detector_skipped_due_to_missing_features=detector_run.skipped_due_to_missing_features,
-            warning_summary=feature_run.warning_summary,
+            warning_summary=dict(warning_summary),
+            backbone={
+                "backbone_model": "not_available",
+                "p_alive": None,
+                "backbone_risk_score": None,
+                "backbone_confidence": None,
+                "warnings": ["PALIVE_NOT_IMPLEMENTED"],
+            },
         )
         log_inspection_summary(
             logger,
@@ -93,6 +135,13 @@ class InspectionService:
             },
         )
         return response
+
+    @staticmethod
+    def _apply_user_scope(source: DataSourceRequest, user_config: dict[str, Any]) -> DataSourceRequest:
+        region_scope = user_config.get("region_scope") or []
+        if source.source_type == "database" and region_scope and not source.province:
+            return source.model_copy(update={"province": region_scope[0]})
+        return source
 
     def inspect_feature_unit(
         self,

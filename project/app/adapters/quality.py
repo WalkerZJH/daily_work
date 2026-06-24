@@ -10,9 +10,7 @@ REQUIRED_ORDER_FIELDS = [
     "org_code",
     "order_time",
     "purchase_qty",
-    "purchase_amount",
     "purchase_price",
-    "manufacturer",
 ]
 
 
@@ -53,6 +51,54 @@ class DataQualityChecker:
             orders=orders,
         )
 
+        price = pd.to_numeric(orders["purchase_price"], errors="coerce")
+        invalid_price = price.isna() | (price < 0)
+        self._append_issue(
+            issues,
+            check_name="purchase_price_non_negative",
+            severity="error",
+            message="purchase_price must be numeric and non-negative",
+            mask=invalid_price,
+            orders=orders,
+        )
+
+        if "conversion_factor" in orders.columns:
+            factor = pd.to_numeric(orders["conversion_factor"], errors="coerce")
+            invalid_factor = factor.isna() | (factor <= 0)
+            self._append_issue(
+                issues,
+                check_name="conversion_factor_valid",
+                severity="warning",
+                message="conversion_factor is missing, zero, or negative; comparable_unit_price used purchase_price fallback",
+                mask=invalid_factor,
+                orders=orders,
+            )
+
+        if "delivery_qty" in orders.columns:
+            delivery_qty = pd.to_numeric(orders["delivery_qty"], errors="coerce")
+            delivery_gt_purchase = delivery_qty.notna() & qty.notna() & (delivery_qty > qty)
+            self._append_issue(
+                issues,
+                check_name="delivery_qty_gt_purchase_qty",
+                severity="warning",
+                message="delivery_qty is greater than purchase_qty",
+                mask=delivery_gt_purchase,
+                orders=orders,
+            )
+
+        if "receipt_qty" in orders.columns and "delivery_qty" in orders.columns:
+            receipt_qty = pd.to_numeric(orders["receipt_qty"], errors="coerce")
+            delivery_qty = pd.to_numeric(orders["delivery_qty"], errors="coerce")
+            receipt_gt_delivery = receipt_qty.notna() & delivery_qty.notna() & (receipt_qty > delivery_qty)
+            self._append_issue(
+                issues,
+                check_name="receipt_qty_gt_delivery_qty",
+                severity="warning",
+                message="receipt_qty is greater than delivery_qty",
+                mask=receipt_gt_delivery,
+                orders=orders,
+            )
+
         empty_org = orders["org_code"].isna() | (orders["org_code"].astype(str).str.strip() == "")
         self._append_issue(
             issues,
@@ -75,15 +121,16 @@ class DataQualityChecker:
             orders=orders,
         )
 
-        duplicate_ids = orders["order_id"].duplicated(keep=False)
-        self._append_issue(
-            issues,
-            check_name="order_id_unique",
-            severity="error",
-            message="order_id contains duplicates",
-            mask=duplicate_ids,
-            orders=orders,
-        )
+        if "order_id" in orders.columns:
+            duplicate_ids = orders["order_id"].duplicated(keep=False)
+            self._append_issue(
+                issues,
+                check_name="order_id_unique",
+                severity="warning",
+                message="order_id contains duplicates",
+                mask=duplicate_ids,
+                orders=orders,
+            )
 
         return self._build_report(dataset_name, len(orders), issues)
 

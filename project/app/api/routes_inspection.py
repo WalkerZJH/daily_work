@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 
 from app.api.deps import get_app_config
 from app.schemas.api import DryRunRequest, DryRunResponse
@@ -13,6 +13,7 @@ router = APIRouter(prefix="/api/v0/inspection", tags=["inspection"])
 @router.post("/dry-run", response_model=DryRunResponse)
 def dry_run(
     request: DryRunRequest,
+    x_user_id: str | None = Header(default=None),
     config: AppConfig = Depends(get_app_config),
 ) -> DryRunResponse:
-    return InspectionService(config).dry_run(request, request.as_of_date)
+    return InspectionService(config).dry_run(request, request.as_of_date, request.user_id or x_user_id)

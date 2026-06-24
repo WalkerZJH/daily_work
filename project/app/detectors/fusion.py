@@ -17,30 +17,38 @@ def fuse_detector_results(results: list[DetectorResult], config: AppConfig) -> d
         family: max(result.severity for result in family_results)
         for family, family_results in by_family.items()
     }
-    score = min(100.0, sum(family_scores.values()) / max(len(family_scores), 1) if family_scores else 0.0)
+    rule_score = max(family_scores.values(), default=0.0)
     warning_count = sum(len(result.warnings) for result in results)
     confidence_values = [result.confidence for result in hit_results]
     confidence = sum(confidence_values) / len(confidence_values) if confidence_values else 0.0
     confidence = max(0.0, confidence - min(0.3, warning_count * 0.02))
-    if confidence < config.fusion.min_confidence_for_alert or score <= 0:
+    if confidence < config.fusion.min_confidence_for_alert or rule_score <= 0:
         risk_level = "none"
-    elif score >= config.fusion.red_score:
-        risk_level = "red"
-    elif score >= config.fusion.orange_score:
+    elif len(family_scores) >= 2 or rule_score >= config.fusion.orange_score:
         risk_level = "orange"
-    elif score >= config.fusion.yellow_score:
+    elif rule_score >= config.fusion.yellow_score:
         risk_level = "yellow"
     else:
         risk_level = "none"
 
     return {
-        "risk_score": round(score, 2),
+        "risk_score": round(rule_score, 2),
+        "rule_score": round(rule_score, 2),
+        "risk_score_deprecated": round(rule_score, 2),
+        "score_semantics": "Uncalibrated rule score for sorting only; not probability.",
         "risk_level": risk_level,
         "confidence": round(confidence, 4),
         "triggered_detectors": [result.detector_name for result in hit_results],
         "triggered_families": sorted(family_scores),
         "family_scores": family_scores,
-        "reason_code": "DETECTOR_FAMILY_FUSION" if hit_results else "NO_DETECTOR_HIT",
+        "backbone": {
+            "backbone_model": "not_available",
+            "p_alive": None,
+            "backbone_risk_score": None,
+            "backbone_confidence": None,
+            "warnings": ["PALIVE_NOT_IMPLEMENTED"],
+        },
+        "reason_code": "DETECTOR_RULE_AGGREGATION" if hit_results else "NO_DETECTOR_HIT",
     }
 
 

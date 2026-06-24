@@ -10,6 +10,7 @@ import pandas as pd
 from app.adapters.base import DatasetBundle
 from app.adapters.canonicalize import prepare_canonical_orders
 from app.adapters.csv_adapter import CSVSourceAdapter
+from app.adapters.sql_table_adapter import SQLTableSourceAdapter
 from app.features.catalog import FeatureCatalog, build_default_feature_catalog
 from app.features.lineage import FeatureLineageRecord
 from app.features.snapshot import FeatureSnapshot
@@ -60,8 +61,18 @@ class FeatureService:
     def __init__(self, config: AppConfig) -> None:
         self.config = config
 
-    def load_dataset(self, source: DataSourceRequest) -> DatasetBundle:
-        adapter = CSVSourceAdapter(dataset_name=source.dataset_name, csv_path=source.csv_path)
+    def load_dataset(self, source: DataSourceRequest, as_of_date: date | None = None) -> DatasetBundle:
+        if source.source_type == "database":
+            adapter = SQLTableSourceAdapter(
+                dataset_name=source.dataset_name,
+                as_of_date=as_of_date,
+                enterprise_code=source.enterprise_code,
+                province=source.province,
+                province_code=source.province_code,
+                row_limit=source.row_limit,
+            )
+        else:
+            adapter = CSVSourceAdapter(dataset_name=source.dataset_name, csv_path=source.csv_path)
         return adapter.load_dataset()
 
     def run_preprocess(
@@ -71,7 +82,7 @@ class FeatureService:
         enabled_preprocessors: list[str] | None = None,
         optional_tables: dict[str, pd.DataFrame] | None = None,
     ) -> FeatureRunResult:
-        bundle = self.load_dataset(source)
+        bundle = self.load_dataset(source, as_of_date)
         prepared_orders = prepare_canonical_orders(bundle)
         store = FeatureStore()
         context = PreprocessContext(

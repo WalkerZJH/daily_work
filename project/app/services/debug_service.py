@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from app.adapters.csv_adapter import CSVSourceAdapter
+from app.adapters.canonicalize import prepare_canonical_orders
 from app.adapters.quality import DataQualityChecker
 from app.detectors.registry import build_default_detector_registry
 from app.features.catalog import build_default_feature_catalog
@@ -18,9 +18,11 @@ class DebugService:
         self.config = config
 
     def data_quality(self, source: DataSourceRequest) -> DataQualityReport:
-        adapter = CSVSourceAdapter(dataset_name=source.dataset_name, csv_path=source.csv_path)
-        bundle = adapter.load_dataset()
-        return DataQualityChecker().check_orders(bundle.orders, bundle.dataset_name)
+        bundle = FeatureService(self.config).load_dataset(source)
+        return DataQualityChecker().check_orders(
+            prepare_canonical_orders(bundle),
+            bundle.dataset_name,
+        )
 
     def inspect_unit(
         self,
@@ -90,17 +92,4 @@ class DebugService:
 
     def detector_specs(self) -> list[dict[str, Any]]:
         registry = build_default_detector_registry()
-        specs: list[dict[str, Any]] = []
-        for detector in registry.list():
-            detector_config = getattr(self.config.detectors, detector.name)
-            specs.append(
-                {
-                    "detector_name": detector.name,
-                    "version": detector.version,
-                    "required_features": detector.required_features,
-                    "supported_grains": detector.supported_grains,
-                    "enabled": detector_config.enabled,
-                    "family": detector_config.family,
-                }
-            )
-        return specs
+        return [meta.model_dump(mode="json") for meta in registry.catalog()]
