@@ -1,0 +1,14 @@
+.side-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.content-grid {
+  margin-top: 16px;
+}
+
+.state-stack {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}

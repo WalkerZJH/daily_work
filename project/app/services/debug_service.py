@@ -7,7 +7,6 @@ from app.adapters.csv_adapter import CSVSourceAdapter
 from app.adapters.quality import DataQualityChecker
 from app.detectors.registry import build_default_detector_registry
 from app.features.catalog import build_default_feature_catalog
-from app.schemas.algorithm import UnitInspectionResult
 from app.schemas.api import DataQualityReport, DataSourceRequest
 from app.schemas.config import AppConfig
 from app.services.feature_service import FeatureService
@@ -29,7 +28,7 @@ class DebugService:
         org_code: str,
         product_line_code: str,
         as_of_date: date,
-    ) -> UnitInspectionResult:
+    ) -> dict[str, Any]:
         return InspectionService(self.config).inspect_unit(
             source, org_code, product_line_code, as_of_date
         )

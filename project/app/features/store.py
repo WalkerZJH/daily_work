@@ -15,16 +15,17 @@ class FeatureStore:
         if existing is None:
             self._snapshots[key] = snapshot
             return
-        merged = existing.with_features(
-            snapshot.features,
-            produced_by="feature_store_merge",
-            version="v0",
-            warnings=snapshot.warnings,
-        )
+        merged_features = {**existing.features, **snapshot.features}
         merged_versions = {**existing.feature_versions, **snapshot.feature_versions}
         merged_producers = {**existing.produced_by, **snapshot.produced_by}
-        self._snapshots[key] = merged.model_copy(
-            update={"feature_versions": merged_versions, "produced_by": merged_producers}
+        merged_warnings = list(dict.fromkeys([*existing.warnings, *snapshot.warnings]))
+        self._snapshots[key] = existing.model_copy(
+            update={
+                "features": merged_features,
+                "feature_versions": merged_versions,
+                "produced_by": merged_producers,
+                "warnings": merged_warnings,
+            }
         )
 
     def put_many(self, snapshots: list[FeatureSnapshot]) -> None:

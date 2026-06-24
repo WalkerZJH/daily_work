@@ -1,6 +1,9 @@
 <script setup>
 import { computed } from 'vue'
 
+import JsonBlock from '../../../components/JsonBlock.vue'
+import SectionCard from '../../../components/SectionCard.vue'
+
 const props = defineProps({
   config: { type: Object, default: null },
   configDryRunResult: { type: Object, default: null },
@@ -23,12 +26,7 @@ const configRows = computed(() => {
 </script>
 
 <template>
-  <section class="panel">
-    <div class="panel-title">
-      <h2>配置读取与影响评估</h2>
-      <span class="muted">生产配置只读，页面只做 dry-run patch</span>
-    </div>
-
+  <SectionCard title="配置读取与影响评估" subtitle="生产配置只读，页面只做 dry-run patch">
     <table v-if="configRows.length" class="table">
       <tbody>
         <tr v-for="[key, value] in configRows" :key="key">
@@ -71,8 +69,9 @@ const configRows = computed(() => {
           </tr>
         </tbody>
       </table>
+      <JsonBlock :value="configDryRunResult.delta" />
     </div>
-  </section>
+  </SectionCard>
 </template>
 
 <style scoped>

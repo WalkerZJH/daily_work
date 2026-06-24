@@ -7,7 +7,9 @@ import pytest
 from app.core.config import load_config
 from app.features.catalog import FeatureCatalog, FeatureSpec, build_default_feature_catalog
 from app.features.store import FeatureStore
+from app.preprocessors.base import PreprocessContext
 from app.preprocessors.registry import build_default_preprocessor_registry
+from app.preprocessors.registry import PreprocessorRegistry
 from app.schemas.api import DataSourceRequest
 from app.services.feature_service import FeatureService
 
@@ -25,6 +27,28 @@ def test_feature_catalog_rejects_duplicate_feature_names() -> None:
     catalog.register(spec)
     with pytest.raises(ValueError, match="Duplicate feature name"):
         catalog.register(spec)
+
+
+class _PreprocessorForDuplicateOutputTest:
+    version = "v0"
+    required_inputs: list[str] = []
+    output_grain = "unit"
+    as_of_date_sensitive = True
+
+    def __init__(self, name: str, output_features: list[str]) -> None:
+        self.name = name
+        self.output_features = output_features
+
+    def run(self, context: PreprocessContext) -> list[object]:
+        return []
+
+
+def test_preprocessor_registry_rejects_duplicate_output_features() -> None:
+    registry = PreprocessorRegistry()
+    registry.register(_PreprocessorForDuplicateOutputTest("first", ["same_feature"]))
+
+    with pytest.raises(ValueError, match="Duplicate output feature"):
+        registry.register(_PreprocessorForDuplicateOutputTest("second", ["same_feature"]))
 
 
 def test_feature_store_get_and_query() -> None:

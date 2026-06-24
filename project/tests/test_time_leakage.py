@@ -16,7 +16,7 @@ def test_as_of_date_excludes_future_orders_from_features() -> None:
         as_of_date=date(2025, 12, 31),
     )
 
-    assert result.baseline_metrics.last_order_time is not None
-    assert result.baseline_metrics.last_order_time.date() == date(2025, 6, 20)
-    assert "OA013" not in result.baseline_metrics.recent_order_ids
-    assert "OA013" not in result.baseline_metrics.baseline_order_ids
+    snapshot = result["feature_snapshot"]
+    assert snapshot is not None
+    assert snapshot["features"]["last_order_date"] == date(2025, 6, 20).isoformat()
+    assert "OA013" not in str(snapshot["features"])

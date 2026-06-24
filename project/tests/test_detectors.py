@@ -17,7 +17,7 @@ def _detectors(org_code: str, product_line_code: str) -> dict[str, bool]:
         product_line_code=product_line_code,
         as_of_date=AS_OF_DATE,
     )
-    return {detector.detector_name: detector.hit for detector in result.detector_results}
+    return {detector["detector_name"]: detector["hit"] for detector in result["detector_results"]}
 
 
 def test_inactive_terminal_hits_long_inactive_case() -> None:

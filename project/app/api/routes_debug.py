@@ -6,7 +6,6 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_app_config
-from app.schemas.algorithm import UnitInspectionResult
 from app.schemas.api import (
     DataQualityReport,
     DataQualityRequest,
@@ -27,7 +26,7 @@ def data_quality(
     return DebugService(config).data_quality(request)
 
 
-@router.get("/unit/{org_code}/{product_line_code}", response_model=UnitInspectionResult)
+@router.get("/unit/{org_code}/{product_line_code}")
 def inspect_unit(
     org_code: str,
     product_line_code: str,
@@ -35,7 +34,7 @@ def inspect_unit(
     dataset_name: str | None = Query("sample"),
     csv_path: str | None = Query(None),
     config: AppConfig = Depends(get_app_config),
-) -> UnitInspectionResult:
+) -> dict[str, Any]:
     source = DataSourceRequest(dataset_name=dataset_name, csv_path=csv_path)
     return DebugService(config).inspect_unit(source, org_code, product_line_code, as_of_date)
 

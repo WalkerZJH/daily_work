@@ -1,0 +1,87 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #f4f4f5;
+  color: var(--text-sub);
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.status-badge-ok {
+  background: var(--green-bg);
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.status-badge-error {
+  background: var(--red-bg);
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.status-badge-warning {
+  background: var(--yellow-bg);
+  border-color: #fde68a;
+  color: #854d0e;
+}
+
+.metric-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 14px 16px;
+}
+
+.metric-card span {
+  display: block;
+  color: var(--text-sub);
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 5px;
+}
+
+.metric-card strong {
+  color: var(--navy);
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.metric-card-danger {
+  border-left: 4px solid var(--red);
+}
+
+.metric-card-warning {
+  border-left: 4px solid var(--orange);
+}
+
+.metric-card-info {
+  border-left: 4px solid var(--blue);
+}
+
+.metric-card-success {
+  border-left: 4px solid var(--green);
+}
+
+.info-banner,
+.error-banner {
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.info-banner {
+  border: 1px solid var(--blue-border);
+  background: var(--blue-pale);
+  color: var(--blue-deep);
+}
+
+.error-banner {
+  border: 1px solid #fecaca;
+  background: var(--red-bg);
+  color: #b91c1c;
+}

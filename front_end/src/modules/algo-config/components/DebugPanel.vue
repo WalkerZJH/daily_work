@@ -1,6 +1,10 @@
 <script setup>
 import { computed } from 'vue'
 
+import JsonBlock from '../../../components/JsonBlock.vue'
+import MetricCard from '../../../components/MetricCard.vue'
+import SectionCard from '../../../components/SectionCard.vue'
+
 const props = defineProps({
   qualityReport: { type: Object, default: null },
   dryRunResult: { type: Object, default: null },
@@ -10,6 +14,8 @@ const props = defineProps({
 
 const levelDistribution = computed(() => props.dryRunResult?.risk_level_distribution || {})
 const detectorDistribution = computed(() => props.dryRunResult?.detector_hit_distribution || {})
+const unitFeatures = computed(() => props.unitDebugResult?.feature_snapshot?.features || {})
+const unitProfile = computed(() => props.unitDebugResult?.canonical_profile || {})
 
 function levelBadgeClass(level) {
   if (level === 'red') return 'badge-red'
@@ -34,30 +40,20 @@ function detectorLabel(name) {
   <div class="grid-2">
     <section>
       <div class="grid-4 kpi-grid">
-        <div class="kpi danger">
-          <span>线索数</span>
-          <strong>{{ dryRunResult?.clue_count ?? '--' }}</strong>
-        </div>
-        <div class="kpi warn">
-          <span>红 / 橙 / 黄</span>
-          <strong>{{ levelDistribution.red || 0 }}/{{ levelDistribution.orange || 0 }}/{{ levelDistribution.yellow || 0 }}</strong>
-        </div>
-        <div class="kpi blue">
-          <span>处理单元</span>
-          <strong>{{ dryRunResult?.unit_count ?? '--' }}</strong>
-        </div>
-        <div class="kpi ok">
-          <span>数据质量错误</span>
-          <strong>{{ qualityReport?.error_count ?? '--' }}</strong>
-        </div>
+        <MetricCard label="线索数" :value="dryRunResult?.clue_count ?? '--'" tone="danger" />
+        <MetricCard
+          label="红 / 橙 / 黄"
+          :value="`${levelDistribution.red || 0}/${levelDistribution.orange || 0}/${levelDistribution.yellow || 0}`"
+          tone="warning"
+        />
+        <MetricCard label="处理单元" :value="dryRunResult?.unit_count ?? '--'" tone="info" />
+        <MetricCard label="数据质量错误" :value="qualityReport?.error_count ?? '--'" tone="success" />
       </div>
 
-      <section class="panel">
-        <div class="panel-title">
-          <h2>全量 dry-run 线索</h2>
-          <span class="muted">{{ dryRunResult ? `${dryRunResult.dataset_name} · ${dryRunResult.as_of_date}` : '等待运行' }}</span>
-        </div>
-
+      <SectionCard
+        title="全量 dry-run 线索"
+        :subtitle="dryRunResult ? `${dryRunResult.dataset_name} · ${dryRunResult.as_of_date}` : '等待运行'"
+      >
         <div v-if="dryRunResult?.top_risk_clues?.length" class="clue-list">
           <article v-for="clue in dryRunResult.top_risk_clues" :key="clue.clue_id" class="clue">
             <div class="clue-head">
@@ -71,23 +67,19 @@ function detectorLabel(name) {
           </article>
         </div>
         <div v-else class="empty">尚未产生线索，或当前配置下没有红/橙/黄风险。</div>
-      </section>
+      </SectionCard>
 
-      <section class="panel">
-        <div class="panel-title">
-          <h2>单分析单元调试</h2>
-          <span class="muted">baseline / demand shape / detector raw output</span>
-        </div>
-
+      <SectionCard title="单分析单元调试" subtitle="FeatureSnapshot / detector raw output / fusion">
         <template v-if="unitDebugResult">
           <table class="table">
             <tbody>
-              <tr><th>分析单元</th><td>{{ unitDebugResult.baseline_metrics.org_code }} × {{ unitDebugResult.baseline_metrics.product_line_code }}</td></tr>
-              <tr><th>需求形态</th><td>{{ unitDebugResult.demand_shape.demand_shape }}，置信度 {{ unitDebugResult.demand_shape.confidence }}</td></tr>
-              <tr><th>融合结果</th><td>{{ unitDebugResult.fusion.risk_level }} / {{ unitDebugResult.fusion.risk_score }}</td></tr>
-              <tr><th>窗口</th><td>{{ unitDebugResult.baseline_metrics.baseline_start }} ~ {{ unitDebugResult.baseline_metrics.as_of_date }}</td></tr>
-              <tr><th>订单数</th><td>recent {{ unitDebugResult.baseline_metrics.recent_orders }} / baseline {{ unitDebugResult.baseline_metrics.baseline_orders }}</td></tr>
-              <tr><th>活跃品规</th><td>recent {{ unitDebugResult.baseline_metrics.recent_active_sku_count }} / baseline {{ unitDebugResult.baseline_metrics.baseline_active_sku_count }}</td></tr>
+              <tr><th>分析单元</th><td>{{ unitProfile.org_code }} × {{ unitProfile.target_code }}</td></tr>
+              <tr><th>粒度</th><td>{{ unitProfile.analysis_grain || '--' }}</td></tr>
+              <tr><th>需求形态</th><td>{{ unitFeatures.demand_shape || 'unknown' }}，置信度 {{ unitFeatures.demand_shape_confidence ?? '--' }}</td></tr>
+              <tr><th>融合结果</th><td>{{ unitDebugResult.fusion?.risk_level || 'none' }} / {{ unitDebugResult.fusion?.risk_score ?? 0 }}</td></tr>
+              <tr><th>订单数</th><td>recent {{ unitFeatures.recent_order_count ?? '--' }} / baseline {{ unitFeatures.baseline_order_count ?? '--' }}</td></tr>
+              <tr><th>活跃品规</th><td>recent {{ unitFeatures.recent_active_sku_count ?? '--' }} / baseline {{ unitFeatures.baseline_active_sku_count ?? '--' }}</td></tr>
+              <tr><th>最后采购</th><td>{{ unitFeatures.last_order_date || '--' }}</td></tr>
             </tbody>
           </table>
 
@@ -107,15 +99,11 @@ function detectorLabel(name) {
           </table>
         </template>
         <div v-else class="empty">尚未运行单元调试。</div>
-      </section>
+      </SectionCard>
     </section>
 
     <aside>
-      <section class="panel">
-        <div class="panel-title">
-          <h2>数据质量</h2>
-          <span class="muted">DataQualityChecker</span>
-        </div>
+      <SectionCard title="数据质量" subtitle="DataQualityChecker">
         <template v-if="qualityReport">
           <table class="table">
             <tbody>
@@ -133,13 +121,9 @@ function detectorLabel(name) {
           <div v-else class="empty compact">未发现质量问题。</div>
         </template>
         <div v-else class="empty">尚未检查。</div>
-      </section>
+      </SectionCard>
 
-      <section class="panel">
-        <div class="panel-title">
-          <h2>Detector 命中分布</h2>
-          <span class="muted">dry-run summary</span>
-        </div>
+      <SectionCard title="Detector 命中分布" subtitle="dry-run summary">
         <table v-if="dryRunResult" class="table">
           <tbody>
             <tr v-for="(count, name) in detectorDistribution" :key="name">
@@ -149,15 +133,11 @@ function detectorLabel(name) {
           </tbody>
         </table>
         <div v-else class="empty">等待 dry-run。</div>
-      </section>
+      </SectionCard>
 
-      <section class="panel">
-        <div class="panel-title">
-          <h2>最近一次 API 响应</h2>
-          <span class="muted">raw JSON</span>
-        </div>
-        <pre class="code-box">{{ JSON.stringify(lastPayload || {}, null, 2) }}</pre>
-      </section>
+      <SectionCard title="最近一次 API 响应" subtitle="raw JSON">
+        <JsonBlock :value="lastPayload || {}" />
+      </SectionCard>
     </aside>
   </div>
 </template>
@@ -165,43 +145,6 @@ function detectorLabel(name) {
 <style scoped>
 .kpi-grid {
   margin-bottom: 16px;
-}
-
-.kpi {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: #fff;
-  padding: 14px 16px;
-}
-
-.kpi span {
-  display: block;
-  color: var(--text-sub);
-  font-size: 12px;
-  font-weight: 800;
-  margin-bottom: 5px;
-}
-
-.kpi strong {
-  color: var(--navy);
-  font-size: 26px;
-  font-weight: 900;
-}
-
-.kpi.danger {
-  border-left: 4px solid var(--red);
-}
-
-.kpi.warn {
-  border-left: 4px solid var(--orange);
-}
-
-.kpi.blue {
-  border-left: 4px solid var(--blue);
-}
-
-.kpi.ok {
-  border-left: 4px solid var(--green);
 }
 
 .clue-list,

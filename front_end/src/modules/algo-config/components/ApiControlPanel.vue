@@ -1,4 +1,7 @@
 <script setup>
+import SectionCard from '../../../components/SectionCard.vue'
+import StatusBadge from '../../../components/StatusBadge.vue'
+
 defineProps({
   apiBase: { type: String, required: true },
   datasetName: { type: String, required: true },
@@ -30,12 +33,10 @@ const units = [
 </script>
 
 <template>
-  <section class="panel">
-    <div class="panel-title">
-      <h2>后端联调控制</h2>
-      <span class="status" :class="backendStatus">{{ backendStatusText }}</span>
-    </div>
-
+  <SectionCard title="后端联调控制">
+    <template #title-extra>
+      <StatusBadge :tone="backendStatus">{{ backendStatusText }}</StatusBadge>
+    </template>
     <div class="form-grid">
       <div class="field">
         <label>API Base URL</label>
@@ -76,26 +77,5 @@ const units = [
         配置影响 dry-run
       </button>
     </div>
-  </section>
+  </SectionCard>
 </template>
-
-<style scoped>
-.status {
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 12px;
-  font-weight: 900;
-  background: #f4f4f5;
-  color: var(--text-sub);
-}
-
-.status.ok {
-  background: var(--green-bg);
-  color: #15803d;
-}
-
-.status.error {
-  background: var(--red-bg);
-  color: #b91c1c;
-}
-</style>
