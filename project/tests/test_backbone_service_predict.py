@@ -21,11 +21,15 @@ class _MockPredictor:
                 {
                     "analysis_unit_id": row["analysis_unit_id"],
                     "org_code": row["org_code"],
+                    "org_name": row.get("org_name"),
                     "product_line_code": row["product_line_code"],
+                    "product_line_name": row.get("product_line_name"),
+                    "selected_model_name": "mock_lgbm_candidate",
                     "p_alive": 0.7,
                     "backbone_risk_score": 30,
                     "confidence": 0.8,
                     "warnings": ["MOCK_MODEL"],
+                    "data_sufficiency": {"mock": True},
                 }
                 for _, row in features.iterrows()
             ]
@@ -51,8 +55,10 @@ def test_backbone_service_predict_returns_complete_prediction() -> None:
     assert prediction.analysis_unit_id == "ORG_A|product_line|PL_A"
     assert prediction.model_name == "palive_lgbm"
     assert prediction.model_version == "test"
+    assert prediction.selected_model_name == "mock_lgbm_candidate"
     assert prediction.p_alive == 0.7
     assert prediction.backbone_risk_score == 30
+    assert prediction.data_sufficiency == {"mock": True}
     assert prediction.debug_features
 
 
@@ -60,7 +66,9 @@ def _row(order_time: str) -> dict:
     return {
         "order_id": order_time,
         "org_code": "ORG_A",
+        "org_name": "Org A",
         "product_line_code": "PL_A",
+        "product_line_name": "Product A",
         "drug_code": "D1",
         "order_time": order_time,
         "purchase_qty": 1,

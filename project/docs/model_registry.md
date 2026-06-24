@@ -57,3 +57,5 @@ python scripts/promote_model.py --model-name palive_lgbm --version 2026062412300
 ## 输出限制
 
 所有 backbone 输出当前仍是算法验证结果。即使字段名为 `p_alive`，在完成真实数据回测、校准和业务验收前，也不能解释为正式业务概率。
+
+`BackbonePrediction` 必须保留 `warnings`、`debug_features` 和 `data_sufficiency`。这些字段用于解释模型是否由真实训练产物输出、是否使用 fallback、当前单元历史是否充分。

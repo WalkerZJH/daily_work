@@ -13,6 +13,7 @@ from app.api.routes_detectors import router as detectors_router
 from app.api.routes_debug import router as debug_router
 from app.api.routes_health import router as health_router
 from app.api.routes_inspection import router as inspection_router
+from app.api.routes_smoke_test import router as smoke_test_router
 from app.api.routes_training import router as training_router
 from app.api.routes_users import router as users_router
 from app.core.errors import TerminalGuardError
@@ -21,9 +22,9 @@ from app.core.logging import configure_logging
 configure_logging(os.getenv("LOG_LEVEL", "INFO"))
 
 app = FastAPI(
-    title="terminal_guard_algo_backend",
+    title="supply_chain_order_risk_algo_backend",
     version="0.1.0",
-    description="Terminal dynamic recognition algorithm backend.",
+    description="Supply chain order risk algorithm validation backend.",
 )
 
 app.add_middleware(
@@ -42,7 +43,8 @@ app.add_middleware(
 @app.get("/")
 def root() -> dict[str, object]:
     return {
-        "service": "terminal_guard_algo_backend",
+        "service": "supply_chain_order_risk_algo_backend",
+        "legacy_service_name": "terminal_guard_algo_backend",
         "status": "ok",
         "message": "Backend API is running. Use /docs for Swagger UI or /health for health check.",
         "links": {
@@ -69,5 +71,6 @@ app.include_router(debug_router)
 app.include_router(inspection_router)
 app.include_router(backbone_router)
 app.include_router(training_router)
+app.include_router(smoke_test_router)
 app.include_router(backtest_router)
 app.include_router(config_router)

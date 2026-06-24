@@ -82,6 +82,9 @@ project/artifacts/models/**
 !project/artifacts/models/
 !project/artifacts/models/README.md
 project/artifacts/training/**
+project/artifacts/smoke_tests/**
+!project/artifacts/smoke_tests/
+!project/artifacts/smoke_tests/README.md
 
 # Compressed packages (remove a rule when the archive is source material)
 *.zip

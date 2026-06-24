@@ -33,6 +33,14 @@ export class BackendApi {
     return getJson(this.baseUrl, '/api/v0/debug/detectors')
   }
 
+  async detectorCatalog() {
+    return getJson(this.baseUrl, '/api/v0/detectors/catalog')
+  }
+
+  async runDetectors(payload) {
+    return postJson(this.baseUrl, '/api/v0/detectors/run', payload)
+  }
+
   async featureSnapshot({ datasetName, asOfDate, orgCode, analysisGrain, targetCode }) {
     return getJson(
       this.baseUrl,
@@ -77,6 +85,18 @@ export class BackendApi {
       as_of_date: asOfDate,
       config_patch: configPatch
     })
+  }
+
+  async runDatabaseSmokeTest(payload) {
+    return postJson(this.baseUrl, '/api/v0/smoke-test/database', payload)
+  }
+
+  async checkDatabaseFreshness(payload) {
+    return postJson(this.baseUrl, '/api/v0/smoke-test/freshness', payload)
+  }
+
+  async predictBackbone(payload) {
+    return postJson(this.baseUrl, '/api/v0/backbone/predict', payload)
   }
 }
 

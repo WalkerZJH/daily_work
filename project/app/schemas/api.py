@@ -16,6 +16,8 @@ class DataSourceRequest(ApiModel):
     source_type: Literal["csv", "database"] = "csv"
     dataset_name: str | None = "sample"
     csv_path: str | None = None
+    date_from: date | None = None
+    date_to: date | None = None
     enterprise_code: str | None = None
     province: str | None = None
     province_code: str | None = None
@@ -62,6 +64,7 @@ class DryRunResponse(ApiModel):
     detector_skipped_due_to_missing_features: int = 0
     warning_summary: dict[str, int] = Field(default_factory=dict)
     backbone: dict[str, Any] = Field(default_factory=dict)
+    data_quality_summary: dict[str, Any] = Field(default_factory=dict)
 
 
 class PreprocessRunRequest(DataSourceRequest):
@@ -131,3 +134,73 @@ class PAliveExperimentResponse(ApiModel):
     unit_count: int
     results: list[PAliveCandidateResult]
     warning_summary: dict[str, int] = Field(default_factory=dict)
+
+
+class DatabaseSmokeTestRequest(ApiModel):
+    as_of_date: date
+    days: int = Field(default=14, ge=1, le=60)
+    row_limit: int = Field(default=5000, ge=1, le=5000)
+    enterprise_code: str | None = None
+    province: str | None = None
+    province_code: str | None = None
+    include_debug_features: bool = True
+
+
+class DatabaseSmokeTestResponse(ApiModel):
+    summary: dict[str, Any]
+    palive_preview: list[dict[str, Any]] = Field(default_factory=list)
+    warning_summary: dict[str, int] = Field(default_factory=dict)
+
+
+class DatabaseFreshnessRequest(ApiModel):
+    as_of_date: date | None = None
+    days: int = Field(default=14, ge=1, le=60)
+    date_from: date | None = None
+    date_to: date | None = None
+    row_limit: int | None = Field(default=5000, ge=1, le=5000)
+    enterprise_code: str | None = None
+    province: str | None = None
+    province_code: str | None = None
+
+
+class DatabaseFreshnessResponse(ApiModel):
+    source_type: Literal["database"] = "database"
+    max_order_time: str | None = None
+    row_count: int
+    date_from: date | None = None
+    date_to: date | None = None
+    is_changed_since_last_check: None = None
+    note: str = "v0 only reports freshness; no scheduler is implemented"
+    warning_summary: dict[str, int] = Field(default_factory=dict)
+
+
+class DetectorRunRequest(DataSourceRequest):
+    source_type: Literal["csv", "database", "sample"] = "csv"
+    as_of_date: date
+    days: int = Field(default=14, ge=1, le=60)
+    enabled_detectors: list[str] | None = None
+    category: str | None = None
+    include_debug: bool = True
+
+
+class DetectorRunResult(ApiModel):
+    detector_id: str
+    detector_name: str
+    name_zh: str
+    category: str
+    status: str
+    hit: bool
+    severity: float = Field(ge=0, le=100)
+    confidence: float = Field(ge=0, le=1)
+    reason_code: str
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    evidence_items: list[dict[str, Any]] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    narrative: str
+
+
+class DetectorRunResponse(ApiModel):
+    summary: dict[str, Any]
+    detector_results: list[DetectorRunResult] = Field(default_factory=list)
+    warning_summary: dict[str, int] = Field(default_factory=dict)
+    debug: dict[str, Any] = Field(default_factory=dict)

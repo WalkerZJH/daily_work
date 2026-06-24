@@ -7,14 +7,6 @@ from typing import Any
 from app.schemas.algorithm import DetectorResult, FusionResult, RiskClue
 from app.schemas.config import FusionConfig
 
-DETECTOR_WEIGHTS = {
-    "inactive_terminal": 0.35,
-    "ip_interval": 0.25,
-    "frequency_drop": 0.20,
-    "sku_shrink": 0.15,
-    "new_terminal": 0.05,
-}
-
 
 def fuse_detector_results(
     detector_results: list[DetectorResult],
@@ -30,21 +22,16 @@ def fuse_detector_results(
             reason_code="NO_DETECTOR_HIT",
         )
 
-    total_weight = sum(DETECTOR_WEIGHTS.get(result.detector_name, 0.1) for result in triggered)
-    weighted_score = sum(
-        result.severity * DETECTOR_WEIGHTS.get(result.detector_name, 0.1) for result in triggered
-    ) / max(total_weight, 1e-6)
-    confidence = sum(
-        result.confidence * DETECTOR_WEIGHTS.get(result.detector_name, 0.1) for result in triggered
-    ) / max(total_weight, 1e-6)
-    risk_level = _level_for_score(weighted_score, confidence, config)
+    rule_score = max(result.severity for result in triggered)
+    confidence = max(result.confidence for result in triggered)
+    risk_level = _level_for_score(rule_score, confidence, config)
 
     return FusionResult(
-        risk_score=float(round(weighted_score, 4)),
+        risk_score=float(round(rule_score, 4)),
         risk_level=risk_level,
         confidence=float(round(confidence, 4)),
         triggered_families=[result.detector_name for result in triggered],
-        reason_code="RULE_FUSION",
+        reason_code="LEGACY_RULE_SCORE_NOT_PROBABILITY",
     )
 
 

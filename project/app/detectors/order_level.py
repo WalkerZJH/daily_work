@@ -18,6 +18,8 @@ def run_order_level_detectors(
     low_price_config: dict[str, Any] | None = None,
     spread_ratio_threshold: float = 1.8,
     low_delivery_rate_threshold: float = 0.8,
+    delivery_delay_days_threshold: int = 7,
+    fluctuation_ratio_threshold: float = 1.8,
 ) -> dict[str, list[DetectorEvidence]]:
     grouped: dict[str, list[DetectorEvidence]] = {}
     if orders.empty:
@@ -58,6 +60,34 @@ def run_order_level_detectors(
 
     if "low_delivery_rate" in enabled_detectors:
         for evidence in _low_delivery_rate(recent, low_delivery_rate_threshold):
+            add(
+                str(evidence.related_entities.get("org_code", "")),
+                str(evidence.related_entities.get("product_line_code", "")),
+                evidence,
+            )
+
+    if "delivery_delay" in enabled_detectors:
+        for evidence in _delivery_delay(recent, delivery_delay_days_threshold):
+            add(
+                str(evidence.related_entities.get("org_code", "")),
+                str(evidence.related_entities.get("product_line_code", "")),
+                evidence,
+            )
+
+    sales_detectors = {
+        "purchase_qty_spike",
+        "purchase_qty_drop",
+        "purchase_freq_spike",
+        "purchase_freq_drop",
+    }
+    if sales_detectors.intersection(enabled_detectors):
+        for evidence in _sales_fluctuation(
+            scoped,
+            as_of_date=as_of_date,
+            recent_days=recent_days,
+            enabled_detectors=enabled_detectors,
+            ratio_threshold=fluctuation_ratio_threshold,
+        ):
             add(
                 str(evidence.related_entities.get("org_code", "")),
                 str(evidence.related_entities.get("product_line_code", "")),
@@ -182,7 +212,11 @@ def _price_spread(orders: pd.DataFrame, threshold: float) -> list[DetectorEviden
 def _delivery_refusal(orders: pd.DataFrame) -> list[DetectorEvidence]:
     if "order_status" not in orders.columns:
         return []
-    pattern = "拒绝|退货|无法配送|缺货|驳回"
+    pattern = (
+        "部分退货|过期配送|经营企业拒绝|拒绝|拒绝配送|拒绝确认|拒绝入库|拒绝收货|拒绝响应|"
+        "配送企业无法配送|企业拒绝配送|企业配送撤废|全部退货|缺货|退货|未及时配送|"
+        "无法配送|已驳回|已拒绝|异议撤单|拒收"
+    )
     hit_orders = orders[orders["order_status"].fillna("").astype(str).str.contains(pattern, regex=True)]
     output: list[DetectorEvidence] = []
     for (org_code, product_line_code), group in hit_orders.groupby(["org_code", "product_line_code"]):
@@ -242,6 +276,135 @@ def _low_delivery_rate(orders: pd.DataFrame, threshold: float) -> list[DetectorE
     return output
 
 
+def _delivery_delay(orders: pd.DataFrame, threshold_days: int) -> list[DetectorEvidence]:
+    output: list[DetectorEvidence] = []
+    if "delivery_time" not in orders.columns or "order_time" not in orders.columns:
+        return output
+    frame = orders.copy()
+    frame["delivery_time"] = pd.to_datetime(frame["delivery_time"], errors="coerce")
+    frame["order_time"] = pd.to_datetime(frame["order_time"], errors="coerce")
+    frame["delivery_delay_days"] = (frame["delivery_time"] - frame["order_time"]).dt.days
+    frame = frame[frame["delivery_delay_days"].notna()]
+    delayed = frame[frame["delivery_delay_days"] > threshold_days]
+    for (org_code, product_line_code), group in delayed.groupby(["org_code", "product_line_code"]):
+        samples = group["order_id"].astype(str).head(10).tolist()
+        output.append(
+            DetectorEvidence(
+                detector_id="delivery_delay",
+                category="delivery_response",
+                family="delivery_timing",
+                hit=True,
+                severity=min(100.0, max(35.0, float(group["delivery_delay_days"].median()) / threshold_days * 35)),
+                confidence=0.55,
+                reason_code="APPROX_DELIVERY_TIME_MINUS_ORDER_TIME_DELAY",
+                evidence_items=[
+                    {
+                        "median_delivery_delay_days": float(group["delivery_delay_days"].median()),
+                        "max_delivery_delay_days": float(group["delivery_delay_days"].max()),
+                        "threshold_days": threshold_days,
+                        "sample_order_ids": samples,
+                    }
+                ],
+                related_entities=_related_entities(group.iloc[0]),
+                warnings=["DELIVERY_DELAY_USES_DELIVERY_TIME_MINUS_ORDER_TIME_APPROXIMATION"],
+                sample_order_ids=samples,
+                statistics={
+                    "median_delivery_delay_days": float(group["delivery_delay_days"].median()),
+                    "threshold_days": threshold_days,
+                },
+            )
+        )
+    return output
+
+
+def _sales_fluctuation(
+    orders: pd.DataFrame,
+    *,
+    as_of_date: date,
+    recent_days: int,
+    enabled_detectors: list[str],
+    ratio_threshold: float,
+) -> list[DetectorEvidence]:
+    output: list[DetectorEvidence] = []
+    if orders.empty:
+        return output
+    recent_start = pd.Timestamp(as_of_date) - pd.Timedelta(days=recent_days)
+    baseline_start = pd.Timestamp(as_of_date) - pd.Timedelta(days=recent_days * 4)
+    baseline_end = recent_start
+    for (_, _), group in orders.groupby(["org_code", "product_line_code"], dropna=True):
+        recent = group[group["order_time"] >= recent_start]
+        baseline = group[(group["order_time"] >= baseline_start) & (group["order_time"] < baseline_end)]
+        if baseline.empty:
+            continue
+        recent_qty = _sum_value(recent, "purchase_qty")
+        baseline_qty_daily = _sum_value(baseline, "purchase_qty") / max((baseline_end - baseline_start).days, 1)
+        recent_qty_daily = recent_qty / max(recent_days, 1)
+        recent_freq_daily = len(recent) / max(recent_days, 1)
+        baseline_freq_daily = len(baseline) / max((baseline_end - baseline_start).days, 1)
+        checks = [
+            ("purchase_qty_spike", recent_qty_daily, baseline_qty_daily, "SALES_QTY_SPIKE"),
+            ("purchase_qty_drop", baseline_qty_daily, recent_qty_daily, "SALES_QTY_DROP"),
+            ("purchase_freq_spike", recent_freq_daily, baseline_freq_daily, "SALES_FREQ_SPIKE"),
+            ("purchase_freq_drop", baseline_freq_daily, recent_freq_daily, "SALES_FREQ_DROP"),
+        ]
+        for detector_id, numerator, denominator, reason_code in checks:
+            if detector_id not in enabled_detectors:
+                continue
+            if denominator <= 0:
+                if detector_id.endswith("_drop") and numerator > 0:
+                    ratio = ratio_threshold * 10
+                else:
+                    output.append(_sales_warning(detector_id, group.iloc[0], "SALES_FLUCTUATION_BASELINE_NOT_POSITIVE"))
+                    continue
+            else:
+                ratio = numerator / denominator
+            if ratio < ratio_threshold:
+                continue
+            output.append(
+                DetectorEvidence(
+                    detector_id=detector_id,
+                    category="sales_fluctuation",
+                    family="purchase_quantity" if "_qty_" in detector_id else "purchase_frequency",
+                    hit=True,
+                    severity=min(100.0, max(35.0, (ratio / ratio_threshold - 1) * 60 + 45)),
+                    confidence=0.55,
+                    reason_code=reason_code,
+                    evidence_items=[
+                        {
+                            "recent_days": recent_days,
+                            "recent_value_per_day": float(numerator),
+                            "baseline_value_per_day": float(denominator),
+                            "ratio": float(ratio),
+                            "threshold": ratio_threshold,
+                        }
+                    ],
+                    related_entities=_related_entities(group.iloc[0]),
+                    sample_order_ids=recent["order_id"].astype(str).head(10).tolist(),
+                    statistics={
+                        "ratio": float(ratio),
+                        "recent_value_per_day": float(numerator),
+                        "baseline_value_per_day": float(denominator),
+                        "threshold": ratio_threshold,
+                    },
+                )
+            )
+    return output
+
+
+def _sales_warning(detector_id: str, row: pd.Series, reason_code: str) -> DetectorEvidence:
+    return DetectorEvidence(
+        detector_id=detector_id,
+        category="sales_fluctuation",
+        family="purchase_quantity" if "_qty_" in detector_id else "purchase_frequency",
+        hit=False,
+        severity=0,
+        confidence=0,
+        reason_code=reason_code,
+        related_entities=_related_entities(row),
+        warnings=[reason_code],
+    )
+
+
 def _related_entities(row: pd.Series) -> dict[str, Any]:
     keys = [
         "org_code",
@@ -267,3 +430,10 @@ def _float(value: Any) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _sum_value(frame: pd.DataFrame, column: str) -> float:
+    if column not in frame.columns or frame.empty:
+        return 0.0
+    series = pd.to_numeric(frame[column], errors="coerce").fillna(0)
+    return float(series.sum())

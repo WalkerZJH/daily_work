@@ -61,6 +61,8 @@ def main() -> None:
     )
     _write_json(output_dir / "metrics.json", metrics)
     model_card = {
+        "model_name": "palive_lgbm",
+        "model_version": timestamp,
         "analysis_unit": cfg.get("analysis_unit", "org_code_product_line"),
         "label_definition": "label_churn_H=1 表示 origin_date 后 horizon_days 天内没有有效采购",
         "horizon_days": cfg.get("horizon_days", 90),

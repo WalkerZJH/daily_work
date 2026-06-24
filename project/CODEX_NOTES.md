@@ -13,3 +13,7 @@
 - 当前新增主干模型能力必须围绕“训练数据构建 -> 模型训练 -> 模型注册 -> 后端推理调用”闭环。
 - 模型产物和训练数据属于本地生成内容，不提交真实文件；只保留 README 和配置样例。
 - `palive_lgbm`、interval proxy、BG/NBD candidate 都是候选主干，未回测校准前不得解释为正式概率。
+- 后续数据相关工作以真实数据库数据为准；CSV sample 仅保留为兼容测试路径，不作为新增算法验证主路径。
+- 当前真实库接入只做小窗口 smoke test 和人工触发验证；不得默认全量读取、全量训练、自动调度、自动重训或自动切换 active model。
+- 对外服务语义逐步收束为 `supply_chain_order_risk_algo_backend`；代码内如仍出现 `terminal_guard_algo_backend`，视为 legacy name，除非专门做兼容迁移，不应继续扩展旧命名。
+- Health 页面 detector 推理只用于验证链路是否可运行；需求 detector 使用 `*_warning` 对外口径，内部 detector 只能作为支撑、reserved 或 interface_only，不得扩展成正式产品功能。

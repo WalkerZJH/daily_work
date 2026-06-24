@@ -19,8 +19,11 @@ class BackbonePredictRequest(DataSourceRequest):
 class BackbonePrediction(BackboneModel):
     analysis_unit_id: str
     org_code: str
+    org_name: str | None = None
     product_line_code: str
+    product_line_name: str | None = None
     as_of_date: date
+    selected_model_name: str | None = None
     model_name: str
     model_version: str
     p_alive: float | None = Field(default=None, ge=0, le=1)
@@ -28,3 +31,4 @@ class BackbonePrediction(BackboneModel):
     confidence: float = Field(default=0, ge=0, le=1)
     warnings: list[str] = Field(default_factory=list)
     debug_features: dict[str, Any] = Field(default_factory=dict)
+    data_sufficiency: dict[str, Any] = Field(default_factory=dict)

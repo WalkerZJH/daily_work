@@ -4,8 +4,10 @@ from datetime import date
 
 import pandas as pd
 
+from app.algorithms.fusion import fuse_detector_results
 from app.features.snapshot import FeatureSnapshot
-from app.schemas.algorithm import DetectorEvidence
+from app.schemas.algorithm import DetectorEvidence, DetectorResult
+from app.schemas.config import FusionConfig
 from app.services.clue_management_service import ClueManagementService
 
 
@@ -41,3 +43,27 @@ def test_terminal_change_without_palive_does_not_escalate_to_red_from_rule_score
     assert cards[0].risk_level == "orange"
     assert cards[0].rule_score == 100
     assert cards[0].evidence_summary_structured["rule_score_note"].endswith("not probability.")
+
+
+def test_legacy_fusion_uses_rule_score_not_weighted_probability() -> None:
+    results = [
+        DetectorResult(
+            detector_name="inactive_terminal",
+            hit=True,
+            severity=100,
+            confidence=0.8,
+            reason_code="A",
+        ),
+        DetectorResult(
+            detector_name="new_terminal",
+            hit=True,
+            severity=10,
+            confidence=0.4,
+            reason_code="B",
+        ),
+    ]
+
+    fusion = fuse_detector_results(results, FusionConfig())
+
+    assert fusion.risk_score == 100
+    assert fusion.reason_code == "LEGACY_RULE_SCORE_NOT_PROBABILITY"

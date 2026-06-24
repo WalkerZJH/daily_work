@@ -1,0 +1,21 @@
+# Detector v1 threshold samples. Do not put sensitive business data here.
+low_price_warning:
+  warning_price: null
+  overrides: {}
+price_spread_warning:
+  spread_ratio_threshold: 1.8
+low_delivery_rate_warning:
+  default_threshold: 0.8
+  province_thresholds: {}
+delivery_delay_warning:
+  threshold_hours: 48
+terminal_lost_warning:
+  cycle_multiplier: 1.5
+new_terminal_warning:
+  min_purchase_qty: 1
+purchase_quantity_fluctuation_warning:
+  spike_ratio_threshold: 3.0
+  drop_ratio_threshold: 0.5
+purchase_frequency_fluctuation_warning:
+  spike_ratio_threshold: 2.0
+  drop_ratio_threshold: 0.5

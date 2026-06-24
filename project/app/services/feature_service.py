@@ -66,6 +66,8 @@ class FeatureService:
             adapter = SQLTableSourceAdapter(
                 dataset_name=source.dataset_name,
                 as_of_date=as_of_date,
+                date_from=source.date_from,
+                date_to=source.date_to,
                 enterprise_code=source.enterprise_code,
                 province=source.province,
                 province_code=source.province_code,

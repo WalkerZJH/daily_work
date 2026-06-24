@@ -44,11 +44,21 @@ class LGBMChurnPredictor:
                 {
                     "analysis_unit_id": row["analysis_unit_id"],
                     "org_code": row["org_code"],
+                    "org_name": row.get("org_name"),
                     "product_line_code": row["product_line_code"],
+                    "product_line_name": row.get("product_line_name"),
+                    "selected_model_name": "lgbm_churn_candidate",
                     "p_alive": p_alive,
                     "backbone_risk_score": round((1 - p_alive) * 100, 4),
                     "confidence": 0.6,
-                    "warnings": ["PALIVE_LGBM_EXPERIMENTAL_NOT_PRODUCTION_CALIBRATED"],
+                    "warnings": [
+                        "PALIVE_LGBM_EXPERIMENTAL_NOT_PRODUCTION_CALIBRATED",
+                        "UNCALIBRATED_PALIVE_CANDIDATE",
+                    ],
+                    "data_sufficiency": {
+                        "feature_column_count": len(self.required_features),
+                        "confidence_basis": "model_available_but_uncalibrated",
+                    },
                 }
             )
         return pd.DataFrame(rows)

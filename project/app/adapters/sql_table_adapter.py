@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy import Column, MetaData, String, Table, create_engine, inspect, select
+from sqlalchemy import Column, MetaData, String, Table, create_engine, inspect, select, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.adapters.base import BaseSourceAdapter
@@ -45,6 +45,8 @@ class SQLTableSourceAdapter(BaseSourceAdapter):
         *,
         dataset_name: str | None = None,
         as_of_date: date | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
         enterprise_code: str | None = None,
         province: str | None = None,
         province_code: str | None = None,
@@ -55,10 +57,16 @@ class SQLTableSourceAdapter(BaseSourceAdapter):
         self._dataset_name = dataset_name or f"database:{table_name or self._table_name_from_env()}"
         self._table_name = table_name or self._table_name_from_env()
         self._as_of_date = as_of_date
+        default_date_to = date_to or as_of_date
+        default_date_from = date_from
+        if default_date_from is None and default_date_to is not None:
+            default_date_from = default_date_to - timedelta(days=14)
+        self._date_from = default_date_from
+        self._date_to = default_date_to
         self._enterprise_code = enterprise_code
         self._province = province
         self._province_code = province_code
-        self._row_limit = row_limit
+        self._row_limit = min(row_limit or 5000, 5000)
         self._orders: pd.DataFrame | None = None
 
     @property
@@ -79,8 +87,10 @@ class SQLTableSourceAdapter(BaseSourceAdapter):
     def build_query_spec(self, available_columns: set[str] | None = None) -> QuerySpec:
         selected_columns = self.projection_columns(available_columns)
         filters: dict[str, Any] = {}
-        if self._as_of_date is not None:
-            filters["采购时间"] = self._as_of_date
+        if self._date_from is not None:
+            filters["采购时间_from"] = self._date_from
+        if self._date_to is not None:
+            filters["采购时间_to"] = self._date_to
         if self._enterprise_code:
             filters["企业编码"] = self._enterprise_code
         if self._province:
@@ -112,18 +122,35 @@ class SQLTableSourceAdapter(BaseSourceAdapter):
         except SQLAlchemyError as exc:
             raise DatasetLoadError("Failed to create database engine from DATABASE_URL.") from exc
 
+        available_columns = self._available_columns_from_information_schema(engine)
+        if not available_columns:
+            try:
+                inspector = inspect(engine)
+                available_columns = {column["name"] for column in inspector.get_columns(self._table_name)}
+            except (ImportError, ModuleNotFoundError) as exc:
+                raise DatasetLoadError(
+                    "Database driver is not installed for the configured DATABASE_URL. "
+                    "Install the matching optional dependency, for example project[mssql] for SQL Server."
+                ) from exc
+            except SQLAlchemyError as exc:
+                raise DatasetLoadError(
+                    f"Unable to inspect source table {self._table_name}; check DATABASE_URL and table access."
+                ) from exc
+
         try:
             inspector = inspect(engine)
-            available_columns = {column["name"] for column in inspector.get_columns(self._table_name)}
+            if not available_columns:
+                available_columns = {column["name"] for column in inspector.get_columns(self._table_name)}
         except (ImportError, ModuleNotFoundError) as exc:
             raise DatasetLoadError(
                 "Database driver is not installed for the configured DATABASE_URL. "
                 "Install the matching optional dependency, for example project[mssql] for SQL Server."
             ) from exc
         except SQLAlchemyError as exc:
-            raise DatasetLoadError(
-                f"Unable to inspect source table {self._table_name}; check DATABASE_URL and table access."
-            ) from exc
+            if not available_columns:
+                raise DatasetLoadError(
+                    f"Unable to inspect source table {self._table_name}; check DATABASE_URL and table access."
+                ) from exc
 
         missing_required = [column for column in REQUIRED_RAW_COLUMNS if column not in available_columns]
         if missing_required:
@@ -142,8 +169,10 @@ class SQLTableSourceAdapter(BaseSourceAdapter):
             *(Column(column, String) for column in spec.selected_columns),
         )
         query = select(*(table.c[column] for column in spec.selected_columns))
-        if self._as_of_date is not None and "采购时间" in table.c:
-            query = query.where(table.c["采购时间"] <= self._as_of_date)
+        if self._date_from is not None and "采购时间" in table.c:
+            query = query.where(table.c["采购时间"] >= self._date_from)
+        if self._date_to is not None and "采购时间" in table.c:
+            query = query.where(table.c["采购时间"] <= self._date_to)
         if self._enterprise_code and "企业编码" in table.c:
             query = query.where(table.c["企业编码"] == self._enterprise_code)
         if self._province and "省" in table.c:
@@ -171,3 +200,22 @@ class SQLTableSourceAdapter(BaseSourceAdapter):
 
     def load_product_line_mapping(self) -> pd.DataFrame:
         return derive_product_line_mapping_from_orders(self.load_orders())
+
+    def _available_columns_from_information_schema(self, engine) -> set[str]:
+        table_name = self._table_name.split(".")[-1]
+        schema_name = self._table_name.split(".")[0] if "." in self._table_name else None
+        query = """
+            SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = :table_name
+        """
+        params: dict[str, Any] = {"table_name": table_name}
+        if schema_name:
+            query += " AND TABLE_SCHEMA = :schema_name"
+            params["schema_name"] = schema_name
+        try:
+            with engine.connect() as conn:
+                rows = conn.execute(text(query), params).fetchall()
+        except SQLAlchemyError:
+            return set()
+        return {str(row[0]) for row in rows}

@@ -13,7 +13,10 @@ class IntervalProxyPredictor:
         for _, row in features.iterrows():
             days = _float(row.get("days_since_last_purchase"))
             interval = _float(row.get("median_interval_days")) or _float(row.get("mean_interval_days"))
-            warnings = ["PALIVE_INTERVAL_PROXY_FALLBACK", "PALIVE_NOT_CALIBRATED_AS_PROBABILITY"]
+            warnings = [
+                "FALLBACK_INTERVAL_PROXY_USED",
+                "UNCALIBRATED_PALIVE_CANDIDATE",
+            ]
             if days is None or interval is None or interval <= 0:
                 p_alive = None
                 confidence = 0.1
@@ -26,11 +29,19 @@ class IntervalProxyPredictor:
                 {
                     "analysis_unit_id": row["analysis_unit_id"],
                     "org_code": row["org_code"],
+                    "org_name": row.get("org_name"),
                     "product_line_code": row["product_line_code"],
+                    "product_line_name": row.get("product_line_name"),
+                    "selected_model_name": "interval_survival_proxy",
                     "p_alive": p_alive,
                     "backbone_risk_score": None if p_alive is None else round((1 - p_alive) * 100, 4),
                     "confidence": confidence,
                     "warnings": warnings,
+                    "data_sufficiency": {
+                        "purchase_count_365d": _int(row.get("purchase_count_365d")),
+                        "has_interval_feature": interval is not None,
+                        "confidence_basis": "low_confidence_interval_proxy",
+                    },
                 }
             )
         return pd.DataFrame(rows)
@@ -43,3 +54,12 @@ def _float(value) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _int(value) -> int:
+    try:
+        if pd.isna(value):
+            return 0
+        return int(value)
+    except (TypeError, ValueError):
+        return 0

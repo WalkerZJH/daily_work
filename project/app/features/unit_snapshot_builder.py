@@ -86,7 +86,9 @@ class UnitSnapshotBuilder:
         row: dict[str, Any] = {
             "analysis_unit_id": f"{org_code}|product_line|{product_line_code}",
             "org_code": org_code,
+            "org_name": _value(latest, "org_name"),
             "product_line_code": product_line_code,
+            "product_line_name": _value(latest, "product_line_name"),
             "origin_date": origin_date,
             "province": _value(latest, "province"),
             "city": _value(latest, "city"),

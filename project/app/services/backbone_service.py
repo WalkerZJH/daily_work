@@ -47,8 +47,11 @@ class BackboneService:
                 BackbonePrediction(
                     analysis_unit_id=unit_id,
                     org_code=str(row["org_code"]),
+                    org_name=_none_or_str(row.get("org_name")),
                     product_line_code=str(row["product_line_code"]),
+                    product_line_name=_none_or_str(row.get("product_line_name")),
                     as_of_date=as_of_date,
+                    selected_model_name=_none_or_str(row.get("selected_model_name")) or load_result.predictor.model_name,
                     model_name=load_result.predictor.model_name,
                     model_version=load_result.predictor.model_version,
                     p_alive=_none_or_float(row.get("p_alive")),
@@ -56,6 +59,7 @@ class BackboneService:
                     confidence=float(row.get("confidence") or 0),
                     warnings=list(dict.fromkeys(warnings)),
                     debug_features=feature_lookup.get(unit_id, {}),
+                    data_sufficiency=_dict_or_default(row.get("data_sufficiency"), feature_lookup.get(unit_id, {})),
                 )
             )
         return predictions
@@ -68,3 +72,25 @@ def _none_or_float(value) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _none_or_str(value) -> str | None:
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return str(value)
+
+
+def _dict_or_default(value, features: dict | None) -> dict:
+    if isinstance(value, dict):
+        return value
+    features = features or {}
+    return {
+        "purchase_count_365d": features.get("purchase_count_365d"),
+        "median_interval_days": features.get("median_interval_days"),
+        "demand_profile": features.get("demand_profile"),
+    }

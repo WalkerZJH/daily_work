@@ -74,5 +74,6 @@ v1 实现采用 Croston/SBA 思路的间隔 fallback：
 - `model_confidence`
 - `warnings`
 - `debug_features`
+- `data_sufficiency`（在后端主干推理输出中体现）
 
 `selected_p_alive` 是用于实验排序和回测对比的候选模型分数。只有经过真实数据回测、校准和业务验收后，才可能作为正式概率使用。

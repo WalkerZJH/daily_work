@@ -104,10 +104,16 @@ class BackboneSignal(AlgorithmModel):
         "not_available",
         "heuristic",
     ] = "not_available"
+    model_name: str = "not_available"
+    model_version: str = "not_available"
+    selected_model_name: str | None = None
     p_alive: float | None = Field(default=None, ge=0, le=1)
     backbone_risk_score: float | None = Field(default=None, ge=0, le=100)
     backbone_confidence: float | None = Field(default=None, ge=0, le=1)
+    confidence: float | None = Field(default=None, ge=0, le=1)
     warnings: list[str] = Field(default_factory=lambda: ["PALIVE_NOT_IMPLEMENTED"])
+    debug_features: dict[str, Any] = Field(default_factory=dict)
+    data_sufficiency: dict[str, Any] = Field(default_factory=dict)
 
 
 class EvidenceFamily(AlgorithmModel):
@@ -138,6 +144,7 @@ class RiskCardCandidate(AlgorithmModel):
     related_entities: dict[str, Any] = Field(default_factory=dict)
     suggested_action: str
     warnings: list[str] = Field(default_factory=list)
+    data_quality_summary: dict[str, Any] = Field(default_factory=dict)
     debug_trace_id: str
     rule_score: float | None = Field(default=None, ge=0, le=100)
     risk_score_deprecated: float | None = Field(default=None, ge=0, le=100)

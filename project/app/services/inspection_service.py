@@ -110,6 +110,13 @@ class InspectionService:
         )
         for issue in quality_report.issues:
             warning_summary[issue.check_name] += issue.row_count
+        data_quality_summary = {
+            "dataset_name": quality_report.dataset_name,
+            "total_rows": quality_report.total_rows,
+            "error_count": quality_report.error_count,
+            "warning_count": quality_report.warning_count,
+            "issues": [issue.model_dump(mode="json") for issue in quality_report.issues],
+        }
 
         response = DryRunResponse(
             dataset_name=feature_run.dataset_name,
@@ -125,6 +132,7 @@ class InspectionService:
             feature_count=feature_run.feature_count,
             detector_skipped_due_to_missing_features=detector_run.skipped_due_to_missing_features,
             warning_summary=dict(warning_summary),
+            data_quality_summary=data_quality_summary,
             backbone={
                 "active_prediction_count": len(backbone_predictions),
                 "warnings": sorted(

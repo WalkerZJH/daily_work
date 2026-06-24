@@ -112,6 +112,7 @@ class ClueManagementService:
             related_entities=related_entities,
             suggested_action=self._suggested_action(category),
             warnings=warnings,
+            data_quality_summary={},
             debug_trace_id=debug_trace_id,
             rule_score=round(rule_score, 2),
             risk_score_deprecated=round(rule_score, 2),
@@ -139,10 +140,16 @@ class ClueManagementService:
             return BackboneSignal()
         return BackboneSignal(
             backbone_model=prediction.model_name,  # type: ignore[arg-type]
+            model_name=prediction.model_name,
+            model_version=prediction.model_version,
+            selected_model_name=prediction.selected_model_name,
             p_alive=prediction.p_alive,
             backbone_risk_score=prediction.backbone_risk_score,
             backbone_confidence=prediction.confidence,
+            confidence=prediction.confidence,
             warnings=prediction.warnings,
+            debug_features=prediction.debug_features,
+            data_sufficiency=prediction.data_sufficiency,
         )
 
     @staticmethod
