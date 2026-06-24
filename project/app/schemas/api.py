@@ -88,3 +88,46 @@ class ConfigDryRunResponse(ApiModel):
     default_result: DryRunResponse
     patched_result: DryRunResponse
     delta: dict[str, Any]
+
+
+class PAliveExperimentConfig(ApiModel):
+    interval_prior_k: float = Field(default=5.0, gt=0)
+    min_unit_intervals: int = Field(default=2, ge=1)
+    min_cohort_intervals: int = Field(default=5, ge=1)
+    bgnbd_min_orders: int = Field(default=5, ge=2)
+    intermittent_overdue_multiplier: float = Field(default=1.5, gt=0)
+    low_confidence_threshold: float = Field(default=0.35, ge=0, le=1)
+
+
+class PAliveExperimentRequest(DataSourceRequest):
+    as_of_date: date
+    enabled_models: list[str] | None = None
+
+
+class PAliveCandidateResult(ApiModel):
+    analysis_unit_id: str
+    org_code: str
+    org_name: str | None = None
+    product_line_code: str
+    product_line_name: str | None = None
+    as_of_date: date
+    demand_profile: Literal["smooth", "erratic", "intermittent", "lumpy", "unknown"]
+    days_since_last_purchase: float | None = None
+    purchase_interval_stats: dict[str, Any] = Field(default_factory=dict)
+    p_alive_proxy_interval: float | None = Field(default=None, ge=0, le=1)
+    p_alive_bgnbd: float | None = Field(default=None, ge=0, le=1)
+    p_alive_intermit_proxy: float | None = Field(default=None, ge=0, le=1)
+    selected_p_alive: float | None = Field(default=None, ge=0, le=1)
+    selected_model_name: str
+    model_confidence: float = Field(ge=0, le=1)
+    warnings: list[str] = Field(default_factory=list)
+    debug_features: dict[str, Any] = Field(default_factory=dict)
+
+
+class PAliveExperimentResponse(ApiModel):
+    dataset_name: str
+    as_of_date: date
+    config: PAliveExperimentConfig
+    unit_count: int
+    results: list[PAliveCandidateResult]
+    warning_summary: dict[str, int] = Field(default_factory=dict)

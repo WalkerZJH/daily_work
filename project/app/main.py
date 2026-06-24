@@ -6,12 +6,14 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes_backbone import router as backbone_router
 from app.api.routes_backtest import router as backtest_router
 from app.api.routes_config import router as config_router
 from app.api.routes_detectors import router as detectors_router
 from app.api.routes_debug import router as debug_router
 from app.api.routes_health import router as health_router
 from app.api.routes_inspection import router as inspection_router
+from app.api.routes_training import router as training_router
 from app.api.routes_users import router as users_router
 from app.core.errors import TerminalGuardError
 from app.core.logging import configure_logging
@@ -65,5 +67,7 @@ app.include_router(detectors_router)
 app.include_router(users_router)
 app.include_router(debug_router)
 app.include_router(inspection_router)
+app.include_router(backbone_router)
+app.include_router(training_router)
 app.include_router(backtest_router)
 app.include_router(config_router)

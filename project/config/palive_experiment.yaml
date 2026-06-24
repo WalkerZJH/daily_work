@@ -1,0 +1,6 @@
+interval_prior_k: 5.0
+min_unit_intervals: 2
+min_cohort_intervals: 5
+bgnbd_min_orders: 5
+intermittent_overdue_multiplier: 1.5
+low_confidence_threshold: 0.35

@@ -1,0 +1,11 @@
+active_backbone: palive_lgbm
+
+models:
+  palive_lgbm:
+    active_version: null
+    fallback: palive_interval_proxy
+  palive_interval_proxy:
+    active_version: builtin
+  palive_bgnbd:
+    active_version: null
+    fallback: palive_interval_proxy

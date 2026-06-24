@@ -10,6 +10,7 @@ import pandas as pd
 from app.detectors.base import DetectorResult
 from app.detectors.registry import DETECTOR_META
 from app.features.snapshot import FeatureSnapshot
+from app.schemas.backbone import BackbonePrediction
 from app.schemas.algorithm import (
     BackboneSignal,
     DetectorEvidence,
@@ -28,6 +29,7 @@ class ClueManagementService:
         prepared_orders: pd.DataFrame,
         as_of_date: date,
         config_version: str,
+        backbone_by_unit: dict[str, BackbonePrediction] | None = None,
     ) -> list[RiskCardCandidate]:
         candidates: list[RiskCardCandidate] = []
         all_units = set(terminal_results_by_unit) | set(order_evidence_by_unit)
@@ -52,6 +54,7 @@ class ClueManagementService:
                     evidence=hit_evidence,
                     as_of_date=as_of_date,
                     config_version=config_version,
+                    backbone_prediction=(backbone_by_unit or {}).get(unit_id),
                 )
             )
         candidates.sort(
@@ -68,11 +71,12 @@ class ClueManagementService:
         evidence: list[DetectorEvidence],
         as_of_date: date,
         config_version: str,
+        backbone_prediction: BackbonePrediction | None = None,
     ) -> RiskCardCandidate:
         families = self._families(evidence)
         categories = {item.category for item in evidence}
         category = "price_warning" if "price_warning" in categories else sorted(categories)[0]
-        backbone = BackboneSignal()
+        backbone = self._backbone_signal(backbone_prediction)
         risk_level = self._risk_level(category, families, evidence, backbone)
         rule_score = max(item.severity for item in evidence)
         confidence = max(item.confidence for item in evidence)
@@ -127,6 +131,18 @@ class ClueManagementService:
                 "evidence_family_count": len(families),
                 "detector_ids": [item.detector_id for item in evidence],
             },
+        )
+
+    @staticmethod
+    def _backbone_signal(prediction: BackbonePrediction | None) -> BackboneSignal:
+        if prediction is None:
+            return BackboneSignal()
+        return BackboneSignal(
+            backbone_model=prediction.model_name,  # type: ignore[arg-type]
+            p_alive=prediction.p_alive,
+            backbone_risk_score=prediction.backbone_risk_score,
+            backbone_confidence=prediction.confidence,
+            warnings=prediction.warnings,
         )
 
     @staticmethod

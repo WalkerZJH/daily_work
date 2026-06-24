@@ -97,7 +97,13 @@ class DetectorEvidence(AlgorithmModel):
 
 
 class BackboneSignal(AlgorithmModel):
-    backbone_model: Literal["palive_bgnbd", "not_available", "heuristic"] = "not_available"
+    backbone_model: Literal[
+        "palive_lgbm",
+        "palive_interval_proxy",
+        "palive_bgnbd",
+        "not_available",
+        "heuristic",
+    ] = "not_available"
     p_alive: float | None = Field(default=None, ge=0, le=1)
     backbone_risk_score: float | None = Field(default=None, ge=0, le=100)
     backbone_confidence: float | None = Field(default=None, ge=0, le=1)

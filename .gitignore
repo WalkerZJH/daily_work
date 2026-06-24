@@ -78,6 +78,10 @@ outputs/
 tmp/
 temp/
 .cache/
+project/artifacts/models/**
+!project/artifacts/models/
+!project/artifacts/models/README.md
+project/artifacts/training/**
 
 # Compressed packages (remove a rule when the archive is source material)
 *.zip

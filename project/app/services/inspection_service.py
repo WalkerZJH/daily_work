@@ -18,6 +18,7 @@ from app.schemas.algorithm import RiskClue
 from app.schemas.api import DataSourceRequest, DryRunResponse
 from app.schemas.config import AppConfig
 from app.services.clue_management_service import ClueManagementService
+from app.services.backbone_service import BackboneService
 from app.services.feature_service import FeatureService
 from app.services.user_config_service import UserConfigService
 
@@ -79,6 +80,14 @@ class InspectionService:
                     detector_hits[evidence.detector_id] += 1
 
         snapshots_by_unit = {snapshot.unit_id: snapshot for snapshot in feature_run.snapshots}
+        backbone_predictions = BackboneService(self.config).predict_on_orders(
+            feature_run.prepared_orders,
+            as_of_date,
+        )
+        backbone_by_unit = {
+            prediction.analysis_unit_id: prediction
+            for prediction in backbone_predictions
+        }
         risk_cards = ClueManagementService().build_candidates(
             snapshots_by_unit=snapshots_by_unit,
             terminal_results_by_unit=results_by_unit,
@@ -86,6 +95,7 @@ class InspectionService:
             prepared_orders=feature_run.prepared_orders,
             as_of_date=as_of_date,
             config_version=self.config.config_version,
+            backbone_by_unit=backbone_by_unit,
         )
         clue_candidates = risk_cards
         level_counter = Counter({"red": 0, "orange": 0, "yellow": 0, "none": 0})
@@ -116,11 +126,14 @@ class InspectionService:
             detector_skipped_due_to_missing_features=detector_run.skipped_due_to_missing_features,
             warning_summary=dict(warning_summary),
             backbone={
-                "backbone_model": "not_available",
-                "p_alive": None,
-                "backbone_risk_score": None,
-                "backbone_confidence": None,
-                "warnings": ["PALIVE_NOT_IMPLEMENTED"],
+                "active_prediction_count": len(backbone_predictions),
+                "warnings": sorted(
+                    {
+                        warning
+                        for prediction in backbone_predictions
+                        for warning in prediction.warnings
+                    }
+                ),
             },
         )
         log_inspection_summary(

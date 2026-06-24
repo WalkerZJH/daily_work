@@ -1,6 +1,6 @@
-# Detector Catalog
+# Detector 目录
 
-Categories:
+当前 detector 固定使用以下 category：
 
 - `price_warning`
 - `delivery_response`
@@ -8,7 +8,7 @@ Categories:
 - `sales_fluctuation`
 - `common_preprocess`
 
-Current implemented terminal-change detectors:
+## 已实现的 terminal_change detector
 
 - `inactive_terminal`
 - `new_terminal`
@@ -18,15 +18,23 @@ Current implemented terminal-change detectors:
 - `substitution_risk`
 - `cycle_deviation`
 
-Price-warning detectors:
+这些 detector 主要用于终端动态和终端变化识别。当前阶段的输出只用于算法验证和风险候选生成，不代表正式预警结论。
 
-- `low_price`: implemented v1 threshold rule. If no `warning_price` config exists, it does not trigger and emits `LOW_PRICE_THRESHOLD_NOT_CONFIGURED`.
-- `price_spread`: implemented v1 recent-window max/min comparable unit price spread rule. Default ratio threshold is `1.8`.
+## price_warning 类检测器
 
-Delivery-response detectors:
+- `low_price`：v1 阈值规则。若没有配置 `warning_price`，则不触发，并输出 `LOW_PRICE_THRESHOLD_NOT_CONFIGURED`。
+- `price_spread`：v1 近期窗口内最高/最低 `comparable_unit_price` 价差规则。默认价差阈值 `spread_ratio_threshold = 1.8`。
 
-- `delivery_refusal`: implemented v1 keyword rule on `order_status`.
-- `delivery_delay`: placeholder; current data only supports `delivery_time - order_time` approximation.
-- `low_delivery_rate`: placeholder in catalog; a lightweight order-level rule can be enabled later.
+价格类 detector 使用 `comparable_unit_price`，不得直接使用原始 `purchase_price` 作为可比价格。
 
-Detector output is normalized into `DetectorEvidence`. Risk cards aggregate evidence families without weighted severity averaging. `P(alive)` fields are present but null until a calibrated backbone model is implemented.
+## delivery_response 类检测器
+
+- `delivery_refusal`：v1 轻量关键词规则，基于 `order_status` 中的拒绝、退货、无法配送、缺货、驳回等关键词。
+- `delivery_delay`：占位。当前只有 `delivery_time - order_time` 的近似口径，不能解释为“确认订单后 48 小时未发货”。
+- `low_delivery_rate`：目录中预留；后续可启用轻量订单级配送率规则。
+
+## 输出约束
+
+Detector 输出会统一规范为 `DetectorEvidence`。风险卡片只聚合 evidence family，不对 severity 做加权平均，也不把规则分解释为概率。
+
+`P(alive)` 相关字段已经预留，但在校准后的主干模型完成前保持 `null` 或实验候选状态。
