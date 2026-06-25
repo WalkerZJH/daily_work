@@ -26,7 +26,7 @@ defineEmits([
 <template>
   <SectionCard
     title="主干算法 smoke test"
-    subtitle="当前结果仅用于算法链路验证，未经过真实回测和概率校准，暂不能作为正式业务预警。"
+    subtitle="单个检测日期下，每个 医院×产品线 分析单元只输出 1 条 P_alive 候选结果。"
   >
     <div class="form-grid">
       <label>
@@ -34,16 +34,27 @@ defineEmits([
         <input :value="apiBase" @input="$emit('update:apiBase', $event.target.value)" />
       </label>
       <label>
-        <span>source_type</span>
-        <input value="database" disabled />
+        <span>数据源</span>
+        <select v-model="form.source_type">
+          <option value="database">database</option>
+          <option value="csv">csv</option>
+        </select>
       </label>
       <label>
-        <span>as_of_date</span>
+        <span>检测日期</span>
         <input v-model="form.as_of_date" type="date" />
       </label>
       <label>
-        <span>days</span>
-        <input v-model.number="form.days" type="number" min="1" max="60" />
+        <span>回看窗口</span>
+        <input v-model.number="form.lookback_days" type="number" min="1" max="365" />
+      </label>
+      <label>
+        <span>基线窗口</span>
+        <input v-model.number="form.baseline_days" type="number" min="1" max="730" />
+      </label>
+      <label>
+        <span>history_start_date</span>
+        <input v-model="form.history_start_date" type="date" />
       </label>
       <label>
         <span>row_limit</span>
@@ -54,16 +65,16 @@ defineEmits([
         <input v-model="form.enterprise_code" placeholder="可选" />
       </label>
       <label>
-        <span>province</span>
-        <input v-model="form.province" placeholder="可选" />
-      </label>
-      <label>
         <span>province_code</span>
         <input v-model="form.province_code" placeholder="可选" />
       </label>
+      <label>
+        <span>product_line_code</span>
+        <input v-model="form.product_line_code" placeholder="可选" />
+      </label>
       <label class="checkbox-line">
         <input v-model="form.include_debug_features" type="checkbox" />
-        <span>返回 debug_features</span>
+        <span>返回完整 debug_features</span>
       </label>
     </div>
 
@@ -79,16 +90,19 @@ defineEmits([
     <LoadingErrorBlock :loading="loading" :error="errorMessage" />
   </SectionCard>
 
-  <SectionCard title="运行结果">
+  <SectionCard title="主干 smoke summary">
     <SmokeTestSummaryCards :summary="result?.summary" />
+    <div v-if="result?.summary" class="info-banner">
+      预测口径：每个 医院×产品线 在检测日期 {{ result.summary.as_of_date }} 输出 1 条 P_alive。
+      <strong v-if="result.summary.prediction_count === result.summary.analysis_unit_count">口径正常。</strong>
+      <strong v-else class="warning-text">预测结果数与分析单元数不一致，请检查 warning。</strong>
+    </div>
     <div v-if="freshness" class="info-banner freshness">
-      当前窗口 row_count={{ freshness.row_count }}，
-      max_order_time={{ freshness.max_order_time || '--' }}。
-      {{ freshness.note }}
+      当前窗口 row_count={{ freshness.row_count }}，max_order_time={{ freshness.max_order_time || '--' }}。{{ freshness.note }}
     </div>
   </SectionCard>
 
-  <SectionCard title="P_alive 候选结果预览" subtitle="最多展示前 10 条，字段为实验候选输出。">
+  <SectionCard title="P_alive 候选结果预览" subtitle="最多展示前 10 条；列表默认只返回关键 debug 字段。">
     <PalivePreviewTable
       :rows="result?.palive_preview || []"
       :selected-id="selectedRow?.analysis_unit_id || ''"
@@ -121,12 +135,14 @@ label {
   color: var(--text-muted);
 }
 
-input {
+input,
+select {
   min-height: 34px;
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px 8px;
   color: var(--text);
+  background: #fff;
 }
 
 .checkbox-line {
@@ -147,6 +163,10 @@ input {
 
 .freshness {
   margin-top: 12px;
+}
+
+.warning-text {
+  color: #b91c1c;
 }
 
 @media (max-width: 980px) {

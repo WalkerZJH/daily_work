@@ -48,6 +48,7 @@ def test_backbone_service_predict_returns_complete_prediction() -> None:
     predictions = BackboneService(load_config(), model_registry=_MockRegistry()).predict_on_orders(
         orders,
         date(2026, 3, 1),
+        include_debug_features=True,
     )
 
     assert predictions

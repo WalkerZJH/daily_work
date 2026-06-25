@@ -137,13 +137,20 @@ class PAliveExperimentResponse(ApiModel):
 
 
 class DatabaseSmokeTestRequest(ApiModel):
+    source_type: Literal["csv", "database"] = "database"
     as_of_date: date
+    lookback_days: int | None = Field(default=30, ge=1, le=365)
+    baseline_days: int = Field(default=180, ge=1, le=730)
+    history_start_date: date | None = None
     days: int = Field(default=14, ge=1, le=60)
     row_limit: int = Field(default=5000, ge=1, le=5000)
     enterprise_code: str | None = None
+    enterprise_name: str | None = None
     province: str | None = None
     province_code: str | None = None
-    include_debug_features: bool = True
+    province_name: str | None = None
+    product_line_code: str | None = None
+    include_debug_features: bool = False
 
 
 class DatabaseSmokeTestResponse(ApiModel):

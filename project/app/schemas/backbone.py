@@ -14,8 +14,13 @@ class BackboneModel(BaseModel):
 
 class BackbonePredictRequest(DataSourceRequest):
     as_of_date: date
+    lookback_days: int | None = None
+    baseline_days: int = 180
     history_start_date: date | None = None
     product_line_code: str | None = None
+    enterprise_name: str | None = None
+    province_name: str | None = None
+    include_debug_features: bool = False
 
 
 class BackbonePrediction(BackboneModel):
@@ -36,3 +41,9 @@ class BackbonePrediction(BackboneModel):
     warnings: list[str] = Field(default_factory=list)
     debug_features: dict[str, Any] = Field(default_factory=dict)
     data_sufficiency: dict[str, Any] = Field(default_factory=dict)
+
+
+class BackbonePredictResponse(BackboneModel):
+    summary: dict[str, Any]
+    predictions: list[BackbonePrediction] = Field(default_factory=list)
+    warning_summary: dict[str, int] = Field(default_factory=dict)

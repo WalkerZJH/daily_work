@@ -298,6 +298,7 @@ textarea {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
+  table-layout: auto;
 }
 
 .table th,
@@ -313,6 +314,9 @@ textarea {
   background: #f4f4f5;
   color: var(--text-sub);
   font-weight: 900;
+  resize: horizontal;
+  overflow: auto;
+  min-width: 72px;
 }
 
 .table tr:last-child th,

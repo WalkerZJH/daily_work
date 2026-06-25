@@ -1,82 +1,64 @@
-# P_alive 实验
+# P_alive 候选算法实验说明
 
-当前阶段是基于真实数据库数据做算法验证。输出用于候选算法对比和回测，不是正式概率、正式工单或最终预警决策。
+当前目标不是把某一个模型定为唯一主干，而是在真实订单数据上比较多个 P_alive 候选算法的解释性、稳定性和回测表现。所有输出都属于算法验证候选，未经过真实回测和概率校准前，不能解释为正式概率。
 
 ## 分析单元
 
-分析单元为“医疗机构 × 产品线”：
+分析单元固定为：
 
-- `org_code`
-- `product_line_code`
-- `analysis_unit_id = org_code|product_line|product_line_code`
+```text
+org_code × product_line_code
+```
 
-输入只来自 canonical orders。数据库原始中文列名必须先完成 canonical 映射，P_alive 实验服务不得直接依赖原始列名。
+即“医疗机构 × 产品线”。`analysis_unit_id` 由这两个字段组成。
+
+## 训练与推理的口径区别
+
+训练集构建可以使用多个历史 `origin_date` 生成滚动样本，用于训练、回测和模型比较。
+
+smoke test、`/api/v0/backbone/predict` 和 health 页面的主干算法预览不同：它们只表示单个检测日 `as_of_date` 的当前状态。对每个 `as_of_date`，每个 `org_code × product_line_code` 只输出 1 条 P_alive 候选结果。
+
+## 输出统计口径
+
+- `raw_order_rows`：本次请求同一数据切口下进入 canonical 后、过滤有效采购前的订单行数。
+- `effective_order_rows`：有效采购订单行数。
+- `analysis_unit_count`：有效订单去重后的 `org_code × product_line_code` 数。
+- `prediction_count`：P_alive 候选预测条数，正常情况下等于 `analysis_unit_count`。
+- `feature_column_count`：特征快照的列数，不是预测次数，也不是单元格数量。
+
+`analysis_unit_count` 不应超过 `effective_order_rows`。如果口径不一致，后端返回 `BACKBONE_UNIT_COUNT_INCONSISTENT` warning。
 
 ## 候选算法
 
-### palive_lgbm
-
-用途：作为当前优先训练的机器学习主干候选，用于预测“医疗机构 × 产品线”在未来 H 天内是否停购。
-
-训练输出的是 `label_churn_H` 的分类模型。后端推理时会将停购风险转换为候选 `p_alive`，但在完成校准前仍不能解释为正式概率。
-
 ### interval_survival_proxy
 
-用途：为平稳采购或波动采购提供可解释的基线代理。
+基于历史采购间隔和同侪 cohort 的可解释代理模型。
 
-计算口径：
-
-- `d = as_of_date - last_purchase_date`
+- `d = as_of_date - 最近一次采购时间`
 - `I = 历史相邻采购间隔`
-- `p_unit = P(I >= d | 当前分析单元历史间隔)`
-- `p_cohort = P(I >= d | 同产品线 / 医院等级 / 省份 / 需求形态 cohort)`
+- `p_unit = P(I >= d | 当前 unit 历史间隔)`
+- `p_cohort = P(I >= d | 同产品线/医院等级/省份/需求形态 cohort)`
 - `p_alive_proxy = w * p_unit + (1 - w) * p_cohort`
 - `w = n_intervals / (n_intervals + k)`
 
-默认 `k = 5`。冷启动单元必须使用 cohort prior 或返回低置信度，不允许在样本不足时强行给高置信结果。
+样本不足时必须降低 confidence，不得伪造高置信输出。
 
 ### bgnbd_candidate
 
-用途：为 BG/NBD 类主干模型保留候选接口。
+BG/NBD 只作为候选模型。依赖缺失、拟合失败或样本不足时返回 warning，不影响整体 dry-run。
 
-当前服务不会把 BG/NBD 定为唯一方向。若依赖缺失、历史样本不足、拟合未启用或拟合失败，该候选返回 `null` 并附带已脱敏的警告信息，不得伪造分数。
+### lgbm_churn_candidate
 
-在完成回测和校准前，任何 BG/NBD 输出都不能解释为真实流失概率或真实存活概率。
+训练目标是预测未来 `horizon_days` 内是否停购，输出 `p_churn_candidate` 后转换为 `p_alive = 1 - p_churn_candidate`。未校准前必须标注 experimental / not production-calibrated probability。
 
-### intermittent_overdue_proxy
+## debug_features
 
-用途：避免对间断型、块状型采购过度惩罚。
+列表接口默认折叠 `debug_features`，只保留关键字段，例如：
 
-v1 实现采用 Croston/SBA 思路的间隔 fallback：
-
-- 有当前单元历史时，估计期望补货间隔。
-- 当前单元历史不足时，使用 cohort prior。
-- 超过期望间隔后缓慢衰减，而不是简单用趋势下降或采购间隔拉长判定流失。
-
-当需求形态为 `intermittent` 或 `lumpy` 时，优先选择该候选，而不是普通趋势下降规则。
-
-## 输出字段
-
-每个结果包含：
-
-- `analysis_unit_id`
-- `org_code`、`org_name`
-- `product_line_code`、`product_line_name`
-- `as_of_date`
-- `demand_profile`
 - `days_since_last_purchase`
-- `purchase_interval_stats`
-- `p_alive_proxy_interval`
-- `p_alive_bgnbd`
-- `p_alive_intermit_proxy`
-- `selected_p_alive`
-- `selected_model_name`
-- `model_confidence`
-- `warnings`
-- `debug_features`
-- `data_sufficiency`（在后端主干推理输出中体现）
+- `purchase_count_90d`
+- `purchase_count_365d`
+- `median_interval_days`
+- `demand_profile`
 
-`selected_p_alive` 是用于实验排序和回测对比的候选模型分数。只有经过真实数据回测、校准和业务验收后，才可能作为正式概率使用。
-# 当前 P_alive 推理口径
-
-训练样本可以使用历史 `origin_date` 构造，但 smoke test、`/api/v0/backbone/predict` 和日报探查输出必须表示检测日 `as_of_date` 下每个 `org_code × product_line_code` 分析单元的 alive 候选状态。若请求提供 `history_start_date`，则只使用 `history_start_date` 到 `as_of_date` 的订单历史。模型缺失时 fallback 到 `interval_survival_proxy`，并在 warnings 中标明 fallback。所有输出保留 `debug_features`、`data_sufficiency` 和 warnings；未回测校准前不得解释为真实概率。
+需要完整特征时，调用方必须显式传入 `include_debug_features=true`。

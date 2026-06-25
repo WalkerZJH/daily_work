@@ -10,7 +10,7 @@ from app.schemas.api import (
     PAliveExperimentRequest,
     PAliveExperimentResponse,
 )
-from app.schemas.backbone import BackbonePrediction, BackbonePredictRequest
+from app.schemas.backbone import BackbonePredictRequest, BackbonePredictResponse
 from app.schemas.config import AppConfig
 from app.services.backbone_service import BackboneService
 from app.services.palive_experiment_service import PAliveExperimentService
@@ -43,9 +43,9 @@ def run_palive_experiment(
     )
 
 
-@router.post("/predict", response_model=list[BackbonePrediction])
+@router.post("/predict", response_model=BackbonePredictResponse)
 def predict_backbone(
     request: BackbonePredictRequest,
     config: AppConfig = Depends(get_app_config),
-) -> list[BackbonePrediction]:
-    return BackboneService(config).predict(request)
+) -> BackbonePredictResponse:
+    return BackboneService(config).predict_with_summary(request)

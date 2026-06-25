@@ -13,11 +13,13 @@ function formatNumber(value, digits = 3) {
 </script>
 
 <template>
-  <table class="table">
+  <table class="table resizable-table">
     <thead>
       <tr>
         <th>机构</th>
         <th>产品线</th>
+        <th>最后采购日</th>
+        <th>未采购天数</th>
         <th>模型</th>
         <th>版本</th>
         <th>P_alive 候选</th>
@@ -35,6 +37,8 @@ function formatNumber(value, digits = 3) {
       >
         <td>{{ row.org_code }}</td>
         <td>{{ row.product_line_code }}</td>
+        <td>{{ row.last_purchase_date || '--' }}</td>
+        <td>{{ formatNumber(row.days_since_last_purchase, 0) }}</td>
         <td>{{ row.model_name }}</td>
         <td>{{ row.model_version }}</td>
         <td>{{ formatNumber(row.p_alive) }}</td>
