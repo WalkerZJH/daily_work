@@ -288,3 +288,39 @@
 ```
 
 如果 `configs/model_registry.yaml` 指向的 active 模型不可用，后端会自动 fallback 到 `palive_interval_proxy`，并在 `warnings` 中返回原因，不会让接口整体失败。输出中的 `p_alive` 当前是候选模型结果，未经过真实回测和概率校准。
+# 当前 detector / health / backbone API 口径
+
+当前 health 页面是“日报式算法探查页”，不是工单页。所有 detector 运行接口都必须携带明确时间口径：
+
+- `as_of_date`：本次探查日期。
+- `lookback_days`：风险发现窗口，默认 30 天。
+- `baseline_days`：历史基线窗口，默认 180 天。
+- `history_start_date`：可选，只使用该日期之后的历史订单。
+
+Detector 配置接口：
+
+- `GET /api/v0/detectors/config`
+- `GET /api/v0/detectors/{detector_id}/config`
+- `PATCH /api/v0/detectors/{detector_id}/config`
+
+`DetectorRuntimeConfig` 字段包括 `detector_id`、`category`、`enabled`、`mode`、`params`、`scope_type`、`scope_value`、`updated_by`、`updated_at`。当前只实现 `rule` 和 `auto_baseline`；`ml_first`、`dl_first` 只预留接口，未实现时返回 `ML_MODEL_NOT_IMPLEMENTED` 或 `DL_MODEL_NOT_IMPLEMENTED` warning，并 fallback 到 rule/auto_baseline。
+
+Detector 运行接口：
+
+- `POST /api/v0/detectors/{detector_id}/run`
+- `POST /api/v0/detectors/run-by-category`
+- `POST /api/v0/detectors/run`
+
+每条 `detector_results` 返回 `as_of_date`、`lookback_start_date`、`baseline_start_date`、`baseline_end_date`、`run_scope`、`statistics`、`evidence_items`、`sample_order_ids`、`related_entities`、`warnings`、`narrative`。
+
+Options 接口：
+
+- `GET /api/v0/options/enterprises`
+- `GET /api/v0/options/provinces`
+- `GET /api/v0/options/product-lines?enterprise_code=...&province_code=...`
+- `GET /api/v0/options/detector-categories`
+- `GET /api/v0/options/detectors?category=...`
+
+前端 health 页面必须通过 options API 填充企业、省份、产品线、category 和 detector 下拉框，用户不应手输 `enterprise_code` 或 `province_code`。
+
+`POST /api/v0/backbone/predict` 支持 `history_start_date` 和 `product_line_code`。输出表示在 `as_of_date` 这个检测日，每个 `org_code × product_line_code` 分析单元的 alive 候选状态。模型缺失时 fallback 到 `interval_survival_proxy`，并在 warnings 中说明。当前 `p_alive` 仍是算法候选输出，不能解释为真实概率。

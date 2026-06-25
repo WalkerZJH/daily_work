@@ -77,3 +77,6 @@ v1 实现采用 Croston/SBA 思路的间隔 fallback：
 - `data_sufficiency`（在后端主干推理输出中体现）
 
 `selected_p_alive` 是用于实验排序和回测对比的候选模型分数。只有经过真实数据回测、校准和业务验收后，才可能作为正式概率使用。
+# 当前 P_alive 推理口径
+
+训练样本可以使用历史 `origin_date` 构造，但 smoke test、`/api/v0/backbone/predict` 和日报探查输出必须表示检测日 `as_of_date` 下每个 `org_code × product_line_code` 分析单元的 alive 候选状态。若请求提供 `history_start_date`，则只使用 `history_start_date` 到 `as_of_date` 的订单历史。模型缺失时 fallback 到 `interval_survival_proxy`，并在 warnings 中标明 fallback。所有输出保留 `debug_features`、`data_sufficiency` 和 warnings；未回测校准前不得解释为真实概率。

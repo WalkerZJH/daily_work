@@ -79,7 +79,7 @@ def test_requirement_low_price_missing_warning_price_config_does_not_fabricate()
     )[0]
 
     assert result.hit is False
-    assert result.reason_code == "MISSING_WARNING_PRICE_CONFIG"
+    assert result.reason_code == "LOW_PRICE_THRESHOLD_NOT_CONFIGURED"
     assert any("缺少客户预警价配置" in warning for warning in result.warnings)
 
 

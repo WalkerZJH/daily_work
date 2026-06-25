@@ -22,9 +22,9 @@ const detectorState = useDetectorRun(apiBase)
 <template>
   <div class="algo-health-view">
     <div class="page-header">
-      <h1>P_alive 候选结果预览</h1>
+      <h1>算法日报探查页</h1>
       <div class="subtitle">
-        当前页面只用于真实数据库小窗口 smoke test 和主干算法链路验证，不展示正式业务预警。
+        当前页面用于真实数据小窗口算法验证，展示 detector 证据、P_alive 候选和调试信息；结果未经过回测和概率校准，不能作为正式业务预警或工单。
       </div>
     </div>
 

@@ -38,10 +38,50 @@ export class BackendApi {
     return getJson(this.baseUrl, '/api/v0/detectors/catalog')
   }
 
+  async detectorConfigs() {
+    return getJson(this.baseUrl, '/api/v0/detectors/config')
+  }
+
+  async detectorConfig(detectorId) {
+    return getJson(this.baseUrl, `/api/v0/detectors/${detectorId}/config`)
+  }
+
   async runDetectors(payload) {
     return postJson(this.baseUrl, '/api/v0/detectors/run', payload, undefined, {
       timeoutMs: payload?.source_type === 'database' ? DATABASE_REQUEST_TIMEOUT_MS : DEFAULT_TIMEOUT_MS
     })
+  }
+
+  async runDetector(detectorId, payload) {
+    return postJson(this.baseUrl, `/api/v0/detectors/${detectorId}/run`, payload, undefined, {
+      timeoutMs: payload?.source_type === 'database' ? DATABASE_REQUEST_TIMEOUT_MS : DEFAULT_TIMEOUT_MS
+    })
+  }
+
+  async runDetectorsByCategory(payload) {
+    return postJson(this.baseUrl, '/api/v0/detectors/run-by-category', payload, undefined, {
+      timeoutMs: payload?.source_type === 'database' ? DATABASE_REQUEST_TIMEOUT_MS : DEFAULT_TIMEOUT_MS
+    })
+  }
+
+  async optionEnterprises() {
+    return getJson(this.baseUrl, '/api/v0/options/enterprises')
+  }
+
+  async optionProvinces() {
+    return getJson(this.baseUrl, '/api/v0/options/provinces')
+  }
+
+  async optionProductLines(query = {}) {
+    return getJson(this.baseUrl, '/api/v0/options/product-lines', query)
+  }
+
+  async optionDetectorCategories() {
+    return getJson(this.baseUrl, '/api/v0/options/detector-categories')
+  }
+
+  async optionDetectors(category) {
+    return getJson(this.baseUrl, '/api/v0/options/detectors', { category })
   }
 
   async featureSnapshot({ datasetName, asOfDate, orgCode, analysisGrain, targetCode }) {

@@ -27,7 +27,9 @@ function formatNumber(value, digits = 2) {
         <th>严重度</th>
         <th>置信度</th>
         <th>原因码</th>
+        <th>运行日期</th>
         <th>中文解释</th>
+        <th>订单样例</th>
         <th>Warnings</th>
       </tr>
     </thead>
@@ -47,7 +49,9 @@ function formatNumber(value, digits = 2) {
         <td>{{ formatNumber(row.severity, 1) }}</td>
         <td>{{ formatNumber(row.confidence, 2) }}</td>
         <td>{{ row.reason_code }}</td>
+        <td>{{ row.as_of_date || '--' }}</td>
         <td class="narrative-cell">{{ row.narrative }}</td>
+        <td>{{ row.sample_order_ids?.slice(0, 3).join(', ') || '--' }}</td>
         <td>
           <span v-if="!row.warnings?.length" class="muted">无</span>
           <span v-else class="badge badge-orange">{{ row.warnings.length }}</span>
@@ -73,4 +77,3 @@ tr {
   line-height: 1.45;
 }
 </style>
-

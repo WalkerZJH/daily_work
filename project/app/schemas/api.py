@@ -178,9 +178,19 @@ class DetectorRunRequest(DataSourceRequest):
     source_type: Literal["csv", "database", "sample"] = "csv"
     as_of_date: date
     days: int = Field(default=14, ge=1, le=60)
+    lookback_days: int | None = Field(default=None, ge=1, le=365)
+    baseline_days: int = Field(default=180, ge=1, le=730)
+    history_start_date: date | None = None
+    enterprise_name: str | None = None
+    province_name: str | None = None
+    product_line_code: str | None = None
     enabled_detectors: list[str] | None = None
     category: str | None = None
     include_debug: bool = True
+
+
+class DailyRiskRunRequest(DetectorRunRequest):
+    """Daily exploration request. It is not a formal workflow/work-order request."""
 
 
 class DetectorRunResult(ApiModel):
@@ -195,8 +205,16 @@ class DetectorRunResult(ApiModel):
     reason_code: str
     metrics: dict[str, Any] = Field(default_factory=dict)
     evidence_items: list[dict[str, Any]] = Field(default_factory=list)
+    related_entities: dict[str, Any] = Field(default_factory=dict)
+    sample_order_ids: list[str] = Field(default_factory=list)
+    statistics: dict[str, Any] = Field(default_factory=dict)
     warnings: list[str] = Field(default_factory=list)
     narrative: str
+    as_of_date: date | None = None
+    lookback_start_date: date | None = None
+    baseline_start_date: date | None = None
+    baseline_end_date: date | None = None
+    run_scope: dict[str, Any] = Field(default_factory=dict)
 
 
 class DetectorRunResponse(ApiModel):
@@ -204,3 +222,48 @@ class DetectorRunResponse(ApiModel):
     detector_results: list[DetectorRunResult] = Field(default_factory=list)
     warning_summary: dict[str, int] = Field(default_factory=dict)
     debug: dict[str, Any] = Field(default_factory=dict)
+
+
+class DetectorRuntimeConfig(ApiModel):
+    detector_id: str
+    category: str
+    enabled: bool = True
+    mode: Literal["rule", "auto_baseline", "rule_first", "ml_first", "dl_first"] = "rule"
+    params: dict[str, Any] = Field(default_factory=dict)
+    scope_type: str = "global"
+    scope_value: str | None = None
+    updated_by: str | None = None
+    updated_at: str | None = None
+
+
+class DetectorRuntimeConfigPatch(ApiModel):
+    enabled: bool | None = None
+    mode: Literal["rule", "auto_baseline", "rule_first", "ml_first", "dl_first"] | None = None
+    params: dict[str, Any] | None = None
+    scope_type: str | None = None
+    scope_value: str | None = None
+    updated_by: str | None = None
+
+
+class DetectorConfigResponse(ApiModel):
+    configs: list[DetectorRuntimeConfig]
+    warning_summary: dict[str, int] = Field(default_factory=dict)
+
+
+class OptionItem(ApiModel):
+    code: str | None = None
+    name: str
+
+
+class DetectorCategoryOption(ApiModel):
+    category_id: str
+    category_name: str
+    detector_count: int
+
+
+class DetectorOption(ApiModel):
+    detector_id: str
+    name_zh: str
+    enabled: bool
+    mode: str
+    implemented: bool

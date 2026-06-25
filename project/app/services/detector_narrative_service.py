@@ -125,6 +125,59 @@ class DetectorNarrativeService:
             f"采购频次出现异常波动，当前倍数或变化比例为 {metrics.get('fluctuation_ratio')}。"
             "建议结合终端丢失、新进和季节性需求一起核实。"
         )
+    @staticmethod
+    def _low_price(hit: bool, metrics: dict[str, Any]) -> str:
+        if not hit:
+            return "该规则未命中或证据不足：rule 模式缺少客户预警价时不会编造预警价。"
+        if metrics.get("auto_baseline") is not None:
+            return (
+                f"该订单单位可比价 {metrics.get('comparable_unit_price')} 低于自动基线阈值 "
+                f"{metrics.get('auto_baseline_threshold')}。该阈值仅用于算法验证，不是客户配置预警价。"
+            )
+        return (
+            f"该订单单位可比价 {metrics.get('comparable_unit_price')} 低于预警价 "
+            f"{metrics.get('warning_price')}，降幅约 {_pct(metrics.get('price_discount_ratio'))}。"
+        )
+
+    @staticmethod
+    def _quantity_fluctuation(hit: bool, metrics: dict[str, Any]) -> str:
+        if not hit:
+            return "该规则未命中：当前窗口与上一窗口未出现超过阈值的采购量突增或下降。"
+        drop_rate = metrics.get("drop_rate")
+        if drop_rate is not None and drop_rate >= metrics.get("drop_rate_threshold", 1):
+            return (
+                f"采购量下降：当前窗口采购量 {metrics.get('current_qty')}，上一窗口 {metrics.get('previous_qty')}，"
+                f"下降比例 {_pct(drop_rate)}。"
+            )
+        if metrics.get("previous_qty") == 0 and metrics.get("current_qty", 0) > 0:
+            return (
+                f"采购量突增：当前窗口采购量 {metrics.get('current_qty')}，上一窗口为 0，"
+                "无法计算稳定倍数，仅作为低置信观察。"
+            )
+        return (
+            f"采购量突增：当前窗口采购量 {metrics.get('current_qty')}，上一窗口 {metrics.get('previous_qty')}，"
+            f"倍数为 {metrics.get('current_vs_previous_ratio')}。"
+        )
+
+    @staticmethod
+    def _frequency_fluctuation(hit: bool, metrics: dict[str, Any]) -> str:
+        if not hit:
+            return "该规则未命中：当前窗口与上一窗口未出现超过阈值的采购频次突增或下降。"
+        drop_rate = metrics.get("drop_rate")
+        if drop_rate is not None and drop_rate >= metrics.get("drop_rate_threshold", 1):
+            return (
+                f"采购频次下降：当前窗口采购次数 {metrics.get('current_freq_count')}，上一窗口 {metrics.get('previous_freq_count')}，"
+                f"下降比例 {_pct(drop_rate)}。"
+            )
+        if metrics.get("previous_freq_count") == 0 and metrics.get("current_freq_count", 0) > 0:
+            return (
+                f"采购频次突增：当前窗口采购次数 {metrics.get('current_freq_count')}，上一窗口为 0，"
+                "无法计算稳定倍数，仅作为低置信观察。"
+            )
+        return (
+            f"采购频次突增：当前窗口采购次数 {metrics.get('current_freq_count')}，上一窗口 {metrics.get('previous_freq_count')}，"
+            f"倍数为 {metrics.get('current_vs_previous_ratio')}。"
+        )
 
 
 def _pct(value: Any) -> str:

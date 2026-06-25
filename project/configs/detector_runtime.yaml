@@ -1,0 +1,71 @@
+low_price_warning:
+  enabled: true
+  mode: rule
+  params:
+    warning_price: null
+    auto_baseline_method: mean_factor
+    auto_baseline_factor: 0.9
+    auto_baseline_quantile: 0.1
+  scope_type: global
+  scope_value: null
+price_spread_warning:
+  enabled: true
+  mode: rule
+  params:
+    spread_ratio_threshold: 1.8
+  scope_type: global
+  scope_value: null
+delivery_rejection_warning:
+  enabled: true
+  mode: rule
+  params:
+    status_keywords: ["拒绝", "退货", "无法配送", "缺货", "驳回", "拒收", "撤单"]
+  scope_type: global
+  scope_value: null
+delivery_delay_warning:
+  enabled: true
+  mode: rule
+  params:
+    delay_hours_threshold: 48
+  scope_type: global
+  scope_value: null
+low_delivery_rate_warning:
+  enabled: true
+  mode: rule
+  params:
+    delivery_rate_threshold: 0.8
+    province_thresholds: {}
+  scope_type: global
+  scope_value: null
+terminal_lost_warning:
+  enabled: true
+  mode: auto_baseline
+  params:
+    inactive_days_multiplier: 1.5
+    min_history_orders: 2
+  scope_type: global
+  scope_value: null
+new_terminal_warning:
+  enabled: true
+  mode: rule
+  params:
+    new_terminal_min_qty: 1
+    comeback_days: 180
+  scope_type: global
+  scope_value: null
+purchase_quantity_fluctuation_warning:
+  enabled: true
+  mode: auto_baseline
+  params:
+    spike_ratio_threshold: 3.0
+    drop_rate_threshold: 0.5
+  scope_type: global
+  scope_value: null
+purchase_frequency_fluctuation_warning:
+  enabled: true
+  mode: auto_baseline
+  params:
+    spike_ratio_threshold: 2.0
+    drop_rate_threshold: 0.5
+  scope_type: global
+  scope_value: null

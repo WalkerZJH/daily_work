@@ -17,3 +17,12 @@
 - 当前真实库接入只做小窗口 smoke test 和人工触发验证；不得默认全量读取、全量训练、自动调度、自动重训或自动切换 active model。
 - 对外服务语义逐步收束为 `supply_chain_order_risk_algo_backend`；代码内如仍出现 `terminal_guard_algo_backend`，视为 legacy name，除非专门做兼容迁移，不应继续扩展旧命名。
 - Health 页面 detector 推理只用于验证链路是否可运行；需求 detector 使用 `*_warning` 对外口径，内部 detector 只能作为支撑、reserved 或 interface_only，不得扩展成正式产品功能。
+# 当前收束约束
+
+- Health 页面是日报式算法探查页，不是工单页、派单页或正式业务闭环。
+- Detector 阈值必须通过 `DetectorRuntimeConfig` / `/api/v0/detectors/config` 读取，不得在前端硬编码。
+- `auto_baseline` 只用于测试和算法验证，不能冒充客户配置阈值。
+- `ml_first` 和 `dl_first` 目前只预留接口；未实现时必须返回 warning 并 fallback。
+- sales_fluctuation 必须区分 `current_vs_previous_ratio` 和 `drop_rate`，不得把 `0/previous` 叙述成“变化比例为 0 因此异常”。
+- 前端企业、省份、产品线必须通过 options API 下拉选择，不让用户手输 code。
+- P_alive smoke/predict 输出表示 `as_of_date` 下每个 `org_code × product_line_code` 的 alive 候选状态；未校准前不得解释为真实概率。

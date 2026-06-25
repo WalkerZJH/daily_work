@@ -14,6 +14,8 @@ class BackboneModel(BaseModel):
 
 class BackbonePredictRequest(DataSourceRequest):
     as_of_date: date
+    history_start_date: date | None = None
+    product_line_code: str | None = None
 
 
 class BackbonePrediction(BackboneModel):
@@ -23,6 +25,8 @@ class BackbonePrediction(BackboneModel):
     product_line_code: str
     product_line_name: str | None = None
     as_of_date: date
+    last_purchase_date: date | None = None
+    days_since_last_purchase: float | None = None
     selected_model_name: str | None = None
     model_name: str
     model_version: str

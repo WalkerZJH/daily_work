@@ -89,3 +89,6 @@ artifacts/models/palive_lgbm/{timestamp}/
 `model_card.json` 必须说明分析单元、标签定义、预测窗口、训练/验证时间范围、模型类型、特征 schema 版本和限制。当前所有模型均为实验候选，不是生产校准概率。
 
 当前 `model_card.json` 至少包含 `model_name`、`model_version`、`analysis_unit`、`label_definition`、`horizon_days`、`train_start`、`train_end`、`validation_start`、`validation_end`、`model_type`、`feature_schema_version` 和 `limitations`。
+# 当前训练边界
+
+模型训练仍处于算法验证阶段。`palive_lgbm`、BG/NBD candidate、interval proxy 都是候选主干，不是已校准生产概率。Health 页面和 detector 日报接口优先验证真实数据库数据链路、传统规则/统计 detector 和 P_alive fallback 是否可运行；不做正式工单、自动派单、自动重训或自动切换 active model。

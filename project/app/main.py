@@ -13,6 +13,7 @@ from app.api.routes_detectors import router as detectors_router
 from app.api.routes_debug import router as debug_router
 from app.api.routes_health import router as health_router
 from app.api.routes_inspection import router as inspection_router
+from app.api.routes_options import router as options_router
 from app.api.routes_smoke_test import router as smoke_test_router
 from app.api.routes_training import router as training_router
 from app.api.routes_users import router as users_router
@@ -74,3 +75,4 @@ app.include_router(training_router)
 app.include_router(smoke_test_router)
 app.include_router(backtest_router)
 app.include_router(config_router)
+app.include_router(options_router)

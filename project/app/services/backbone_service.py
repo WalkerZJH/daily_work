@@ -24,6 +24,14 @@ class BackboneService:
     def predict(self, request: BackbonePredictRequest) -> list[BackbonePrediction]:
         bundle = FeatureService(self.config).load_dataset(request, request.as_of_date)
         orders = prepare_canonical_orders(bundle)
+        if "order_time" in orders.columns:
+            orders["order_time"] = pd.to_datetime(orders["order_time"], errors="coerce")
+            orders = orders[orders["order_time"].notna()]
+            orders = orders[orders["order_time"].dt.date <= request.as_of_date]
+        if request.history_start_date is not None and "order_time" in orders.columns:
+            orders = orders[orders["order_time"].dt.date >= request.history_start_date]
+        if request.product_line_code and "product_line_code" in orders.columns:
+            orders = orders[orders["product_line_code"].astype(str) == str(request.product_line_code)]
         return self.predict_on_orders(orders, request.as_of_date)
 
     def predict_on_orders(self, orders: pd.DataFrame, as_of_date: date) -> list[BackbonePrediction]:
@@ -51,6 +59,10 @@ class BackboneService:
                     product_line_code=str(row["product_line_code"]),
                     product_line_name=_none_or_str(row.get("product_line_name")),
                     as_of_date=as_of_date,
+                    last_purchase_date=_feature_last_purchase_date(feature_lookup.get(unit_id, {}), as_of_date),
+                    days_since_last_purchase=_none_or_float(row.get("days_since_last_purchase"))
+                    if _none_or_float(row.get("days_since_last_purchase")) is not None
+                    else _none_or_float(feature_lookup.get(unit_id, {}).get("days_since_last_purchase")),
                     selected_model_name=_none_or_str(row.get("selected_model_name")) or load_result.predictor.model_name,
                     model_name=load_result.predictor.model_name,
                     model_version=load_result.predictor.model_version,
@@ -94,3 +106,11 @@ def _dict_or_default(value, features: dict | None) -> dict:
         "median_interval_days": features.get("median_interval_days"),
         "demand_profile": features.get("demand_profile"),
     }
+
+
+def _feature_last_purchase_date(features: dict | None, as_of_date: date) -> date | None:
+    features = features or {}
+    days_since = _none_or_float(features.get("days_since_last_purchase"))
+    if days_since is None:
+        return None
+    return (pd.Timestamp(as_of_date) - pd.Timedelta(days=int(days_since))).date()
