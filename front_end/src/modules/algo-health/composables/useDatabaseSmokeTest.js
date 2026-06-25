@@ -16,7 +16,7 @@ export function useDatabaseSmokeTest() {
   const form = reactive({
     as_of_date: todayText(),
     days: 14,
-    row_limit: 5000,
+    row_limit: 500,
     enterprise_code: '',
     province: '',
     province_code: '',

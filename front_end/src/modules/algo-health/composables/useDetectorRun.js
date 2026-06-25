@@ -18,7 +18,7 @@ export function useDetectorRun(sharedApiBase) {
     dataset_name: 'sample',
     as_of_date: todayText(),
     days: 14,
-    row_limit: 5000,
+    row_limit: 500,
     category: '',
     enabled_detector: '',
     enterprise_code: '',

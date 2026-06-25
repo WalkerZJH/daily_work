@@ -1,4 +1,5 @@
-const DEFAULT_TIMEOUT_MS = 12000
+const DEFAULT_TIMEOUT_MS = 30000
+const DATABASE_REQUEST_TIMEOUT_MS = 120000
 
 export class BackendApi {
   constructor(baseUrl) {
@@ -38,7 +39,9 @@ export class BackendApi {
   }
 
   async runDetectors(payload) {
-    return postJson(this.baseUrl, '/api/v0/detectors/run', payload)
+    return postJson(this.baseUrl, '/api/v0/detectors/run', payload, undefined, {
+      timeoutMs: payload?.source_type === 'database' ? DATABASE_REQUEST_TIMEOUT_MS : DEFAULT_TIMEOUT_MS
+    })
   }
 
   async featureSnapshot({ datasetName, asOfDate, orgCode, analysisGrain, targetCode }) {
@@ -88,23 +91,29 @@ export class BackendApi {
   }
 
   async runDatabaseSmokeTest(payload) {
-    return postJson(this.baseUrl, '/api/v0/smoke-test/database', payload)
+    return postJson(this.baseUrl, '/api/v0/smoke-test/database', payload, undefined, {
+      timeoutMs: DATABASE_REQUEST_TIMEOUT_MS
+    })
   }
 
   async checkDatabaseFreshness(payload) {
-    return postJson(this.baseUrl, '/api/v0/smoke-test/freshness', payload)
+    return postJson(this.baseUrl, '/api/v0/smoke-test/freshness', payload, undefined, {
+      timeoutMs: 60000
+    })
   }
 
   async predictBackbone(payload) {
-    return postJson(this.baseUrl, '/api/v0/backbone/predict', payload)
+    return postJson(this.baseUrl, '/api/v0/backbone/predict', payload, undefined, {
+      timeoutMs: payload?.source_type === 'database' ? DATABASE_REQUEST_TIMEOUT_MS : DEFAULT_TIMEOUT_MS
+    })
   }
 }
 
 export async function requestJson(baseUrl, path, options = {}) {
   const controller = new AbortController()
   const timeout = window.setTimeout(() => controller.abort(), options.timeoutMs || DEFAULT_TIMEOUT_MS)
+  const url = buildUrl(baseUrl, path, options.query)
   try {
-    const url = buildUrl(baseUrl, path, options.query)
     const response = await fetch(url, {
       method: options.method || 'GET',
       headers: options.body === undefined ? undefined : { 'Content-Type': 'application/json' },
@@ -117,6 +126,11 @@ export async function requestJson(baseUrl, path, options = {}) {
       throw new Error(payload?.detail || response.statusText || `HTTP ${response.status}`)
     }
     return payload
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error(`请求超时：${url} 超过 ${(options.timeoutMs || DEFAULT_TIMEOUT_MS) / 1000} 秒未返回。database 模式会读取真实库，请降低 row_limit 或缩短日期窗口后重试。`)
+    }
+    throw error
   } finally {
     window.clearTimeout(timeout)
   }
@@ -126,8 +140,8 @@ export function getJson(baseUrl, path, query) {
   return requestJson(baseUrl, path, { method: 'GET', query })
 }
 
-export function postJson(baseUrl, path, body, query) {
-  return requestJson(baseUrl, path, { method: 'POST', body, query })
+export function postJson(baseUrl, path, body, query, options = {}) {
+  return requestJson(baseUrl, path, { method: 'POST', body, query, ...options })
 }
 
 export function normalizeBaseUrl(baseUrl) {
