@@ -7,6 +7,7 @@ from alg.cleaning.bs_agent_dingdan import (
     map_status_lifecycle_value,
     order_status_lifecycle_map_dataframe,
 )
+import alg.cleaning.bs_agent_dingdan_pipeline as pipeline_module
 from alg.cleaning.bs_agent_dingdan_pipeline import run_bs_agent_dingdan_cleaning_pipeline
 
 
@@ -98,6 +99,12 @@ def _write_raw(tmp_path: Path) -> Path:
     return raw_path
 
 
+def _write_small_raw(tmp_path: Path) -> Path:
+    raw_path = tmp_path / "raw.parquet"
+    _raw_sample().head(1).to_parquet(raw_path, index=False)
+    return raw_path
+
+
 def test_pipeline_function_importable():
     assert callable(run_bs_agent_dingdan_cleaning_pipeline)
 
@@ -107,6 +114,7 @@ def test_pipeline_default_writes_model_and_report_only(tmp_path):
     result = run_bs_agent_dingdan_cleaning_pipeline(
         raw_cache_path=raw_path,
         output_dir=tmp_path / "exports",
+        max_rows=2,
     )
     paths = result["output_paths"]
     expected_model_path = MODEL_BASE_PATH
@@ -118,11 +126,80 @@ def test_pipeline_default_writes_model_and_report_only(tmp_path):
     assert "audit_sample" not in paths["review_outputs"]
 
 
+def test_pipeline_reuse_if_enough_refreshes_small_cache(tmp_path, monkeypatch):
+    raw_path = _write_small_raw(tmp_path)
+
+    def fake_read_sql(**kwargs):
+        return _raw_sample()
+
+    monkeypatch.setattr(pipeline_module, "_read_sql_projected", fake_read_sql)
+    result = run_bs_agent_dingdan_cleaning_pipeline(
+        raw_cache_path=raw_path,
+        output_dir=tmp_path / "exports",
+        max_rows=2,
+        cache_policy="reuse_if_enough",
+    )
+    assert result["row_count"] == 2
+    metadata = pipeline_module._read_cache_meta(raw_path)
+    assert metadata["row_count"] == 2
+    assert metadata["max_rows"] == 2
+
+
+def test_pipeline_always_reuse_cache_even_when_smaller_than_max_rows(tmp_path, monkeypatch):
+    raw_path = _write_small_raw(tmp_path)
+
+    def fail_if_sql_called(**kwargs):
+        raise AssertionError("SQL should not be called when cache_policy=always_reuse")
+
+    monkeypatch.setattr(pipeline_module, "_read_sql_projected", fail_if_sql_called)
+    result = run_bs_agent_dingdan_cleaning_pipeline(
+        raw_cache_path=raw_path,
+        output_dir=tmp_path / "exports",
+        max_rows=2,
+        cache_policy="always_reuse",
+    )
+    assert result["row_count"] == 1
+
+
+def test_pipeline_no_use_cache_forces_sql_read(tmp_path, monkeypatch):
+    raw_path = _write_small_raw(tmp_path)
+
+    def fake_read_sql(**kwargs):
+        return _raw_sample()
+
+    monkeypatch.setattr(pipeline_module, "_read_sql_projected", fake_read_sql)
+    result = run_bs_agent_dingdan_cleaning_pipeline(
+        raw_cache_path=raw_path,
+        output_dir=tmp_path / "exports",
+        max_rows=1,
+        use_cache=False,
+    )
+    assert result["row_count"] == 2
+
+
+def test_pipeline_refresh_cache_overrides_reuse(tmp_path, monkeypatch):
+    raw_path = _write_raw(tmp_path)
+
+    def fake_read_sql(**kwargs):
+        return _raw_sample().head(1)
+
+    monkeypatch.setattr(pipeline_module, "_read_sql_projected", fake_read_sql)
+    result = run_bs_agent_dingdan_cleaning_pipeline(
+        raw_cache_path=raw_path,
+        output_dir=tmp_path / "exports",
+        max_rows=2,
+        refresh_cache=True,
+    )
+    assert result["row_count"] == 1
+    assert result["cache_policy"] == "refresh"
+
+
 def test_pipeline_optional_clean_and_audit_outputs(tmp_path):
     raw_path = _write_raw(tmp_path)
     result = run_bs_agent_dingdan_cleaning_pipeline(
         raw_cache_path=raw_path,
         output_dir=tmp_path / "exports",
+        max_rows=2,
         generate_clean=True,
         generate_audit=True,
     )
@@ -138,6 +215,7 @@ def test_pipeline_model_and_audit_columns(tmp_path):
     result = run_bs_agent_dingdan_cleaning_pipeline(
         raw_cache_path=raw_path,
         output_dir=tmp_path / "exports",
+        max_rows=2,
         generate_audit=True,
     )
     model = pd.read_parquet(result["output_paths"]["model_base"]["parquet"])
@@ -186,6 +264,7 @@ def test_numeric_report_has_no_unit_price_or_purchase_price_consistency(tmp_path
     result = run_bs_agent_dingdan_cleaning_pipeline(
         raw_cache_path=raw_path,
         output_dir=tmp_path / "exports",
+        max_rows=2,
     )
     report = Path(result["output_paths"]["review_outputs"]["numeric_desensitization_report_v2"]).read_text(
         encoding="utf-8-sig"

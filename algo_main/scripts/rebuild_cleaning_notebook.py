@@ -33,6 +33,12 @@ def build_notebook() -> dict:
         "`alg.cleaning.bs_agent_dingdan_pipeline.run_bs_agent_dingdan_cleaning_pipeline`。\n\n"
         "notebook 不再维护独立清洗逻辑。",
     )
+    md(
+        cells,
+        "## 0. 字段字典\n\n"
+        "字段解释请查看 `docs/data_dictionary/BS_Agent_DingDan_v2_outputs.md`。"
+        "本 notebook 只展示 pipeline 结果，不维护独立字段口径。",
+    )
     md(cells, "## 1. 环境与路径配置")
     code(
         cells,
@@ -142,7 +148,13 @@ display(clean_v2["needs_manual_review"].value_counts(dropna=False))
 display(pd.read_csv(PROJECT_ROOT / "exports/eda/order_status_mapping_coverage.csv"))
 display(pd.read_csv(PROJECT_ROOT / "exports/eda/order_status_suspicious_mapping.csv"))''',
     )
-    md(cells, "## 7. 药品编码与地区检查")
+    md(
+        cells,
+        "## 7. 药品编码与地区检查\n\n"
+        "- `drug_code_match_flag`: 行级一致性检查，表示当前行 `drug_code` 是否等于当前行 `insurance_drug_code`。\n"
+        "- `drug_code_conflict_flag`: 编码级冲突检查，表示同一 `drug_code` 是否对应多个不同 `insurance_drug_code`。\n"
+        "- `region_dirty_flag`: 地区质量控制字段，表示原始 `raw_city_code` 与由 `county_code` 派生的 `city_code` 是否冲突。",
+    )
     code(
         cells,
         '''display(audit["drug_code_match_flag"].value_counts(dropna=False))
@@ -190,7 +202,7 @@ print(quality_report_path.read_text(encoding="utf-8")[:3000])''',
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
     output = root / "notebooks/01_BS_Agent_DingDan_EDA_and_Cleaning.ipynb"
-    output.write_text(json.dumps(build_notebook(), ensure_ascii=True, indent=1), encoding="utf-8")
+    output.write_text(json.dumps(build_notebook(), ensure_ascii=False, indent=1), encoding="utf-8")
     print(output)
 
 

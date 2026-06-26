@@ -11,6 +11,7 @@ def test_cleaning_asset_files_exist():
     expected = [
         "notebooks/01_BS_Agent_DingDan_EDA_and_Cleaning.ipynb",
         "docs/data_dictionary/BS_Agent_DingDan字段说明.md",
+        "docs/data_dictionary/BS_Agent_DingDan_v2_outputs.md",
         "configs/data_schema/bs_agent_dingdan_schema.yaml",
         "configs/mappings/order_status_map.yaml",
         "configs/mappings/order_status_lifecycle_map.yaml",
@@ -70,6 +71,7 @@ def test_notebook_contains_required_sections_and_modes():
     notebook = json.loads((ROOT / "notebooks/01_BS_Agent_DingDan_EDA_and_Cleaning.ipynb").read_text(encoding="utf-8"))
     text = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
     for section in [
+        "## 0. 字段字典",
         "## 1. 环境与路径配置",
         "## 2. 运行 pipeline",
         "## 3. 展示三张核心表",
@@ -87,6 +89,48 @@ def test_notebook_contains_required_sections_and_modes():
     assert "delivery_rate" in text
     assert "arrival_rate" in text
     assert "run_bs_agent_dingdan_cleaning_pipeline" in text
+    assert "docs/data_dictionary/BS_Agent_DingDan_v2_outputs.md" in text
+    assert "行级一致性检查" in text
+    assert "编码级冲突检查" in text
+    assert "地区质量控制字段" in text
+
+
+def test_v2_output_data_dictionary_documents_key_fields():
+    text = (ROOT / "docs/data_dictionary/BS_Agent_DingDan_v2_outputs.md").read_text(encoding="utf-8")
+    for field in [
+        "drug_code_match_flag",
+        "drug_code_conflict_flag",
+        "region_dirty_flag",
+        "order_phase_code",
+        "delivery_state_code",
+        "order_terminal_flag",
+        "order_failure_flag",
+        "needs_manual_review",
+        "mapping_failure_reason",
+        "delivery_rate",
+        "arrival_rate",
+        "overall_arrival_rate",
+    ]:
+        assert field in text
+    for phrase in [
+        "drug_code_match_flag 是行级一致性检查",
+        "drug_code_conflict_flag 是同一 drug_code 对应多个 insurance_drug_code 的编码级冲突检查",
+        "model_base 不是最终 X_train",
+        "row_uid/order_detail_id 是追溯键，不直接进入 X",
+        "purchase_time 是时间索引",
+        "region_dirty_flag 是质量控制字段",
+        "状态语义字段可能造成标签泄漏",
+        "delivery_rate/arrival_rate/overall_arrival_rate 是数量比例，不是配送时长",
+        "禁止用金额/数量推断真实单价",
+    ]:
+        assert phrase in text
+
+
+def test_readme_links_v2_output_data_dictionary():
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "docs/data_dictionary/BS_Agent_DingDan_v2_outputs.md" in text
+    assert "model_base" in text
+    assert "X_train" in text
 
 
 def test_notebook_is_orchestration_only():

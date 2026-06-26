@@ -8,7 +8,9 @@ a model-ready base table plus optional clean/audit samples and quality reports.
 from __future__ import annotations
 
 import argparse
+import json
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -42,6 +44,8 @@ MODEL_FORBIDDEN_TEXT_COLUMNS = {
     "ownership_type_raw",
     "drug_category_raw",
 }
+
+CACHE_POLICIES = {"reuse_if_enough", "always_reuse", "refresh"}
 
 
 def _project_root() -> Path:
@@ -88,15 +92,67 @@ def _read_raw_cache(path: Path) -> pd.DataFrame:
     raise ValueError(f"Unsupported raw cache format: {path.suffix}")
 
 
-def _write_raw_cache(df: pd.DataFrame, path: Path) -> None:
+def _cache_meta_path(path: Path) -> Path:
+    return path.with_suffix(".meta.json")
+
+
+def _read_cache_meta(path: Path) -> dict[str, Any]:
+    meta_path = _cache_meta_path(path)
+    if not meta_path.exists():
+        return {}
+    try:
+        return json.loads(meta_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+
+
+def _cache_row_count(path: Path) -> int | None:
+    metadata = _read_cache_meta(path)
+    if isinstance(metadata.get("row_count"), int):
+        return metadata["row_count"]
+    if not path.exists():
+        return None
+    if path.suffix.lower() == ".parquet":
+        try:
+            import pyarrow.parquet as pq
+
+            return int(pq.ParquetFile(path).metadata.num_rows)
+        except Exception:
+            return int(len(pd.read_parquet(path)))
+    if path.suffix.lower() == ".csv":
+        return int(len(pd.read_csv(path, usecols=[0])))
+    return None
+
+
+def _write_raw_cache(
+    df: pd.DataFrame,
+    path: Path,
+    table_name: str,
+    raw_columns: list[str],
+    max_rows: int | None,
+    sample_mode: bool,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.suffix.lower() == ".parquet":
         df.to_parquet(path, index=False)
-        return
-    if path.suffix.lower() == ".csv":
+    elif path.suffix.lower() == ".csv":
         df.to_csv(path, index=False, encoding="utf-8-sig")
-        return
-    raise ValueError(f"Unsupported raw cache format: {path.suffix}")
+    else:
+        raise ValueError(f"Unsupported raw cache format: {path.suffix}")
+    metadata = {
+        "table_name": table_name,
+        "row_count": int(len(df)),
+        "column_count": int(df.shape[1]),
+        "raw_columns": raw_columns,
+        "max_rows": max_rows,
+        "sample_mode": sample_mode,
+        "cache_path": str(path),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    _cache_meta_path(path).write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
 
 def _read_sql_projected(
@@ -134,9 +190,20 @@ def _load_raw_dataframe(
     sample_mode: bool,
     chunksize: int,
     write_outputs: bool,
+    use_cache: bool,
+    cache_policy: str,
 ) -> pd.DataFrame:
-    if raw_cache_path.exists():
-        return _read_raw_cache(raw_cache_path)
+    if cache_policy not in CACHE_POLICIES:
+        raise ValueError(f"cache_policy must be one of: {sorted(CACHE_POLICIES)}")
+    effective_max_rows = max_rows
+    if sample_mode and effective_max_rows is None:
+        effective_max_rows = 5000
+    if use_cache and cache_policy != "refresh" and raw_cache_path.exists():
+        if cache_policy == "always_reuse":
+            return _read_raw_cache(raw_cache_path)
+        cached_rows = _cache_row_count(raw_cache_path)
+        if effective_max_rows is None or (cached_rows is not None and cached_rows >= effective_max_rows):
+            return _read_raw_cache(raw_cache_path)
     df = _read_sql_projected(
         sql_database_url=sql_database_url,
         engine=engine,
@@ -146,8 +213,15 @@ def _load_raw_dataframe(
         sample_mode=sample_mode,
         chunksize=chunksize,
     )
-    if write_outputs and raw_cache_path.suffix.lower() == ".parquet":
-        _write_raw_cache(df, raw_cache_path)
+    if write_outputs:
+        _write_raw_cache(
+            df,
+            raw_cache_path,
+            table_name=table_name,
+            raw_columns=raw_columns,
+            max_rows=effective_max_rows,
+            sample_mode=sample_mode,
+        )
     return df
 
 
@@ -309,6 +383,9 @@ def run_bs_agent_dingdan_cleaning_pipeline(
     write_outputs: bool = True,
     return_dataframes: bool = False,
     use_polars: bool = True,
+    refresh_cache: bool = False,
+    use_cache: bool = True,
+    cache_policy: str = "reuse_if_enough",
 ) -> dict:
     """Run the frozen BS_Agent_DingDan v2 cleaning pipeline.
 
@@ -319,6 +396,10 @@ def run_bs_agent_dingdan_cleaning_pipeline(
 
     if output_format not in {"parquet", "csv", "both"}:
         raise ValueError("output_format must be one of: parquet, csv, both")
+    if cache_policy not in CACHE_POLICIES:
+        raise ValueError(f"cache_policy must be one of: {sorted(CACHE_POLICIES)}")
+    if refresh_cache:
+        cache_policy = "refresh"
     if output_format in {"csv", "both"} and not sample_mode:
         raise ValueError("CSV output is only allowed in sample/debug mode.")
     project_root = _project_root()
@@ -343,6 +424,8 @@ def run_bs_agent_dingdan_cleaning_pipeline(
         sample_mode=sample_mode,
         chunksize=chunksize,
         write_outputs=write_outputs,
+        use_cache=use_cache,
+        cache_policy=cache_policy,
     )
     clean_v2, model_base, audit = build_clean_model_audit_v2(
         df_raw,
@@ -399,6 +482,10 @@ def run_bs_agent_dingdan_cleaning_pipeline(
         "output_paths": output_paths,
         "sample_mode": sample_mode,
         "output_format": output_format,
+        "cache_policy": cache_policy,
+        "use_cache": use_cache,
+        "raw_cache_path": str(paths.raw_parquet_path),
+        "raw_cache_meta_path": str(_cache_meta_path(paths.raw_parquet_path)),
         "used_polars": False,
     }
     if return_dataframes:
@@ -413,6 +500,14 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--table", default="BS_Agent_DingDan")
     parser.add_argument("--output-dir", default="exports")
     parser.add_argument("--raw-cache-path", default=None)
+    parser.add_argument("--refresh-cache", action="store_true", help="Force SQL read and overwrite raw cache.")
+    parser.add_argument("--use-cache", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument(
+        "--cache-policy",
+        choices=sorted(CACHE_POLICIES),
+        default="reuse_if_enough",
+        help="Raw cache reuse policy.",
+    )
     parser.add_argument("--output-format", choices=["parquet", "csv", "both"], default="parquet")
     parser.add_argument("--max-rows", type=int, default=None)
     parser.add_argument("--chunksize", type=int, default=100_000)
@@ -442,6 +537,9 @@ def main(argv: list[str] | None = None) -> int:
         generate_clean=args.generate_clean,
         generate_audit=args.generate_audit,
         generate_quality_report=args.generate_quality_report,
+        refresh_cache=args.refresh_cache,
+        use_cache=args.use_cache,
+        cache_policy=args.cache_policy,
     )
     for key, value in result["output_paths"].items():
         if isinstance(value, dict):

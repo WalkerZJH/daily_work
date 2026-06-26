@@ -81,7 +81,8 @@ jupyter lab
 第一阶段聚焦 `BS_Agent_DingDan` 字段理解、EDA、初步清洗和清洗规则沉淀：
 
 - Notebook: `notebooks/01_BS_Agent_DingDan_EDA_and_Cleaning.ipynb`
-- 字段字典: `docs/data_dictionary/BS_Agent_DingDan字段说明.md`
+- 原始字段字典: `docs/data_dictionary/BS_Agent_DingDan字段说明.md`
+- v2 输出字段字典: `docs/data_dictionary/BS_Agent_DingDan_v2_outputs.md`
 - 机器 schema: `configs/data_schema/bs_agent_dingdan_schema.yaml`
 - 映射配置: `configs/mappings/*.yaml`
 - EDA/review 输出: `exports/eda/`、`exports/mappings/`
@@ -110,13 +111,23 @@ python -m alg.cleaning.bs_agent_dingdan_pipeline \
 
 Notebook `notebooks/01_BS_Agent_DingDan_EDA_and_Cleaning.ipynb` 只用于复核和汇报展示；
 它调用同一个 pipeline 入口，不维护第二套清洗逻辑。
+clean/audit/review 输出字段语义以 `docs/data_dictionary/BS_Agent_DingDan_v2_outputs.md` 为准。
 
 默认行为只生成 `data/03_cleaned/bs_agent_dingdan_model_base.parquet` 和
 `exports/eda/bs_agent_dingdan_quality_report_v2.md`，不生成 clean/audit CSV。
 如果已通过 editable install 安装本包，则不需要手动设置 `PYTHONPATH`。
 `clean_sample_v2` 与 `audit_sample` 仅用于 sample/debug 和人工复核。
 
-`model_base` 是统一稳定输入，不是最终 `X_train`：
+Raw cache 默认使用 `data/01_raw/BS_Agent_DingDan.parquet`，并写入同名元数据
+`data/01_raw/BS_Agent_DingDan.meta.json`。默认缓存策略为
+`--cache-policy reuse_if_enough`：当缓存行数大于等于 `max_rows` 时复用，否则回源 SQL
+并覆盖缓存。可用参数：
+
+- `--cache-policy always_reuse`：只要缓存存在就复用。
+- `--cache-policy refresh` 或 `--refresh-cache`：无条件回源 SQL 并覆盖缓存。
+- `--no-use-cache`：不读取缓存，强制回源 SQL。
+
+`model_base` 是统一稳定输入，不是最终 `X_train`；clean/audit/review 输出的字段解释以 v2 输出字段字典为准：
 
 - `row_uid`、`order_detail_id` 是追溯键，不直接进入 X。
 - `purchase_time` 是排序、切分和聚合的时间索引，不应原样当作连续数值特征。
