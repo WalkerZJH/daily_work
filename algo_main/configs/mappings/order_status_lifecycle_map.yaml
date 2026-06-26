@@ -1,0 +1,144 @@
+version: 0.2.0
+description: "BS_Agent_DingDan v2 lifecycle status mapping. This is the frozen mapping used by the cleaning pipeline."
+codes:
+  order_phase_code:
+    0: unknown
+    10: draft_or_plan
+    20: submitted_or_pending
+    30: confirmed
+    40: pending_dispatch
+    50: dispatched
+    60: received
+    70: invoiced_or_paid
+    80: completed
+    90: returned_or_rejected
+    100: cancelled_or_failed
+  delivery_state_code:
+    0: unknown
+    1: ordered_not_confirmed
+    2: confirmed_not_dispatched
+    3: dispatched_not_received
+    4: partially_dispatched
+    5: received
+    6: completed_or_settled
+    7: returned_or_rejected_receipt
+    8: cancelled_or_voided
+    9: delivery_failed
+rules:
+  - label: received
+    keywords: ["已收货", "已入库", "到货确认", "到货", "入库", "全部收货", "医院已入库", "全部收货确认", "医院已收货", "确认收货", "配送完成"]
+    order_phase_code: 60
+    order_phase_label: received
+    delivery_state_code: 5
+    delivery_state_label: received
+    order_terminal_flag: 1
+    order_failure_flag: 0
+    needs_manual_review: false
+  - label: dispatched_not_received
+    keywords: ["全部发货", "已发货", "已配送", "已配送待收货", "已出库", "经销商配送", "已提交已配送", "企业已配送", "已发出", "配送企业已配送"]
+    order_phase_code: 50
+    order_phase_label: dispatched
+    delivery_state_code: 3
+    delivery_state_label: dispatched_not_received
+    order_terminal_flag: 0
+    order_failure_flag: 0
+    needs_manual_review: false
+  - label: submitted_or_pending
+    keywords: ["已提交", "医院已提交", "未确认", "未及时确认", "待响应", "已提交待确认", "待确认", "已下发网采证明"]
+    order_phase_code: 20
+    order_phase_label: submitted_or_pending
+    delivery_state_code: 1
+    delivery_state_label: ordered_not_confirmed
+    order_terminal_flag: 0
+    order_failure_flag: 0
+    needs_manual_review: false
+  - label: partially_dispatched
+    keywords: ["部分发货", "部分配送"]
+    order_phase_code: 50
+    order_phase_label: dispatched
+    delivery_state_code: 4
+    delivery_state_label: partially_dispatched
+    order_terminal_flag: 0
+    order_failure_flag: 0
+    needs_manual_review: false
+  - label: confirmed
+    keywords: ["已确认", "已响应", "配送企业已确认", "投标企业确认"]
+    order_phase_code: 30
+    order_phase_label: confirmed
+    delivery_state_code: 2
+    delivery_state_label: confirmed_not_dispatched
+    order_terminal_flag: 0
+    order_failure_flag: 0
+    needs_manual_review: false
+  - label: pending_dispatch
+    keywords: ["确认配送", "企业确认配送", "待发货", "未确认送货", "已提交待配送", "已提交配送", "提交配送", "已确认待配送"]
+    order_phase_code: 40
+    order_phase_label: pending_dispatch
+    delivery_state_code: 2
+    delivery_state_label: confirmed_not_dispatched
+    order_terminal_flag: 0
+    order_failure_flag: 0
+    needs_manual_review: false
+  - label: draft_or_plan
+    keywords: ["正式计划", "未提交"]
+    order_phase_code: 10
+    order_phase_label: draft_or_plan
+    delivery_state_code: 1
+    delivery_state_label: ordered_not_confirmed
+    order_terminal_flag: 0
+    order_failure_flag: 0
+    needs_manual_review: false
+  - label: invoiced_or_paid
+    keywords: ["已开全部发票", "结算完毕", "已付款"]
+    order_phase_code: 70
+    order_phase_label: invoiced_or_paid
+    delivery_state_code: 6
+    delivery_state_label: completed_or_settled
+    order_terminal_flag: 1
+    order_failure_flag: 0
+    needs_manual_review: false
+  - label: completed
+    keywords: ["成交完成", "已完成"]
+    order_phase_code: 80
+    order_phase_label: completed
+    delivery_state_code: 6
+    delivery_state_label: completed_or_settled
+    order_terminal_flag: 1
+    order_failure_flag: 0
+    needs_manual_review: false
+  - label: returned_or_rejected
+    keywords: ["退货完成", "拒绝收货", "拒收", "退货"]
+    order_phase_code: 90
+    order_phase_label: returned_or_rejected
+    delivery_state_code: 7
+    delivery_state_label: returned_or_rejected_receipt
+    order_terminal_flag: 1
+    order_failure_flag: 1
+    needs_manual_review: false
+  - label: delivery_failed
+    keywords: ["无法配送", "拒绝配送", "企业拒绝配送", "缺货", "未及时配送", "拒绝响应", "拒绝确认"]
+    order_phase_code: 100
+    order_phase_label: cancelled_or_failed
+    delivery_state_code: 9
+    delivery_state_label: delivery_failed
+    order_terminal_flag: 1
+    order_failure_flag: 1
+    needs_manual_review: false
+  - label: cancelled_or_voided
+    keywords: ["撤废", "撤销", "未发货作废", "已撤废", "已撤销", "7天未阅读作废", "撤单", "已撤单", "已作废", "订单到期", "取消采购", "作废", "逾期作废", "失效", "自主撤单"]
+    order_phase_code: 100
+    order_phase_label: cancelled_or_failed
+    delivery_state_code: 8
+    delivery_state_label: cancelled_or_voided
+    order_terminal_flag: 1
+    order_failure_flag: 1
+    needs_manual_review: false
+  - label: unknown_manual_review
+    keywords: ["未作废"]
+    order_phase_code: 0
+    order_phase_label: unknown
+    delivery_state_code: 0
+    delivery_state_label: unknown
+    order_terminal_flag: -1
+    order_failure_flag: -1
+    needs_manual_review: true

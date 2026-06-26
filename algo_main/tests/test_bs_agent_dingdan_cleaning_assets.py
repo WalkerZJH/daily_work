@@ -13,6 +13,7 @@ def test_cleaning_asset_files_exist():
         "docs/data_dictionary/BS_Agent_DingDan字段说明.md",
         "configs/data_schema/bs_agent_dingdan_schema.yaml",
         "configs/mappings/order_status_map.yaml",
+        "configs/mappings/order_status_lifecycle_map.yaml",
         "configs/mappings/hospital_grade_map.yaml",
         "configs/mappings/drug_category_map.yaml",
         "configs/mappings/ownership_map.yaml",
@@ -87,6 +88,8 @@ def test_notebook_contains_required_sections_and_modes():
     assert "arrival_rate" in text
     assert "price_from_amount_quantity" in text
     assert "do not infer real unit price" in text
+    assert "save_v2_outputs(\n    df_raw," in text
+    assert "save_v2_outputs(df_clean" not in text
 
 
 def test_notebook_is_orchestration_only():
@@ -108,6 +111,7 @@ def test_bs_agent_dingdan_cleaning_module_imports():
         "save_basic_profile",
         "analyze_numeric_desensitization",
         "apply_order_status_lifecycle",
+        "build_alias_table_from_raw",
         "build_clean_table",
         "build_clean_model_audit_v2",
         "build_quality_report",

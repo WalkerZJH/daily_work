@@ -141,7 +141,7 @@ df_raw.head()""",
         ("## 11. 所有制形式编码", "ownership_map = build_ownership_map(df_raw, alias_to_raw, paths.export_mappings)\nownership_map.head()"),
         ("## 12. 退回数量与作废数量", "return_void_report = analyze_return_void(df_raw, alias_to_raw, paths.export_eda)\nreturn_void_report"),
         ("## 13. 生成 clean 表", "df_clean = build_clean_table(\n    df_raw,\n    schema=schema,\n    raw_to_alias=raw_to_alias,\n    status_map=status_map,\n    hospital_level_map=hospital_level_map,\n    drug_category_counts=drug_category_counts,\n)\nsave_clean_outputs(df_clean, paths)\ndf_clean.head()"),
-        ("## 14. 生成第二轮 clean/model/audit 样本输出", "df_clean_v2, df_model_sample, df_audit_sample, numeric_report_v2, profile_v2 = save_v2_outputs(df_clean, paths)\ndf_clean_v2.head(), df_model_sample.head(), df_audit_sample.head()"),
+        ("## 14. 生成第二轮 clean/model/audit 样本输出", "df_clean_v2, df_model_sample, df_audit_sample, numeric_report_v2, profile_v2 = save_v2_outputs(\n    df_raw,\n    paths,\n    schema=schema,\n    raw_to_alias=raw_to_alias,\n    hospital_level_map=hospital_level_map,\n    drug_category_counts=drug_category_counts,\n)\ndf_clean_v2.head(), df_model_sample.head(), df_audit_sample.head()"),
         ("## 15. 生成 Markdown 数据质量报告", "quality_report = build_quality_report(\n    schema=schema,\n    basic=basic_summary,\n    status_review=status_review,\n    status_unmapped=status_unmapped,\n    hospital_review=hospital_review,\n    hospital_unmapped=hospital_unmapped,\n)\nreport_path = save_quality_report(quality_report, paths.export_eda)\nprint(report_path)\nprint(quality_report[:1000])\nprint(profile_v2[:1000])"),
     ]
     for title, body in remaining:

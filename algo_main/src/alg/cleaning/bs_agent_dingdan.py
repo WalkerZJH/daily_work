@@ -269,10 +269,6 @@ def save_source_order_profiles(
     return source_top, order_name_top
 
 
-# Backward-compatible name used by the notebook rebuild script.
-save_data_source_and_order_name_profiles = save_source_order_profiles
-
-
 def build_region_mapping(
     df: pd.DataFrame, alias_to_raw: dict[str, str], export_eda: Path, export_mappings: Path
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -483,7 +479,7 @@ def map_status_value(value: Any, status_map: dict[str, Any]) -> pd.Series:
 
 STATUS_LIFECYCLE_GROUPS: list[dict[str, Any]] = [
     {
-        "keywords": ["已收货", "已入库", "到货确认", "到货", "入库", "全部收货", "医院已入库", "全部收货确认", "医院已收货", "确认收货"],
+        "keywords": ["已收货", "已入库", "到货确认", "到货", "入库", "全部收货", "医院已入库", "全部收货确认", "医院已收货", "确认收货", "配送完成"],
         "order_phase_code": 60,
         "order_phase_label": "received",
         "delivery_state_code": 5,
@@ -493,7 +489,7 @@ STATUS_LIFECYCLE_GROUPS: list[dict[str, Any]] = [
         "needs_manual_review": False,
     },
     {
-        "keywords": ["全部发货", "配送完成", "已发货", "已配送", "已配送待收货", "已出库", "经销商配送", "已提交已配送", "企业已配送", "已发出", "配送企业已配送"],
+        "keywords": ["全部发货", "已发货", "已配送", "已配送待收货", "已出库", "经销商配送", "已提交已配送", "企业已配送", "已发出", "配送企业已配送"],
         "order_phase_code": 50,
         "order_phase_label": "dispatched",
         "delivery_state_code": 3,
@@ -533,7 +529,7 @@ STATUS_LIFECYCLE_GROUPS: list[dict[str, Any]] = [
         "needs_manual_review": False,
     },
     {
-        "keywords": ["已提交", "医院已提交", "未确认", "未及时确认", "待响应", "已提交待确认", "待确认"],
+        "keywords": ["已提交", "医院已提交", "未确认", "未及时确认", "待响应", "已提交待确认", "待确认", "已下发网采证明"],
         "order_phase_code": 20,
         "order_phase_label": "submitted_or_pending",
         "delivery_state_code": 1,
@@ -573,7 +569,7 @@ STATUS_LIFECYCLE_GROUPS: list[dict[str, Any]] = [
         "needs_manual_review": False,
     },
     {
-        "keywords": ["退货完成", "拒绝收货"],
+        "keywords": ["退货完成", "拒绝收货", "拒收", "退货"],
         "order_phase_code": 90,
         "order_phase_label": "returned_or_rejected",
         "delivery_state_code": 7,
@@ -593,7 +589,7 @@ STATUS_LIFECYCLE_GROUPS: list[dict[str, Any]] = [
         "needs_manual_review": False,
     },
     {
-        "keywords": ["撤废", "撤销", "未发货作废", "已撤废", "已撤销", "7天未阅读作废", "已撤单", "已作废", "订单到期", "取消采购", "作废", "逾期作废", "失效", "自主撤单"],
+        "keywords": ["撤废", "撤销", "未发货作废", "已撤废", "已撤销", "7天未阅读作废", "撤单", "已撤单", "已作废", "订单到期", "取消采购", "作废", "逾期作废", "失效", "自主撤单"],
         "order_phase_code": 100,
         "order_phase_label": "cancelled_or_failed",
         "delivery_state_code": 8,
@@ -603,7 +599,7 @@ STATUS_LIFECYCLE_GROUPS: list[dict[str, Any]] = [
         "needs_manual_review": False,
     },
     {
-        "keywords": ["未作废", "已下发网采证明"],
+        "keywords": ["未作废"],
         "order_phase_code": 0,
         "order_phase_label": "unknown",
         "delivery_state_code": 0,
@@ -620,9 +616,6 @@ def order_status_lifecycle_map_dataframe() -> pd.DataFrame:
     for group in STATUS_LIFECYCLE_GROUPS:
         for keyword in group["keywords"]:
             row = {k: v for k, v in group.items() if k != "keywords"}
-            if keyword == "配送完成":
-                row["order_terminal_flag"] = -1
-                row["needs_manual_review"] = True
             row["order_status_norm"] = keyword
             rows.append(row)
     mapping = pd.DataFrame(rows)
@@ -730,11 +723,33 @@ def build_order_status_suspicious_mapping(df: pd.DataFrame) -> pd.DataFrame:
     if "order_status_raw" not in df:
         return pd.DataFrame()
     status = df["order_status_raw"].astype("string").fillna("")
+    failure_or_unknown_expected = status.str.contains("无法配送|拒绝配送|企业拒绝配送|拒绝响应|拒绝确认|缺货|未及时配送|未作废", regex=True)
     checks = [
-        (status.str.contains("收货|入库|到货", regex=True) & (df["delivery_state_code"] != 5), "receive_keyword_not_received_state"),
-        (status.str.contains("拒绝|无法|缺货|作废|撤销|失效", regex=True) & (df["order_failure_flag"] != 1), "failure_keyword_not_failure_flag"),
-        (status.str.contains("未确认|待确认", regex=True) & (df["order_phase_code"] >= 30), "pending_confirm_keyword_late_phase"),
-        (status.str.contains("发货|配送|出库", regex=True) & (~df["delivery_state_code"].isin([3, 4])), "dispatch_keyword_not_dispatch_state"),
+        (
+            status.str.contains("收货|入库|到货", regex=True)
+            & ~status.str.contains("拒绝收货|拒收|待收货", regex=True)
+            & (df["delivery_state_code"] != 5),
+            "receive_keyword_not_received_state",
+        ),
+        (
+            status.str.contains("拒绝|无法|缺货|作废|撤销|撤单|失效|退货|拒收", regex=True)
+            & ~status.str.contains("未作废", regex=True)
+            & (df["order_failure_flag"] != 1),
+            "failure_keyword_not_failure_flag",
+        ),
+        (
+            status.str.contains("未确认|待确认", regex=True)
+            & ~status.str.contains("未确认送货", regex=True)
+            & (df["order_phase_code"] >= 30),
+            "pending_confirm_keyword_late_phase",
+        ),
+        (
+            status.str.contains("全部发货|已发货|已配送|部分配送|部分发货|已出库|出库", regex=True)
+            & ~status.str.contains("待发货|未发货", regex=True)
+            & ~failure_or_unknown_expected
+            & (~df["delivery_state_code"].isin([3, 4])),
+            "dispatch_keyword_not_dispatch_state",
+        ),
         ((status == "") & (~df["needs_manual_review"].astype(bool)), "empty_status_not_manual_review"),
     ]
     frames = []
@@ -755,6 +770,7 @@ def build_order_status_suspicious_mapping(df: pd.DataFrame) -> pd.DataFrame:
     for mask, reason in checks:
         tmp = df.loc[mask, cols].copy()
         tmp["suspicious_reason"] = reason
+        tmp["suspicious_level"] = "hard"
         frames.append(tmp)
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=cols + ["suspicious_reason"])
 
@@ -990,6 +1006,20 @@ def _safe_ratio(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
     return pd.to_numeric(numerator, errors="coerce") / pd.to_numeric(denominator, errors="coerce").replace(0, np.nan)
 
 
+def build_alias_table_from_raw(df_raw: pd.DataFrame, raw_to_alias: dict[str, str]) -> pd.DataFrame:
+    """Build an alias-named working table directly from raw sample columns."""
+
+    out = pd.DataFrame(index=df_raw.index)
+    for raw, alias in raw_to_alias.items():
+        if raw in df_raw.columns:
+            out[alias] = df_raw[raw]
+        elif alias in df_raw.columns:
+            out[alias] = df_raw[alias]
+    if "enterprise_code" in out.columns and "enterprise_code_raw" not in out.columns:
+        out["enterprise_code_raw"] = out["enterprise_code"]
+    return out
+
+
 def add_v2_derived_fields(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     for column in [
@@ -1005,19 +1035,25 @@ def add_v2_derived_fields(df: pd.DataFrame) -> pd.DataFrame:
             out[column] = pd.to_numeric(out[column], errors="coerce")
     if "county_code" in out:
         county = normalize_code(out["county_code"]).str.zfill(6)
-        out["county_code"] = county
         derived_province = county.str.slice(0, 2) + "0000"
         derived_city = county.str.slice(0, 4) + "00"
-        raw_city = normalize_code(out["city_code"]).str.zfill(6) if "city_code" in out else derived_city
+        raw_city = normalize_code(out["raw_city_code"]).str.zfill(6) if "raw_city_code" in out else pd.Series(pd.NA, index=out.index, dtype="string")
+        out["county_code"] = county
         out["province_code"] = derived_province
         out["city_code"] = derived_city
-        out["region_dirty_flag"] = (raw_city.notna() & (raw_city != derived_city)).astype(int)
+        out["region_dirty_flag"] = (
+            raw_city.notna() & derived_city.notna() & (raw_city != derived_city)
+        ).astype(int)
     else:
         out["region_dirty_flag"] = 0
     if {"drug_code", "insurance_drug_code"}.issubset(out.columns):
         drug = normalize_code(out["drug_code"])
         insurance = normalize_code(out["insurance_drug_code"])
-        out["drug_code_match_flag"] = ((drug == insurance) & drug.notna() & insurance.notna()).astype(int)
+        out["drug_code_match_flag"] = np.select(
+            [drug.isna() | insurance.isna(), drug == insurance],
+            [-1, 1],
+            default=0,
+        )
         conflict = (
             pd.DataFrame({"drug_code": drug, "insurance_drug_code": insurance})
             .dropna()
@@ -1026,10 +1062,10 @@ def add_v2_derived_fields(df: pd.DataFrame) -> pd.DataFrame:
             .nunique()
         )
         conflict_codes = set(conflict[conflict > 1].index)
-        out["drug_code_conflict_flag"] = drug.isin(conflict_codes).astype(int)
+        out["drug_code_conflict_flag"] = np.where(drug.isna(), -1, drug.isin(conflict_codes).astype(int))
     else:
-        out["drug_code_match_flag"] = np.nan
-        out["drug_code_conflict_flag"] = np.nan
+        out["drug_code_match_flag"] = -1
+        out["drug_code_conflict_flag"] = -1
     out["delivery_rate"] = _safe_ratio(
         out.get("raw_sensitive_delivery_quantity", pd.Series(index=out.index)),
         out.get("raw_sensitive_purchase_quantity", pd.Series(index=out.index)),
@@ -1057,9 +1093,63 @@ def add_v2_derived_fields(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def build_clean_model_audit_v2(df_clean: pd.DataFrame, paths: CleaningPaths) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    clean_v2, _, _ = apply_order_status_lifecycle(df_clean, paths.export_eda, paths.export_mappings)
-    clean_v2 = add_v2_derived_fields(clean_v2)
+def build_clean_model_audit_v2(
+    df_raw: pd.DataFrame,
+    paths: CleaningPaths,
+    schema: dict[str, Any],
+    raw_to_alias: dict[str, str],
+    hospital_level_map: dict[str, Any],
+    drug_category_counts: pd.DataFrame | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    aliased = build_alias_table_from_raw(df_raw, raw_to_alias)
+    if "purchase_time" in aliased.columns:
+        aliased["purchase_time"] = pd.to_datetime(aliased["purchase_time"], errors="coerce")
+    if "hospital_level_raw" in aliased.columns:
+        aliased = aliased.join(
+            aliased["hospital_level_raw"].apply(
+                lambda value: map_hospital_level_value(value, hospital_level_map)
+            )
+        )
+    if "drug_category_raw" in aliased.columns:
+        if drug_category_counts is None or drug_category_counts.empty:
+            drug_category_counts = top_values(aliased, "drug_category_raw", n=200).rename(
+                columns={"value": "drug_category_raw"}
+            )
+            drug_category_counts["drug_category_code"] = range(1, len(drug_category_counts) + 1)
+        category_map = dict(
+            zip(
+                drug_category_counts["drug_category_raw"].astype("string"),
+                drug_category_counts["drug_category_code"],
+            )
+        )
+        aliased["drug_category_code"] = aliased["drug_category_raw"].astype("string").map(category_map)
+    if "ownership_type_raw" in aliased.columns:
+        aliased = aliased.join(aliased["ownership_type_raw"].apply(map_ownership_value))
+    if "return_quantity" in aliased.columns:
+        aliased["return_quantity"] = pd.to_numeric(aliased["return_quantity"], errors="coerce").fillna(0)
+    clean_work, _, _ = apply_order_status_lifecycle(aliased, paths.export_eda, paths.export_mappings)
+    clean_work = add_v2_derived_fields(clean_work)
+    clean_work["mapping_failure_reason"] = np.where(
+        clean_work["order_phase_code"] == 0,
+        "unknown_or_unmapped_status",
+        np.where(clean_work["needs_manual_review"].astype(bool), "manual_review_status", ""),
+    )
+    clean_columns: list[str] = []
+    for columns in schema["clean_columns"].values():
+        clean_columns.extend(columns)
+    derived_clean_columns = [
+        "region_dirty_flag",
+        "delivery_rate",
+        "arrival_rate",
+        "overall_arrival_rate",
+        "delivery_amount_to_purchase_amount_ratio",
+        "arrival_amount_to_delivery_amount_ratio",
+        "arrival_amount_to_purchase_amount_ratio",
+    ]
+    clean_v2_columns = [column for column in clean_columns + derived_clean_columns if column in clean_work.columns]
+    clean_v2 = clean_work[
+        clean_v2_columns + [c for c in ["mapping_failure_reason"] if c in clean_work]
+    ].copy()
     model_columns = [
         "row_uid",
         "order_detail_id",
@@ -1097,6 +1187,12 @@ def build_clean_model_audit_v2(df_clean: pd.DataFrame, paths: CleaningPaths) -> 
     audit_columns = [
         "row_uid",
         "order_detail_id",
+        "raw_province_code",
+        "raw_city_code",
+        "province_code",
+        "city_code",
+        "county_code",
+        "region_dirty_flag",
         "order_status_raw",
         "order_status_norm",
         "order_phase_code",
@@ -1106,10 +1202,7 @@ def build_clean_model_audit_v2(df_clean: pd.DataFrame, paths: CleaningPaths) -> 
         "order_terminal_flag",
         "order_failure_flag",
         "needs_manual_review",
-        "province_code",
-        "city_code",
-        "county_code",
-        "region_dirty_flag",
+        "mapping_failure_reason",
         "drug_code",
         "insurance_drug_code",
         "drug_code_match_flag",
@@ -1132,20 +1225,34 @@ def build_clean_model_audit_v2(df_clean: pd.DataFrame, paths: CleaningPaths) -> 
         "arrival_rate",
         "overall_arrival_rate",
     ]
-    audit = clean_v2[[column for column in audit_columns if column in clean_v2.columns]].copy()
+    audit = clean_work[[column for column in audit_columns if column in clean_work.columns]].copy()
     return clean_v2, model, audit
 
 
 def build_numeric_desensitization_report_v2(df: pd.DataFrame, export_eda: Path) -> pd.DataFrame:
     rows: list[dict[str, Any]] = []
     df = add_v2_derived_fields(df)
-    for column in [
+    numeric_columns = [
         "raw_sensitive_purchase_quantity",
         "raw_sensitive_delivery_quantity",
         "raw_sensitive_arrival_quantity",
-    ]:
+        "raw_sensitive_purchase_amount",
+        "raw_sensitive_delivery_amount",
+        "raw_sensitive_arrival_amount",
+        "return_quantity",
+    ]
+    negative_samples = []
+    for column in numeric_columns:
         if column in df:
-            rows.append({"metric_group": "zero_rate", "metric": f"{column}_zero_rate", "value": float((df[column] == 0).mean())})
+            series = pd.to_numeric(df[column], errors="coerce")
+            rows.append({"metric_group": "zero_rate", "metric": f"{column}_zero_rate", "value": float((series == 0).mean())})
+            rows.append({"metric_group": "negative_rate", "metric": f"{column}_negative_rate", "value": float((series < 0).mean())})
+            sample = df.loc[series < 0, [c for c in ["row_uid", "order_detail_id", "order_status_raw", column] if c in df.columns]].copy()
+            sample["negative_field"] = column
+            sample["negative_value"] = series[series < 0].values
+            negative_samples.append(sample)
+    negative_sample_df = pd.concat(negative_samples, ignore_index=True) if negative_samples else pd.DataFrame()
+    negative_sample_df.to_csv(export_eda / "numeric_negative_samples_v2.csv", index=False, encoding="utf-8-sig")
     ratio_columns = [
         "delivery_rate",
         "arrival_rate",
@@ -1156,6 +1263,7 @@ def build_numeric_desensitization_report_v2(df: pd.DataFrame, export_eda: Path) 
     ]
     for column in ratio_columns:
         series = pd.to_numeric(df[column], errors="coerce")
+        non_null = series.dropna()
         rows.extend(
             [
                 {"metric_group": column, "metric": "count", "value": int(series.count())},
@@ -1165,7 +1273,11 @@ def build_numeric_desensitization_report_v2(df: pd.DataFrame, export_eda: Path) 
                 {"metric_group": column, "metric": "p75", "value": series.quantile(0.75)},
                 {"metric_group": column, "metric": "p95", "value": series.quantile(0.95)},
                 {"metric_group": column, "metric": "max", "value": series.max()},
-                {"metric_group": column, "metric": f"{column}_gt_1_rate", "value": float((series > 1).mean())},
+                {
+                    "metric_group": column,
+                    "metric": f"{column}_gt_1_rate",
+                    "value": float((non_null > 1).mean()) if len(non_null) else np.nan,
+                },
             ]
         )
     if "order_phase_code" in df:
@@ -1189,9 +1301,16 @@ def build_numeric_desensitization_report_v2(df: pd.DataFrame, export_eda: Path) 
 
 
 def save_v2_outputs(
-    df_clean: pd.DataFrame, paths: CleaningPaths
+    df_raw: pd.DataFrame,
+    paths: CleaningPaths,
+    schema: dict[str, Any],
+    raw_to_alias: dict[str, str],
+    hospital_level_map: dict[str, Any],
+    drug_category_counts: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, str]:
-    clean_v2, model, audit = build_clean_model_audit_v2(df_clean, paths)
+    clean_v2, model, audit = build_clean_model_audit_v2(
+        df_raw, paths, schema, raw_to_alias, hospital_level_map, drug_category_counts
+    )
     clean_v2.to_csv(paths.export_clean / "bs_agent_dingdan_clean_sample_v2.csv", index=False, encoding="utf-8-sig")
     model.to_csv(paths.export_clean / "bs_agent_dingdan_model_sample.csv", index=False, encoding="utf-8-sig")
     audit.to_csv(paths.export_clean / "bs_agent_dingdan_audit_sample.csv", index=False, encoding="utf-8-sig")

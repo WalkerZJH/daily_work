@@ -4,6 +4,7 @@ description: SQL Server 订单宽表第一阶段字段理解与清洗 schema。
 raw_cache_path: data/01_raw/BS_Agent_DingDan.parquet
 clean_output_path: data/03_cleaned/bs_agent_dingdan_clean.parquet
 clean_sample_output_path: exports/clean/bs_agent_dingdan_clean_sample.csv
+model_base_output_path: exports/clean/bs_agent_dingdan_model_base.parquet
 notes:
 - "New desensitization policy: quantity fields share multiplier q; amount fields share multiplier m; purchase_price may be independently desensitized."
 - "Allowed: ratios among quantity fields, quantity trends, relative relationships among amount fields, amount trends, and order frequency trends."
@@ -11,6 +12,9 @@ notes:
 - "Hospital level is the clean source; hospital level detail is raw/audit only."
 - "Second-round cleaning separates clean/model/audit outputs; model columns exclude raw/label/name text fields."
 - "Order status uses lifecycle mapping: order_phase_code, delivery_state_code, order_terminal_flag, order_failure_flag."
+- "model_base is a stable base table, not final X_train. Task-specific feature views must select and derive smaller X tables."
+- "row_uid/order_detail_id are trace keys; purchase_time is a time index; region_dirty_flag is a quality-control flag."
+- "Status semantic fields can cause leakage for completion/failure/terminal/arrival targets and must be governed by task-specific feature configs."
 - "CSV is only for small samples, review mappings, and EDA summaries; not for million-row primary processing."
 columns:
 - raw_name: 数据唯一标识符

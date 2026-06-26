@@ -83,6 +83,45 @@ jupyter lab
 
 本阶段禁止把脱敏后的数值字段用于业务算法结论；这些字段仅用于脱敏破坏程度检查。
 
+## BS_Agent_DingDan v2 Pipeline
+
+稳定后的 v2 清洗流程已冻结为可复用入口：
+
+```bash
+set PYTHONPATH=src
+python -m alg.cleaning.bs_agent_dingdan_pipeline \
+  --table BS_Agent_DingDan \
+  --output-format parquet \
+  --generate-model \
+  --generate-quality-report \
+  --no-generate-clean \
+  --no-generate-audit
+```
+
+默认行为只生成 `exports/clean/bs_agent_dingdan_model_base.parquet` 和
+`exports/eda/bs_agent_dingdan_quality_report_v2.md`，不生成 clean/audit CSV。
+如果已通过 editable install 安装本包，则不需要手动设置 `PYTHONPATH`。
+`clean_sample_v2` 与 `audit_sample` 仅用于 sample/debug 和人工复核。
+
+`model_base` 是统一稳定输入，不是最终 `X_train`：
+
+- `row_uid`、`order_detail_id` 是追溯键，不直接进入 X。
+- `purchase_time` 是排序、切分和聚合的时间索引，不应原样当作连续数值特征。
+- `region_dirty_flag` 是质量控制字段，正式训练默认不进入 X。
+- `order_phase_code`、`delivery_state_code`、`order_terminal_flag`、`order_failure_flag`
+  是状态语义字段，若任务目标涉及完成、失败、终止、到货，可能造成标签泄漏。
+- `delivery_rate`、`arrival_rate` 等比例字段来自数量字段，不代表配送时长。
+- 不同任务应通过 feature view 配置从 `model_base` 生成各自的小 X，不提前生成巨大通用 X 表。
+
+后续可以新增：
+
+- `feature_view_alive_prediction.yaml`
+- `feature_view_quantity_forecast.yaml`
+- `feature_view_delivery_quality.yaml`
+
+每个 feature view 需要明确 input table、entity grain、time grain、target、
+allowed columns、excluded columns、leakage rules、null handling 和 categorical encoding strategy。
+
 ## 时间留出验证
 
 在 cutoff 月份 T，只使用 T 及以前的数据构造特征；预测当时仍可能存活的 entity 是否会在 T+1 到 T+H 的留出窗口内 die；再用留出窗口中的真实订单情况验证预测是否正确。
