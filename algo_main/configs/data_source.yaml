@@ -19,6 +19,7 @@ sources:
 
   parquet:
     raw_path: "data/01_raw/BS_Agent_DingDan.parquet"
-    cleaned_path: "data/03_cleaned/bs_agent_dingdan_clean.parquet"
+    model_base_path: "data/03_cleaned/bs_agent_dingdan_model_base.parquet"
+    cleaned_path: "data/03_cleaned/bs_agent_dingdan_model_base.parquet"
     raw_glob: "data/01_raw/orders/**/*.parquet"
     cleaned_glob: "data/03_cleaned/orders/**/*.parquet"

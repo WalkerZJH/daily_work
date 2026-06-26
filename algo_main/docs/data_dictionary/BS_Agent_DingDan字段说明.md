@@ -7,7 +7,7 @@
 - SQL Server 表 `BS_Agent_DingDan` 是真实数据源。
 - CSV 只用于小样本导出、人工 review 映射表和 EDA 汇总结果，不作为百万级主数据处理格式。
 - 原始全量缓存优先使用 Parquet：`data/01_raw/BS_Agent_DingDan.parquet`。
-- 清洗后主数据优先使用 Parquet：`data/03_cleaned/bs_agent_dingdan_clean.parquet`。
+- 清洗后算法主链路输入优先使用 Parquet：`data/03_cleaned/bs_agent_dingdan_model_base.parquet`。
 - 新脱敏口径下，数量字段统一乘随机数 q，金额字段统一乘随机数 m，采购价格可能单独脱敏。数量字段之间、金额字段之间的比例和趋势可用于探索分析；金额字段与数量字段之间的真实价格关系不可用。
 - `医疗机构详细等级` 暂认为错误或不可信，只保留 raw/audit，不进入 clean 主字段和算法字段。
 - `hospital_level_code` 是有序类别变量，`semantic_type=ordinal_category`，后续建模时不得默认当作连续变量。

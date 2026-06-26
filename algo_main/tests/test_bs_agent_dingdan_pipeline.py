@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from alg.cleaning.bs_agent_dingdan import (
     map_status_lifecycle_value,
@@ -10,6 +11,14 @@ from alg.cleaning.bs_agent_dingdan_pipeline import run_bs_agent_dingdan_cleaning
 
 
 ROOT = Path(__file__).resolve().parents[1]
+MODEL_BASE_PATH = ROOT / "data/03_cleaned/bs_agent_dingdan_model_base.parquet"
+
+
+@pytest.fixture(autouse=True)
+def cleanup_model_base_output():
+    MODEL_BASE_PATH.unlink(missing_ok=True)
+    yield
+    MODEL_BASE_PATH.unlink(missing_ok=True)
 
 
 def _raw_sample() -> pd.DataFrame:
@@ -100,10 +109,13 @@ def test_pipeline_default_writes_model_and_report_only(tmp_path):
         output_dir=tmp_path / "exports",
     )
     paths = result["output_paths"]
-    assert Path(paths["model_base"]["parquet"]).exists()
-    assert Path(paths["quality_report"]).exists()
-    assert "clean_sample_v2" not in paths
-    assert "audit_sample" not in paths
+    expected_model_path = MODEL_BASE_PATH
+    assert Path(paths["model_base"]["parquet"]) == expected_model_path
+    assert expected_model_path.exists()
+    assert not (tmp_path / "exports/clean/bs_agent_dingdan_model_base.parquet").exists()
+    assert Path(paths["review_outputs"]["quality_report"]).exists()
+    assert "clean_sample_v2" not in paths["review_outputs"]
+    assert "audit_sample" not in paths["review_outputs"]
 
 
 def test_pipeline_optional_clean_and_audit_outputs(tmp_path):
@@ -114,8 +126,11 @@ def test_pipeline_optional_clean_and_audit_outputs(tmp_path):
         generate_clean=True,
         generate_audit=True,
     )
-    assert Path(result["output_paths"]["clean_sample_v2"]).exists()
-    assert Path(result["output_paths"]["audit_sample"]).exists()
+    review_outputs = result["output_paths"]["review_outputs"]
+    assert Path(review_outputs["clean_sample_v2"]) == tmp_path / "exports/clean/bs_agent_dingdan_clean_sample_v2.csv"
+    assert Path(review_outputs["clean_sample_v2"]).exists()
+    assert Path(review_outputs["audit_sample"]) == tmp_path / "exports/clean/bs_agent_dingdan_audit_sample.csv"
+    assert Path(review_outputs["audit_sample"]).exists()
 
 
 def test_pipeline_model_and_audit_columns(tmp_path):
@@ -138,7 +153,7 @@ def test_pipeline_model_and_audit_columns(tmp_path):
         "drug_category_raw",
     }
     assert not forbidden.intersection(model.columns)
-    audit = pd.read_csv(result["output_paths"]["audit_sample"])
+    audit = pd.read_csv(result["output_paths"]["review_outputs"]["audit_sample"])
     for column in [
         "raw_city_code",
         "raw_province_code",
@@ -172,7 +187,7 @@ def test_numeric_report_has_no_unit_price_or_purchase_price_consistency(tmp_path
         raw_cache_path=raw_path,
         output_dir=tmp_path / "exports",
     )
-    report = Path(result["output_paths"]["numeric_desensitization_report_v2"]).read_text(
+    report = Path(result["output_paths"]["review_outputs"]["numeric_desensitization_report_v2"]).read_text(
         encoding="utf-8-sig"
     )
     assert "price_from_amount_quantity" not in report
@@ -181,5 +196,18 @@ def test_numeric_report_has_no_unit_price_or_purchase_price_consistency(tmp_path
 
 def test_gitignore_keeps_generated_outputs_ignored():
     gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
-    for pattern in ["data/01_raw/*", "exports/clean/*", "exports/eda/*", "*.parquet", "*.csv", "*.joblib"]:
+    for pattern in [
+        "data/01_raw/*",
+        "data/03_cleaned/*",
+        "data/04_facts/*",
+        "data/05_features/*",
+        "data/06_train_sets/*",
+        "exports/clean/*",
+        "exports/eda/*",
+        "*.parquet",
+        "*.csv",
+        "*.xlsx",
+        "*.joblib",
+        "*.pkl",
+    ]:
         assert pattern in gitignore

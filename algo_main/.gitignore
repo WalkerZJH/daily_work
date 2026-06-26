@@ -44,6 +44,7 @@ artifacts/handoff/*
 *.zip
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 .ipynb_checkpoints/
 .ruff_cache/

@@ -142,22 +142,72 @@ def load_input_dataframe(
     sql_database_url: str | None,
     sql_table: str,
     raw_columns: list[str],
-    max_rows: int,
+    max_rows: int | None,
     chunksize: int,
+    use_cache: bool = True,
+    refresh_cache: bool = False,
 ) -> pd.DataFrame:
-    if mode == "parquet":
-        return pd.read_parquet(paths.raw_parquet_path)
-    if mode == "sql_full_to_parquet":
-        export_sql_full_to_parquet(
-            sql_database_url, sql_table, raw_columns, paths.raw_parquet_path, chunksize
-        )
-        return pd.read_parquet(paths.raw_parquet_path)
-    if mode != "sql_sample":
-        raise ValueError(f"Unsupported mode: {mode}")
-    if paths.sample_csv_path.exists():
-        return pd.read_csv(paths.sample_csv_path)
-    return read_sql_sample(sql_database_url, sql_table, raw_columns, max_rows)
+    """
+    Load BS_Agent_DingDan input data.
 
+    Cache policy:
+    - If use_cache=True and refresh_cache=False and raw_parquet_path exists,
+      read raw_parquet_path directly for parquet/sql_full_to_parquet modes.
+    - sql_full_to_parquet exports SQL to raw_parquet_path only when cache is absent
+      or refresh_cache=True.
+    - sql_sample uses sample_csv_path cache for sample data.
+    """
+
+    raw_parquet_path = Path(paths.raw_parquet_path)
+    sample_csv_path = Path(paths.sample_csv_path)
+
+    if mode not in {"parquet", "sql_full_to_parquet", "sql_sample"}:
+        raise ValueError(f"Unsupported mode: {mode}")
+
+    # 1. Explicit parquet mode: must read local parquet.
+    if mode == "parquet":
+        if not raw_parquet_path.exists():
+            raise FileNotFoundError(
+                f"Parquet cache not found: {raw_parquet_path}. "
+                "Use mode='sql_full_to_parquet' to create it first."
+            )
+        return pd.read_parquet(raw_parquet_path)
+
+    # 2. Full SQL mode: prefer existing parquet cache unless refresh is requested.
+    if mode == "sql_full_to_parquet":
+        if use_cache and not refresh_cache and raw_parquet_path.exists():
+            return pd.read_parquet(raw_parquet_path)
+
+        if not sql_database_url:
+            raise ValueError("sql_database_url is required for sql_full_to_parquet mode.")
+
+        export_sql_full_to_parquet(
+            sql_database_url=sql_database_url,
+            sql_table=sql_table,
+            raw_columns=raw_columns,
+            output_path=raw_parquet_path,
+            chunksize=chunksize,
+        )
+        return pd.read_parquet(raw_parquet_path)
+
+    # 3. Sample SQL mode: sample cache is separate from full raw parquet cache.
+    if mode == "sql_sample":
+        if use_cache and not refresh_cache and sample_csv_path.exists():
+            return pd.read_csv(sample_csv_path)
+
+        if not sql_database_url:
+            raise ValueError("sql_database_url is required for sql_sample mode.")
+
+        df = read_sql_sample(sql_database_url, sql_table, raw_columns, max_rows)
+
+        # Optional: cache sample for reproducible review.
+        if use_cache:
+            sample_csv_path.parent.mkdir(parents=True, exist_ok=True)
+            df.to_csv(sample_csv_path, index=False, encoding="utf-8-sig")
+
+        return df
+
+    raise ValueError(f"Unsupported mode: {mode}")
 
 def normalize_code(series: pd.Series) -> pd.Series:
     return series.astype("string").str.replace(r"\.0$", "", regex=True).str.strip()

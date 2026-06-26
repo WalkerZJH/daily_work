@@ -64,13 +64,19 @@ def _pipeline_paths(project_root: Path, output_dir: str | Path, raw_cache_path: 
         export_clean=output_root / "clean",
         export_mappings=output_root / "mappings",
         raw_parquet_path=raw_path,
-        clean_parquet_path=project_root / "data/03_cleaned/bs_agent_dingdan_clean.parquet",
+        clean_parquet_path=project_root / "data/03_cleaned/bs_agent_dingdan_model_base.parquet",
         sample_csv_path=output_root / "raw/BS_Agent_DingDan_sample.csv",
     )
 
 
 def _ensure_pipeline_dirs(paths: CleaningPaths) -> None:
-    for path in [paths.export_eda, paths.export_clean, paths.export_mappings, paths.raw_parquet_path.parent]:
+    for path in [
+        paths.export_eda,
+        paths.export_clean,
+        paths.export_mappings,
+        paths.raw_parquet_path.parent,
+        paths.clean_parquet_path.parent,
+    ]:
         path.mkdir(parents=True, exist_ok=True)
 
 
@@ -201,73 +207,89 @@ def _build_quality_report(
     summary = dict(zip(coverage["metric"], coverage["value"]))
     contradictions = numeric_report[numeric_report["metric_group"] == "status_quantity_contradiction"]
     contradiction_lines = "\n".join(f"- {r.metric}: {r.value}" for r in contradictions.itertuples(index=False))
-    output_lines = "\n".join(f"- {key}: {value}" for key, value in output_paths.items())
-    return f"""# BS_Agent_DingDan v2 Pipeline Quality Report
+    output_lines = "\n".join(_format_output_paths(output_paths))
+    return f"""# BS_Agent_DingDan v2 清洗质量报告
 
-## Scope
+## 一、处理范围
 
-- Rows: {row_count}
-- Columns in clean_v2: {field_count}
-- model_base rows/columns: {model_base.shape[0]} / {model_base.shape[1]}
-- audit rows/columns: {audit.shape[0]} / {audit.shape[1]}
+- 清洗表行数：{row_count}
+- clean_v2 字段数：{field_count}
+- model_base 行数/字段数：{model_base.shape[0]} / {model_base.shape[1]}
+- audit 行数/字段数：{audit.shape[0]} / {audit.shape[1]}
 
-## Identifier Checks
+## 二、主键与重复检查
 
-- row_uid unique: {bool(clean_v2['row_uid'].is_unique) if 'row_uid' in clean_v2 else None}
-- order_detail_id unique: {bool(clean_v2['order_detail_id'].is_unique) if 'order_detail_id' in clean_v2 else None}
-- order_detail_id duplicated-row count: {duplicate_groups}
+- row_uid 是否唯一：{bool(clean_v2['row_uid'].is_unique) if 'row_uid' in clean_v2 else None}
+- order_detail_id 是否唯一：{bool(clean_v2['order_detail_id'].is_unique) if 'order_detail_id' in clean_v2 else None}
+- order_detail_id 重复行数：{duplicate_groups}
 
-## Field Quality
+## 三、字段质量
 
-See `field_quality_gate_v2.csv` for null count, null rate, and distinct count.
+字段级 null 数、null 率、distinct 数请查看 `field_quality_gate_v2.csv`。
 
-## Region Checks
+## 四、地区字段检查
 
 {chr(10).join(_status_distribution(clean_v2, 'region_dirty_flag'))}
 
-## Drug Code Checks
+## 五、药品编码检查
 
+drug_code 与 insurance_drug_code 一致性：
 {chr(10).join(_status_distribution(audit, 'drug_code_match_flag'))}
+
+drug_code 与 insurance_drug_code 冲突情况：
 {chr(10).join(_status_distribution(audit, 'drug_code_conflict_flag'))}
 
-## Status Mapping
+## 六、订单状态映射
 
-- total_rows: {summary.get('total_rows')}
-- mapped_rows: {summary.get('mapped_rows')}
-- unmapped_rows: {summary.get('unmapped_rows')}
-- mapping_coverage: {summary.get('mapping_coverage')}
+- 总行数：{summary.get('total_rows')}
+- 已映射行数：{summary.get('mapped_rows')}
+- 未映射行数：{summary.get('unmapped_rows')}
+- 映射覆盖率：{summary.get('mapping_coverage')}
 
-Needs manual review:
+需要人工复核：
 {chr(10).join(_status_distribution(clean_v2, 'needs_manual_review'))}
 
-Order phase:
+订单阶段分布：
 {chr(10).join(_status_distribution(clean_v2, 'order_phase_code'))}
 
-Delivery state:
+配送状态分布：
 {chr(10).join(_status_distribution(clean_v2, 'delivery_state_code'))}
 
-## Numeric Checks
+## 七、数值字段检查
 
-See `numeric_desensitization_report_v2.csv` for zero rate, negative rate, ratio distribution, and gt_1_rate. `gt_1_rate` uses non-null ratio rows as denominator.
+zero rate、negative rate、比例分布、gt_1_rate 请查看 `numeric_desensitization_report_v2.csv`。
 
-## Status / Quantity Contradictions
+注意：`gt_1_rate` 使用非空 ratio 行作为分母。
+
+## 八、状态与数量矛盾
 
 {contradiction_lines}
 
-## model_base Usage Notes
+## 九、model_base 使用说明
 
-- `model_base` is a stable base table, not final `X_train`.
-- `row_uid` and `order_detail_id` are trace keys and must not directly enter X.
-- `purchase_time` is a time index for sorting, splitting, and aggregation; do not use it as a plain continuous feature.
-- `region_dirty_flag` is a quality-control flag and should not enter X by default.
-- Status semantic fields may leak labels for completion, failure, terminal, arrival, or delivery-quality tasks.
-- Ratio fields such as `delivery_rate` and `arrival_rate` come from quantities; they are not delivery-duration features.
-- Do not infer unit price from amount / quantity, and do not validate purchase price against amount / quantity.
+- `model_base` 是稳定的建模基础表，不是最终 `X_train`。
+- `row_uid` 和 `order_detail_id` 是追溯键，不应直接进入 X。
+- `purchase_time` 是排序、切分、聚合用的时间索引，不应作为普通连续数值特征直接进入 X。
+- `region_dirty_flag` 是质量控制字段，默认不进入 X。
+- 状态语义字段在完成、失败、终止、到货、配送质量等任务中可能造成标签泄漏。
+- `delivery_rate`、`arrival_rate` 等比例字段来自数量字段，不是配送时长特征。
+- 禁止使用 金额 / 数量 推断真实单价，也禁止使用采购价校验金额 / 数量。
 
-## Output Paths
+## 十、输出路径
 
 {output_lines}
 """
+
+
+def _format_output_paths(output_paths: dict[str, Any], prefix: str = "") -> list[str]:
+    lines: list[str] = []
+    for key, value in output_paths.items():
+        label = f"{prefix}.{key}" if prefix else key
+        if isinstance(value, dict):
+            lines.extend(_format_output_paths(value, label))
+        else:
+            lines.append(f"- {label}: {value}")
+    return lines
 
 
 def run_bs_agent_dingdan_cleaning_pipeline(
@@ -338,12 +360,12 @@ def run_bs_agent_dingdan_cleaning_pipeline(
     coverage = build_order_status_mapping_coverage(clean_v2)
     coverage.to_csv(paths.export_eda / "order_status_mapping_coverage.csv", index=False, encoding="utf-8-sig")
     build_order_status_lifecycle_map(paths.export_mappings)
-    output_paths: dict[str, Any] = {}
+    output_paths: dict[str, Any] = {"review_outputs": {}}
     if write_outputs and generate_model:
         output_paths["model_base"] = _write_dataframe_outputs(
             model_base,
-            paths.export_clean / "bs_agent_dingdan_model_base.parquet",
-            paths.export_clean / "bs_agent_dingdan_model_base.csv",
+            paths.clean_parquet_path,
+            paths.export_clean / "bs_agent_dingdan_model_base_sample.csv",
             output_format=output_format,
             sample_mode=sample_mode,
         )
@@ -352,25 +374,25 @@ def run_bs_agent_dingdan_cleaning_pipeline(
             raise ValueError("clean sample output is only allowed in sample/debug mode.")
         clean_path = paths.export_clean / "bs_agent_dingdan_clean_sample_v2.csv"
         clean_v2.to_csv(clean_path, index=False, encoding="utf-8-sig")
-        output_paths["clean_sample_v2"] = str(clean_path)
+        output_paths["review_outputs"]["clean_sample_v2"] = str(clean_path)
     if write_outputs and generate_audit:
         if not sample_mode:
             raise ValueError("audit sample output is only allowed in sample/debug mode.")
         audit_path = paths.export_clean / "bs_agent_dingdan_audit_sample.csv"
         audit.to_csv(audit_path, index=False, encoding="utf-8-sig")
-        output_paths["audit_sample"] = str(audit_path)
+        output_paths["review_outputs"]["audit_sample"] = str(audit_path)
     field_gate_path = _write_field_quality_gate(clean_v2, model_base, audit, paths.export_eda)
-    output_paths["field_quality_gate_v2"] = str(field_gate_path)
-    output_paths["numeric_desensitization_report_v2"] = str(paths.export_eda / "numeric_desensitization_report_v2.csv")
-    output_paths["order_status_mapping_coverage"] = str(paths.export_eda / "order_status_mapping_coverage.csv")
-    output_paths["order_status_suspicious_mapping"] = str(paths.export_eda / "order_status_suspicious_mapping.csv")
-    output_paths["order_status_lifecycle_map"] = str(paths.export_mappings / "order_status_lifecycle_map.csv")
+    output_paths["review_outputs"]["field_quality_gate_v2"] = str(field_gate_path)
+    output_paths["review_outputs"]["numeric_desensitization_report_v2"] = str(paths.export_eda / "numeric_desensitization_report_v2.csv")
+    output_paths["review_outputs"]["order_status_mapping_coverage"] = str(paths.export_eda / "order_status_mapping_coverage.csv")
+    output_paths["review_outputs"]["order_status_suspicious_mapping"] = str(paths.export_eda / "order_status_suspicious_mapping.csv")
+    output_paths["review_outputs"]["order_status_lifecycle_map"] = str(paths.export_mappings / "order_status_lifecycle_map.csv")
     if generate_quality_report:
         report = _build_quality_report(clean_v2, model_base, audit, numeric_report, output_paths)
         if write_outputs:
             report_path = paths.export_eda / "bs_agent_dingdan_quality_report_v2.md"
             report_path.write_text(report, encoding="utf-8")
-            output_paths["quality_report"] = str(report_path)
+            output_paths["review_outputs"]["quality_report"] = str(report_path)
     result: dict[str, Any] = {
         "row_count": len(clean_v2),
         "model_columns": list(model_base.columns),
@@ -422,7 +444,11 @@ def main(argv: list[str] | None = None) -> int:
         generate_quality_report=args.generate_quality_report,
     )
     for key, value in result["output_paths"].items():
-        print(f"{key}: {value}")
+        if isinstance(value, dict):
+            for line in _format_output_paths({key: value}):
+                print(line.removeprefix("- "))
+        else:
+            print(f"{key}: {value}")
     return 0
 
 

@@ -20,6 +20,12 @@
 
 本地不部署数据库。Microsoft SQL Server / ClickHouse 数据通过授权流程导出为 CSV 或 Parquet 后放入本地数据目录，优先转换为 Parquet 缓存，再做分析。不要提交真实数据文件、数据库账号、密码、IP 或连接串。
 
+目录职责：
+
+- `data/` 是算法主链路运行时数据层，供后续 facts、features、train sets 使用。
+- `exports/` 是人工复核、EDA、mapping review、小样本报告层，不作为算法主链路输入。
+- `artifacts/` 是模型与交付物层。
+
 推荐主链路：
 
 ```text
@@ -79,7 +85,8 @@ jupyter lab
 - 机器 schema: `configs/data_schema/bs_agent_dingdan_schema.yaml`
 - 映射配置: `configs/mappings/*.yaml`
 - EDA/review 输出: `exports/eda/`、`exports/mappings/`
-- clean 输出: `data/03_cleaned/bs_agent_dingdan_clean.parquet` 和 `exports/clean/bs_agent_dingdan_clean_sample.csv`
+- 正式清洗输出: `data/03_cleaned/bs_agent_dingdan_model_base.parquet`
+- 人工复核 sample 输出: `exports/clean/bs_agent_dingdan_clean_sample_v2.csv` 和 `exports/clean/bs_agent_dingdan_audit_sample.csv`
 
 本阶段禁止把脱敏后的数值字段用于业务算法结论；这些字段仅用于脱敏破坏程度检查。
 
@@ -98,7 +105,7 @@ python -m alg.cleaning.bs_agent_dingdan_pipeline \
   --no-generate-audit
 ```
 
-默认行为只生成 `exports/clean/bs_agent_dingdan_model_base.parquet` 和
+默认行为只生成 `data/03_cleaned/bs_agent_dingdan_model_base.parquet` 和
 `exports/eda/bs_agent_dingdan_quality_report_v2.md`，不生成 clean/audit CSV。
 如果已通过 editable install 安装本包，则不需要手动设置 `PYTHONPATH`。
 `clean_sample_v2` 与 `audit_sample` 仅用于 sample/debug 和人工复核。
@@ -112,6 +119,7 @@ python -m alg.cleaning.bs_agent_dingdan_pipeline \
   是状态语义字段，若任务目标涉及完成、失败、终止、到货，可能造成标签泄漏。
 - `delivery_rate`、`arrival_rate` 等比例字段来自数量字段，不代表配送时长。
 - 不同任务应通过 feature view 配置从 `model_base` 生成各自的小 X，不提前生成巨大通用 X 表。
+- 下游 facts/features 默认应从 `data/03_cleaned/bs_agent_dingdan_model_base.parquet` 读取。
 
 后续可以新增：
 
