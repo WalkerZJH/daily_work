@@ -1,0 +1,12 @@
+
+version: 0.1.0
+entity_grain:
+  - hospital_code
+  - product_line_code
+feature_windows_days: [30, 60, 90, 180, 365]
+features:
+  activity: []
+  value: []
+  trend: []
+  stability: []
+  seasonality: []

@@ -1,0 +1,8 @@
+task_name: value_estimation
+version: 0.1.0
+entity_grain:
+  - hospital_code
+  - product_line_code
+label: null
+horizon_months: 3
+notes: "Template only; fill after label definition is confirmed."

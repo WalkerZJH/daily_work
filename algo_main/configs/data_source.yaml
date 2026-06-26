@@ -1,0 +1,24 @@
+
+active_source: parquet
+
+sources:
+  mssql:
+    driver: "ODBC Driver 18 for SQL Server"
+    server: "${SQL_SERVER}"
+    port: "${SQL_PORT}"
+    database: "${SQL_DB}"
+    username: "${SQL_USER}"
+    password: "${SQL_PASSWORD}"
+    table: "${SQL_TABLE}"
+
+  clickhouse:
+    host: "${CLICKHOUSE_HOST}"
+    port: "${CLICKHOUSE_PORT}"
+    database: "${CLICKHOUSE_DB}"
+    table: "${CLICKHOUSE_TABLE}"
+
+  parquet:
+    raw_path: "data/01_raw/BS_Agent_DingDan.parquet"
+    cleaned_path: "data/03_cleaned/bs_agent_dingdan_clean.parquet"
+    raw_glob: "data/01_raw/orders/**/*.parquet"
+    cleaned_glob: "data/03_cleaned/orders/**/*.parquet"

@@ -1,16 +1,25 @@
+param(
+  [int]$BackendPort = 8000,
+  [int]$FrontendPort = 5173
+)
+
 $ErrorActionPreference = "Stop"
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $backendScript = Join-Path $PSScriptRoot "dev_start_backend.ps1"
 $frontendScript = Join-Path $PSScriptRoot "dev_start_frontend.ps1"
 
 if (-not (Test-Path $backendScript) -or -not (Test-Path $frontendScript)) {
-  Write-Error "启动脚本缺失。"
+  Write-Error "Missing dev start script."
 }
 
-Write-Host "将启动两个 PowerShell 窗口：后端与前端。"
-Write-Host "后端地址: http://127.0.0.1:8000/docs"
-Write-Host "前端地址: http://127.0.0.1:5173"
+Write-Host "Starting backend and frontend in two PowerShell windows."
+Write-Host "Backend: http://127.0.0.1:$BackendPort/docs"
+Write-Host "Frontend: http://127.0.0.1:$FrontendPort"
+Write-Host "If port 8000 is occupied, use: .\scripts\dev_start.ps1 -BackendPort 8001"
 
-Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-File", "`"$backendScript`"" -WorkingDirectory $repoRoot -WindowStyle Normal
-Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-File", "`"$frontendScript`"" -WorkingDirectory $repoRoot -WindowStyle Normal
+Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-File", "`"$backendScript`"", "-Port", "$BackendPort" -WorkingDirectory $repoRoot -WindowStyle Normal
+Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-File", "`"$frontendScript`"", "-Port", "$FrontendPort" -WorkingDirectory $repoRoot -WindowStyle Normal
+

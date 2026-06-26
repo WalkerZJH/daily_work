@@ -1,0 +1,14 @@
+
+version: 0.1.0
+notes: "Map exported source columns to alg standard columns. Do not store secrets here."
+source_table: orders
+columns:
+  order_id: []
+  hospital_code: []
+  hospital_name: []
+  product_line_code: []
+  product_line_name: []
+  order_date: []
+  purchase_qty: []
+  purchase_amount: []
+  unit_price: []

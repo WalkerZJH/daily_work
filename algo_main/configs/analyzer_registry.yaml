@@ -1,0 +1,10 @@
+
+version: 0.1.0
+routers:
+  demand_shape_gate:
+    enabled: true
+    profiles: [smooth, erratic, intermittent, lumpy, cold_start]
+analyzers:
+  rule_based: []
+  traditional_ml: []
+  time_series: []

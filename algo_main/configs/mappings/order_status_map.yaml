@@ -1,0 +1,30 @@
+version: 0.1.0
+description: "订单状态初版归类。未匹配值输出到 exports/eda/status_unmapped_values.csv。"
+default:
+  stage: unknown
+  code: 0
+rules:
+  - stage: confirmed
+    code: 1
+    description: "已确认"
+    keywords: ["确认", "已确认"]
+  - stage: dispatched
+    code: 2
+    description: "已配送/发货/配送确认"
+    keywords: ["配送", "发货", "已发货", "配送确认"]
+  - stage: received
+    code: 3
+    description: "已收货/已入库"
+    keywords: ["收货", "到货", "入库"]
+  - stage: invoiced
+    code: 4
+    description: "已开发票"
+    keywords: ["发票", "开票"]
+  - stage: returned
+    code: 5
+    description: "退货/售后/退回"
+    keywords: ["退货", "售后", "退回"]
+  - stage: rejected_or_cancelled
+    code: 6
+    description: "拒绝/撤单/作废/驳回"
+    keywords: ["拒绝", "拒收", "撤单", "取消", "作废", "驳回"]

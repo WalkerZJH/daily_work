@@ -1,0 +1,4 @@
+version: 0.1.0
+description: "药品类别人工复核映射模板。Notebook 将按出现值生成 review CSV。"
+default_code_start: 1
+items: []

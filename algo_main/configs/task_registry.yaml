@@ -1,0 +1,12 @@
+
+version: 0.1.0
+tasks:
+  die_prediction:
+    label: die_within_horizon
+    default_horizon_months: 3
+  value_estimation:
+    label: future_purchase_value
+    default_horizon_months: 3
+  anomaly_detection:
+    label: anomaly_flag
+    default_horizon_months: 1

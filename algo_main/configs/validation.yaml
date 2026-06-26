@@ -1,0 +1,10 @@
+
+temporal_validation:
+  mode: rolling_cutoff
+  entity_grain:
+    - hospital_code
+    - product_line_code
+  cutoff_months: []
+  holdout_horizon_months: 3
+  grace_months: 0
+  label_name: die_within_horizon

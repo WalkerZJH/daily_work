@@ -1,0 +1,46 @@
+
+name: alg-ml
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip
+  - ipykernel
+  - jupyterlab
+  - notebook
+  - ipywidgets
+  - numpy
+  - scipy
+  - pandas
+  - polars
+  - pyarrow
+  - duckdb
+  - sqlalchemy
+  - pyodbc
+  - python-dotenv
+  - scikit-learn
+  - imbalanced-learn
+  - statsmodels
+  - lightgbm
+  - xgboost
+  - joblib
+  - cloudpickle
+  - skops
+  - pyyaml
+  - pydantic
+  - matplotlib
+  - seaborn
+  - plotly
+  - missingno
+  - pandera
+  - pytest
+  - tqdm
+  - rich
+  - loguru
+  - black
+  - ruff
+  - pip:
+      - category-encoders

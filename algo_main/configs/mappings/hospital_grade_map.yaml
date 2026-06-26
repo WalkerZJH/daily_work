@@ -1,0 +1,22 @@
+version: 0.1.0
+description: "医疗机构等级归一化。仅使用【医疗机构等级】字段，不使用【医疗机构详细等级】。"
+semantic_type: ordinal_category
+default:
+  label: 未知
+  code: -1
+rules:
+  - label: 未定级
+    code: 0
+    keywords: ["未定级", "未评级", "未定等"]
+  - label: 一级
+    code: 1
+    keywords: ["一级", "一等", "1级"]
+  - label: 二级
+    code: 2
+    keywords: ["二级", "二等", "2级"]
+  - label: 三级
+    code: 3
+    keywords: ["三级", "三等", "3级"]
+  - label: 其他
+    code: 9
+    keywords: ["其他"]

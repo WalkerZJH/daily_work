@@ -1,0 +1,18 @@
+version: 0.1.0
+description: "所有制形式初版映射。Notebook 将输出未匹配值供人工复核。"
+default:
+  label: 未知
+  code: -1
+items:
+  - raw_values: ["公立"]
+    label: 公立
+    code: 1
+  - raw_values: ["民营", "私立"]
+    label: 民营
+    code: 2
+  - raw_values: ["其他"]
+    label: 其他
+    code: 9
+  - raw_values: ["未知", "", null]
+    label: 未知
+    code: -1

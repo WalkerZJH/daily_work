@@ -1,0 +1,11 @@
+
+version: 0.1.0
+rules:
+  product_spec:
+    source_column: product_spec_raw
+    patterns: []
+    outputs:
+      - dosage_form
+      - strength
+      - package_qty
+      - package_unit

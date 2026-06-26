@@ -1,0 +1,100 @@
+# alg 算法实验工程
+
+本目录是面向医药供应链订单风险分析的纯算法工程。当前目标是先完成数据理解、清洗规则沉淀、特征工程和传统机器学习验证，不做前端、后端服务、权限管理、工单系统、LangChain/Dify/Agent 封装。
+
+## 项目定位
+
+- 字段理解、数据质量诊断和 schema 标准化。
+- 正则拆列、枚举映射和人工 review 表沉淀。
+- 文件型分析层：授权导出的 CSV/Parquet -> 本地 Parquet 缓存 -> DuckDB/Polars/pandas 查询处理。
+- 医疗机构 x 产品线等实体粒度的特征工程。
+- 传统机器学习、规则模型、时间序列/间隔模型对比。
+- 时间留出验证与 rolling cutoff backtest。
+- 模型文件、特征 schema、验证报告和 handoff 包交付。
+
+## 当前不做
+
+当前阶段不做前端页面、FastAPI 后端服务、权限系统、工单系统、LLM Agent、自动调度和分布式计算。未来如果算法方案稳定，再考虑交给前后端同事适配业务系统。
+
+## 本地数据策略
+
+本地不部署数据库。Microsoft SQL Server / ClickHouse 数据通过授权流程导出为 CSV 或 Parquet 后放入本地数据目录，优先转换为 Parquet 缓存，再做分析。不要提交真实数据文件、数据库账号、密码、IP 或连接串。
+
+推荐主链路：
+
+```text
+company export
+-> data/01_raw
+-> data/02_interim
+-> data/03_cleaned
+-> data/04_facts
+-> data/05_features
+-> data/06_train_sets
+-> experiments
+-> artifacts/promoted_models
+-> artifacts/handoff
+```
+
+## 环境创建
+
+推荐使用 mamba：
+
+```bash
+mamba env create -f environment.yml
+mamba activate alg-ml
+python -m ipykernel install --user --name alg-ml --display-name "Python (alg-ml)"
+jupyter lab
+```
+
+如果没有 mamba，可以使用 conda：
+
+```bash
+conda env create -f environment.yml
+conda activate alg-ml
+python -m ipykernel install --user --name alg-ml --display-name "Python (alg-ml)"
+jupyter lab
+```
+
+## 模块职责
+
+- `src/alg/data_access/`: 文件型数据读取、SQL Server/ClickHouse 抽取接口预留。
+- `src/alg/schema/`: 标准字段、字段映射、正则拆列和 schema 校验。
+- `src/alg/cleaning/`: 订单清洗、缺失值、重复、异常值和编码质量检查。
+- `src/alg/facts/`: 周/月粒度事实表构建。
+- `src/alg/features/`: 通用特征、任务特征与特征注册。
+- `src/alg/routing/`: 不同订单分布和需求形态的算法路由。
+- `src/alg/tasks/`: die prediction、价值估计、异常检测三类任务数据集与指标。
+- `src/alg/models/`: 规则模型、传统 ML、树模型、时间序列模型封装。
+- `src/alg/validation/`: 时间切分、rolling backtest、泄漏检查。
+- `src/alg/evaluation/`: 统计指标、业务指标和对比报告。
+- `src/alg/artifacts/`: 模型交付包保存、加载、manifest 和导出。
+- `src/alg/utils/`: 路径、日志、哈希、时间和 IO 工具。
+
+## 第一阶段清洗任务
+
+第一阶段聚焦 `BS_Agent_DingDan` 字段理解、EDA、初步清洗和清洗规则沉淀：
+
+- Notebook: `notebooks/01_BS_Agent_DingDan_EDA_and_Cleaning.ipynb`
+- 字段字典: `docs/data_dictionary/BS_Agent_DingDan字段说明.md`
+- 机器 schema: `configs/data_schema/bs_agent_dingdan_schema.yaml`
+- 映射配置: `configs/mappings/*.yaml`
+- EDA/review 输出: `exports/eda/`、`exports/mappings/`
+- clean 输出: `data/03_cleaned/bs_agent_dingdan_clean.parquet` 和 `exports/clean/bs_agent_dingdan_clean_sample.csv`
+
+本阶段禁止把脱敏后的数值字段用于业务算法结论；这些字段仅用于脱敏破坏程度检查。
+
+## 时间留出验证
+
+在 cutoff 月份 T，只使用 T 及以前的数据构造特征；预测当时仍可能存活的 entity 是否会在 T+1 到 T+H 的留出窗口内 die；再用留出窗口中的真实订单情况验证预测是否正确。
+
+## 最小测试
+
+```bash
+pytest tests
+```
+
+## 后续优先任务
+
+1. 执行 `BS_Agent_DingDan` Notebook，确认字段可靠性、重复记录语义、状态映射和数值脱敏破坏程度。
+2. 基于 Parquet/DuckDB/Polars 打通数据清洗 -> facts -> features 的百万行级单机链路。
+3. 为 die prediction 建立 rolling cutoff 数据集、baseline 规则模型和 LightGBM/XGBoost 对比实验。

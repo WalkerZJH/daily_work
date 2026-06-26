@@ -1,0 +1,370 @@
+version: 0.1.0
+table: BS_Agent_DingDan
+description: SQL Server 订单宽表第一阶段字段理解与清洗 schema。
+raw_cache_path: data/01_raw/BS_Agent_DingDan.parquet
+clean_output_path: data/03_cleaned/bs_agent_dingdan_clean.parquet
+clean_sample_output_path: exports/clean/bs_agent_dingdan_clean_sample.csv
+notes:
+- "New desensitization policy: quantity fields share multiplier q; amount fields share multiplier m; purchase_price may be independently desensitized."
+- "Allowed: ratios among quantity fields, quantity trends, relative relationships among amount fields, amount trends, and order frequency trends."
+- "Forbidden: infer real unit price from amount / quantity; validate purchase_price against amount / quantity."
+- "Hospital level is the clean source; hospital level detail is raw/audit only."
+- "CSV is only for small samples, review mappings, and EDA summaries; not for million-row primary processing."
+columns:
+- raw_name: 数据唯一标识符
+  alias: row_uid
+  field_type: identifier
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 转字符串；检查唯一性。
+- raw_name: 订单明细ID
+  alias: order_detail_id
+  field_type: identifier
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 转字符串；检查是否唯一；重复时按生命周期记录审计，不直接删除。
+- raw_name: 数据来源
+  alias: data_source
+  field_type: metadata
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 输出 distinct count 和 top value。
+  notes: 暂时认为有效但不进入算法。
+- raw_name: 订单名称
+  alias: order_name
+  field_type: metadata
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 输出 distinct count 和 top value。
+  notes: 暂时无效。
+- raw_name: 省
+  alias: province_name
+  field_type: geography
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 进入 region 映射表。
+- raw_name: 省编码
+  alias: raw_province_code
+  field_type: geography
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 用于一致性审计；clean 编码优先从县区编码派生。
+- raw_name: 市
+  alias: city_name
+  field_type: geography
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 进入 region 映射表。
+- raw_name: 市编码
+  alias: raw_city_code
+  field_type: geography
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 用于一致性审计；clean 编码优先从县区编码派生。
+- raw_name: 县区
+  alias: county_name
+  field_type: geography
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 进入 region 映射表。
+- raw_name: 县区编码
+  alias: county_code
+  field_type: geography
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 转字符串；保留 county_code；派生 province_code=前2位+'0000'，city_code=前4位+'00'。
+- raw_name: 采购时间
+  alias: purchase_time
+  field_type: time
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 解析为 datetime；非法值进入数据质量报告。
+- raw_name: 药品编码
+  alias: drug_code
+  field_type: drug
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 转字符串；检查与药品医保编码一致性。
+- raw_name: 药品医保编码
+  alias: insurance_drug_code
+  field_type: drug
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 检查与药品编码一致性；完全一致时不进入算法字段。
+- raw_name: 通用名
+  alias: drug_name
+  field_type: drug
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 去空白；作为药品具体名称。
+- raw_name: 商品名
+  alias: product_name
+  field_type: drug
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 去空白；可选保留。
+- raw_name: 剂型
+  alias: dosage_form
+  field_type: drug
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 保留在 raw/audit，不进入算法。
+- raw_name: 规格
+  alias: spec
+  field_type: drug
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 保留在 raw/audit，后续可用于正则拆列。
+- raw_name: 转换系数
+  alias: conversion_factor
+  field_type: drug
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 保留在 raw/audit，不进入算法。
+- raw_name: 采购单位
+  alias: purchase_unit
+  field_type: drug
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 保留在 raw/audit，不进入算法。
+- raw_name: 材质
+  alias: material
+  field_type: drug
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 保留在 raw/audit，不进入算法。
+- raw_name: 采购价(元)
+  alias: raw_sensitive_purchase_price
+  field_type: numeric_sensitive
+  include_in_clean: true
+  algorithm_usable: false
+  clean_rule: "Numeric; purchase_price may be independently desensitized. Do not validate against amount / quantity."
+  usable_scope: not_core_field_independently_desensitized
+- raw_name: 采购数量
+  alias: raw_sensitive_purchase_quantity
+  field_type: numeric_sensitive
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: "Numeric; quantity fields share multiplier q, so quantity ratios and trends are usable."
+  usable_scope: bounded_quantity_ratio_and_trend
+- raw_name: 采购金额(元)
+  alias: raw_sensitive_purchase_amount
+  field_type: numeric_sensitive
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: "Numeric; amount fields share multiplier m, so amount ratios and trends are usable. Do not divide by quantity to infer real unit price."
+  usable_scope: bounded_amount_relative_relationship_and_trend
+- raw_name: 配送数量
+  alias: raw_sensitive_delivery_quantity
+  field_type: numeric_sensitive
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: "Numeric; quantity fields share multiplier q, so quantity ratios and trends are usable."
+  usable_scope: bounded_quantity_ratio_and_trend
+- raw_name: 配送金额(元)
+  alias: raw_sensitive_delivery_amount
+  field_type: numeric_sensitive
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: "Numeric; amount fields share multiplier m, so amount ratios and trends are usable. Do not divide by quantity to infer real unit price."
+  usable_scope: bounded_amount_relative_relationship_and_trend
+- raw_name: 到货数量
+  alias: raw_sensitive_arrival_quantity
+  field_type: numeric_sensitive
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: "Numeric; quantity fields share multiplier q, so quantity ratios and trends are usable."
+  usable_scope: bounded_quantity_ratio_and_trend
+- raw_name: 到货金额(元)
+  alias: raw_sensitive_arrival_amount
+  field_type: numeric_sensitive
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: "Numeric; amount fields share multiplier m, so amount ratios and trends are usable. Do not divide by quantity to infer real unit price."
+  usable_scope: bounded_amount_relative_relationship_and_trend
+- raw_name: 采购地址
+  alias: purchase_address
+  field_type: metadata
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 输出 null rate。
+  notes: 大量 null。
+- raw_name: 订单状态
+  alias: order_status_raw
+  field_type: status
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 用 order_status_map.yaml 归类为 order_status_stage/order_status_code。
+- raw_name: 企业编码
+  alias: enterprise_code
+  field_type: enterprise
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 检查与生产企业字段关系；确认前不直接删除 raw。
+- raw_name: 医疗机构等级
+  alias: hospital_level_raw
+  field_type: institution
+  semantic_type: ordinal_category
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 使用 hospital_grade_map.yaml 归一化为 hospital_level_label/hospital_level_code。
+- raw_name: 医疗机构详细等级
+  alias: hospital_level_detail_raw
+  field_type: institution
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 暂不可信，仅 raw/audit 保留。
+- raw_name: 医疗机构编码
+  alias: hospital_code
+  field_type: institution
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 转字符串；空值进入报告。
+- raw_name: 医疗机构
+  alias: hospital_name
+  field_type: institution
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 去空白。
+- raw_name: 配送企业编码
+  alias: distributor_code
+  field_type: enterprise
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 转字符串。
+- raw_name: 配送企业
+  alias: distributor_name
+  field_type: enterprise
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 去空白。
+- raw_name: 生产企业编码
+  alias: manufacturer_code
+  field_type: enterprise
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 转字符串；检查到生产企业名称是否一对一。
+- raw_name: 生产企业
+  alias: manufacturer_name
+  field_type: enterprise
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 去空白；检查生产企业编码映射。
+- raw_name: 药品类别
+  alias: drug_category_raw
+  field_type: category
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 用 drug_category_map.yaml 编码为 drug_category_code。
+- raw_name: 数据更新时间
+  alias: updated_at
+  field_type: time
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 暂时忽略；仅重复记录审计时使用。
+- raw_name: 配送时间
+  alias: delivery_time
+  field_type: time
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 输出 null rate；暂不进算法。
+- raw_name: 到货时间
+  alias: arrival_time
+  field_type: time
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 输出 null rate；暂不进算法。
+- raw_name: 项目名称
+  alias: project_name
+  field_type: metadata
+  include_in_clean: false
+  algorithm_usable: false
+  clean_rule: 输出 null rate；大量 null。
+- raw_name: 所有制形式
+  alias: ownership_type_raw
+  field_type: category
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: 用 ownership_map.yaml 编码为 ownership_type_code。
+- raw_name: 退回数量
+  alias: return_quantity
+  field_type: numeric_sensitive
+  include_in_clean: true
+  algorithm_usable: true
+  clean_rule: "Numeric; null as 0; quantity fields share multiplier q, so quantity ratios and trends are usable."
+  usable_scope: bounded_quantity_ratio_and_trend
+- raw_name: 作废数量
+  alias: void_quantity
+  field_type: numeric_sensitive
+  include_in_clean: false
+  algorithm_usable: true
+  clean_rule: "Numeric; quantity fields share multiplier q. Keep for audit unless inclusion is confirmed."
+  usable_scope: bounded_quantity_ratio_and_trend
+clean_columns:
+  identifiers:
+  - row_uid
+  - order_detail_id
+  time:
+  - purchase_time
+  geography:
+  - province_code
+  - city_code
+  - county_code
+  drug:
+  - drug_code
+  - drug_name
+  - product_name
+  - drug_category_code
+  - drug_category_raw
+  institution:
+  - hospital_code
+  - hospital_name
+  - hospital_level_raw
+  - hospital_level_label
+  - hospital_level_code
+  - ownership_type_code
+  - ownership_type_raw
+  enterprise:
+  - distributor_code
+  - distributor_name
+  - manufacturer_code
+  - manufacturer_name
+  status:
+  - order_status_raw
+  - order_status_stage
+  - order_status_code
+  return:
+  - return_quantity
+  raw_sensitive_optional:
+  - raw_sensitive_purchase_price
+  - raw_sensitive_purchase_quantity
+  - raw_sensitive_purchase_amount
+  - raw_sensitive_delivery_quantity
+  - raw_sensitive_delivery_amount
+  - raw_sensitive_arrival_quantity
+  - raw_sensitive_arrival_amount
+desensitization_policy:
+  quantity_fields_share_multiplier: q
+  quantity_fields:
+  - raw_sensitive_purchase_quantity
+  - raw_sensitive_delivery_quantity
+  - raw_sensitive_arrival_quantity
+  - return_quantity
+  - void_quantity
+  amount_fields_share_multiplier: m
+  amount_fields:
+  - raw_sensitive_purchase_amount
+  - raw_sensitive_delivery_amount
+  - raw_sensitive_arrival_amount
+  purchase_price_policy: may_be_independently_desensitized_not_core_analysis_field
+  allowed_analyses:
+  - delivery_rate = raw_sensitive_delivery_quantity / raw_sensitive_purchase_quantity
+  - arrival_rate = raw_sensitive_arrival_quantity / raw_sensitive_delivery_quantity
+  - overall_arrival_rate = raw_sensitive_arrival_quantity / raw_sensitive_purchase_quantity
+  - quantity_trends
+  - amount_trends
+  - order_frequency_trends
+  - relative_relationships_among_amount_fields
+  forbidden_analyses:
+  - infer_real_unit_price_from_amount_divided_by_quantity
+  - validate_purchase_price_against_purchase_amount_divided_by_purchase_quantity
