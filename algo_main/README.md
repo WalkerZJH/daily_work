@@ -105,6 +105,12 @@ python -m alg.cleaning.bs_agent_dingdan_pipeline \
   --no-generate-audit
 ```
 
+生产级清洗入口是 `alg.cleaning.bs_agent_dingdan_pipeline.run_bs_agent_dingdan_cleaning_pipeline`。
+`src/alg/cleaning/bs_agent_dingdan.py` 只保留内部 helper 和兼容函数，不作为主流程入口。
+
+Notebook `notebooks/01_BS_Agent_DingDan_EDA_and_Cleaning.ipynb` 只用于复核和汇报展示；
+它调用同一个 pipeline 入口，不维护第二套清洗逻辑。
+
 默认行为只生成 `data/03_cleaned/bs_agent_dingdan_model_base.parquet` 和
 `exports/eda/bs_agent_dingdan_quality_report_v2.md`，不生成 clean/audit CSV。
 如果已通过 editable install 安装本包，则不需要手动设置 `PYTHONPATH`。

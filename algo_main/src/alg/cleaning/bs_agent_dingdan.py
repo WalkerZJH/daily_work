@@ -1,8 +1,9 @@
-"""Reusable functions for the BS_Agent_DingDan EDA and cleaning notebook.
+"""Internal helpers for the BS_Agent_DingDan v2 cleaning pipeline.
 
-The notebook should act as a small main function: configure paths and parameters,
-then call functions from this module. Keep data access, profiling, mapping,
-desensitization checks, clean table construction, and report generation here.
+The production and notebook entry point is
+``alg.cleaning.bs_agent_dingdan_pipeline.run_bs_agent_dingdan_cleaning_pipeline``.
+Keep this module as implementation support and backward-compatible helper
+surface; do not use it as a separate main cleaning workflow.
 """
 
 from __future__ import annotations

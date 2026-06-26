@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Rebuild the BS_Agent_DingDan cleaning notebook as orchestration-only JSON."""
+"""Rebuild the BS_Agent_DingDan v2 pipeline review notebook."""
 
 from __future__ import annotations
 
@@ -27,126 +27,151 @@ def build_notebook() -> dict:
     cells: list[dict] = []
     md(
         cells,
-        "# BS_Agent_DingDan EDA 与清洗规则沉淀\n\n"
-        "This notebook is orchestration-only. Function code lives in "
-        "`src/alg/cleaning/bs_agent_dingdan.py`.",
+        "# BS_Agent_DingDan v2 清洗 Pipeline 复核\n\n"
+        "本 notebook 仅用于 BS_Agent_DingDan v2 清洗 pipeline 的人工复核与汇报展示。\n\n"
+        "正式清洗逻辑统一来自 "
+        "`alg.cleaning.bs_agent_dingdan_pipeline.run_bs_agent_dingdan_cleaning_pipeline`。\n\n"
+        "notebook 不再维护独立清洗逻辑。",
     )
-    md(
-        cells,
-        "## 0. 环境与路径配置\n\n"
-        "Configure read mode and paths. Modes: `sql_sample`, "
-        "`sql_full_to_parquet`, `parquet`.",
-    )
+    md(cells, "## 1. 环境与路径配置")
     code(
         cells,
-        '''from __future__ import annotations
-
+        '''from pathlib import Path
 import sys
-from pathlib import Path
 
 import pandas as pd
 
 PROJECT_ROOT = Path.cwd()
 if PROJECT_ROOT.name == "notebooks":
     PROJECT_ROOT = PROJECT_ROOT.parent
+
 SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from alg.cleaning.bs_agent_dingdan import (
-    analyze_drug_code_consistency,
-    analyze_enterprise,
-    analyze_hospital_level,
-    analyze_identifiers,
-    analyze_numeric_desensitization,
-    analyze_return_void,
-    analyze_status,
-    build_clean_table,
-    build_clean_model_audit_v2,
-    build_column_maps,
-    build_drug_category_map,
-    build_ownership_map,
-    build_paths,
-    build_quality_report,
-    build_region_mapping,
-    ensure_output_dirs,
-    load_env,
-    load_input_dataframe,
-    load_yaml,
-    save_basic_profile,
-    save_clean_outputs,
-    save_data_source_and_order_name_profiles,
-    save_quality_report,
-    save_v2_outputs,
-)
+from alg.cleaning.bs_agent_dingdan_pipeline import run_bs_agent_dingdan_cleaning_pipeline
+from alg.cleaning.bs_agent_dingdan import load_env
 
 pd.set_option("display.max_columns", 120)
 pd.set_option("display.width", 180)
 
-mode = "sql_sample"  # sql_sample | sql_full_to_parquet | parquet
+sql_database_url, sql_table = load_env(PROJECT_ROOT)
+
+sample_mode = True
 max_rows = 5000
-chunksize = 50000
+output_format = "parquet"
+generate_model = True
+generate_quality_report = True
+generate_clean = True
+generate_audit = True
+return_dataframes = True
 
-paths = build_paths(PROJECT_ROOT)
-ensure_output_dirs(paths)
-schema = load_yaml(paths.config_path)
-status_map = load_yaml(paths.status_map_path)
-hospital_level_map = load_yaml(paths.hospital_level_map_path)
-raw_to_alias, alias_to_raw, raw_columns = build_column_maps(schema)
-sql_database_url, sql_table = load_env(paths.project_root)
-
-print(f"project_root={paths.project_root}")
-print(f"mode={mode}, max_rows={max_rows}, table={sql_table}")
+print(f"project_root={PROJECT_ROOT}")
+print(f"sample_mode={sample_mode}, max_rows={max_rows}, table={sql_table}")
 print("SQL_DATABASE_URL configured:", bool(sql_database_url))''',
     )
-    md(cells, "## 读取数据\n\nCSV is only a small-sample fallback. Full local cache should be Parquet.")
+    md(cells, "## 2. 运行 pipeline")
     code(
         cells,
-        """df_raw = load_input_dataframe(
-    mode=mode,
-    paths=paths,
+        '''result = run_bs_agent_dingdan_cleaning_pipeline(
     sql_database_url=sql_database_url,
-    sql_table=sql_table,
-    raw_columns=raw_columns,
+    table_name=sql_table,
+    output_dir="exports",
+    output_format=output_format,
     max_rows=max_rows,
-    chunksize=chunksize,
+    sample_mode=sample_mode,
+    generate_model=generate_model,
+    generate_clean=generate_clean,
+    generate_audit=generate_audit,
+    generate_quality_report=generate_quality_report,
+    return_dataframes=return_dataframes,
 )
-df_raw.head()""",
+
+result["row_count"], result["model_columns"], result["output_paths"]''',
     )
-    sections = [
-        ("## 1. 基础规模检查", "basic_summary, field_counts = save_basic_profile(df_raw, alias_to_raw, paths.export_eda)\nbasic_summary, field_counts.head(20)"),
-        ("## 2. 唯一标识符检查", "id_report, duplicate_samples = analyze_identifiers(df_raw, alias_to_raw, paths.export_eda)\nid_report, duplicate_samples.head()"),
-        ("## 3. 数据来源与订单名称", "source_top, order_name_top = save_data_source_and_order_name_profiles(df_raw, alias_to_raw, paths.export_eda)\nsource_top.head(), order_name_top.head()"),
-        ("## 4. 地区字段清洗", "region_map, region_conflicts = build_region_mapping(df_raw, alias_to_raw, paths.export_eda, paths.export_mappings)\nregion_map.head(), region_conflicts.head()"),
-        ("## 5. 药品编码与医保编码一致性", "drug_code_report = analyze_drug_code_consistency(df_raw, alias_to_raw, paths.export_eda)\ndrug_code_report"),
-    ]
-    for title, body in sections:
-        md(cells, title)
-        code(cells, body)
+    md(cells, "## 3. 展示三张核心表")
+    code(
+        cells,
+        '''clean_v2 = result["dataframes"]["clean"]
+model_base = result["dataframes"]["model_base"]
+audit = result["dataframes"]["audit"]
+
+display(clean_v2.head())
+display(model_base.head())
+display(audit.head())
+
+clean_v2.shape, model_base.shape, audit.shape''',
+    )
+    md(cells, "## 4. model_base 字段检查")
+    code(
+        cells,
+        '''model_base.columns.tolist()
+
+forbidden = {
+    "hospital_name",
+    "distributor_name",
+    "manufacturer_name",
+    "product_name",
+    "order_status_raw",
+    "hospital_level_raw",
+    "hospital_level_label",
+    "ownership_type_raw",
+    "drug_category_raw",
+}
+sorted(forbidden.intersection(model_base.columns))''',
+    )
+    md(cells, "## 5. 主键检查")
+    code(
+        cells,
+        '''{
+    "clean_row_uid_unique": clean_v2["row_uid"].is_unique,
+    "model_row_uid_unique": model_base["row_uid"].is_unique,
+    "audit_row_uid_unique": audit["row_uid"].is_unique,
+    "clean_order_detail_id_unique": clean_v2["order_detail_id"].is_unique,
+    "model_order_detail_id_unique": model_base["order_detail_id"].is_unique,
+    "audit_order_detail_id_unique": audit["order_detail_id"].is_unique,
+}''',
+    )
+    md(cells, "## 6. 订单状态映射检查")
+    code(
+        cells,
+        '''display(clean_v2["order_phase_code"].value_counts(dropna=False).sort_index())
+display(clean_v2["delivery_state_code"].value_counts(dropna=False).sort_index())
+display(clean_v2["needs_manual_review"].value_counts(dropna=False))
+
+display(pd.read_csv(PROJECT_ROOT / "exports/eda/order_status_mapping_coverage.csv"))
+display(pd.read_csv(PROJECT_ROOT / "exports/eda/order_status_suspicious_mapping.csv"))''',
+    )
+    md(cells, "## 7. 药品编码与地区检查")
+    code(
+        cells,
+        '''display(audit["drug_code_match_flag"].value_counts(dropna=False))
+display(audit["drug_code_conflict_flag"].value_counts(dropna=False))
+display(clean_v2["region_dirty_flag"].value_counts(dropna=False))''',
+    )
+    md(cells, "## 8. 数值脱敏与矛盾检查")
+    code(
+        cells,
+        '''numeric_report = pd.read_csv(PROJECT_ROOT / "exports/eda/numeric_desensitization_report_v2.csv")
+display(numeric_report.head(50))
+
+display(numeric_report[numeric_report["metric_group"] == "status_quantity_contradiction"])''',
+    )
+    md(cells, "## 9. 质量报告展示")
+    code(
+        cells,
+        '''quality_report_path = PROJECT_ROOT / "exports/eda/bs_agent_dingdan_quality_report_v2.md"
+print(quality_report_path.read_text(encoding="utf-8")[:3000])''',
+    )
     md(
         cells,
-        "## 6. 数值字段脱敏影响检查\n\n"
-        "Updated policy: quantity fields share multiplier q; amount fields share "
-        "multiplier m. `delivery_rate`, `arrival_rate`, `overall_arrival_rate`, "
-        "quantity trends, amount trends, and order frequency trends are allowed. "
-        "`price_from_amount_quantity` is forbidden: do not infer real unit price "
-        "from amount / quantity.",
+        "## 10. 汇报结论\n\n"
+        "- 本 notebook 调用正式 v2 pipeline 生成 model_base。\n"
+        "- model_base 是建模基础表，不是最终 X_train。\n"
+        "- clean/audit 仅用于人工复核。\n"
+        "- `delivery_rate`、`arrival_rate` 等 ratio 字段来自数量/金额比例，不代表时间。\n"
+        "- 状态字段后续进入算法时必须按 cutoff 聚合，避免泄漏。",
     )
-    code(cells, "numeric_report = analyze_numeric_desensitization(df_raw, alias_to_raw, paths.export_eda)\nnumeric_report")
-    remaining = [
-        ("## 7. 订单状态枚举与初步归类", "status_counts, status_review, status_unmapped = analyze_status(\n    df_raw, alias_to_raw, status_map, paths.export_eda, paths.export_mappings\n)\nstatus_counts.head(), status_review.head(), status_unmapped.head()"),
-        ("## 8. 医疗机构等级清洗", "hospital_counts, hospital_review, hospital_unmapped = analyze_hospital_level(\n    df_raw, alias_to_raw, hospital_level_map, paths.export_eda, paths.export_mappings\n)\nhospital_counts.head(), hospital_review.head(), hospital_unmapped.head()"),
-        ("## 9. 企业字段关系检查", "enterprise_report = analyze_enterprise(df_raw, alias_to_raw, paths.export_eda)\nenterprise_report"),
-        ("## 10. 药品类别编码", "drug_category_counts = build_drug_category_map(df_raw, alias_to_raw, paths.export_mappings)\ndrug_category_counts.head()"),
-        ("## 11. 所有制形式编码", "ownership_map = build_ownership_map(df_raw, alias_to_raw, paths.export_mappings)\nownership_map.head()"),
-        ("## 12. 退回数量与作废数量", "return_void_report = analyze_return_void(df_raw, alias_to_raw, paths.export_eda)\nreturn_void_report"),
-        ("## 13. 生成 clean 表", "df_clean = build_clean_table(\n    df_raw,\n    schema=schema,\n    raw_to_alias=raw_to_alias,\n    status_map=status_map,\n    hospital_level_map=hospital_level_map,\n    drug_category_counts=drug_category_counts,\n)\nsave_clean_outputs(df_clean, paths)\ndf_clean.head()"),
-        ("## 14. 生成第二轮 clean/model/audit 样本输出", "df_clean_v2, df_model_sample, df_audit_sample, numeric_report_v2, profile_v2 = save_v2_outputs(\n    df_raw,\n    paths,\n    schema=schema,\n    raw_to_alias=raw_to_alias,\n    hospital_level_map=hospital_level_map,\n    drug_category_counts=drug_category_counts,\n)\ndf_clean_v2.head(), df_model_sample.head(), df_audit_sample.head()"),
-        ("## 15. 生成 Markdown 数据质量报告", "quality_report = build_quality_report(\n    schema=schema,\n    basic=basic_summary,\n    status_review=status_review,\n    status_unmapped=status_unmapped,\n    hospital_review=hospital_review,\n    hospital_unmapped=hospital_unmapped,\n)\nreport_path = save_quality_report(quality_report, paths.export_eda)\nprint(report_path)\nprint(quality_report[:1000])\nprint(profile_v2[:1000])"),
-    ]
-    for title, body in remaining:
-        md(cells, title)
-        code(cells, body)
     return {
         "cells": cells,
         "metadata": {

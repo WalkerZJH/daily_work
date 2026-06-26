@@ -70,26 +70,23 @@ def test_notebook_contains_required_sections_and_modes():
     notebook = json.loads((ROOT / "notebooks/01_BS_Agent_DingDan_EDA_and_Cleaning.ipynb").read_text(encoding="utf-8"))
     text = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
     for section in [
-        "## 0. 环境与路径配置",
-        "## 1. 基础规模检查",
-        "## 2. 唯一标识符检查",
-        "## 4. 地区字段清洗",
-        "## 6. 数值字段脱敏影响检查",
-        "## 8. 医疗机构等级清洗",
-        "## 13. 生成 clean 表",
-        "## 14. 生成第二轮 clean/model/audit 样本输出",
-        "## 15. 生成 Markdown 数据质量报告",
+        "## 1. 环境与路径配置",
+        "## 2. 运行 pipeline",
+        "## 3. 展示三张核心表",
+        "## 4. model_base 字段检查",
+        "## 5. 主键检查",
+        "## 6. 订单状态映射检查",
+        "## 7. 药品编码与地区检查",
+        "## 8. 数值脱敏与矛盾检查",
+        "## 9. 质量报告展示",
+        "## 10. 汇报结论",
     ]:
         assert section in text
-    assert "sql_sample" in text
-    assert "sql_full_to_parquet" in text
-    assert "parquet" in text
+    assert "sample_mode = True" in text
+    assert 'output_format = "parquet"' in text
     assert "delivery_rate" in text
     assert "arrival_rate" in text
-    assert "price_from_amount_quantity" in text
-    assert "do not infer real unit price" in text
-    assert "save_v2_outputs(\n    df_raw," in text
-    assert "save_v2_outputs(df_clean" not in text
+    assert "run_bs_agent_dingdan_cleaning_pipeline" in text
 
 
 def test_notebook_is_orchestration_only():
@@ -100,24 +97,42 @@ def test_notebook_is_orchestration_only():
         if cell.get("cell_type") == "code"
     )
     assert "\ndef " not in code_text
-    assert "from alg.cleaning.bs_agent_dingdan import" in code_text
+    assert "from alg.cleaning.bs_agent_dingdan_pipeline import run_bs_agent_dingdan_cleaning_pipeline" in code_text
+    assert "from alg.cleaning.bs_agent_dingdan import load_env" in code_text
+
+
+def test_notebook_uses_only_pipeline_as_cleaning_entrypoint():
+    notebook = json.loads((ROOT / "notebooks/01_BS_Agent_DingDan_EDA_and_Cleaning.ipynb").read_text(encoding="utf-8"))
+    code_text = "\n".join(
+        "".join(cell.get("source", []))
+        for cell in notebook["cells"]
+        if cell.get("cell_type") == "code"
+    )
+    forbidden_calls = [
+        "save_v2_outputs",
+        "save_clean_outputs",
+        "build_clean_table",
+        "build_clean_model_audit_v2",
+        "analyze_numeric_desensitization",
+        "build_quality_report",
+    ]
+    for name in forbidden_calls:
+        assert name not in code_text
 
 
 def test_bs_agent_dingdan_cleaning_module_imports():
     import alg.cleaning.bs_agent_dingdan as module
+    from alg.cleaning.bs_agent_dingdan_pipeline import run_bs_agent_dingdan_cleaning_pipeline
 
     for name in [
-        "load_input_dataframe",
-        "save_basic_profile",
-        "analyze_numeric_desensitization",
+        "load_env",
         "apply_order_status_lifecycle",
         "build_alias_table_from_raw",
-        "build_clean_table",
-        "build_clean_model_audit_v2",
-        "build_quality_report",
-        "save_v2_outputs",
+        "map_status_lifecycle_value",
+        "order_status_lifecycle_map_dataframe",
     ]:
         assert hasattr(module, name)
+    assert callable(run_bs_agent_dingdan_cleaning_pipeline)
 
 
 def test_schema_records_second_round_model_columns():
