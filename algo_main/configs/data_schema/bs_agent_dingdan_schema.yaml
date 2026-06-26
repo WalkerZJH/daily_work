@@ -9,6 +9,8 @@ notes:
 - "Allowed: ratios among quantity fields, quantity trends, relative relationships among amount fields, amount trends, and order frequency trends."
 - "Forbidden: infer real unit price from amount / quantity; validate purchase_price against amount / quantity."
 - "Hospital level is the clean source; hospital level detail is raw/audit only."
+- "Second-round cleaning separates clean/model/audit outputs; model columns exclude raw/label/name text fields."
+- "Order status uses lifecycle mapping: order_phase_code, delivery_state_code, order_terminal_flag, order_failure_flag."
 - "CSV is only for small samples, review mappings, and EDA summaries; not for million-row primary processing."
 columns:
 - raw_name: 数据唯一标识符
@@ -90,7 +92,11 @@ columns:
   field_type: drug
   include_in_clean: false
   algorithm_usable: false
-  clean_rule: 检查与药品编码一致性；完全一致时不进入算法字段。
+  audit_only: true
+  clean_rule: 检查与药品编码一致性；当前不能与药品编码合并，audit 保留。
+  derived_flags:
+  - drug_code_match_flag
+  - drug_code_conflict_flag
 - raw_name: 通用名
   alias: drug_name
   field_type: drug
@@ -101,8 +107,10 @@ columns:
   alias: product_name
   field_type: drug
   include_in_clean: true
-  algorithm_usable: true
-  clean_rule: 去空白；可选保留。
+  algorithm_usable: false
+  audit_only: true
+  clean_rule: 去空白；clean/audit 可保留，不进入 model。
+  notes: high_null_rate_and_low_distinct_count; audit_only
 - raw_name: 剂型
   alias: dosage_form
   field_type: drug
@@ -194,13 +202,15 @@ columns:
   field_type: status
   include_in_clean: true
   algorithm_usable: true
-  clean_rule: 用 order_status_map.yaml 归类为 order_status_stage/order_status_code。
+  clean_rule: 用 order_status_lifecycle_map.csv 归类为 order_phase_code、delivery_state_code、order_terminal_flag、order_failure_flag。
 - raw_name: 企业编码
   alias: enterprise_code
   field_type: enterprise
   include_in_clean: false
   algorithm_usable: false
-  clean_rule: 检查与生产企业字段关系；确认前不直接删除 raw。
+  audit_only: true
+  clean_rule: 判为无效字段；不进入 clean/model，仅 audit 保留为 enterprise_code_raw。
+  notes: invalid_by_business_peer_usage
 - raw_name: 医疗机构等级
   alias: hospital_level_raw
   field_type: institution
@@ -254,8 +264,9 @@ columns:
   alias: drug_category_raw
   field_type: category
   include_in_clean: true
-  algorithm_usable: true
-  clean_rule: 用 drug_category_map.yaml 编码为 drug_category_code。
+  algorithm_usable: false
+  clean_rule: clean/audit 保留原始类别；model 使用 drug_category_code。
+  notes: raw label excluded from model; drug_category_code is not product_line_code.
 - raw_name: 数据更新时间
   alias: updated_at
   field_type: time
@@ -297,9 +308,11 @@ columns:
   alias: void_quantity
   field_type: numeric_sensitive
   include_in_clean: false
-  algorithm_usable: true
-  clean_rule: "Numeric; quantity fields share multiplier q. Keep for audit unless inclusion is confirmed."
-  usable_scope: bounded_quantity_ratio_and_trend
+  algorithm_usable: false
+  audit_only: true
+  clean_rule: "Numeric; sample distinct_count=1; keep for audit unless full data proves useful."
+  usable_scope: audit_only
+  notes: sample distinct_count=1; audit only
 clean_columns:
   identifiers:
   - row_uid
@@ -331,8 +344,14 @@ clean_columns:
   - manufacturer_name
   status:
   - order_status_raw
-  - order_status_stage
-  - order_status_code
+  - order_status_norm
+  - order_phase_code
+  - order_phase_label
+  - delivery_state_code
+  - delivery_state_label
+  - order_terminal_flag
+  - order_failure_flag
+  - needs_manual_review
   return:
   - return_quantity
   raw_sensitive_optional:
@@ -343,6 +362,63 @@ clean_columns:
   - raw_sensitive_delivery_amount
   - raw_sensitive_arrival_quantity
   - raw_sensitive_arrival_amount
+model_columns:
+- row_uid
+- order_detail_id
+- purchase_time
+- province_code
+- city_code
+- county_code
+- region_dirty_flag
+- hospital_code
+- drug_code
+- drug_category_code
+- distributor_code
+- manufacturer_code
+- hospital_level_code
+- ownership_type_code
+- order_phase_code
+- delivery_state_code
+- order_terminal_flag
+- order_failure_flag
+- return_quantity
+- raw_sensitive_purchase_quantity
+- raw_sensitive_purchase_amount
+- raw_sensitive_delivery_quantity
+- raw_sensitive_delivery_amount
+- raw_sensitive_arrival_quantity
+- raw_sensitive_arrival_amount
+- delivery_rate
+- arrival_rate
+- overall_arrival_rate
+- delivery_amount_to_purchase_amount_ratio
+- arrival_amount_to_delivery_amount_ratio
+- arrival_amount_to_purchase_amount_ratio
+derived_columns:
+- alias: province_code
+  source: county_code
+- alias: city_code
+  source: county_code
+- alias: region_dirty_flag
+  source: county_code/raw_city_code
+- alias: drug_code_match_flag
+  source: drug_code/insurance_drug_code
+- alias: drug_code_conflict_flag
+  source: drug_code/insurance_drug_code
+- alias: order_phase_code
+  source: order_status_raw
+- alias: delivery_state_code
+  source: order_status_raw
+- alias: order_terminal_flag
+  source: order_status_raw
+- alias: order_failure_flag
+  source: order_status_raw
+- alias: delivery_rate
+  source: raw_sensitive_delivery_quantity/raw_sensitive_purchase_quantity
+- alias: arrival_rate
+  source: raw_sensitive_arrival_quantity/raw_sensitive_delivery_quantity
+- alias: overall_arrival_rate
+  source: raw_sensitive_arrival_quantity/raw_sensitive_purchase_quantity
 desensitization_policy:
   quantity_fields_share_multiplier: q
   quantity_fields:

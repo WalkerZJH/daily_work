@@ -42,7 +42,6 @@ def test_schema_marks_quantity_and_amount_fields_bounded_usable():
         "raw_sensitive_delivery_quantity",
         "raw_sensitive_arrival_quantity",
         "return_quantity",
-        "void_quantity",
     ]:
         assert columns[alias]["algorithm_usable"] is True
         assert columns[alias]["usable_scope"] == "bounded_quantity_ratio_and_trend"
@@ -54,6 +53,7 @@ def test_schema_marks_quantity_and_amount_fields_bounded_usable():
         assert columns[alias]["algorithm_usable"] is True
         assert columns[alias]["usable_scope"] == "bounded_amount_relative_relationship_and_trend"
     assert columns["raw_sensitive_purchase_price"]["algorithm_usable"] is False
+    assert columns["void_quantity"]["algorithm_usable"] is False
 
 
 def test_hospital_level_policy_uses_level_not_detail():
@@ -76,7 +76,8 @@ def test_notebook_contains_required_sections_and_modes():
         "## 6. 数值字段脱敏影响检查",
         "## 8. 医疗机构等级清洗",
         "## 13. 生成 clean 表",
-        "## 14. 生成 Markdown 数据质量报告",
+        "## 14. 生成第二轮 clean/model/audit 样本输出",
+        "## 15. 生成 Markdown 数据质量报告",
     ]:
         assert section in text
     assert "sql_sample" in text
@@ -106,7 +107,23 @@ def test_bs_agent_dingdan_cleaning_module_imports():
         "load_input_dataframe",
         "save_basic_profile",
         "analyze_numeric_desensitization",
+        "apply_order_status_lifecycle",
         "build_clean_table",
+        "build_clean_model_audit_v2",
         "build_quality_report",
+        "save_v2_outputs",
     ]:
         assert hasattr(module, name)
+
+
+def test_schema_records_second_round_model_columns():
+    schema = yaml.safe_load((ROOT / "configs/data_schema/bs_agent_dingdan_schema.yaml").read_text(encoding="utf-8"))
+    columns = {c["alias"]: c for c in schema["columns"]}
+    assert columns["enterprise_code"]["notes"] == "invalid_by_business_peer_usage"
+    assert columns["insurance_drug_code"]["audit_only"] is True
+    assert columns["product_name"]["algorithm_usable"] is False
+    assert columns["drug_category_raw"]["algorithm_usable"] is False
+    assert "order_phase_code" in schema["model_columns"]
+    assert "delivery_state_code" in schema["model_columns"]
+    assert "hospital_name" not in schema["model_columns"]
+    assert "order_status_raw" not in schema["model_columns"]
