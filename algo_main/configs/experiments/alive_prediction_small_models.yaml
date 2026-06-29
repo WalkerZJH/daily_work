@@ -1,0 +1,268 @@
+experiment_name: alive_prediction_small_models_v1
+
+input:
+  model_base_path: data/03_cleaned/bs_agent_dingdan_model_base.parquet
+  cache_dir: data/cache/alive_prediction_sanity
+  reports_dir: reports/alive_prediction_small_models
+  reuse_cached_features: true
+  refresh_cache: false
+
+entity:
+  keys:
+    - manufacturer_code
+    - hospital_code
+    - drug_group
+  drug_group_source: drug_code
+
+candidate_policy:
+  default: monitorable
+  max_monitor_gap_months: 12
+
+scopes:
+  primary_train_scope: recurring_only
+  eval_scopes:
+    - recurring_only
+    - all_monitorable
+    - one_shot_only
+
+recurring_definition:
+  min_purchase_count_asof_cutoff: 3
+  min_active_month_count_asof_cutoff: 2
+
+one_shot_policy:
+  one_shot_flag_column: one_shot_flag
+  exclude_from_probability_training: true
+  keep_attention_list_separate: true
+  one_shot_attention_flag_column: one_shot_high_value_silence_flag
+
+horizons_months:
+  - 3
+  - 6
+  - 12
+
+labels:
+  H3: label_die_H3
+  H6: label_die_H6
+  H12: label_die_H12
+
+time_split:
+  type: fixed_temporal_holdout
+  train_cutoff_start: "2022-01"
+  train_cutoff_end: "2022-12"
+  purge_cutoff_start: "2023-01"
+  purge_cutoff_end: "2023-12"
+  test_cutoff_start: "2024-01"
+  test_cutoff_end: "2024-12"
+  purge_gap_note: "2023 is left as a conservative purge gap for H12."
+  no_random_split: true
+
+time_splits:
+  train_2022_only:
+    type: fixed_temporal_holdout
+    train_cutoff_start: "2022-01"
+    train_cutoff_end: "2022-12"
+    purge_cutoff_start: "2023-01"
+    purge_cutoff_end: "2023-12"
+    test_cutoff_start: "2024-01"
+    test_cutoff_end: "2024-12"
+    no_random_split: true
+    purge_gap_note: "2023 is left as a conservative purge gap for H12."
+  train_2021_2022:
+    type: fixed_temporal_holdout
+    train_cutoff_start: "2021-01"
+    train_cutoff_end: "2022-12"
+    purge_cutoff_start: "2023-01"
+    purge_cutoff_end: "2023-12"
+    test_cutoff_start: "2024-01"
+    test_cutoff_end: "2024-12"
+    no_random_split: true
+    purge_gap_note: "2023 is left as a conservative purge gap for H12."
+  expanded_train_2020_2022:
+    type: fixed_temporal_holdout
+    train_cutoff_start: "2020-01"
+    train_cutoff_end: "2022-12"
+    purge_cutoff_start: "2023-01"
+    purge_cutoff_end: "2023-12"
+    test_cutoff_start: "2024-01"
+    test_cutoff_end: "2024-12"
+    no_random_split: true
+    purge_gap_note: "2023 is left as a conservative purge gap for H12."
+
+smoke_time_split:
+  train_cutoff_start: "2024-01"
+  train_cutoff_end: "2024-06"
+  test_cutoff_start: "2024-07"
+  test_cutoff_end: "2024-12"
+  note: "smoke_test_only_not_final_temporal_validation"
+
+trainability_gate:
+  train_row_count_min: 1000
+  test_row_count_min: 1000
+  train_positive_count_min: 50
+  train_negative_count_min: 50
+  test_positive_count_min: 50
+  test_negative_count_min: 50
+  train_cutoff_count_min: 3
+  test_cutoff_count_min: 3
+  train_manufacturer_count_min: 2
+  test_manufacturer_count_min: 2
+
+models:
+  logistic_regression:
+    enabled: true
+    class_path: sklearn.linear_model.LogisticRegression
+    params:
+      max_iter: 1000
+      C: 1.0
+      penalty: l2
+      solver: lbfgs
+      class_weight: null
+      random_state: 42
+
+  lightgbm_small:
+    enabled: true
+    optional_dependency: lightgbm
+    class_path: lightgbm.LGBMClassifier
+    params:
+      objective: binary
+      n_estimators: 200
+      learning_rate: 0.05
+      num_leaves: 31
+      max_depth: -1
+      min_child_samples: 50
+      subsample: 0.8
+      colsample_bytree: 0.8
+      random_state: 42
+      n_jobs: -1
+
+  catboost_small:
+    enabled: true
+    optional_dependency: catboost
+    class_path: catboost.CatBoostClassifier
+    params:
+      iterations: 300
+      depth: 6
+      learning_rate: 0.05
+      loss_function: Logloss
+      eval_metric: AUC
+      random_seed: 42
+      verbose: false
+      allow_writing_files: false
+      thread_count: -1
+
+  xgboost_small:
+    enabled: true
+    optional_dependency: xgboost
+    class_path: xgboost.XGBClassifier
+    params:
+      objective: binary:logistic
+      n_estimators: 200
+      learning_rate: 0.05
+      max_depth: 4
+      min_child_weight: 5
+      subsample: 0.8
+      colsample_bytree: 0.8
+      eval_metric: logloss
+      tree_method: hist
+      random_state: 42
+      n_jobs: -1
+
+features:
+  id_columns:
+    - manufacturer_code
+    - hospital_code
+    - drug_group
+    - cutoff_month
+
+  allowed_numeric_groups:
+    - recency
+    - frequency
+    - quantity_amount_history
+    - interval
+    - entity_age
+    - demand_profile
+    - value_at_risk_nonnegative
+
+  allowed_categorical_columns:
+    - manufacturer_code
+    - hospital_code
+    - drug_group
+    - province_code
+    - city_code
+    - county_code
+    - hospital_level_code
+    - ownership_type_code
+    - drug_category_code
+    - demand_pattern_type_asof_cutoff
+
+  low_cardinality_categorical_for_logistic:
+    - province_code
+    - city_code
+    - hospital_level_code
+    - ownership_type_code
+    - drug_category_code
+    - demand_pattern_type_asof_cutoff
+
+  high_cardinality_categorical:
+    - manufacturer_code
+    - hospital_code
+    - drug_group
+
+  logistic_use_high_cardinality: false
+  tree_use_high_cardinality: true
+
+  exclude_columns_patterns:
+    - "label_alive_H*"
+    - "label_die_H*"
+    - "next_purchase_*"
+    - "days_until_next_purchase"
+    - "churn_probability_H*"
+    - "business_priority_score_H*"
+    - "rank_by_probability_H*"
+    - "rank_by_business_priority_H*"
+
+  exclude_columns:
+    - order_detail_id
+    - row_uid
+    - purchase_time
+    - order_status_raw
+    - hospital_name
+    - distributor_name
+    - manufacturer_name
+    - product_name
+    - one_shot_business_priority_score
+    - rule_score
+
+  status_history_features:
+    enabled: false
+
+value_at_risk:
+  use_nonnegative_for_business_priority: true
+  amount_columns:
+    H3: value_at_risk_amount_nonnegative_H3_asof_cutoff
+    H6: value_at_risk_amount_nonnegative_H6_asof_cutoff
+    H12: value_at_risk_amount_nonnegative_H12_asof_cutoff
+  quantity_columns:
+    H3: value_at_risk_quantity_nonnegative_H3_asof_cutoff
+    H6: value_at_risk_quantity_nonnegative_H6_asof_cutoff
+    H12: value_at_risk_quantity_nonnegative_H12_asof_cutoff
+
+metrics:
+  ranking_group:
+    - cutoff_month
+    - manufacturer_code
+  min_group_rows_for_topk: 5
+  k_values:
+    - 10
+    - 20
+    - 50
+    - 100
+    - top_1_pct
+    - top_5_pct
+    - top_10_pct
+
+outputs:
+  save_model_artifacts: false
+  save_prediction_artifacts: false
+  write_reports: true
+  reports_dir: reports/alive_prediction_small_models

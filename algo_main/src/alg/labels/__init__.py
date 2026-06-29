@@ -1,0 +1,2 @@
+"""Alive prediction label builders."""
+

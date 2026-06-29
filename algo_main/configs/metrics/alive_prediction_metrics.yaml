@@ -1,0 +1,82 @@
+name: alive_prediction_metrics
+version: 1
+status: design
+description: >
+  Metrics contract for the alive/churn probability task. Probability quality
+  metrics and business ranking metrics are intentionally separated.
+
+horizons_months: [3, 6, 12]
+
+probability_outputs:
+  H3: churn_probability_H3
+  H6: churn_probability_H6
+  H12: churn_probability_H12
+
+labels:
+  H3: label_die_H3
+  H6: label_die_H6
+  H12: label_die_H12
+
+probability_quality_metrics:
+  calibration:
+    - brier_score
+    - log_loss
+    - calibration_curve
+    - ece
+  discrimination:
+    - auc
+    - pr_auc
+  topk_by_probability:
+    - precision_at_k
+    - recall_at_k
+    - ndcg_at_k
+    - lift_at_k
+
+business_ranking_metrics:
+  ranking_score_template: business_priority_score_H{horizon}
+  value_columns:
+    amount_template: value_at_risk_amount_H{horizon}
+    quantity_template: value_at_risk_quantity_H{horizon}
+  metrics:
+    - captured_value_at_k
+    - value_weighted_ndcg_at_k
+    - expected_loss_captured_at_k
+    - topk_total_value_at_risk
+    - topk_average_business_priority_score
+    - precision_at_k_by_business_priority_guardrail
+
+k_values:
+  fixed: [10, 20, 50, 100]
+  percent:
+    - 0.01
+    - 0.05
+    - 0.10
+
+groupby_dimensions:
+  required:
+    - cutoff_month
+  optional:
+    - manufacturer_code
+    - drug_group
+    - drug_category_code
+    - hospital_level_code
+    - demand_pattern_type
+
+aggregation:
+  rule: compute metrics within each cutoff_month first, then average across cutoffs
+  manufacturer_topk: compute within manufacturer_code, never across all manufacturers
+
+validation:
+  strategy: rolling_origin_temporal_split
+  purged_by_horizon: true
+  rule: max_train_cutoff + horizon <= valid_start
+  forbidden:
+    - random_k_fold_as_primary_validation
+    - global_topk_mixed_across_cutoffs
+    - using_business_priority_score_as_probability_metric_input
+
+report_outputs:
+  - reports/alive_prediction/baseline_metric_report.md
+  - reports/alive_prediction/model_metric_report.md
+  - reports/alive_prediction/calibration_report.md
+  - reports/alive_prediction/topk_sample_review.md

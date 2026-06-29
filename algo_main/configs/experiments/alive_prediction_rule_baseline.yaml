@@ -1,0 +1,55 @@
+name: alive_prediction_rule_baseline
+version: 1
+status: design_and_smoke_test
+description: >
+  Rule baseline and one-shot business attention configuration. The rule
+  baseline is a minimum benchmark, not a calibrated churn probability model.
+
+recurring_candidate:
+  min_purchase_count_asof_cutoff: 3
+  min_active_month_count_asof_cutoff: 2
+
+one_shot_high_value_silence:
+  enabled: true
+  recent_one_shot_lookback_months: 36
+  min_one_shot_silence_months: 3
+  high_value_threshold_mode: quantile_by_group
+  high_value_quantile: 0.9
+  group_keys:
+    - manufacturer_code
+    - drug_group
+  default_priority_score: value_at_risk_amount_nonnegative_H12_asof_cutoff
+  exclude_from_probability_training_by_default: true
+  include_in_business_attention_pool: true
+  note: >
+    One-shot high-value silence entities are recalled by a business rule. They
+    are not assigned calibrated churn_probability by the probability model.
+
+rule_baseline:
+  enabled: true
+  eligible_subset: recurring
+  score_name: rule_score
+  components:
+    months_since_last_purchase_score:
+      enabled: true
+      weight: 0.35
+    overdue_ratio_score:
+      enabled: true
+      weight: 0.25
+    recent_frequency_drop_score:
+      enabled: true
+      weight: 0.20
+    recent_quantity_drop_score:
+      enabled: true
+      weight: 0.20
+  topk_group_keys:
+    - cutoff_month
+    - manufacturer_code
+  k_values:
+    - 10
+    - 20
+    - 50
+    - 100
+    - top_1_pct
+    - top_5_pct
+    - top_10_pct

@@ -1,0 +1,228 @@
+name: alive_prediction_feature_view
+version: 1
+status: design
+description: >
+  Feature view contract for the BS_Agent_DingDan alive/churn probability task.
+  This file defines the intended feature surface only; it does not trigger model
+  training or data extraction.
+
+input:
+  model_base: data/03_cleaned/bs_agent_dingdan_model_base.parquet
+  planned_facts:
+    purchase_event: data/04_facts/fact_purchase_event.parquet
+    entity_month: data/04_facts/fact_entity_month.parquet
+    demand_profile: data/04_facts/entity_demand_profile.parquet
+  planned_feature_table: data/05_features/entity_cutoff_feature_table.parquet
+
+entity:
+  grain:
+    - manufacturer_code
+    - hospital_code
+    - drug_group
+  primary_drug_group_source: drug_code
+  secondary_drug_group_source: drug_category_code
+  candidate_rule: candidate entities must have purchase history at or before cutoff_month
+
+candidate_policy:
+  default: monitorable
+  max_monitor_gap_months: 12
+  alternatives:
+    - all_seen
+
+cold_start:
+  min_purchase_count_asof_cutoff: 3
+  min_active_month_count_asof_cutoff: 2
+  min_months_observed_asof_cutoff: 3
+
+time:
+  time_grain: month
+  cutoff_column: cutoff_month
+  event_time_column: purchase_time
+  cutoff_semantics: cutoff_month is a month-end snapshot
+  purchase_month_rule: purchase_month is the month containing purchase_time
+  feature_boundary: purchase_month <= cutoff_month
+  label_boundary: purchase_month in [cutoff_month + 1, cutoff_month + H]
+
+targets:
+  horizons_months: [3, 6, 12]
+  labels:
+    H3:
+      alive: label_alive_H3
+      die: label_die_H3
+    H6:
+      alive: label_alive_H6
+      die: label_die_H6
+    H12:
+      alive: label_alive_H12
+      die: label_die_H12
+  main_model_target_template: label_die_H{horizon}
+  probability_output_template: churn_probability_H{horizon}
+
+post_processing:
+  value_at_risk:
+    amount_raw_template: value_at_risk_amount_raw_H{horizon}_asof_cutoff
+    quantity_raw_template: value_at_risk_quantity_raw_H{horizon}_asof_cutoff
+    amount_nonnegative_template: value_at_risk_amount_nonnegative_H{horizon}_asof_cutoff
+    quantity_nonnegative_template: value_at_risk_quantity_nonnegative_H{horizon}_asof_cutoff
+    amount_rule: prior_12_month_avg_purchase_amount_asof_cutoff * horizon
+    quantity_rule: prior_12_month_avg_purchase_quantity_asof_cutoff * horizon
+  business_priority:
+    score_template: business_priority_score_H{horizon}
+    rule: churn_probability_H * value_at_risk_amount_nonnegative_H
+    note: business_priority_score is not a probability
+
+allowed_feature_groups:
+  recency:
+    - days_since_last_purchase
+    - months_since_last_purchase
+    - expected_next_purchase_gap
+    - overdue_ratio
+  frequency:
+    - order_count_last_1m
+    - order_count_last_3m
+    - order_count_last_6m
+    - order_count_last_12m
+    - active_months_last_3m
+    - active_months_last_6m
+    - active_months_last_12m
+    - frequency_recent_vs_base
+  quantity_amount_trend:
+    - purchase_quantity_sum_last_3m
+    - purchase_quantity_sum_last_6m
+    - purchase_quantity_sum_last_12m
+    - purchase_amount_sum_last_3m
+    - purchase_amount_sum_last_6m
+    - purchase_amount_sum_last_12m
+    - purchase_quantity_recent_vs_base
+    - purchase_amount_recent_vs_base
+    - purchase_quantity_trend
+    - purchase_amount_trend
+  interval:
+    - median_purchase_interval_days_asof_cutoff
+    - mean_purchase_interval_days_asof_cutoff
+    - std_purchase_interval_days_asof_cutoff
+    - purchase_interval_cv_asof_cutoff
+    - purchase_interval_iqr_asof_cutoff
+  relationship_strength:
+    - hospital_drug_total_orders_asof_cutoff
+    - hospital_drug_active_months_asof_cutoff
+    - hospital_total_orders_asof_cutoff
+    - drug_total_hospitals_asof_cutoff
+    - hospital_drug_share_in_hospital_asof_cutoff
+  status_history:
+    - failed_count_last_3m_asof_cutoff
+    - failed_count_last_6m_asof_cutoff
+    - failed_rate_last_6m_asof_cutoff
+    - days_since_last_failed_order
+    - received_count_last_3m_asof_cutoff
+    - received_rate_last_6m_asof_cutoff
+    - terminal_count_last_6m_asof_cutoff
+    - last_order_phase_code_asof_cutoff
+    - last_delivery_state_code_asof_cutoff
+    - last_order_failure_flag_asof_cutoff
+  static_entity:
+    - manufacturer_code
+    - hospital_code
+    - drug_group
+    - province_code
+    - city_code
+    - county_code
+    - hospital_level_code
+    - ownership_type_code
+    - drug_category_code
+  demand_profile:
+    - purchase_count_total_asof_cutoff
+    - active_month_count_total_asof_cutoff
+    - months_observed_asof_cutoff
+    - active_month_ratio_asof_cutoff
+    - adi_asof_cutoff
+    - cv2_quantity_asof_cutoff
+    - seasonality_strength_asof_cutoff
+    - burstiness_score_asof_cutoff
+    - demand_pattern_type
+    - cold_start_flag
+    - confidence_score
+  value_at_risk_features:
+    - historical_avg_monthly_amount_asof_cutoff
+    - historical_avg_monthly_quantity_asof_cutoff
+    - entity_value_tier_asof_cutoff
+    - value_at_risk_amount_raw_H3_asof_cutoff
+    - value_at_risk_amount_raw_H6_asof_cutoff
+    - value_at_risk_amount_raw_H12_asof_cutoff
+    - value_at_risk_quantity_raw_H3_asof_cutoff
+    - value_at_risk_quantity_raw_H6_asof_cutoff
+    - value_at_risk_quantity_raw_H12_asof_cutoff
+    - value_at_risk_amount_nonnegative_H3_asof_cutoff
+    - value_at_risk_amount_nonnegative_H6_asof_cutoff
+    - value_at_risk_amount_nonnegative_H12_asof_cutoff
+    - value_at_risk_quantity_nonnegative_H3_asof_cutoff
+    - value_at_risk_quantity_nonnegative_H6_asof_cutoff
+    - value_at_risk_quantity_nonnegative_H12_asof_cutoff
+    - negative_value_at_risk_amount_flag
+    - negative_value_at_risk_quantity_flag
+
+excluded_columns:
+  trace_keys:
+    - row_uid
+    - order_detail_id
+  raw_text_or_labels:
+    - hospital_name
+    - distributor_name
+    - manufacturer_name
+    - product_name
+    - order_status_raw
+    - order_status_norm
+    - order_phase_label
+    - delivery_state_label
+    - hospital_level_raw
+    - hospital_level_label
+    - ownership_type_raw
+    - drug_category_raw
+  future_or_label_like:
+    - next_purchase_time
+    - next_purchase_month
+    - days_until_next_purchase
+    - label_alive_H3
+    - label_die_H3
+    - label_alive_H6
+    - label_die_H6
+    - label_alive_H12
+    - label_die_H12
+    - churn_probability_H3
+    - churn_probability_H6
+    - churn_probability_H12
+    - business_priority_score_H3
+    - business_priority_score_H6
+    - business_priority_score_H12
+  forbidden_price_logic:
+    - inferred_unit_price
+    - price_from_amount_quantity
+    - purchase_price_consistency
+
+leakage_rules:
+  - all features must be computed as of cutoff_month
+  - candidate entities must exist at or before cutoff_month
+  - target encoding and frequency encoding must be fit inside train folds only
+  - preprocessing must fit on train and transform validation/test
+  - value_at_risk must use prior history only
+  - historical value and scale features may enter the churn probability model if computed as of cutoff
+  - future realized loss and business_priority_score must not enter probability model inputs or targets
+  - purchase_time is a time index and must not enter X as a raw timestamp
+  - status fields can only be historical aggregations before cutoff
+  - business_priority_score must never be interpreted as churn_probability
+
+categorical_encoding:
+  preferred:
+    - CatBoost native categorical handling
+    - time-aware frequency encoding
+    - time-aware out-of-fold target encoding
+  high_cardinality_columns:
+    - manufacturer_code
+    - hospital_code
+    - drug_group
+
+null_handling:
+  fit_scope: train_only
+  numeric_default: median_or_explicit_missing_indicator
+  categorical_default: __MISSING__
+  cold_start_default: group_prior_asof_cutoff

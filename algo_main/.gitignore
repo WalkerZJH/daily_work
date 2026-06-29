@@ -10,6 +10,7 @@ data/04_facts/*
 data/05_features/*
 data/06_train_sets/*
 data/07_outputs/*
+data/cache/*
 !data/00_external/.gitkeep
 !data/01_raw/.gitkeep
 !data/02_interim/.gitkeep
@@ -18,6 +19,7 @@ data/07_outputs/*
 !data/05_features/.gitkeep
 !data/06_train_sets/.gitkeep
 !data/07_outputs/.gitkeep
+!data/cache/.gitkeep
 
 exports/eda/*
 exports/clean/*
@@ -35,6 +37,9 @@ artifacts/handoff/*
 !artifacts/promoted_models/.gitkeep
 !artifacts/handoff/.gitkeep
 
+reports/alive_prediction*/
+!reports/alive_prediction/.gitkeep
+
 *.parquet
 *.csv
 *.xlsx
@@ -42,6 +47,7 @@ artifacts/handoff/*
 *.pkl
 *.skops
 *.zip
+*.cbm
 __pycache__/
 *.py[cod]
 *.egg-info/

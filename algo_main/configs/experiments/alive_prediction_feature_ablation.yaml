@@ -1,0 +1,97 @@
+experiment_name: alive_prediction_feature_ablation_v1
+base_config: configs/experiments/alive_prediction_small_models.yaml
+split_name: expanded_train_2020_2022
+scope: recurring_only
+reports_dir: reports/alive_prediction_feature_ablation
+
+models:
+  - catboost_small
+  - lightgbm_small
+  - xgboost_small
+  - logistic_regression
+
+feature_groups:
+  base_recency_frequency:
+    - months_since_last_purchase_asof_cutoff
+    - months_since_first_purchase_asof_cutoff
+    - purchase_count_asof_cutoff
+    - active_month_count_asof_cutoff
+    - months_observed_asof_cutoff
+    - active_month_ratio_asof_cutoff
+  quantity_amount_history:
+    - purchase_quantity_sum_last_3m_asof_cutoff
+    - purchase_quantity_sum_last_6m_asof_cutoff
+    - purchase_quantity_sum_last_12m_asof_cutoff
+    - purchase_amount_sum_last_3m_asof_cutoff
+    - purchase_amount_sum_last_6m_asof_cutoff
+    - purchase_amount_sum_last_12m_asof_cutoff
+    - historical_avg_monthly_amount_asof_cutoff
+    - historical_avg_monthly_quantity_asof_cutoff
+  interval_features:
+    - median_purchase_interval_days_asof_cutoff
+    - mean_purchase_interval_days_asof_cutoff
+    - std_purchase_interval_days_asof_cutoff
+    - purchase_interval_iqr_asof_cutoff
+    - median_purchase_interval_days_missing_flag
+    - mean_purchase_interval_days_missing_flag
+    - std_purchase_interval_days_missing_flag
+    - purchase_interval_iqr_missing_flag
+  demand_profile_features:
+    - cold_start_flag
+    - adi_asof_cutoff
+    - cv2_quantity_asof_cutoff
+    - demand_pattern_type_asof_cutoff
+  static_category_features:
+    - province_code
+    - city_code
+    - county_code
+    - hospital_level_code
+    - ownership_type_code
+    - drug_category_code
+    - manufacturer_code
+    - hospital_code
+    - drug_group
+  value_features:
+    - value_at_risk_amount_nonnegative_H3_asof_cutoff
+    - value_at_risk_amount_nonnegative_H6_asof_cutoff
+    - value_at_risk_amount_nonnegative_H12_asof_cutoff
+    - value_at_risk_quantity_nonnegative_H3_asof_cutoff
+    - value_at_risk_quantity_nonnegative_H6_asof_cutoff
+    - value_at_risk_quantity_nonnegative_H12_asof_cutoff
+
+ablations:
+  base_recency_frequency_only:
+    include_groups: [base_recency_frequency]
+  base_plus_quantity_amount_history:
+    include_groups: [base_recency_frequency, quantity_amount_history]
+  base_plus_interval_features:
+    include_groups: [base_recency_frequency, interval_features]
+  base_plus_demand_profile_features:
+    include_groups: [base_recency_frequency, demand_profile_features]
+  base_plus_static_category_features:
+    include_groups: [base_recency_frequency, static_category_features]
+  base_plus_value_features:
+    include_groups: [base_recency_frequency, value_features]
+  all_features_without_value:
+    include_groups:
+      - base_recency_frequency
+      - quantity_amount_history
+      - interval_features
+      - demand_profile_features
+      - static_category_features
+  all_features:
+    include_groups:
+      - base_recency_frequency
+      - quantity_amount_history
+      - interval_features
+      - demand_profile_features
+      - static_category_features
+      - value_features
+
+disabled_feature_families:
+  - status_history_features
+  - target_encoding
+  - ranker
+  - survival
+  - BG-NBD
+  - Pareto-NBD
