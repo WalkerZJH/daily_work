@@ -1,0 +1,1 @@
+No safe delete candidates in this dry-run. Keep all data/cache/parquet/reports until manual approval.
