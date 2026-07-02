@@ -25,10 +25,10 @@ try {
 <template>
   <header class="topbar">
     <button class="sidebar-toggle" title="收起 / 展开侧边栏" type="button" @click="toggleSidebar">
-      ☰
+      ◀
     </button>
     <a class="topbar-logo" href="index.html">
-      <div class="logo-icon">终</div>
+      <div class="logo-icon">智</div>
       <div>
         <div class="logo-text">终端不丢智能体</div>
         <div class="logo-sub">供应链风险巡检 · 智能预警</div>

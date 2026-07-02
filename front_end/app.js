@@ -1291,3 +1291,10 @@ document.addEventListener('DOMContentLoaded', function() {
     card.style.animationDelay = (i * 0.07).toFixed(2) + 's';
   });
 });
+
+Object.assign(window, {
+  showToast,
+  openForwardModal,
+  closeForwardModal,
+  openFeedbackModal
+});
