@@ -1,0 +1,5 @@
+final_candidate_status,review_priority,row_count
+low_confidence_watch,P2,5
+observation_only,P2,275593
+one_shot_attention,P2,116612
+priority_review,P0,1167

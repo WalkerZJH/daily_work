@@ -1,0 +1,8 @@
+horizon,survival_state,row_count,die_rate
+H12,likely_churn_interval,19,0.10526315789473684
+H12,materially_overdue,178,0.6460674157303371
+H12,near_due,5,0.2
+H3,likely_churn_interval,1,0.0
+H3,materially_overdue,496,0.7983870967741935
+H6,likely_churn_interval,5,0.6
+H6,materially_overdue,468,0.7094017094017094

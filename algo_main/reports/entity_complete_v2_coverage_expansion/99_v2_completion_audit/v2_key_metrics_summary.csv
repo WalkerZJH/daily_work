@@ -1,0 +1,17 @@
+metric,value
+v2_done,true
+blocking_leakage_count,0
+feature_rows,1448628
+manufacturer_count,14
+entity_count,60641
+best_model,xgboost_small
+best_feature_set,all_safe_features_without_choice_set
+best_auc,0.8190319644940823
+best_pr_auc_gain,0.3080575268267463
+best_ece,0.0180645446129345
+choice_set_auc_gain,-0.000169332790102672
+best_calibration_by_mean_ece,raw
+m1_recommended_policy,multi_recall_union_top10
+m1_recall,0.43433345731347417
+m1_manual_load,8741.711111111112
+customer_facing_probability_service,false

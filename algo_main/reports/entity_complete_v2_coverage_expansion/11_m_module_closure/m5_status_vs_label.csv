@@ -1,0 +1,11 @@
+horizon,final_candidate_status,row_count,die_rate
+H12,low_confidence_watch,5,0.2
+H12,observation_only,37671,0.514188633166096
+H12,one_shot_attention,16865,0.6436406759561222
+H12,priority_review,197,0.5939086294416244
+H3,observation_only,125412,0.7525436162408701
+H3,one_shot_attention,53442,0.8526626997492609
+H3,priority_review,497,0.7967806841046278
+H6,observation_only,112510,0.6357212692205138
+H6,one_shot_attention,46305,0.7608033689666343
+H6,priority_review,473,0.7082452431289641
