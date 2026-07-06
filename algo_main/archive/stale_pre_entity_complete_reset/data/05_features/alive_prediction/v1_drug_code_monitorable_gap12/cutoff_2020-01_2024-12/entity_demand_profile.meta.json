@@ -1,0 +1,43 @@
+{
+  "artifact_name": "entity_demand_profile",
+  "artifact_type": "features",
+  "version": "v1",
+  "created_at": "2026-06-29T08:49:06.830994+00:00",
+  "row_count": 1406590,
+  "columns": [
+    "manufacturer_code",
+    "hospital_code",
+    "drug_group",
+    "cutoff_month",
+    "purchase_count_asof_cutoff",
+    "active_month_count_asof_cutoff",
+    "months_observed_asof_cutoff",
+    "active_month_ratio_asof_cutoff",
+    "median_purchase_interval_days_asof_cutoff",
+    "mean_purchase_interval_days_asof_cutoff",
+    "std_purchase_interval_days_asof_cutoff",
+    "purchase_interval_iqr_asof_cutoff",
+    "adi_asof_cutoff",
+    "cv2_quantity_asof_cutoff",
+    "seasonality_strength_asof_cutoff",
+    "burstiness_score_asof_cutoff",
+    "cold_start_flag",
+    "confidence_score",
+    "demand_pattern_type_asof_cutoff"
+  ],
+  "schema_hash": "52c6b5ae76eadc137fa13373887201c20bc4221c2b6c7a0b2f6cbedfa6cebb7f",
+  "source_artifacts": [],
+  "source_hashes": {},
+  "config_hashes": {},
+  "drug_group_source": "drug_code",
+  "candidate_policy": "monitorable",
+  "max_monitor_gap_months": 12,
+  "cutoff_start": "2020-01",
+  "cutoff_end": "2024-12",
+  "horizons": [
+    3,
+    6,
+    12
+  ],
+  "include_status_history": false
+}

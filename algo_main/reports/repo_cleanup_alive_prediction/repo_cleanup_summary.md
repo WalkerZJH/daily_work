@@ -4,10 +4,10 @@ Mode: dry-run
 
 No files were deleted by this audit.
 
-- Script files scanned: 29
-- Report files inventoried: 209
-- Data/artifact files inventoried: 49
-- Duplicate-code candidate rows: 99
+- Script files scanned: 56
+- Report files inventoried: 545
+- Data/artifact files inventoried: 33
+- Duplicate-code candidate rows: 178
 - Obsolete script candidate rows: 5
 - Obsolete doc candidate rows: 2
 

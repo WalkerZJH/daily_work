@@ -1,0 +1,24 @@
+{
+  "artifact_name": "fact_entity_month",
+  "artifact_type": "facts",
+  "version": "v1",
+  "created_at": "2026-06-29T06:59:19.255288+00:00",
+  "row_count": 88840,
+  "columns": [],
+  "schema_hash": null,
+  "source_artifacts": [
+    "C:\\Users\\admin\\Myprojects\\for_git\\algo_main\\data\\cache\\alive_prediction_sanity\\fact_entity_month__drug_code__2024-01__2024-12__monitorable__gap12__H3_6_12__status0.parquet"
+  ],
+  "source_hashes": {
+    "legacy_source_size": "1800077"
+  },
+  "config_hashes": {},
+  "legacy_source_path": "C:\\Users\\admin\\Myprojects\\for_git\\algo_main\\data\\cache\\alive_prediction_sanity\\fact_entity_month__drug_code__2024-01__2024-12__monitorable__gap12__H3_6_12__status0.parquet",
+  "drug_group_source": "drug_code",
+  "candidate_policy": "monitorable",
+  "max_monitor_gap_months": 12,
+  "cutoff_start": "2024-01",
+  "cutoff_end": "2024-12",
+  "horizons": "H3_6_12",
+  "include_status_history": false
+}

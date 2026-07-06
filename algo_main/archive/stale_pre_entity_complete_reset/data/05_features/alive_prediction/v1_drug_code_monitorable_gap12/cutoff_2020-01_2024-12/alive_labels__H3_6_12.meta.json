@@ -1,0 +1,38 @@
+{
+  "artifact_name": "alive_labels",
+  "artifact_type": "features",
+  "version": "v1",
+  "created_at": "2026-06-29T08:49:07.953625+00:00",
+  "row_count": 211279,
+  "columns": [
+    "manufacturer_code",
+    "hospital_code",
+    "drug_group",
+    "first_purchase_month",
+    "last_purchase_month_asof_cutoff",
+    "months_since_last_purchase",
+    "cutoff_month",
+    "candidate_policy",
+    "label_alive_H3",
+    "label_die_H3",
+    "label_alive_H6",
+    "label_die_H6",
+    "label_alive_H12",
+    "label_die_H12"
+  ],
+  "schema_hash": "2626ec8dc2a54b9f9d7b94949d9fb7afa0f58f0bd8600834264589e2ef860998",
+  "source_artifacts": [],
+  "source_hashes": {},
+  "config_hashes": {},
+  "drug_group_source": "drug_code",
+  "candidate_policy": "monitorable",
+  "max_monitor_gap_months": 12,
+  "cutoff_start": "2020-01",
+  "cutoff_end": "2024-12",
+  "horizons": [
+    3,
+    6,
+    12
+  ],
+  "include_status_history": false
+}
