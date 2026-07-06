@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import sys
+import tempfile
 
 import pandas as pd
 
@@ -226,7 +227,7 @@ def main() -> None:
     args = parse_args()
     survival, v1_evidence = load_inputs(dry_run=args.dry_run)
     outputs = run_detectors_v2(survival, v1_evidence)
-    output_dir = OUTPUT_DIR if not args.dry_run else OUTPUT_DIR / "_dry_run"
+    output_dir = OUTPUT_DIR if not args.dry_run else Path(tempfile.gettempdir()) / "algo_main_test_dry_run/alive_prediction_detectors_v2"
     write_outputs(outputs, survival, v1_evidence, output_dir)
     print(f"output_dir={output_dir}")
     print(f"D001_rows={len(outputs['interval'])}")

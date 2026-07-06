@@ -136,7 +136,7 @@ class ExtractConfig:
     min_manufacturer_rows: int = 200_000
     target_manufacturer_rows: int = 350_000
     manufacturer_batch_size: int = 100_000
-    entity_batch_size: int = 100
+    entity_batch_size: int = 500
     sql_chunksize: int = 50_000
     query_timeout: int = 120
     dry_run: bool = False
@@ -549,9 +549,11 @@ def _write_sql_chunks_to_parquet(engine: Any, sql: str, output_path: Path, *, pa
         with engine.connect() as conn:
             conn = conn.execution_options(timeout=int(query_timeout))
             for chunk in pd.read_sql_query(text(sql), conn, params=params, chunksize=chunksize):
-                table = pa.Table.from_pandas(chunk, preserve_index=False)
                 if writer is None:
+                    table = sql_chunk_to_arrow_table(chunk)
                     writer = pq.ParquetWriter(output_path, table.schema)
+                else:
+                    table = sql_chunk_to_arrow_table(chunk, schema=writer.schema)
                 writer.write_table(table)
                 total += len(chunk)
     finally:
@@ -560,6 +562,23 @@ def _write_sql_chunks_to_parquet(engine: Any, sql: str, output_path: Path, *, pa
     if total == 0:
         pd.DataFrame().to_parquet(output_path, index=False)
     return total
+
+
+def sql_chunk_to_arrow_table(chunk: pd.DataFrame, schema: Any | None = None) -> Any:
+    import pyarrow as pa
+
+    work = normalize_sql_chunk_for_parquet(chunk)
+    table = pa.Table.from_pandas(work, preserve_index=False)
+    return table.cast(schema, safe=False) if schema is not None else table
+
+
+def normalize_sql_chunk_for_parquet(chunk: pd.DataFrame) -> pd.DataFrame:
+    work = chunk.copy()
+    for col in work.columns:
+        series = work[col]
+        if pd.api.types.is_object_dtype(series) or pd.api.types.is_string_dtype(series) or pd.api.types.is_categorical_dtype(series):
+            work[col] = series.astype("string")
+    return work
 
 
 def manufacturer_detail_query(context: SqlContext, raw_columns: list[str], manufacturers: list[str]) -> tuple[str, dict[str, Any]]:
@@ -712,14 +731,20 @@ def run_entity_complete_sql_extract(
             try:
                 for start in range(0, len(selected_entities), config.entity_batch_size):
                     batch = selected_entities.iloc[start : start + config.entity_batch_size]
+                    print(
+                        f"entity_detail_batch {start // config.entity_batch_size + 1}/{math.ceil(len(selected_entities) / config.entity_batch_size)} size={len(batch)}",
+                        flush=True,
+                    )
                     sql, params = entity_detail_query(context, raw_columns, batch)
                     with engine.connect() as conn:
                         conn = conn.execution_options(timeout=int(config.query_timeout))
                         for chunk in pd.read_sql_query(text(sql), conn, params=params, chunksize=config.sql_chunksize):
-                            table = pa.Table.from_pandas(chunk, preserve_index=False)
                             if writer is None:
+                                table = sql_chunk_to_arrow_table(chunk)
                                 entity_out.parent.mkdir(parents=True, exist_ok=True)
                                 writer = pq.ParquetWriter(entity_out, table.schema)
+                            else:
+                                table = sql_chunk_to_arrow_table(chunk, schema=writer.schema)
                             writer.write_table(table)
                             counts.append(len(chunk))
             finally:
@@ -741,14 +766,20 @@ def run_entity_complete_sql_extract(
                     batch = selected_pairs.iloc[start : start + config.entity_batch_size]
                     if batch.empty:
                         continue
+                    print(
+                        f"hospital_drug_choice_batch {start // config.entity_batch_size + 1}/{math.ceil(len(selected_pairs) / config.entity_batch_size)} size={len(batch)}",
+                        flush=True,
+                    )
                     sql, params = hospital_drug_choice_set_detail_query(context, raw_columns, batch)
                     with engine.connect() as conn:
                         conn = conn.execution_options(timeout=int(config.query_timeout))
                         for chunk in pd.read_sql_query(text(sql), conn, params=params, chunksize=config.sql_chunksize):
-                            table = pa.Table.from_pandas(chunk, preserve_index=False)
                             if writer is None:
+                                table = sql_chunk_to_arrow_table(chunk)
                                 hospital_drug_out.parent.mkdir(parents=True, exist_ok=True)
                                 writer = pq.ParquetWriter(hospital_drug_out, table.schema)
+                            else:
+                                table = sql_chunk_to_arrow_table(chunk, schema=writer.schema)
                             writer.write_table(table)
                             counts.append(len(chunk))
             finally:
