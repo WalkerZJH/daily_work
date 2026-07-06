@@ -848,13 +848,22 @@ def skipped_model_row(feature_set: str, model_name: str, reason: str) -> dict[st
 
 
 def feature_dependency_complexity(feature_set: str) -> str:
-    if "choice_set" in feature_set:
+    if feature_set_uses_choice_set(feature_set):
         return "partial_platform_context"
     if "all_safe" in feature_set:
         return "medium"
     if feature_set == "base_recency_frequency":
         return "low"
     return "medium_low"
+
+
+def feature_set_uses_choice_set(feature_set: str) -> bool:
+    return feature_set in {
+        "base_plus_hospital_drug_choice_set_context",
+        "base_plus_switching_context",
+        "all_safe_features_with_choice_set",
+        "all_features",
+    }
 
 
 def feature_group_importance_audit(ablation: pd.DataFrame, feature_sets: dict[str, list[str]]) -> pd.DataFrame:
@@ -871,7 +880,7 @@ def feature_group_importance_audit(ablation: pd.DataFrame, feature_sets: dict[st
                 "auc": row.get("auc"),
                 "delta_auc_vs_base": row.get("auc") - base_auc if pd.notna(base_auc) and pd.notna(row.get("auc")) else np.nan,
                 "delta_auc_vs_all_safe_without_choice": row.get("auc") - all_safe if pd.notna(all_safe) and pd.notna(row.get("auc")) else np.nan,
-                "choice_set_dependency": "yes" if "choice_set" in str(row["feature_set"]) else "no",
+                "choice_set_dependency": "yes" if feature_set_uses_choice_set(str(row["feature_set"])) else "no",
             }
         )
     return pd.DataFrame(rows)
@@ -1170,7 +1179,20 @@ def build_decisions(**items: Any) -> dict[str, Any]:
         and selected_row.get("test_ece", 1) < 0.05
         and mean_candidate_recall >= 0.30
         and manufacturer_holdout_stable(holdout)
-        and "choice_set" not in str(best_feature.get("feature_set", ""))
+        and not feature_set_uses_choice_set(str(best_feature.get("feature_set", "")))
+    )
+    customer_blockers = []
+    if blocking:
+        customer_blockers.append("blocking_leakage")
+    if mean_candidate_recall < 0.30:
+        customer_blockers.append("candidate_die_recall_below_0.30")
+    customer_blockers.extend(
+        [
+            "selected_subset_not_full_sql_universe",
+            "probability_availability_gate_not_implemented_as_runtime_policy",
+            "partial_platform_choice_set_features_not_customer_claim_safe",
+            "manual_review_load_requires_product_threshold",
+        ]
     )
     analyst_allowed = bool(not blocking and selected_row.get("test_auc", 0) >= 0.70 and mean_candidate_recall >= 0.18)
     return {
@@ -1187,6 +1209,7 @@ def build_decisions(**items: Any) -> dict[str, Any]:
         "candidate_die_recall": mean_candidate_recall,
         "manual_review_load": candidate_reco.get("manual_review_load", np.nan),
         "customer_allowed": customer_allowed,
+        "customer_blockers": customer_blockers,
         "analyst_allowed": analyst_allowed,
         "internal_allowed": bool(not blocking),
         "proof_case_allowed": analyst_allowed,
@@ -1303,6 +1326,7 @@ def render_candidate_policy_recommendation(metrics: pd.DataFrame, reco: dict[str
 - mean candidate die recall: {reco.get("candidate_die_recall", np.nan):.4f}
 - mean manual review load per horizon-cutoff: {reco.get("manual_review_load", np.nan):.1f}
 - previous M1 mean recall reference: 0.1862
+- load caveat: the recall-maximizing union policy is appropriate for analyst batch review; use `probability_top20` or `hybrid_business_guardrail_top15` if manual load must be capped more tightly.
 
 {dataframe_to_markdown(summary.head(20))}
 """
@@ -1327,7 +1351,7 @@ Reason: full-universe strict test metrics are strong enough for analyst review i
 
 Allowed: {str(decisions["customer_allowed"]).lower()}
 
-Blocking constraints if false: candidate recall threshold, selected-subset coverage, manufacturer holdout stability, probability availability gate, and partial-platform choice-set caveats.
+Blocking constraints if false: {", ".join(decisions.get("customer_blockers", []))}
 """
 
 
