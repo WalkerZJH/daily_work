@@ -5,3 +5,4 @@
 2026-07-06T01:24:35.394128+00:00 stage=feature_group_ablation feature_set=base_recency_frequency
 2026-07-06T01:27:35.442954+00:00 stage=feature_group_ablation feature_set=base_plus_interval
 2026-07-06T01:33:44.871187+00:00 stage=feature_group_ablation feature_set=base_plus_demand_shape
+2026-07-06T01:37:14.460783+00:00 stage=feature_group_ablation feature_set=base_plus_manufacturer_hospital_context
