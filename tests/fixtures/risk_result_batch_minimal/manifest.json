@@ -1,0 +1,17 @@
+{
+  "batch_id": "fixture-monthly-v1",
+  "report_type": "monthly",
+  "report_month": "2025-12",
+  "report_date": "2026-07-07",
+  "score_cutoff_month": "2025-12",
+  "primary_horizon": "H12",
+  "available_horizons": ["H12"],
+  "schema_version": "risk_model_core_fixture_v1",
+  "data_backend": "csv",
+  "allowed_usage": ["analyst_view", "internal_diagnostic"],
+  "forbidden_usage": ["auto_dispatch", "formal_customer_probability_service", "definitive_churn_claim"],
+  "customer_facing_probability_service_allowed": false,
+  "auto_dispatch_allowed": false,
+  "proof_case_report_allowed": false,
+  "caveats": ["fixture batch for independence tests"]
+}

@@ -1,0 +1,3 @@
+risk_card_id,risk_entity_id,candidate_id,card_type,card_title,card_level,source_module,is_primary,card_summary,suggested_action
+rc_1,re_1,c1,primary_risk,Monthly risk review,orange,M5,true,Recent purchasing rhythm should be reviewed,Manual review of purchasing plans is recommended
+rc_2,re_2,c2,demand_shape_observation,Observation item,observation,M5,true,Low-frequency purchasing relationship for monitoring only,Continue observing

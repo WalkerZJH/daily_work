@@ -1,0 +1,15 @@
+{
+  "page_title": "Monthly risk clues",
+  "items": [
+    {
+      "risk_entity_id": "re_1",
+      "hospital_display_name": "Hospital H1",
+      "risk_level": "orange"
+    },
+    {
+      "risk_entity_id": "re_2",
+      "hospital_display_name": "Hospital H2",
+      "risk_level": "observation"
+    }
+  ]
+}

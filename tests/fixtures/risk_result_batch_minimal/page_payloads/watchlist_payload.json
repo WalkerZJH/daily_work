@@ -1,0 +1,9 @@
+{
+  "page_title": "Observation watchlist",
+  "items": [
+    {
+      "risk_entity_id": "re_2",
+      "risk_level": "observation"
+    }
+  ]
+}

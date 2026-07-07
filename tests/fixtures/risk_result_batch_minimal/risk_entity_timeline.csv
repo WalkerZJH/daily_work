@@ -1,0 +1,3 @@
+timeline_id,risk_entity_id,candidate_id,month,display_note
+tl_1,re_1,c1,2025-12,Fixture monthly timeline point
+tl_2,re_2,c2,2025-12,Fixture observation timeline point

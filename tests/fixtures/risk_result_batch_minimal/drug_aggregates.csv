@@ -1,0 +1,2 @@
+tenant_id,drug_group,drug_group_source,risk_entity_count,high_risk_count
+tenant_demo,d1,drug_code,1,1

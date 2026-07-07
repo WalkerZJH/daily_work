@@ -1,0 +1,3 @@
+risk_entity_id,candidate_id,tenant_id,manufacturer_code,hospital_code,drug_group,report_month,risk_level,review_status,final_candidate_status,auto_dispatch_allowed,is_one_shot,is_observation,is_high_risk,hospital_display_name,product_line_display_name,palive_display
+re_1,c1,tenant_demo,m1,h1,d1,2025-12,orange,pending,priority_review,False,False,False,True,Hospital H1,Product D1,hidden
+re_2,c2,tenant_demo,m1,h2,d2,2025-12,observation,watching,observation_only,False,False,True,False,Hospital H2,Product D2,hidden

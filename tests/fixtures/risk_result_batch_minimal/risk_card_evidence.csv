@@ -1,0 +1,3 @@
+evidence_id,risk_card_id,risk_entity_id,candidate_id,evidence_type,evidence_text,visibility_level
+ev_1,rc_1,re_1,c1,frequency_drop,Recent purchase frequency is below historical level,business_visible
+ev_2,rc_2,re_2,c2,observation,Low-frequency purchasing item should not be treated as a strong warning,business_visible

@@ -1,0 +1,14 @@
+{
+  "page_title": "Monthly workbench",
+  "hero": {
+    "high_risk_entity_count": 1,
+    "auto_dispatch_allowed": false
+  },
+  "top_clues": [
+    {
+      "risk_entity_id": "re_1",
+      "hospital_display_name": "Hospital H1",
+      "risk_level": "orange"
+    }
+  ]
+}
