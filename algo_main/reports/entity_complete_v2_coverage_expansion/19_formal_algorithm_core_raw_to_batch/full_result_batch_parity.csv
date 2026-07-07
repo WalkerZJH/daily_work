@@ -1,0 +1,9 @@
+metric,status,production_value,reference_value,blocker_reason
+reference_full_rows,info,533,871,"reference batch contains 871 multi-cutoff/multi-horizon rows; filtered to cutoff=2025-12-31, horizon=H6"
+reference_scope_rows,pass,533,12,
+risk_entities_row_count,warn,533,12,production candidate selector is refactored bounded runtime
+selected_entity_key_overlap,warn,2,12,not all same-scope reference entity keys selected by formal runtime
+risk_cards_row_count,warn,2448,38,card generation refactored in formal runtime
+evidence_row_count,warn,7332,26,evidence generation refactored in formal runtime
+auto_dispatch_allowed_count,pass,0,0,
+customer_facing_probability_service_allowed_count,pass,0,0,

@@ -12,7 +12,7 @@ import pandas as pd
 from .schema_mapping import SchemaMapping, apply_schema_mapping, ensure_columns, load_schema_mapping
 
 
-ORDER_REQUIRED_COLUMNS = ["order_date", "manufacturer_code", "hospital_code", "drug_code"]
+ORDER_REQUIRED_COLUMNS = ["order_date", "manufacturer_code", "hospital_code", "drug_code", "order_quantity", "order_amount"]
 OPTIONAL_TABLES = [
     "drug_master",
     "hospital_master",
@@ -114,3 +114,29 @@ def validate_raw_tables(tables: dict[str, pd.DataFrame]) -> None:
     if orders.empty:
         raise ValueError("orders table is required and cannot be empty.")
     ensure_columns(orders, ORDER_REQUIRED_COLUMNS, "orders")
+    report = build_raw_input_validation_report(tables)
+    bad = report[report["status"].eq("fail")]
+    if not bad.empty:
+        raise ValueError("raw input validation failed: " + "; ".join(bad["message"].astype(str).head(5)))
+
+
+def build_raw_input_validation_report(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    orders = tables.get("orders", pd.DataFrame())
+    rows: list[dict[str, Any]] = []
+    rows.append({"check_name": "orders_non_empty", "status": "pass" if not orders.empty else "fail", "invalid_count": 0 if not orders.empty else 1, "message": "" if not orders.empty else "orders table is empty"})
+    missing = [col for col in ORDER_REQUIRED_COLUMNS if col not in orders.columns]
+    rows.append({"check_name": "orders_required_columns", "status": "pass" if not missing else "fail", "invalid_count": len(missing), "message": ",".join(missing)})
+    if orders.empty or missing:
+        return pd.DataFrame(rows)
+    order_date = pd.to_datetime(orders["order_date"], errors="coerce")
+    rows.append({"check_name": "order_date_parse", "status": "pass" if not order_date.isna().any() else "fail", "invalid_count": int(order_date.isna().sum()), "message": "invalid order_date rows"})
+    for col in ["manufacturer_code", "hospital_code", "drug_code"]:
+        blank = orders[col].isna() | orders[col].astype(str).str.strip().eq("")
+        rows.append({"check_name": f"{col}_not_blank", "status": "pass" if not blank.any() else "fail", "invalid_count": int(blank.sum()), "message": f"blank {col}"})
+    for col in ["order_quantity", "order_amount"]:
+        numeric = pd.to_numeric(orders[col], errors="coerce")
+        invalid = numeric.isna()
+        if col == "order_quantity":
+            invalid = invalid | (numeric <= 0)
+        rows.append({"check_name": f"{col}_numeric", "status": "pass" if not invalid.any() else "warn", "invalid_count": int(invalid.sum()), "message": f"invalid {col}"})
+    return pd.DataFrame(rows)

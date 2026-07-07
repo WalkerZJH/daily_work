@@ -14,6 +14,7 @@ data/cache/*
 data/entity_complete_v2_coverage_expansion/10_mvc_model_package/
 data/entity_complete_v2_coverage_expansion/10_frontend_worklist_model_package/
 data/entity_complete_v2_coverage_expansion/11_business_detector_adaptation/
+data/entity_complete_v2_coverage_expansion/13_formal_algorithm_core_raw_to_batch/
 !data/00_external/.gitkeep
 !data/01_raw/.gitkeep
 !data/02_interim/.gitkeep

@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 
 from .monthly_runner import MonthlyRiskRunner
-from .validation import validate_raw_input_batch
+from .validation import raw_input_validation_report, validate_raw_input_batch
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,10 +23,13 @@ def main(argv: list[str] | None = None) -> int:
     val_p = sub.add_parser("validate-raw")
     val_p.add_argument("--raw-batch", required=True)
     val_p.add_argument("--schema-mapping")
+    val_p.add_argument("--output-report")
 
     args = parser.parse_args(argv)
     if args.command == "validate-raw":
         validate_raw_input_batch(args.raw_batch, args.schema_mapping)
+        if args.output_report:
+            raw_input_validation_report(args.raw_batch, args.schema_mapping).to_csv(args.output_report, index=False)
         print("raw_input_validation: ok")
         return 0
     if args.command == "run":

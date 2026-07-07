@@ -99,11 +99,12 @@ def engineer_features(entity_base: pd.DataFrame, orders: pd.DataFrame, cutoff_da
     features["one_shot_attention_score"] = np.where(features["is_one_shot"], features["value_at_risk_proxy"].rank(pct=True), 0.0)
     features["one_shot_flag"] = features["is_one_shot"]
     features["one_shot_silence_months"] = np.where(features["is_one_shot"], features["months_since_last_purchase_asof_cutoff"], 0.0)
-    features["province_code"] = _series_or_default(features, "region_code", "").fillna("").astype(str)
-    features["city_code"] = ""
-    features["county_code"] = ""
+    province_source = "province_code" if "province_code" in features.columns else "region_code"
+    features["province_code"] = _series_or_default(features, province_source, "").fillna("").astype(str)
+    features["city_code"] = _series_or_default(features, "city_code", "").fillna("").astype(str)
+    features["county_code"] = _series_or_default(features, "county_code", "").fillna("").astype(str)
     features["hospital_level_code"] = _series_or_default(features, "hospital_level", "").fillna("").astype(str)
-    features["ownership_type_code"] = "unknown"
+    features["ownership_type_code"] = _series_or_default(features, "ownership_type_code", "unknown").fillna("unknown").astype(str)
     features["drug_category_code"] = _series_or_default(features, "drug_category", "").fillna("").astype(str)
     features["last_order_phase_code_asof_cutoff"] = "unknown"
     features["last_delivery_state_code_asof_cutoff"] = "unknown"

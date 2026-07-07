@@ -50,6 +50,7 @@ def load_run_config(path: str | Path) -> MonthlyRiskRunConfig:
     horizon = data.get("horizon", {})
     model = data.get("model", {})
     safety = data.get("safety", {})
+    output_cfg = data.get("output", {})
     if safety.get("auto_dispatch_allowed") is True:
         raise ValueError("auto_dispatch_allowed must remain false.")
     if safety.get("customer_facing_probability_service_allowed") is True:
@@ -62,7 +63,7 @@ def load_run_config(path: str | Path) -> MonthlyRiskRunConfig:
         run_date=str(run.get("run_date") or dt.date.today().isoformat()),
         timezone=str(run.get("timezone") or "Asia/Shanghai"),
         cutoff_policy=str(run.get("cutoff_policy") or "month_end"),
-        output_root=str(run.get("output_root") or "data/risk_result_batches"),
+        output_root=str(output_cfg.get("output_root") or run.get("output_root") or "data/risk_result_batches"),
         raw_batch_dir=str(input_cfg.get("raw_batch_dir") or ""),
         schema_mapping_path=input_cfg.get("schema_mapping_path"),
         tenant_id=str(scope.get("tenant_id") or "default_tenant"),

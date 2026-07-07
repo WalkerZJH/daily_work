@@ -81,8 +81,25 @@ def _join_hospital(base: pd.DataFrame, hospital_master: pd.DataFrame) -> pd.Data
         base["region_code"] = ""
         base["region_display_name"] = ""
         base["hospital_level"] = ""
+        base["province_code"] = ""
+        base["city_code"] = ""
+        base["county_code"] = ""
+        base["ownership_type_code"] = ""
         return base
-    cols = ["hospital_code", "hospital_name", "region_code", "region_name", "hospital_level"]
+    cols = [
+        "hospital_code",
+        "hospital_name",
+        "region_code",
+        "region_name",
+        "hospital_level",
+        "province_code",
+        "city_code",
+        "county_code",
+        "ownership_type_code",
+    ]
+    for col in cols:
+        if col not in hospital_master:
+            hospital_master[col] = ""
     out = base.merge(hospital_master[cols].drop_duplicates("hospital_code"), on="hospital_code", how="left")
     out["hospital_display_name"] = out["hospital_name"].fillna(out["hospital_code"])
     out["region_display_name"] = out["region_name"].fillna("")
