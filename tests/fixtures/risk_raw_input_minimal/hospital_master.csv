@@ -1,0 +1,8 @@
+hospital_code,hospital_name,region_code,region_name,hospital_level
+h1,Hospital 1,r1,Region 1,A
+h2,Hospital 2,r1,Region 1,A
+h3,Hospital 3,r2,Region 2,B
+h4,Hospital 4,r2,Region 2,B
+h5,Hospital 5,r3,Region 3,C
+h6,Hospital 6,r3,Region 3,C
+h7,Hospital 7,r4,Region 4,C

@@ -1,0 +1,16 @@
+{
+  "artifact_id": "fixture_linear_stub_v1",
+  "model_family": "linear_stub",
+  "trained_at": "2026-07-07T00:00:00Z",
+  "training_data_version": "fixture",
+  "feature_schema_version": "production_features_v1",
+  "required_features": [
+    "months_since_last_purchase",
+    "current_interval_over_median",
+    "frequency_ratio",
+    "quantity_ratio"
+  ],
+  "output_score": "churn_probability_H",
+  "probability_calibration": "raw",
+  "caveats": ["fixture artifact only"]
+}

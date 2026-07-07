@@ -1,0 +1,10 @@
+{
+  "type": "linear_stub",
+  "intercept": -1.2,
+  "weights": {
+    "months_since_last_purchase": 0.10,
+    "current_interval_over_median": 0.60,
+    "frequency_ratio": -1.00,
+    "quantity_ratio": -0.70
+  }
+}

@@ -1,0 +1,30 @@
+orders:
+  columns:
+    order_id: order_id
+    order_date: order_date
+    manufacturer_code: manufacturer_code
+    hospital_code: hospital_code
+    drug_code: drug_code
+    order_quantity: order_quantity
+    order_amount: order_amount
+    distributor_code: distributor_code
+    order_status: order_status
+    delivery_status: delivery_status
+    delivery_date: delivery_date
+    arrival_date: arrival_date
+
+drug_master:
+  columns:
+    drug_code: drug_code
+    drug_name: drug_name
+    drug_category: drug_category
+    product_line_code: product_line_code
+    product_line_name: product_line_name
+
+hospital_master:
+  columns:
+    hospital_code: hospital_code
+    hospital_name: hospital_name
+    region_code: region_code
+    region_name: region_name
+    hospital_level: hospital_level

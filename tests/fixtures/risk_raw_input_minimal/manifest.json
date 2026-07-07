@@ -1,0 +1,24 @@
+{
+  "raw_batch_id": "raw_fixture_monthly_v1",
+  "source_system": "local_fixture",
+  "data_as_of_date": "2026-07-31",
+  "min_order_date": "2025-01-10",
+  "max_order_date": "2026-07-20",
+  "table_format": "csv",
+  "table_paths": {
+    "orders": "orders.csv",
+    "drug_master": "drug_master.csv",
+    "hospital_master": "hospital_master.csv",
+    "product_line_mapping": "product_line_mapping.csv",
+    "delivery_events": "delivery_events.csv",
+    "price_reference": "price_reference.csv"
+  },
+  "schema_profile": "risk_algorithm_core_fixture_v1",
+  "contains_drug_master": true,
+  "contains_hospital_master": true,
+  "contains_product_line_mapping": true,
+  "contains_delivery_events": true,
+  "contains_price_reference": true,
+  "contains_org_scope": false,
+  "caveats": ["fixture only", "not company production data"]
+}

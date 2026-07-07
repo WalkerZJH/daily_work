@@ -1,0 +1,9 @@
+{
+  "feature_schema_version": "production_features_v1",
+  "required_features": [
+    "months_since_last_purchase",
+    "current_interval_over_median",
+    "frequency_ratio",
+    "quantity_ratio"
+  ]
+}

@@ -1,0 +1,8 @@
+drug_code,drug_name,drug_category,product_line_code,product_line_name
+d1,Drug 1,cat_a,pl_a,Line A
+d2,Drug 2,cat_a,pl_a,Line A
+d3,Drug 3,cat_b,pl_b,Line B
+d4,Drug 4,cat_b,pl_b,Line B
+d5,Drug 5,cat_c,pl_c,Line C
+d6,Drug 6,cat_c,pl_c,Line C
+d7,Drug 7,cat_d,pl_d,Line D

@@ -1,0 +1,79 @@
+run:
+  run_id: fixture
+  report_type: monthly
+  report_month: auto_previous_month
+  run_date: "2026-08-05"
+  timezone: Asia/Shanghai
+  cutoff_policy: month_end
+  output_root: .tmp/risk_algorithm_core_batches
+
+input:
+  raw_batch_dir: tests/fixtures/risk_raw_input_minimal
+  table_format: auto
+  schema_mapping_path: configs/risk_algorithm_core/schema_mapping.example.yaml
+
+scope:
+  tenant_id: default_tenant
+  enterprise_id: default_enterprise
+  manufacturer_codes: all
+  region_scope: all
+
+entity:
+  grain: manufacturer_hospital_drug
+  drug_group_source_priority:
+    - product_line_mapping
+    - drug_code
+
+horizon:
+  primary_horizon: H6
+  available_horizons:
+    - H3
+    - H6
+    - H12
+
+model:
+  artifact_alias: current
+  artifact_dir: tests/fixtures/model_artifacts/risk_algorithm_core/main_churn/current
+  require_artifact: true
+
+worklist:
+  frontend_default_topN_per_manufacturer: 20
+  frontend_max_topN_per_manufacturer: 50
+  one_shot_topN_per_manufacturer: 20
+  observation_topN_per_manufacturer: 20
+  index_topN: 8
+  global_candidate_cap: 30000
+
+display:
+  allow_exact_probability_when_gate_passed: true
+  value_display_mode: relative_level
+  hide_amount_if_not_verified: true
+
+detectors:
+  enable_terminal_loss: true
+  enable_interval_overdue: true
+  enable_frequency_drop: true
+  enable_quantity_drop: true
+  enable_one_shot_attention: true
+  enable_low_delivery_rate_if_quality_passed: false
+  enable_delivery_time_detectors: false
+  enable_price_detectors: false
+  enable_sku_wallet_detectors: false
+
+safety:
+  auto_dispatch_allowed: false
+  customer_facing_probability_service_allowed: false
+  proof_case_report_allowed: false
+  forbid_causal_claims: true
+
+export:
+  write_parquet: true
+  write_csv_sample: true
+  write_page_payloads: false
+  export_ready: true
+  export_formats_supported:
+    - html
+    - markdown
+    - csv_bundle
+    - future_pdf
+    - future_xlsx
