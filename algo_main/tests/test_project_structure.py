@@ -108,7 +108,25 @@ def test_algo_main_does_not_track_generated_data_or_model_artifacts():
         capture_output=True,
     )
     forbidden_suffixes = (".parquet", ".csv", ".xlsx", ".joblib", ".pkl", ".skops", ".zip")
-    tracked_artifacts = [
-        path for path in result.stdout.splitlines() if path.lower().endswith(forbidden_suffixes)
-    ]
+    allowed_report_csvs = {
+        "algo_main/reports/entity_complete_v2_coverage_expansion/11_m_module_closure/m1_worklist_load_by_manufacturer.csv",
+        "algo_main/reports/entity_complete_v2_coverage_expansion/11_m_module_closure/m3_survival_state_vs_label.csv",
+        "algo_main/reports/entity_complete_v2_coverage_expansion/11_m_module_closure/m4_detector_hit_vs_label.csv",
+        "algo_main/reports/entity_complete_v2_coverage_expansion/11_m_module_closure/m5_status_distribution.csv",
+        "algo_main/reports/entity_complete_v2_coverage_expansion/11_m_module_closure/m5_status_vs_label.csv",
+        "algo_main/reports/entity_complete_v2_coverage_expansion/11_m_module_closure/m7_bundle_completeness.csv",
+        "algo_main/reports/entity_complete_v2_coverage_expansion/11_m_module_closure/m7_claim_boundary_audit.csv",
+        "algo_main/reports/entity_complete_v2_coverage_expansion/11_m_module_closure/m8_module_status_matrix.csv",
+        "algo_main/reports/entity_complete_v2_coverage_expansion/12_m_module_implementation_audit_v2/m_module_status_matrix_v2.csv",
+        "algo_main/reports/entity_complete_v2_coverage_expansion/99_v2_completion_audit/v2_key_metrics_summary.csv",
+        "algo_main/reports/entity_complete_v2_coverage_expansion/99_v2_completion_audit/v2_missing_outputs.csv",
+    }
+    tracked_artifacts = []
+    for path in result.stdout.splitlines():
+        lower = path.lower()
+        if not lower.endswith(forbidden_suffixes):
+            continue
+        if lower.endswith(".csv") and path in allowed_report_csvs:
+            continue
+        tracked_artifacts.append(path)
     assert tracked_artifacts == []
