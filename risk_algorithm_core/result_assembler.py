@@ -25,10 +25,11 @@ def assemble_result_batch(
     risk_card_evidence: pd.DataFrame,
     feature_frame: pd.DataFrame,
     worklist_config: dict[str, Any],
+    artifact_metadata: dict[str, Any] | None = None,
     write_parquet: bool = True,
 ) -> Path:
     batch_id = f"{report_month}-monthly-risk-algorithm-{run_id}"
-    batch_dir = Path(output_root) / f"batch_id={batch_id}"
+    batch_dir = Path(output_root) / f"report_month={report_month}" / f"batch_id={batch_id}"
     batch_dir.mkdir(parents=True, exist_ok=True)
 
     risk_entities = _build_risk_entities(candidate_status, report_month)
@@ -51,6 +52,7 @@ def assemble_result_batch(
         "work_order_reserved": work_order_reserved,
     }
     data_backend = _write_tables(batch_dir, tables, write_parquet)
+    artifact_metadata = artifact_metadata or {}
     manifest = {
         "batch_id": batch_id,
         "report_type": "monthly",
@@ -65,7 +67,12 @@ def assemble_result_batch(
         "raw_batch_id": raw_batch_id,
         "algorithm_core_version": "risk_algorithm_core_v1",
         "model_artifact_id": model_artifact_id,
-        "feature_schema_version": "production_features_v1",
+        "model_family": artifact_metadata.get("model_family", "unknown"),
+        "feature_group": artifact_metadata.get("feature_group", "unknown"),
+        "calibration": artifact_metadata.get("calibration", artifact_metadata.get("probability_calibration", "raw")),
+        "excludes_choice_set": bool(artifact_metadata.get("excludes_choice_set", True)),
+        "risk_result_schema_version": "risk_result_batch_monthly_v1",
+        "feature_schema_version": artifact_metadata.get("feature_schema_version", "production_features_v1"),
         "detector_config_version": "detector_runtime_v1",
         "worklist_config": worklist_config,
         "allowed_usage": ["internal_diagnostic", "analyst_view", "monthly_business_review"],

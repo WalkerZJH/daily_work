@@ -1,0 +1,7 @@
+{
+  "type": "sklearn_column_transformer",
+  "numeric_imputer": "median",
+  "categorical_imputer": "most_frequent",
+  "onehot_handle_unknown": "ignore",
+  "onehot_min_frequency": 50
+}

@@ -1,0 +1,8 @@
+{
+  "source_experiment": "entity_complete_v2_coverage_expansion",
+  "golden_model_feature_frame": "golden_model_feature_frame.parquet",
+  "golden_score_frame": "golden_score_frame.parquet",
+  "golden_selected_candidates": "golden_selected_candidates.parquet",
+  "raw_to_feature_parity": "blocked",
+  "result_batch_parity": "blocked"
+}

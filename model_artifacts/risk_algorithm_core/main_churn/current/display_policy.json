@@ -1,0 +1,8 @@
+{
+  "probability_levels": [
+    "probability_allowed",
+    "risk_band_only",
+    "hidden_data_insufficient"
+  ],
+  "business_priority_is_probability": false
+}

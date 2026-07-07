@@ -15,7 +15,7 @@ def test_monthly_runner_end_to_end_with_artifact(tmp_path) -> None:
     assert summary["entity_rows"] > 0
     assert summary["feature_rows"] == summary["score_rows"]
     assert summary["selected_candidate_rows"] > 0
-    assert summary["model_artifact_id"] == "fixture_linear_stub_v1"
+    assert str(summary["model_artifact_id"]).startswith("xgboost_small_without_choice_set_")
 
 
 def test_monthly_runner_dry_run_with_rule_baseline(tmp_path) -> None:

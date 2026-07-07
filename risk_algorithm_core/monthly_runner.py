@@ -27,6 +27,7 @@ from .entity_builder import build_monthly_entities
 from .evidence_builder import build_risk_card_evidence, build_risk_cards
 from .feature_engineering import engineer_features
 from .normalization import normalize_raw_tables
+from .production_feature_builder import build_model_feature_frame
 from .raw_input import read_raw_input_batch
 from .result_assembler import assemble_result_batch
 from .scorer import ArtifactRiskScorer, RuleBaselineScorer
@@ -62,11 +63,24 @@ class MonthlyRiskRunner:
         if use_rule_baseline:
             scorer = RuleBaselineScorer()
             model_artifact_id = "dry_run_rule_baseline"
+            model_features = features
+            feature_parity_report = pd.DataFrame()
+            artifact_metadata = {
+                "model_family": "rule_baseline",
+                "feature_group": "dry_run",
+                "calibration": "none",
+                "excludes_choice_set": True,
+                "feature_schema_version": "dry_run_rule_baseline",
+            }
         else:
             artifact = load_current_model_artifact(cfg.artifact_dir, cfg.require_artifact)
+            aligned = build_model_feature_frame(features, artifact)
+            model_features = aligned.model_feature_frame
+            feature_parity_report = aligned.parity_report
             scorer = ArtifactRiskScorer(artifact)
             model_artifact_id = artifact.manifest.artifact_id
-        score_frame = scorer.score(features)
+            artifact_metadata = artifact.manifest.raw
+        score_frame = scorer.score(model_features)
         selected, selection_report = BoundedCandidateSelector(cfg.worklist).select(score_frame, features)
         gate = DetectorQualityGate(cfg.detectors)
         gate_decisions = gate.evaluate(features, normalized)
@@ -90,6 +104,7 @@ class MonthlyRiskRunner:
             risk_evidence,
             features,
             cfg.worklist,
+            artifact_metadata=artifact_metadata,
             write_parquet=write_parquet,
         )
         validate_result_batch(batch_dir)
@@ -109,7 +124,7 @@ class MonthlyRiskRunner:
             "model_artifact_id": model_artifact_id,
             "dry_run_rule_baseline": bool(use_rule_baseline),
         }
-        self._write_run_reports(batch_dir, summary, normalize_report, feature_report, selection_report, gate_decisions, disabled_notes)
+        self._write_run_reports(batch_dir, summary, normalize_report, feature_report, feature_parity_report, selection_report, gate_decisions, disabled_notes)
         return summary
 
     def _run_detectors(self, selected: pd.DataFrame, features: pd.DataFrame, gate_decisions: pd.DataFrame) -> pd.DataFrame:
@@ -137,6 +152,7 @@ class MonthlyRiskRunner:
         summary: dict[str, Any],
         normalize_report: pd.DataFrame,
         feature_report: pd.DataFrame,
+        feature_parity_report: pd.DataFrame,
         selection_report: pd.DataFrame,
         gate_decisions: pd.DataFrame,
         disabled_notes: pd.DataFrame,
@@ -160,6 +176,7 @@ class MonthlyRiskRunner:
         )
         normalize_report.to_csv(batch_dir / "normalization_report.csv", index=False)
         feature_report.to_csv(batch_dir / "feature_quality_report.csv", index=False)
+        feature_parity_report.to_csv(batch_dir / "feature_parity_runtime_report.csv", index=False)
         selection_report.to_csv(batch_dir / "selection_report.csv", index=False)
         gate_decisions.to_csv(batch_dir / "detector_quality_gate.csv", index=False)
         disabled_notes.to_csv(batch_dir / "disabled_detector_notes.csv", index=False)

@@ -1,0 +1,6 @@
+{
+  "calibration": "raw",
+  "fit_on_validation": false,
+  "platt_enabled": false,
+  "isotonic_enabled": false
+}

@@ -1,0 +1,10 @@
+{
+  "terminal_loss_warning": "enabled_rule_v1",
+  "purchase_interval_overdue_warning": "enabled_rule_v1",
+  "purchase_frequency_fluctuation_warning": "enabled_rule_v1",
+  "purchase_quantity_fluctuation_warning": "weak_enabled_review_required",
+  "new_terminal_detection": "enabled_rule_v1",
+  "delivery_time_detectors": "disabled",
+  "price_detectors": "interface_only",
+  "sku_wallet_detectors": "deferred"
+}

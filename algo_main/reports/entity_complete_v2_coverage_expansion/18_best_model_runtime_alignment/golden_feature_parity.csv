@@ -1,0 +1,2 @@
+parity_layer,status,blocker_reason
+raw_to_feature,blocked,No matched production raw input batch exists for exact v2 raw-to-feature parity; runtime feature coverage is audited in feature_parity_matrix.csv.

@@ -1,0 +1,2 @@
+parity_layer,status,blocker_reason
+result_batch,blocked,Full result-batch parity requires raw-to-feature parity first; artifact scorer parity is available.
