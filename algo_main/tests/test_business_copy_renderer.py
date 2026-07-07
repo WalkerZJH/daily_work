@@ -37,3 +37,15 @@ def test_renderer_rejects_unsafe_payload() -> None:
 
     with pytest.raises(ValueError):
         renderer.assert_safe({"text": "XGBoost AUC 医院已经确定流失"})
+
+
+def test_detector_renderer_uses_business_copy_and_disabled_notes() -> None:
+    renderer = BusinessCopyRenderer()
+    interval = renderer.render_detector_evidence("purchase_interval_overdue_warning")
+    disabled = renderer.render_detector_evidence("delayed_response_warning", gate_status="disabled")
+
+    assert "历史常规采购节奏" in interval["evidence_text"]
+    assert "配送/到货时间字段缺失率较高" in disabled["evidence_text"]
+    assert not contains_forbidden_claims(str(interval))
+    assert not contains_forbidden_claims(str(disabled))
+

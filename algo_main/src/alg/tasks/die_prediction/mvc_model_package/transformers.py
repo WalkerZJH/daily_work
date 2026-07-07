@@ -29,6 +29,7 @@ def transform_m_closure_to_result_tables(
     selected_candidate_ids: set[str] | None = None,
     max_cards_per_entity: int = 5,
     max_business_visible_evidence_per_card: int = 3,
+    detector_quality_gate: pd.DataFrame | None = None,
 ) -> dict[str, pd.DataFrame]:
     base = build_base_frame(inputs, selected_candidate_ids=selected_candidate_ids)
     risk_entities = build_risk_entities(base)
@@ -37,6 +38,7 @@ def transform_m_closure_to_result_tables(
         inputs["m4"],
         max_cards_per_entity=max_cards_per_entity,
         max_business_visible_evidence_per_card=max_business_visible_evidence_per_card,
+        detector_quality_gate=detector_quality_gate,
     )
     risk_entities = attach_card_counts(risk_entities, risk_cards)
     return {
@@ -134,6 +136,7 @@ def build_cards_and_evidence(
     *,
     max_cards_per_entity: int = 5,
     max_business_visible_evidence_per_card: int = 3,
+    detector_quality_gate: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     renderer = BusinessCopyRenderer()
     entity = risk_entities[["risk_entity_id", "candidate_id", "tenant_id", "risk_level", "risk_color", "primary_horizon", "risk_probability_display", "main_reason_summary", "suggested_action_short", "user_visible_caveat"]].copy()
@@ -163,6 +166,12 @@ def build_cards_and_evidence(
     if m4.empty:
         return select_cols(primary, RISK_CARD_COLUMNS), pd.DataFrame(columns=RISK_EVIDENCE_COLUMNS)
     m4 = m4[m4["candidate_id"].astype(str).isin(selected_ids)].copy()
+    gate_map = build_detector_gate_map(detector_quality_gate)
+    if gate_map:
+        m4["gate_status"] = m4["detector_name"].astype(str).map(lambda x: gate_map.get(x, "disabled"))
+        m4 = m4[m4["gate_status"].isin(["enabled", "weak_enabled_review_required"])].copy()
+    else:
+        m4["gate_status"] = "enabled"
     hits = m4[m4["hit_flag"].astype(str).str.lower().isin(["true", "1"])].copy()
     hits = hits.merge(entity[["candidate_id", "risk_entity_id", "tenant_id", "user_visible_caveat"]], on="candidate_id", how="inner")
     if hits.empty:
@@ -171,18 +180,22 @@ def build_cards_and_evidence(
     det_cards = hits.drop_duplicates(["risk_card_id"]).copy()
     det_cards["_card_rank"] = det_cards.groupby("risk_entity_id").cumcount()
     det_cards = det_cards[det_cards["_card_rank"] < max(0, max_cards_per_entity - 1)].copy()
+    rendered = det_cards.apply(
+        lambda row: renderer.render_detector_evidence(str(row["detector_name"]), gate_status=str(row.get("gate_status", "enabled"))),
+        axis=1,
+    )
     det_cards["card_type"] = det_cards["detector_name"].map(detector_card_type).fillna("evidence")
-    det_cards["card_title"] = det_cards["detector_name"].map(renderer.detector_display_text)
+    det_cards["card_title"] = rendered.map(lambda x: x["card_title"])
     det_cards["card_level"] = det_cards["severity"].map({"strong": "orange", "medium": "yellow"}).fillna("yellow")
     det_cards["card_color"] = det_cards["card_level"].map({"orange": "orange", "yellow": "yellow"}).fillna("yellow")
     det_cards["horizon"] = det_cards["candidate_id"].astype(str).str.split("|").str[-1]
     det_cards["risk_probability_display"] = "不展示"
-    det_cards["card_summary"] = det_cards["card_title"]
+    det_cards["card_summary"] = rendered.map(lambda x: x["card_summary"])
     det_cards["candidate_reason"] = det_cards["reason_code"]
     det_cards["is_primary"] = False
     det_cards["source_module"] = "M4"
     det_cards["evidence_count"] = 1
-    det_cards["suggested_action"] = "建议业务人员结合实际采购情况复核。"
+    det_cards["suggested_action"] = rendered.map(lambda x: x["suggested_action"])
     det_cards["created_at"] = pd.Timestamp.now().isoformat()
 
     allowed_card_ids = set(det_cards["risk_card_id"].astype(str))
@@ -190,12 +203,15 @@ def build_cards_and_evidence(
     evidence["evidence_id"] = "ev_" + evidence["risk_card_id"].astype(str) + "_" + evidence.groupby("risk_card_id").cumcount().astype(str)
     evidence["evidence_type"] = evidence["detector_name"].map(detector_card_type).fillna("behavior_signal")
     evidence["evidence_level"] = evidence["severity"].fillna("medium")
-    evidence["evidence_text"] = evidence["detector_name"].map(renderer.detector_display_text)
+    evidence["evidence_text"] = evidence.apply(
+        lambda row: renderer.render_detector_evidence(str(row["detector_name"]), gate_status=str(row.get("gate_status", "enabled")))["evidence_text"],
+        axis=1,
+    )
     evidence["business_metric_name"] = evidence["detector_name"].map(detector_metric_name).fillna("采购行为变化")
     evidence["business_metric_value"] = evidence["evidence_values"].astype(str).str[:180]
     evidence["source_feature_name"] = evidence["evidence_fields"]
     evidence["source_feature_value"] = evidence["business_metric_value"]
-    evidence["visibility_level"] = "business_visible"
+    evidence["visibility_level"] = evidence["gate_status"].map({"enabled": "business_visible", "weak_enabled_review_required": "manager_visible"}).fillna("internal_only")
     evidence["sort_order"] = evidence.groupby("risk_card_id").cumcount() + 1
     evidence = evidence[evidence["sort_order"] <= max_business_visible_evidence_per_card].copy()
     evidence_counts = evidence.groupby("risk_card_id").size().reset_index(name="evidence_count")
@@ -353,6 +369,16 @@ def detector_metric_name(name: Any) -> str:
         "purchase_quantity_fluctuation_warning": "近期采购数量变化",
         "new_terminal_detection": "新进事实",
     }.get(str(name), "采购行为变化")
+
+
+def build_detector_gate_map(detector_quality_gate: pd.DataFrame | None) -> dict[str, str]:
+    if detector_quality_gate is None or detector_quality_gate.empty:
+        return {}
+    required = {"detector_name", "gate_status", "enable_frontend_display"}
+    if not required.issubset(detector_quality_gate.columns):
+        return {}
+    usable = detector_quality_gate[detector_quality_gate["enable_frontend_display"].astype(bool)].copy()
+    return dict(zip(usable["detector_name"].astype(str), usable["gate_status"].astype(str)))
 
 
 def stable_hash(value: str, length: int = 12) -> str:
