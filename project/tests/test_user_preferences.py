@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+from pathlib import Path
 
 import pytest
 
@@ -25,7 +26,8 @@ def test_regional_manager_effective_config_is_limited_to_permissions() -> None:
 
 def test_enabling_detector_without_permission_fails(tmp_path) -> None:
     config_path = tmp_path / "users.yaml"
-    shutil.copyfile("config/users.yaml", config_path)
+    source_config = Path(__file__).resolve().parents[1] / "config" / "users.yaml"
+    shutil.copyfile(source_config, config_path)
     service = UserConfigService(config_path=config_path)
 
     with pytest.raises(PermissionError):

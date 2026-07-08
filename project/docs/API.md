@@ -29,6 +29,69 @@
 
 如果多模型 union 后再计算 TopK recall，页面和 API 均使用 union 之后的实际占比作为 K。例如请求 Top 10%，union 后覆盖 12.8%，则 `requested_k_percent=0.10`、`actual_k_percent=0.1280`、`k_policy=union_backfilled_actual_share`。
 
+## User Scoped Top Entity API
+
+`GET /api/risk/my/top-entities`
+
+用于后端按当前用户可见的生产商范围动态生成 TopEntity 列表。默认策略是：后端解析当前用户可见的 `manufacturer_code` scope，过滤 `risk_entities`，把全部可见 entity 合并后按选定排序策略排序一次，再返回总量不超过 `top_n` 的列表。默认不是每个生产商各取 `top_n`。
+
+该接口只从 `risk_model_core` repository 读取 `risk_result_batch`，不读取 raw/source 业务库，不重跑主干模型、detector 或算法实验链路，不依赖 `algo_main`。前端不得直接读取 result batch，也不得自行做权限过滤或排序裁剪。
+
+请求通过 `X-User-Id` header 识别当前用户，默认 `admin`。非管理员用户的 manufacturer scope 来自 `config/user_manufacturer_scope.example.csv`；管理员默认可查看当前 batch 中全部 manufacturer，也可通过 `manufacturer_codes` 参数指定范围。
+
+参数：
+
+- `report_month`：可选，默认 latest。
+- `horizon`：默认 `H6`。
+- `top_n`：动态参数，默认 20，最小 1。
+- `max_n`：默认 50，`top_n > max_n` 时后端 clamp 并返回 warning。
+- `group_by`：`user_scope` 或 `manufacturer`，默认 `user_scope`。`manufacturer` 保留为 deprecated/internal-only，用于后续企业均衡覆盖分析。
+- `ranking_strategy`：`probability`、`mixed_v2`、`business_priority`、`interval`、`frequency`，默认 `probability`。`mixed_v2` 保留为 deprecated/internal-only；缺少 interval/frequency/business priority 字段时返回明确 warning，并设置 `ranking_strategy_effective=probability`。
+- `candidate_type`：`recurring`、`one_shot`、`observation`、`all`，默认 `recurring`。
+- `probability_threshold`：可选，0 到 1；deprecated/internal-only，不是默认策略。
+- `include_threshold_overflow`：默认 `false`；deprecated/internal-only，不是默认策略。
+- `fill_policy`：`none`、`observation_fill`、`one_shot_fill`，默认 `none`。默认不补齐，不伪造高风险。
+- `manufacturer_codes`：可选；非管理员只能取自身 scope 的交集，不能越权。
+
+页面级 API 优先复用该 service 的后端排序与权限逻辑。当前 `/api/v1/risk-entities` 会先通过 TopEntity service 获取用户可见 TopN；如果没有配置 result batch 或没有可返回实体，则回退到既有页面 payload。前端仍只调用页面 API，不需要理解 result batch、用户 scope 或排序细节。
+
+返回重点字段：
+
+```json
+{
+  "user_id": "js_manager_001",
+  "report_month": "2025-12",
+  "horizon": "H6",
+  "ranking_strategy": "probability",
+  "effective_ranking_strategy": "probability",
+  "ranking_strategy_effective": "probability",
+  "ranking_strategy_warning": null,
+  "top_n": 20,
+  "group_by": "user_scope",
+  "scope_mode": "user_scope",
+  "scope": {
+    "manufacturer_count": 2,
+    "manufacturer_codes": ["M1", "M2"]
+  },
+  "groups": [
+    {
+      "manufacturer_code": "user_scope",
+      "available_count": 123,
+      "returned_count": 20,
+      "threshold_hit_count": 0,
+      "overflow_count": 0,
+      "shortage_count": 0,
+      "entities": []
+    }
+  ],
+  "warnings": []
+}
+```
+
+当前正式 batch 的 `risk_entities` 有 `risk_probability_value`，但可能缺少 interval、frequency、business priority 的数值排序字段。因此只有显式请求 `ranking_strategy=mixed_v2` 且字段不足时，response 才会保留请求策略，同时将 `effective_ranking_strategy` / `ranking_strategy_effective` 降级为 `probability` 并返回 `missing_mixed_fields` warning。该降级不是重新解释概率，也不会产生自动派单。
+
+接口不得返回 AUC、ECE、PR-AUC、XGBoost、feature ablation、leakage audit、hyperparameters 等内部算法指标。`observation_fill` 与 `one_shot_fill` 仅用于补足展示列表，返回项必须保留 `candidate_type`，且不标记为 high risk；one-shot 项不展示 recurring churn probability。
+
 ## 主干算法 smoke test
 
 `POST /api/v0/smoke-test/database`

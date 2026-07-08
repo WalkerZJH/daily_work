@@ -18,6 +18,7 @@ from app.api.routes_options import router as options_router
 from app.api.routes_smoke_test import router as smoke_test_router
 from app.api.routes_training import router as training_router
 from app.api.routes_users import router as users_router
+from app.api.routes_user_top_entities import router as user_top_entities_router
 from app.core.errors import TerminalGuardError
 from app.core.logging import configure_logging
 
@@ -69,6 +70,7 @@ async def terminal_guard_error_handler(_: Request, exc: TerminalGuardError) -> J
 app.include_router(health_router)
 app.include_router(detectors_router)
 app.include_router(users_router)
+app.include_router(user_top_entities_router)
 app.include_router(debug_router)
 app.include_router(inspection_router)
 app.include_router(backbone_router)

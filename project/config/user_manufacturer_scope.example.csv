@@ -1,0 +1,4 @@
+user_id,tenant_id,enterprise_id,manufacturer_code,manufacturer_display_name,role,enabled
+js_manager_001,default_tenant,default_enterprise,1D93E15EBB9B4F14A1C18E0CD1750A0A,1D93E15EBB9B4F14A1C18E0CD1750A0A,regional_manager,true
+js_manager_001,default_tenant,default_enterprise,7de4fd63-eac3-4347-87c4-3bd90dbf08bd,7de4fd63-eac3-4347-87c4-3bd90dbf08bd,regional_manager,true
+sales_001,default_tenant,default_enterprise,F9BDA11C2EE443F49615B9AD6AFBD4AA,F9BDA11C2EE443F49615B9AD6AFBD4AA,salesperson,true

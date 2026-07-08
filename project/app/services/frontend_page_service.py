@@ -12,7 +12,12 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from risk_model_core import ParquetRiskResultRepository  # noqa: E402
-from risk_model_core.page_payload_builder import PagePayloadBuilder, build_default_frontend_payloads  # noqa: E402
+from risk_model_core.page_payload_builder import PagePayloadBuilder  # noqa: E402
+
+try:  # noqa: E402
+    from risk_model_core.page_payload_builder import build_default_frontend_payloads  # type: ignore[attr-defined]
+except ImportError:  # noqa: E402
+    from app.services.frontend_default_payloads import build_default_frontend_payloads
 
 
 DEFAULT_MODEL_METRICS: list[dict[str, Any]] = [
