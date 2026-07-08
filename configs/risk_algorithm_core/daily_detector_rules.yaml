@@ -1,0 +1,50 @@
+config_version: daily_detector_rules_v1
+effective_from: "2026-07-01"
+default_run_scope: monthly_high_risk_plus_daily_delta
+detectors:
+  purchase_interval_ipi:
+    enabled: true
+    status: implemented
+    method: median_mad_robust_z_v1
+    z_hit: 1.5
+    z_full: 3.5
+    mad_floor_days: 3
+    min_purchase_count: 4
+    confidence_n: 12
+  purchase_quantity_trend:
+    enabled: true
+    status: implemented
+    method: simplified_ratio_v1
+    recent_window_days: 90
+    baseline_window_days: 365
+    drop_ratio_hit: 0.6
+    min_baseline_quantity: 1
+    confidence_n: 6
+  purchase_frequency_drop:
+    enabled: true
+    status: implemented
+    method: recent_base_rate_ratio_v1
+    recent_window_days: 90
+    baseline_window_days: 365
+    freq_drop_ratio: 0.6
+    min_base_rate: 1.0
+    confidence_base_rate: 2.0
+  sku_shrink:
+    enabled: false
+    status: interface_only
+    method: requires_product_line_mapping
+    sku_shrink_ratio: 0.34
+    min_baseline_sku_count: 2
+  fulfillment_gap:
+    enabled: false
+    status: experimental
+    reject_days: 7
+    reject_rate_hit: 0.15
+    fill_ok: 0.8
+    sys_min_hospital: 5
+  price_competition:
+    enabled: false
+    status: reserved
+  peer_contrast:
+    enabled: false
+    status: reserved

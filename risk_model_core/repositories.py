@@ -79,6 +79,22 @@ class RiskResultRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def list_detector_catalog(self, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_daily_detector_runs(self, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_daily_detector_clues(self, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_high_risk_detector_evidence(self, risk_entity_id: str | None = None, detector_run_id: str | None = None, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError
+
+    @abstractmethod
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         raise NotImplementedError
 
@@ -165,6 +181,23 @@ class ParquetRiskResultRepository(RiskResultRepository):
     def load_entity_display_lookup(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("entity_display_lookup"), normalize_entity_display_lookup_filters(filters))
 
+    def list_detector_catalog(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("detector_catalog"), filters)
+
+    def list_daily_detector_runs(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("daily_detector_runs"), filters)
+
+    def list_daily_detector_clues(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("daily_detector_clues"), filters)
+
+    def list_high_risk_detector_evidence(self, risk_entity_id: str | None = None, detector_run_id: str | None = None, **filters: Any) -> pd.DataFrame:
+        normalized = dict(filters)
+        if risk_entity_id is not None:
+            normalized["risk_entity_id"] = risk_entity_id
+        if detector_run_id is not None:
+            normalized["detector_run_id"] = detector_run_id
+        return apply_filters(self.load_table("high_risk_detector_evidence"), normalized)
+
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         clean = page_name[:-5] if page_name.endswith(".json") else page_name
         candidates = [
@@ -250,6 +283,23 @@ class InMemoryRiskResultRepository(RiskResultRepository):
     def load_entity_display_lookup(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("entity_display_lookup"), normalize_entity_display_lookup_filters(filters))
 
+    def list_detector_catalog(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("detector_catalog"), filters)
+
+    def list_daily_detector_runs(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("daily_detector_runs"), filters)
+
+    def list_daily_detector_clues(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("daily_detector_clues"), filters)
+
+    def list_high_risk_detector_evidence(self, risk_entity_id: str | None = None, detector_run_id: str | None = None, **filters: Any) -> pd.DataFrame:
+        normalized = dict(filters)
+        if risk_entity_id is not None:
+            normalized["risk_entity_id"] = risk_entity_id
+        if detector_run_id is not None:
+            normalized["detector_run_id"] = detector_run_id
+        return apply_filters(self.load_table("high_risk_detector_evidence"), normalized)
+
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         key = page_name[:-5] if page_name.endswith(".json") else page_name
         if key not in self.payloads:
@@ -313,6 +363,18 @@ class ClickHouseRiskResultRepository(RiskResultRepository):
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
     def load_entity_display_lookup(self, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
+    def list_detector_catalog(self, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
+    def list_daily_detector_runs(self, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
+    def list_daily_detector_clues(self, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
+    def list_high_risk_detector_evidence(self, risk_entity_id: str | None = None, detector_run_id: str | None = None, **filters: Any) -> pd.DataFrame:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
     def get_page_payload(self, page_name: str) -> dict[str, Any]:

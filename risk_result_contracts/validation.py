@@ -11,6 +11,10 @@ from .manifest import load_manifest
 from .schemas import (
     ENTITY_DISPLAY_LOOKUP_REQUIRED_COLUMNS,
     ENTITY_DISPLAY_LOOKUP_UNIQUE_KEY,
+    DAILY_DETECTOR_CLUE_REQUIRED_COLUMNS,
+    DAILY_DETECTOR_RUN_REQUIRED_COLUMNS,
+    DETECTOR_CATALOG_REQUIRED_COLUMNS,
+    HIGH_RISK_DETECTOR_EVIDENCE_REQUIRED_COLUMNS,
     MONTHLY_REPORT_REQUIRED_COLUMNS,
     RISK_CARD_REQUIRED_COLUMNS,
     RISK_ENTITY_REQUIRED_COLUMNS,
@@ -40,12 +44,20 @@ def validate_result_batch(batch_dir: str | Path) -> None:
     risk_card_evidence = _load_table(batch, "risk_card_evidence")
     monthly_reports = _load_table(batch, "monthly_reports")
     entity_display_lookup = _load_table(batch, "entity_display_lookup")
+    detector_catalog = _load_table(batch, "detector_catalog")
+    daily_detector_runs = _load_table(batch, "daily_detector_runs")
+    daily_detector_clues = _load_table(batch, "daily_detector_clues")
+    high_risk_detector_evidence = _load_table(batch, "high_risk_detector_evidence")
 
     _require_columns(risk_entities, RISK_ENTITY_REQUIRED_COLUMNS, "risk_entities")
     _require_columns(risk_cards, RISK_CARD_REQUIRED_COLUMNS, "risk_cards")
     _require_columns(risk_card_evidence, RISK_EVIDENCE_REQUIRED_COLUMNS, "risk_card_evidence")
     _require_columns(monthly_reports, MONTHLY_REPORT_REQUIRED_COLUMNS, "monthly_reports")
     _require_columns(entity_display_lookup, ENTITY_DISPLAY_LOOKUP_REQUIRED_COLUMNS, "entity_display_lookup")
+    _require_columns(detector_catalog, DETECTOR_CATALOG_REQUIRED_COLUMNS, "detector_catalog")
+    _require_columns(daily_detector_runs, DAILY_DETECTOR_RUN_REQUIRED_COLUMNS, "daily_detector_runs")
+    _require_columns(daily_detector_clues, DAILY_DETECTOR_CLUE_REQUIRED_COLUMNS, "daily_detector_clues")
+    _require_columns(high_risk_detector_evidence, HIGH_RISK_DETECTOR_EVIDENCE_REQUIRED_COLUMNS, "high_risk_detector_evidence")
     _require_unique(entity_display_lookup, ENTITY_DISPLAY_LOOKUP_UNIQUE_KEY, "entity_display_lookup")
 
     if "auto_dispatch_allowed" in risk_entities and bool(risk_entities["auto_dispatch_allowed"].fillna(False).any()):
@@ -56,9 +68,19 @@ def validate_result_batch(batch_dir: str | Path) -> None:
         raise ValueError("risk_cards contains risk_entity_id outside risk_entities.")
     if not set(risk_card_evidence["risk_entity_id"].astype(str)).issubset(entity_ids):
         raise ValueError("risk_card_evidence contains risk_entity_id outside risk_entities.")
+    if "detector_probability" in daily_detector_clues.columns:
+        raise ValueError("daily_detector_clues must not expose detector_probability.")
+    if not high_risk_detector_evidence.empty:
+        if not set(high_risk_detector_evidence["risk_entity_id"].astype(str)).issubset(entity_ids):
+            raise ValueError("high_risk_detector_evidence contains risk_entity_id outside risk_entities.")
+    reserved = detector_catalog[detector_catalog["status"].astype(str).isin(["reserved", "interface_only", "missing_fields"])]
+    if not reserved.empty and reserved["enabled_by_default"].astype(str).str.lower().isin({"true", "1", "yes"}).any():
+        raise ValueError("reserved/interface-only detectors must not be enabled by default.")
 
     _validate_no_forbidden_claims(risk_cards, ["card_title", "card_summary", "suggested_action"])
     _validate_no_forbidden_claims(risk_card_evidence, ["evidence_text"])
+    _validate_no_forbidden_claims(daily_detector_clues, ["evidence_text", "root_cause_label", "caveat"])
+    _validate_no_forbidden_claims(high_risk_detector_evidence, ["evidence_text", "root_cause_label", "caveat"])
 
 
 def _load_table(batch: Path, name: str) -> pd.DataFrame:

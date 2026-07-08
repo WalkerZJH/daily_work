@@ -9,6 +9,7 @@ import datetime as dt
 import pandas as pd
 
 from risk_result_contracts import validate_result_batch, write_manifest
+from .daily_detector_runner import build_daily_detector_tables
 from .entity_display_lookup import ENTITY_DISPLAY_LOOKUP_SCHEMA_VERSION, build_entity_display_lookup
 
 
@@ -47,6 +48,14 @@ def assemble_result_batch(
         report_month,
         raw_batch_id,
     )
+    detector_tables = build_daily_detector_tables(
+        risk_entities=risk_entities,
+        scan_features=feature_frame,
+        report_month=report_month,
+        run_date=dt.date.today().isoformat(),
+        source_raw_batch_id=raw_batch_id,
+        source_result_batch_id=batch_id,
+    )
 
     tables = {
         "risk_entities": risk_entities,
@@ -59,6 +68,7 @@ def assemble_result_batch(
         "proof_cases": proof_cases,
         "work_order_reserved": work_order_reserved,
         "entity_display_lookup": entity_display_lookup,
+        **detector_tables,
     }
     data_backend = _write_tables(batch_dir, tables, write_parquet)
     artifact_metadata = artifact_metadata or {}
@@ -82,7 +92,15 @@ def assemble_result_batch(
         "excludes_choice_set": bool(artifact_metadata.get("excludes_choice_set", True)),
         "risk_result_schema_version": "risk_result_batch_monthly_v1",
         "feature_schema_version": artifact_metadata.get("feature_schema_version", "production_features_v1"),
-        "detector_config_version": "detector_runtime_v1",
+        "detector_config_version": "daily_detector_rules_v1",
+        "detector_tables": {
+            "detector_catalog": f"detector_catalog.{data_backend}",
+            "daily_detector_runs": f"daily_detector_runs.{data_backend}",
+            "daily_detector_clues": f"daily_detector_clues.{data_backend}",
+            "high_risk_detector_evidence": f"high_risk_detector_evidence.{data_backend}",
+        },
+        "detector_score_probability_interpretation": "detector_score_is_not_probability",
+        "detector_default_scope": "monthly_high_risk_entities",
         "worklist_config": worklist_config,
         "allowed_usage": ["internal_diagnostic", "analyst_view", "monthly_business_review"],
         "forbidden_usage": ["auto_dispatch", "formal_customer_probability_service", "definitive_churn_claim"],

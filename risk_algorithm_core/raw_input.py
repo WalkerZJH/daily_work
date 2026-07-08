@@ -129,15 +129,50 @@ def _clickhouse_query_for_table(manifest: RawInputManifest, table_name: str) -> 
             return ""
         template = "SELECT * FROM {table} {limit_clause}"
     row_limit = manifest.raw.get("row_limit")
+    if manifest.raw.get("sampling_strategy") == "manufacturer_complete_time_window":
+        row_limit = None
     limit_clause = f"LIMIT {int(row_limit)}" if row_limit not in {None, "", 0, "0"} else ""
+    manufacturer_scope_clause = _manufacturer_scope_clause(manifest, str(table or manifest.raw.get("source_table") or ""))
     values = {
         "table": str(table),
         "database": str(manifest.raw.get("database") or ""),
         "from_date": str(manifest.raw.get("from_date") or "1971-01-01"),
         "to_date": str(manifest.raw.get("to_date") or manifest.data_as_of_date or "2100-01-01"),
         "limit_clause": limit_clause,
+        "manufacturer_scope_clause": manufacturer_scope_clause,
     }
     return template.format(**values)
+
+
+def _manufacturer_scope_clause(manifest: RawInputManifest, table: str) -> str:
+    raw = manifest.raw
+    if raw.get("sampling_strategy") != "manufacturer_complete_time_window":
+        return ""
+    explicit = raw.get("manufacturer_codes") or []
+    if explicit and explicit != "all":
+        codes = ", ".join(_quote_clickhouse_literal(str(code)) for code in explicit)
+        return f"AND manufacturer_code IN ({codes})"
+    sample_limit = raw.get("manufacturer_sample_limit")
+    if sample_limit in {None, "", 0, "0"}:
+        return ""
+    limit = int(sample_limit)
+    from_date = str(raw.get("from_date") or "1971-01-01")
+    to_date = str(raw.get("to_date") or raw.get("data_as_of_date") or "2100-01-01")
+    subquery = (
+        f"SELECT manufacturer_code FROM {table} "
+        "WHERE purchase_time > toDateTime('1971-01-01') "
+        f"AND purchase_time >= toDateTime('{from_date}') "
+        f"AND purchase_time <= toDateTime('{to_date}') "
+        "AND manufacturer_code != '' "
+        "GROUP BY manufacturer_code "
+        "ORDER BY count() DESC "
+        f"LIMIT {limit}"
+    )
+    return f"AND manufacturer_code IN ({subquery})"
+
+
+def _quote_clickhouse_literal(value: str) -> str:
+    return "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'"
 
 
 def validate_raw_tables(tables: dict[str, pd.DataFrame]) -> None:

@@ -14,7 +14,7 @@ from .domain import (
 )
 from .manifest import RiskResultManifest, load_manifest, validate_manifest
 from .repositories import ClickHouseRiskResultRepository, InMemoryRiskResultRepository, ParquetRiskResultRepository, RiskResultRepository
-from .services import PermissionScopeService, ProofCaseService, ReportService, RiskCardService, RiskQueryService
+from .services import DetectorResultService, PermissionScopeService, ProofCaseService, ReportService, RiskCardService, RiskQueryService
 
 __all__ = [
     "BusinessCopyRenderer",
@@ -23,6 +23,7 @@ __all__ = [
     "HospitalAggregate",
     "InMemoryRiskResultRepository",
     "MonthlyReport",
+    "DetectorResultService",
     "ParquetRiskResultRepository",
     "PermissionScopeService",
     "ProofCase",

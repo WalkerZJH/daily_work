@@ -109,6 +109,25 @@ class ProofCaseService:
         return self.repository.list_proof_cases(**filters).to_dict("records")
 
 
+class DetectorResultService:
+    """Read detector result-batch tables without computing detectors."""
+
+    def __init__(self, repository: RiskResultRepository):
+        self.repository = repository
+
+    def list_catalog(self, **filters: Any) -> list[dict[str, Any]]:
+        return self.repository.list_detector_catalog(**filters).to_dict("records")
+
+    def list_runs(self, **filters: Any) -> list[dict[str, Any]]:
+        return self.repository.list_daily_detector_runs(**filters).to_dict("records")
+
+    def list_clues(self, **filters: Any) -> list[dict[str, Any]]:
+        return self.repository.list_daily_detector_clues(**filters).to_dict("records")
+
+    def list_high_risk_evidence(self, risk_entity_id: str | None = None, detector_run_id: str | None = None, **filters: Any) -> list[dict[str, Any]]:
+        return self.repository.list_high_risk_detector_evidence(risk_entity_id=risk_entity_id, detector_run_id=detector_run_id, **filters).to_dict("records")
+
+
 class PermissionScopeService:
     """Reserved hook for tenant/org permissions in backend integration."""
 
