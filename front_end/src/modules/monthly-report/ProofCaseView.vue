@@ -11,6 +11,7 @@ const horizonSets = computed(() => state.value.proofCaseHorizonSets || {})
 const activeSet = computed(() => horizonSets.value[selectedHorizon.value] || horizonSets.value.H6 || { cases: [] })
 const proofCases = computed(() => activeSet.value.cases || [])
 const spotlight = computed(() => proofCases.value[0] || {})
+const displayLookupStatus = computed(() => state.value.displayLookupStatus || { label: '演示数据', message: '展示名映射未接通' })
 
 const summaryMetrics = computed(() => [
   { label: '复盘月报', value: activeSet.value.reportMonth || '-', note: activeSet.value.subtitle || '闭合验证', tone: 'info' },
@@ -61,17 +62,20 @@ onMounted(async () => {
       <div class="proof-hero-copy">
         <div class="proof-hero-topline">
           <span class="eyebrow">历史命中复盘</span>
-          <div class="segmented-control proof-horizon-switcher" aria-label="风险窗口切换">
-            <button
-              v-for="tab in horizonTabs"
-              :key="tab.id"
-              type="button"
-              :class="['segment-btn', { active: selectedHorizon === tab.id }]"
-              @click="selectHorizon(tab.id)"
-            >
-              <strong>{{ tab.label }}</strong>
-              <span>{{ tab.note }}</span>
-            </button>
+          <div class="proof-hero-actions">
+            <span class="status-badge status-badge-neutral">{{ displayLookupStatus.label }} · {{ displayLookupStatus.message }}</span>
+            <div class="segmented-control proof-horizon-switcher" aria-label="风险窗口切换">
+              <button
+                v-for="tab in horizonTabs"
+                :key="tab.id"
+                type="button"
+                :class="['segment-btn', { active: selectedHorizon === tab.id }]"
+                @click="selectHorizon(tab.id)"
+              >
+                <strong>{{ tab.label }}</strong>
+                <span>{{ tab.note }}</span>
+              </button>
+            </div>
           </div>
         </div>
         <h1>{{ activeSet.reportMonth }} 月报命中复盘</h1>

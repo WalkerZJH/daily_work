@@ -92,6 +92,41 @@
 
 接口不得返回 AUC、ECE、PR-AUC、XGBoost、feature ablation、leakage audit、hyperparameters 等内部算法指标。`observation_fill` 与 `one_shot_fill` 仅用于补足展示列表，返回项必须保留 `candidate_type`，且不标记为 high risk；one-shot 项不展示 recurring churn probability。
 
+## Display Lookup Readiness API
+
+`GET /api/v1/display-lookup/status`
+
+用于报告 `entity_display_lookup` 展示名映射表在当前后端链路中的 readiness。该接口只通过 `risk_model_core` repository/service 访问 `entity_display_lookup`，不直接扫描 result-batch 目录，不读取 raw/source 业务库，也不依赖 `algo_main`。
+
+lookup 未就绪时返回 200：
+
+```json
+{
+  "ready": false,
+  "status": "missing",
+  "source": "risk_model_core",
+  "table": "entity_display_lookup",
+  "row_count": 0,
+  "warnings": ["ENTITY_DISPLAY_LOOKUP_NOT_AVAILABLE"]
+}
+```
+
+lookup 就绪时返回 200：
+
+```json
+{
+  "ready": true,
+  "status": "ready",
+  "source": "risk_model_core",
+  "table": "entity_display_lookup",
+  "row_count": 12345,
+  "schema_version": "v1",
+  "warnings": []
+}
+```
+
+`/api/v1/workbench`、`/api/v1/risk-entities`、`/api/v1/proof-cases` 和 `/api/risk/my/top-entities` 可附带 `display_lookup_status`。lookup missing 不会导致这些 API 失败，也不会触发 raw DB 回源补展示名。
+
 ## 主干算法 smoke test
 
 `POST /api/v0/smoke-test/database`

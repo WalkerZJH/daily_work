@@ -17,8 +17,15 @@ import {
   workbenchFillPolicy
 } from './demoData'
 
+const DISPLAY_LOOKUP_DEMO_STATUS = {
+  ready: false,
+  label: '演示数据',
+  message: '展示名映射未接通'
+}
+
 export function createStaticWorkbenchData() {
   return {
+    displayLookupStatus: DISPLAY_LOOKUP_DEMO_STATUS,
     batchContext,
     overviewMetrics,
     modelMetrics,
@@ -29,23 +36,25 @@ export function createStaticWorkbenchData() {
 }
 
 export function createStaticRiskEntitiesData() {
-  return { riskEntities }
+  return { displayLookupStatus: DISPLAY_LOOKUP_DEMO_STATUS, riskEntities }
 }
 
 export function createStaticRiskEntityDetailData(entityId) {
   const entity = riskEntities.find((item) => item.id === entityId) || riskEntities[0]
   return {
+    displayLookupStatus: DISPLAY_LOOKUP_DEMO_STATUS,
     entity,
     horizonProfiles: riskCardHorizonProfiles[entity.id] || {}
   }
 }
 
 export function createStaticOneshotData() {
-  return { oneshotSummary, oneshotTerminals }
+  return { displayLookupStatus: DISPLAY_LOOKUP_DEMO_STATUS, oneshotSummary, oneshotTerminals }
 }
 
 export function createStaticMonthlyReportsData() {
   return {
+    displayLookupStatus: DISPLAY_LOOKUP_DEMO_STATUS,
     batchContext,
     overviewMetrics,
     modelMetrics,
@@ -55,21 +64,21 @@ export function createStaticMonthlyReportsData() {
 }
 
 export function createStaticProofCasesData() {
-  return { proofCaseHorizonTabs, proofCaseHorizonSets, proofCases }
+  return { displayLookupStatus: DISPLAY_LOOKUP_DEMO_STATUS, proofCaseHorizonTabs, proofCaseHorizonSets, proofCases }
 }
 
 export async function loadWorkbenchData() {
-  return tryLoad(() => api().frontendWorkbench(), mapWorkbenchPayload)
+  return tryLoadWhenDisplayLookupReady(() => api().frontendWorkbench(), mapWorkbenchPayload)
 }
 
 export async function loadRiskEntitiesData() {
-  return tryLoad(() => api().frontendRiskEntities(), (payload) => ({
+  return tryLoadWhenDisplayLookupReady(() => api().frontendRiskEntities(), (payload) => ({
     riskEntities: payload.entities.map(mapRiskEntity)
   }))
 }
 
 export async function loadRiskEntityDetailData(entityId) {
-  return tryLoad(() => api().frontendRiskEntityDetail(entityId), (payload) => ({
+  return tryLoadWhenDisplayLookupReady(() => api().frontendRiskEntityDetail(entityId), (payload) => ({
     entity: mapRiskEntity(payload.entity),
     horizonProfiles: Object.fromEntries(
       Object.entries(payload.horizon_profiles || {}).map(([horizon, profile]) => [horizon, mapHorizonProfile(profile)])
@@ -78,23 +87,16 @@ export async function loadRiskEntityDetailData(entityId) {
 }
 
 export async function loadOneshotData() {
-  return tryLoad(() => api().frontendOneshotTerminals(), mapOneshotPayload)
+  return tryLoadWhenDisplayLookupReady(() => api().frontendOneshotTerminals(), mapOneshotPayload)
 }
 
 export async function loadMonthlyReportsData() {
-  return tryLoad(() => api().frontendMonthlyReports(), mapMonthlyReportsPayload)
+  return tryLoadWhenDisplayLookupReady(() => api().frontendMonthlyReports(), mapMonthlyReportsPayload)
 }
 
 export async function loadProofCasesData() {
-  return tryLoad(() => api().frontendProofCases(), (payload) => ({
-    proofCases: (payload.items || []).map((item) => ({
-      id: item.proof_case_id,
-      title: item.title,
-      visible: item.visible,
-      outcome: item.outcome,
-      caveat: item.case_summary
-    }))
-  }))
+  await resolveDisplayLookupStatus()
+  return null
 }
 
 function api() {
@@ -117,6 +119,30 @@ async function tryLoad(loader, mapper) {
     return mapper(await loader())
   } catch (error) {
     return null
+  }
+}
+
+async function tryLoadWhenDisplayLookupReady(loader, mapper) {
+  const displayLookupStatus = await resolveDisplayLookupStatus()
+  if (!displayLookupStatus.ready) return null
+  const data = await tryLoad(loader, mapper)
+  return data ? { ...data, displayLookupStatus } : null
+}
+
+async function resolveDisplayLookupStatus() {
+  try {
+    return normalizeDisplayLookupStatus(await api().displayLookupStatus())
+  } catch (error) {
+    return DISPLAY_LOOKUP_DEMO_STATUS
+  }
+}
+
+function normalizeDisplayLookupStatus(payload) {
+  if (payload?.ready !== true) return DISPLAY_LOOKUP_DEMO_STATUS
+  return {
+    ready: true,
+    label: '展示名映射已就绪',
+    message: payload.message || '后端展示名映射可用'
   }
 }
 
@@ -153,14 +179,17 @@ function mapFillPolicy(policy) {
 }
 
 function mapWorkbenchRow(row) {
+  const manufacturer = firstDisplayText(row.manufacturer_display_name, row.manufacturer_code)
+  const hospital = firstDisplayText(row.hospital_display_name, row.hospital_name, row.hospital_code)
+  const drug = firstDisplayText(row.drug_display_name, row.drug_name, row.drug_code, row.drug_group)
   return {
     id: row.row_id,
     entityId: row.entity_id || '',
-    manufacturer: row.manufacturer_code,
-    hospital: row.hospital_name,
-    drug: row.drug_name,
-    hospitalDrugKey: `${row.hospital_name} × ${row.drug_name}`,
-    region: row.region,
+    manufacturer,
+    hospital,
+    drug,
+    hospitalDrugKey: `${hospital} × ${drug}`,
+    region: firstDisplayText(row.region_display_name, row.region, row.region_code),
     riskProbability: row.risk_probability,
     probabilityDisplay: formatPercent(row.risk_probability),
     averageConsumptionInWindow: row.average_consumption_in_window,
@@ -176,10 +205,10 @@ function mapWorkbenchRow(row) {
 function mapRiskEntity(item) {
   return {
     id: item.entity_id,
-    hospital: item.hospital_name,
-    drug: item.drug_name,
-    manufacturer: item.manufacturer_code,
-    region: item.region,
+    hospital: firstDisplayText(item.hospital_display_name, item.hospital_name, item.hospital_code),
+    drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_code, item.drug_group),
+    manufacturer: firstDisplayText(item.manufacturer_display_name, item.manufacturer_code),
+    region: firstDisplayText(item.region_display_name, item.region, item.region_code),
     horizon: item.horizon,
     riskLevel: item.risk_band,
     riskColor: item.risk_color,
@@ -244,9 +273,9 @@ function mapOneshotPayload(payload) {
     },
     oneshotTerminals: payload.items.map((item) => ({
       id: item.oneshot_id,
-      hospital: item.hospital_name,
-      drug: item.drug_name,
-      region: item.region,
+      hospital: firstDisplayText(item.hospital_display_name, item.hospital_name, item.hospital_code),
+      drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_code, item.drug_group),
+      region: firstDisplayText(item.region_display_name, item.region, item.region_code),
       firstPurchaseDate: item.first_purchase_date,
       firstPurchaseAmount: item.first_purchase_amount,
       firstPurchaseAmountText: formatMoney(item.first_purchase_amount),
@@ -344,6 +373,10 @@ function replaceHorizonCodes(value) {
     .replaceAll('H12', '12月')
     .replaceAll('H6', '6月')
     .replaceAll('H3', '3月')
+}
+
+function firstDisplayText(...values) {
+  return values.find((value) => value !== undefined && value !== null && String(value).trim() !== '') || ''
 }
 
 function formatPercent(value) {

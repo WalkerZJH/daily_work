@@ -875,6 +875,12 @@
   justify-content: flex-end;
 }
 
+.proof-hero-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
 .proof-horizon-switcher .segment-btn {
   min-width: 82px;
 }
@@ -1127,5 +1133,9 @@
 
   .proof-horizon-switcher {
     justify-content: flex-start;
+  }
+
+  .proof-hero-actions {
+    justify-items: start;
   }
 }

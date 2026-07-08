@@ -11,6 +11,7 @@ from app.api.routes_backtest import router as backtest_router
 from app.api.routes_config import router as config_router
 from app.api.routes_detectors import router as detectors_router
 from app.api.routes_debug import router as debug_router
+from app.api.routes_display_lookup import router as display_lookup_router
 from app.api.routes_frontend_pages import router as frontend_pages_router
 from app.api.routes_health import router as health_router
 from app.api.routes_inspection import router as inspection_router
@@ -71,6 +72,7 @@ app.include_router(health_router)
 app.include_router(detectors_router)
 app.include_router(users_router)
 app.include_router(user_top_entities_router)
+app.include_router(display_lookup_router)
 app.include_router(debug_router)
 app.include_router(inspection_router)
 app.include_router(backbone_router)

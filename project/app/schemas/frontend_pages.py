@@ -80,6 +80,7 @@ class WorkbenchPayload(FrontendPageModel):
     batch_context: BatchContext
     overview_metrics: list[OverviewMetric]
     model_metrics: list[ModelEvaluationMetric] = Field(default_factory=list)
+    display_lookup_status: dict[str, Any] | None = None
     fill_policy: WorkbenchFillPolicy
     rows: list[WorkbenchRow]
 
@@ -109,6 +110,7 @@ class RiskEntitiesPayload(FrontendPageModel):
     batch_context: BatchContext
     entities: list[RiskEntityItem]
     pagination: dict[str, int]
+    display_lookup_status: dict[str, Any] | None = None
 
 
 class DetectorResultItem(FrontendPageModel):
@@ -211,6 +213,7 @@ class ProofCaseItem(FrontendPageModel):
 
 
 class ProofCasesPayload(FrontendPageModel):
+    display_lookup_status: dict[str, Any] | None = None
     items: list[ProofCaseItem]
 
 

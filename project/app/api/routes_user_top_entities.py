@@ -4,6 +4,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
+from app.api.routes_display_lookup import get_display_lookup_service
+from app.services.display_lookup_service import DisplayLookupService
 from app.services.user_top_entity_service import (
     CandidateType,
     FillPolicy,
@@ -23,6 +25,7 @@ def get_user_top_entity_service() -> TopEntityService:
 @router.get("/my/top-entities")
 def my_top_entities(
     service: Annotated[TopEntityService, Depends(get_user_top_entity_service)],
+    display_lookup_service: Annotated[DisplayLookupService, Depends(get_display_lookup_service)],
     x_user_id: Annotated[str | None, Header()] = None,
     report_month: str | None = Query(default=None),
     horizon: str = Query(default="H6"),
@@ -38,7 +41,7 @@ def my_top_entities(
 ) -> dict:
     if top_n < 1:
         raise HTTPException(status_code=400, detail="top_n must be >= 1")
-    return service.list_user_top_entities(
+    payload = service.list_user_top_entities(
         user_id=x_user_id or "admin",
         report_month=report_month,
         horizon=horizon,
@@ -52,3 +55,4 @@ def my_top_entities(
         fill_policy=fill_policy,
         manufacturer_codes=manufacturer_codes,
     )
+    return {**payload, "display_lookup_status": display_lookup_service.status()}

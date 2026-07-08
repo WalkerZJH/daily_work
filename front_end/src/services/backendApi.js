@@ -1,5 +1,6 @@
 const DEFAULT_TIMEOUT_MS = 30000
 const DATABASE_REQUEST_TIMEOUT_MS = 120000
+const DISPLAY_LOOKUP_STATUS_TIMEOUT_MS = 3000
 
 export class BackendApi {
   constructor(baseUrl) {
@@ -171,6 +172,12 @@ export class BackendApi {
   async frontendProofCases() {
     return getJson(this.baseUrl, '/api/v1/proof-cases')
   }
+
+  async displayLookupStatus() {
+    return getJson(this.baseUrl, '/api/v1/display-lookup/status', undefined, {
+      timeoutMs: DISPLAY_LOOKUP_STATUS_TIMEOUT_MS
+    })
+  }
 }
 
 export async function requestJson(baseUrl, path, options = {}) {
@@ -200,8 +207,8 @@ export async function requestJson(baseUrl, path, options = {}) {
   }
 }
 
-export function getJson(baseUrl, path, query) {
-  return requestJson(baseUrl, path, { method: 'GET', query })
+export function getJson(baseUrl, path, query, options = {}) {
+  return requestJson(baseUrl, path, { method: 'GET', query, ...options })
 }
 
 export function postJson(baseUrl, path, body, query, options = {}) {
