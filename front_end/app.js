@@ -1054,7 +1054,7 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// ── Filter chips (clues.html / watchlist.html) ────────────────
+// ── Filter chips (clues.html) ────────────────
 document.addEventListener('click', function(e) {
   const chip = e.target.closest('.filter-chip');
   if (!chip) return;

@@ -17,13 +17,12 @@ export default defineConfig({
         dashboard: resolve(__dirname, 'dashboard.html'),
         clues: resolve(__dirname, 'clues.html'),
         clueDetail: resolve(__dirname, 'clue-detail.html'),
+        oneshot: resolve(__dirname, 'oneshot.html'),
         orderDetail: resolve(__dirname, 'order-detail.html'),
         distributor: resolve(__dirname, 'distributor.html'),
         verify: resolve(__dirname, 'verify.html'),
-        watchlist: resolve(__dirname, 'watchlist.html'),
         backtest: resolve(__dirname, 'backtest.html'),
-        algoConfig: resolve(__dirname, 'algo-config.html'),
-        algoHealth: resolve(__dirname, 'algo-health.html')
+        algoArchitecture: resolve(__dirname, 'algo-architecture.html')
       }
     }
   },

@@ -25,7 +25,7 @@ try {
 <template>
   <header class="topbar">
     <button class="sidebar-toggle" title="收起 / 展开侧边栏" type="button" @click="toggleSidebar">
-      ◀
+      ≡
     </button>
     <a class="topbar-logo" href="index.html">
       <div class="logo-icon">智</div>

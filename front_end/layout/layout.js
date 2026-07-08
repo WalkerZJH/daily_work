@@ -1,48 +1,46 @@
 (function () {
   const navSections = [
     {
-      label: '工作台',
+      label: '月报工作台',
       items: [
-        { key: 'index', href: 'index.html', icon: '⌁', text: 'VP 今日工作台', badge: '8' },
-        { key: 'clues', href: 'clues.html', icon: '⌕', text: '全部风险线索', badge: '39', badgeClass: 'orange' },
-        { key: 'watchlist', href: 'watchlist.html', icon: '◌', text: '观察清单（黄）', badge: '14', badgeStyle: 'background:#eab308' }
+        { key: 'index', href: 'index.html', icon: '▦', text: '月报工作台', badge: '20' },
+        { key: 'clues', href: 'clues.html', icon: '●', text: '风险实体清单', badge: '9', badgeClass: 'orange' },
+        { key: 'oneshot', href: 'oneshot.html', icon: '+', text: '新进终端监测', badge: '6', badgeClass: 'green' }
       ]
     },
     {
-      label: '跟进与核验',
+      label: '人工复核',
       items: [
         { key: 'verify', href: 'verify.html', icon: '✓', text: '挽回核验', badge: '4', badgeClass: 'orange' },
         { key: 'distributor', href: 'distributor.html', icon: '!', text: '配送商预警', badge: '1' }
       ]
     },
     {
-      label: '分析',
+      label: '月报与案例',
       items: [
-        { key: 'dashboard', href: 'dashboard.html', icon: '▣', text: '管理驾驶舱' },
-        { key: 'backtest', href: 'backtest.html', icon: '↗', text: '回测报告' }
+        { key: 'dashboard', href: 'dashboard.html', icon: '▣', text: '月报与批次' },
+        { key: 'backtest', href: 'backtest.html', icon: '↗', text: 'Proof-case 案例' }
       ]
     },
     {
-      label: '系统配置',
+      label: '算法说明',
       items: [
-        { key: 'algo-config', href: 'algo-config.html', icon: '⚙', text: '算法配置管理' },
-        { key: 'algo-health', href: 'algo-health.html', icon: '●', text: '接口诊断' }
+        { key: 'algo-architecture', href: 'algo-architecture.html', icon: '▥', text: '算法链路说明' }
       ]
     }
   ]
 
   const pageDefaults = {
-    'index.html': { active: 'index', tag: 'VP 今日工作台 · 本日待办' },
-    'clues.html': { active: 'clues', tag: '全部风险线索' },
-    'clue-detail.html': { active: 'clues', tag: '风险线索详情' },
+    'index.html': { active: 'index', tag: '月报工作台 · H6 主视角' },
+    'clues.html': { active: 'clues', tag: '风险实体清单' },
+    'clue-detail.html': { active: 'clues', tag: 'RiskCard 详情' },
     'order-detail.html': { active: 'clues', tag: '订单详情' },
-    'watchlist.html': { active: 'watchlist', tag: '观察清单' },
+    'oneshot.html': { active: 'oneshot', tag: '新进终端监测 · oneshot 复购倾向' },
     'verify.html': { active: 'verify', tag: '挽回核验' },
     'distributor.html': { active: 'distributor', tag: '配送商预警' },
-    'dashboard.html': { active: 'dashboard', tag: '管理驾驶舱 · 本月统计' },
-    'backtest.html': { active: 'backtest', tag: '回测报告' },
-    'algo-config.html': { active: 'algo-config', tag: '算法配置管理 · 仅管理员可见' },
-    'algo-health.html': { active: 'algo-health', tag: '接口诊断 · 后端联调' }
+    'dashboard.html': { active: 'dashboard', tag: 'MonthlyReport · 批次总览' },
+    'backtest.html': { active: 'backtest', tag: 'Proof-case · 历史命中案例' },
+    'algo-architecture.html': { active: 'algo-architecture', tag: '算法链路说明' }
   }
 
   function currentPage() {
@@ -59,7 +57,7 @@
     const tag = target.dataset.title || pageMeta().tag
     target.outerHTML = `
       <header class="topbar">
-        <button class="sidebar-toggle" title="收起 / 展开侧边栏" type="button">◀</button>
+        <button class="sidebar-toggle" title="收起 / 展开侧边栏" type="button">≡</button>
         <a class="topbar-logo" href="index.html">
           <div class="logo-icon">智</div>
           <div>

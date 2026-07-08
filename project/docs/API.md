@@ -1,8 +1,33 @@
 # API
 
+## Frontend Page API v1
+
+这些接口供 Vue 页面读取稳定页面数据，前端不直接组合调用 `/api/v0/backbone` 或 `/api/v0/detectors`。第二层算法抽离完成后，后端只需要让结果批次或 `risk_model_core` payload 按以下字段供数，前端链路无需改动。
+
+- `GET /api/v1/workbench`：返回生产商视角的医院 × 药品主工作台，`rows` 固定按 `business_score` 降序。`business_score = risk_probability * average_consumption_in_window`。当 global 当月数量不足时，后端直接补齐到 `fill_policy.workbench_target_count = 20`。
+- `GET /api/v1/risk-entities`：返回风险实体清单，核心字段包括 `entity_id`、`hospital_name`、`drug_name`、`manufacturer_code`、`horizon`、`risk_probability`、`average_consumption_in_window`、`business_score`、`risk_band`、`risk_card_count`、`primary_reason`。
+- `GET /api/v1/risk-entities/{entity_id}`：返回详情页数据，`horizon_profiles` 至少覆盖 `H3`、`H6`、`H12`；每个 horizon 包含 `detector_results`、`xgboost_shap`、`detector_narrative`。
+- `GET /api/v1/oneshot-terminals`：返回新进终端监测数据，核心字段包括 `oneshot_count`、`repurchase_propensity`、`expected_repurchase_amount`、`priority`、`reason`。
+- `GET /api/v1/monthly-reports`：返回往期日报切换、月报列表和批次上下文。
+- `GET /api/v1/proof-cases`：返回成功案例列表。
+
+页面批次上下文字段统一为 `report_month`、`score_as_of_date`、`data_watermark_at`、`score_batch_id`、`result_batch_id`、`primary_horizon`、`primary_horizon_label`。当前实现由 `risk_model_core.page_payload_builder` 提供确定性默认 payload；配置 `RISK_RESULT_BATCH_DIR` 后可读取结果批次中的页面 payload。
+
 当前服务对外语义为 `supply_chain_order_risk_algo_backend`，API 前缀为 `/api/v0`。代码中若仍出现 `terminal_guard_algo_backend`，仅作为 legacy name 兼容。
 
-当前阶段是算法验证阶段：P_alive、主干风险分、DetectorEvidence、RiskCardCandidate 都是实验候选输出，不是正式业务工单，也不是已校准概率。
+`GET /api/v1/workbench` 与 `GET /api/v1/monthly-reports` 均返回 `model_metrics`。主干模型和所有可输出具体结果的模型都需要提供关键指标，至少包括 `auc`、`prauc`、`ece`、`brier`、`topk_recall`。
+
+`topk_recall` 必须同时提供：
+
+- `requested_k_percent`：请求的 TopK 占比，例如 0.10。
+- `actual_k_percent`：实际评估占比，必须等于 `selected_count / evaluation_population` 四位小数回填。
+- `selected_count`：实际入选样本数。
+- `evaluation_population`：评估分母。
+- `true_positive_count`：TopK 命中真实风险数。
+- `recall`：`true_positive_count / positive_count` 的召回结果。
+- `k_policy`：`direct_actual_share` 或 `union_backfilled_actual_share`。
+
+如果多模型 union 后再计算 TopK recall，页面和 API 均使用 union 之后的实际占比作为 K。例如请求 Top 10%，union 后覆盖 12.8%，则 `requested_k_percent=0.10`、`actual_k_percent=0.1280`、`k_policy=union_backfilled_actual_share`。
 
 ## 主干算法 smoke test
 
@@ -102,7 +127,7 @@
 - `GET /api/v0/detectors/{detector_id}/config`
 - `PATCH /api/v0/detectors/{detector_id}/config`
 
-所有阈值必须从 `DetectorRuntimeConfig` 读取，不允许在前端硬编码。`auto_baseline` 仅用于测试和算法验证；`ml_first`、`dl_first` 当前只预留接口，未实现时返回 warning 并 fallback。
+所有阈值必须从 `DetectorRuntimeConfig` 读取，不允许在前端硬编码。`auto_baseline`、`ml_first`、`dl_first` 的启用状态、执行路径和结果状态由后端配置与响应字段明确给出。
 
 ## Detector 推理
 

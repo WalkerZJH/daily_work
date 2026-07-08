@@ -147,6 +147,30 @@ export class BackendApi {
       timeoutMs: payload?.source_type === 'database' ? DATABASE_REQUEST_TIMEOUT_MS : DEFAULT_TIMEOUT_MS
     })
   }
+
+  async frontendWorkbench() {
+    return getJson(this.baseUrl, '/api/v1/workbench')
+  }
+
+  async frontendRiskEntities() {
+    return getJson(this.baseUrl, '/api/v1/risk-entities')
+  }
+
+  async frontendRiskEntityDetail(entityId) {
+    return getJson(this.baseUrl, `/api/v1/risk-entities/${entityId}`)
+  }
+
+  async frontendOneshotTerminals() {
+    return getJson(this.baseUrl, '/api/v1/oneshot-terminals')
+  }
+
+  async frontendMonthlyReports() {
+    return getJson(this.baseUrl, '/api/v1/monthly-reports')
+  }
+
+  async frontendProofCases() {
+    return getJson(this.baseUrl, '/api/v1/proof-cases')
+  }
 }
 
 export async function requestJson(baseUrl, path, options = {}) {

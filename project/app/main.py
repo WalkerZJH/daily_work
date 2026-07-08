@@ -11,6 +11,7 @@ from app.api.routes_backtest import router as backtest_router
 from app.api.routes_config import router as config_router
 from app.api.routes_detectors import router as detectors_router
 from app.api.routes_debug import router as debug_router
+from app.api.routes_frontend_pages import router as frontend_pages_router
 from app.api.routes_health import router as health_router
 from app.api.routes_inspection import router as inspection_router
 from app.api.routes_options import router as options_router
@@ -76,3 +77,4 @@ app.include_router(smoke_test_router)
 app.include_router(backtest_router)
 app.include_router(config_router)
 app.include_router(options_router)
+app.include_router(frontend_pages_router)

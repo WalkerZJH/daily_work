@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>算法链路说明 - 终端不丢智能体</title>
+    <link rel="stylesheet" href="/src/styles/main.scss" />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['\\(', '\\)']],
+          displayMath: [['\\[', '\\]']]
+        },
+        svg: { fontCache: 'global' }
+      }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  </head>
+  <body>
+    <div data-layout-topbar data-title="算法链路说明"></div>
+    <div class="layout">
+      <div data-layout-sidebar data-active="algo-architecture"></div>
+
+      <main class="main">
+        <div class="page-shell algo-architecture">
+          <section class="arch-hero panel">
+            <div>
+              <span class="eyebrow">Algorithm Chain</span>
+              <h1>终端不丢算法链路</h1>
+              <p>
+                这页说明产品如何把订单行为转成领先指标、风险概率、业务排序、detector 证据链、新进终端复购倾向和回测验收。核心目标是让生产商看到某医院采购某药品的风险、原因、金额影响和下一步处置优先级。
+              </p>
+            </div>
+            <div class="arch-hero-metrics">
+              <div><span>主干输出</span><strong>H3 / H6 / H12 风险概率</strong></div>
+              <div><span>主排序</span><strong>概率 × 预测窗口平均消费金额</strong></div>
+              <div><span>详情页</span><strong>所有 detector 结果 + SHAP + 聚合解释</strong></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>总体链路</h2>
+              <span class="muted">从订单行到可复核线索</span>
+            </div>
+            <div class="arch-pipeline-strip">
+              <article><strong>L0</strong><span>数据预处理与基线</span></article>
+              <article><strong>L0.5</strong><span>需求形态分类闸门</span></article>
+              <article><strong>L1</strong><span>主干风险模型</span></article>
+              <article><strong>M1</strong><span>候选池与业务排序</span></article>
+              <article><strong>M2</strong><span>新进终端监测</span></article>
+              <article><strong>M3</strong><span>节奏精查</span></article>
+              <article><strong>M4</strong><span>探测器证据链</span></article>
+              <article><strong>M5</strong><span>证据融合与状态决策</span></article>
+              <article><strong>M6</strong><span>结构化证据包</span></article>
+              <article><strong>M8</strong><span>回测与验收</span></article>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>每个模块的计算办法</h2>
+              <span class="muted">算法模块、输入、计算、输出</span>
+            </div>
+            <div class="arch-module-grid">
+              <article class="arch-module">
+                <div class="arch-module-code">L0</div>
+                <h3>数据预处理与基线</h3>
+                <p>统一订单、医院、药品、生产商编码，构造 entity = 生产商 × 医院 × 药品。按 cutoff 月生成 as-of 特征：末次采购、采购频次、采购金额、采购间隔、品规覆盖、配送履约和区域同类基线。</p>
+                <ul>
+                  <li>最近性：距末次采购天数、最近 N 天订单数。</li>
+                  <li>规模：窗口消费金额、历史均值、同类终端分位数。</li>
+                  <li>稳定性：采购间隔中位数、MAD、ADI、CV²。</li>
+                </ul>
+              </article>
+
+              <article class="arch-module">
+                <div class="arch-module-code">L0.5</div>
+                <h3>需求形态分类闸门</h3>
+                <p>先判断采购分布，再选择 detector 容忍带和窗口解释。平稳、波动、间断、块状需求使用不同阈值，避免把正常低频补货误判为异常。</p>
+                <div class="math-panel">\[ \text{ADI}=\frac{\text{观察期总月数}}{\text{有采购月份数}},\quad \text{CV}^2=\left(\frac{\sigma_q}{\mu_q}\right)^2 \]</div>
+                <ul>
+                  <li>smooth：ADI &lt; 1.32 且 CV² &lt; 0.49，全套 detector。</li>
+                  <li>erratic：ADI &lt; 1.32 且 CV² ≥ 0.49，量波动容忍带放宽。</li>
+                  <li>intermittent：ADI ≥ 1.32 且 CV² &lt; 0.49，优先解释补货点和长窗口风险。</li>
+                  <li>lumpy：ADI ≥ 1.32 且 CV² ≥ 0.49，强化主干概率和金额暴露排序。</li>
+                </ul>
+              </article>
+
+              <article class="arch-module">
+                <div class="arch-module-code">L1</div>
+                <h3>主干风险模型</h3>
+                <p>主干算法对 recurring entity 输出 H3、H6、H12 三个预测窗口的具体风险概率。概率服务只回答“该医院 × 药品在窗口内发生风险的概率”，detector 不覆盖主干概率。</p>
+                <div class="math-panel">\[ p_{e,h}=P(y_{e,h}=1\mid X_{e,t}),\quad h\in\{H3,H6,H12\} \]</div>
+                <ul>
+                  <li>输入：as-of 采购节奏、金额、频次、品规、履约、区域同类和需求形态特征。</li>
+                  <li>输出：risk_probability、SHAP feature contribution、窗口级解释。</li>
+                </ul>
+              </article>
+
+              <article class="arch-module">
+                <div class="arch-module-code">M1</div>
+                <h3>候选池与业务排序</h3>
+                <p>候选池先接收主干高风险 entity，再按业务评分排序。业务评分把概率和金额影响合并，确保高概率且高消费影响的 entity 出现在更靠前的位置。</p>
+                <div class="math-panel">\[ \text{business_score}_{e,h}=p_{e,h}\times \overline{\text{consumption}}_{e,h} \]</div>
+                <ul>
+                  <li>工作台按 business_score 降序。</li>
+                  <li>每个用户 20-50 条，不是整体全局只给 20-50 条。</li>
+                  <li>优先复核、人工复核、新进终端关注、补充算法候选共同构成主工作台。</li>
+                  <li>高风险 entity、新进终端复购关注、补充算法候选共同进入主工作台，不足 20 条时展示实际数量。</li>
+                </ul>
+              </article>
+
+              <article class="arch-module">
+                <div class="arch-module-code">M2</div>
+                <h3>oneshot 复购倾向计算</h3>
+                <p>oneshot 面向本期首次采购或短历史终端，核心问题是首次采购后复购倾向计算。结果汇总为新进终端数量、平均复购倾向、预计复购金额和复购促进优先级。</p>
+                <div class="math-panel">\[ \text{repurchase_propensity}=\sigma(\beta_0+\beta_1\log(1+\text{first_amount})+\beta_2\text{cohort_rebuy_rate}-\beta_3\text{days_since_first}) \]</div>
+                <div class="math-panel">\[ \text{expected_repurchase_amount}=\text{repurchase_propensity}\times \widehat{\text{next_purchase_amount}} \]</div>
+                <ul>
+                  <li>关键输入：首采金额、首采后天数、区域同类终端复购周期、产品线复购率。</li>
+                  <li>关键输出：复购倾向分层、预计复购金额、复购促进优先级、reason。</li>
+                </ul>
+              </article>
+
+              <article class="arch-module">
+                <div class="arch-module-code">M3</div>
+                <h3>节奏精查</h3>
+                <p>对进入候选池的 entity 做 interval-aware 精查，比较当前距末次采购天数、历史补货间隔、同类终端补货周期和需求形态，定位“采购节奏走弱”的领先信号。</p>
+                <div class="math-panel">\[ \text{overdue_ratio}=\frac{\text{days_since_last_purchase}-\widehat{\text{interval}}}{\max(\text{MAD},1)} \]</div>
+                <ul>
+                  <li>平稳需求重视间隔偏离和频次下降。</li>
+                  <li>间断需求重视期望补货点和长窗口未复购。</li>
+                  <li>块状需求重视金额暴露和同类 cohort 对照。</li>
+                </ul>
+              </article>
+
+              <article class="arch-module">
+                <div class="arch-module-code">M4</div>
+                <h3>探测器证据链</h3>
+                <p>入选 entity 后，详情页展示所有 detector 的计算结果，包括命中、弱信号和稳定信号。detector 输出解释具体原因，不替代主干风险概率。</p>
+                <div class="arch-detector-list">
+                  <span>采购间隔 detector</span>
+                  <span>频次下降 detector</span>
+                  <span>品规收缩 detector</span>
+                  <span>配送履约 detector</span>
+                  <span>价格与政策 detector</span>
+                  <span>同类 cohort detector</span>
+                </div>
+                <ul>
+                  <li>每个 detector 输出 score、signal、status、evidence、action。</li>
+                  <li>同一 entity 在 H3/H6/H12 下可有不同 detector 解释。</li>
+                </ul>
+              </article>
+
+              <article class="arch-module">
+                <div class="arch-module-code">M5</div>
+                <h3>证据融合与状态决策</h3>
+                <p>融合层把主干概率、金额影响、detector 证据、SHAP 特征贡献和业务动作合成自然语言解释。状态决策用于区分优先跟进、持续观察、配送核查、政策归因和复购促进。</p>
+                <div class="math-panel">\[ \text{evidence_strength}=\max_j(s_j)\times \text{consistency}(\text{detectors},\text{SHAP}) \]</div>
+                <ul>
+                  <li>主干概率决定风险强度。</li>
+                  <li>detector 证据解释触发原因。</li>
+                  <li>SHAP 说明模型主要驱动特征。</li>
+                </ul>
+              </article>
+
+              <article class="arch-module">
+                <div class="arch-module-code">M6</div>
+                <h3>结构化证据包</h3>
+                <p>证据包把 entity、窗口概率、业务评分、所有 detector 结果、SHAP、高风险原因、推荐动作和历史趋势统一给到详情页，支撑销售、商务和管理者在同一事实层上协作。</p>
+                <ul>
+                  <li>实体粒度：manufacturer_code、hospital_name、drug_name、region。</li>
+                  <li>窗口粒度：H3/H6/H12 的 probability、business_score、detector_results。</li>
+                  <li>动作粒度：跟进建议、配送核查、复购促进、成功案例沉淀。</li>
+                </ul>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>重要指标公式</h2>
+              <span class="muted">用 MathJax 渲染的评价与排序口径</span>
+            </div>
+            <div class="arch-metric-matrix">
+              <article>
+                <h3>主干风险概率模型</h3>
+                <p>H3、H6、H12 每个可输出风险概率的窗口都需要给出 AUC、PRAUC、ECE、Brier 和 TopK recall。主工作台默认读 H6，详情页按风险卡绑定 H 切换。</p>
+                <dl>
+                  <dt>对象</dt><dd>recurring 医院 × 药品 entity</dd>
+                  <dt>排序</dt><dd>risk_probability × average_consumption_in_window</dd>
+                  <dt>解释</dt><dd>XGBoost SHAP + detector 聚合解释</dd>
+                </dl>
+              </article>
+              <article>
+                <h3>oneshot 复购倾向模型</h3>
+                <p>凡输出 repurchase_propensity、expected_repurchase_amount 或 priority 的 oneshot 模型，都按首采 cohort 回测并给出同一组关键指标。</p>
+                <dl>
+                  <dt>对象</dt><dd>本期首采或短历史医院 × 药品 entity</dd>
+                  <dt>排序</dt><dd>repurchase_propensity × expected_repurchase_amount</dd>
+                  <dt>解释</dt><dd>首采金额、首采后天数、cohort 复购率</dd>
+                </dl>
+              </article>
+              <article>
+                <h3>detector 证据排序模型</h3>
+                <p>凡 detector 或证据融合模块给出 score、priority、rank、hit probability 这类具体结果，也需要报 AUC、PRAUC、ECE、Brier 和 TopK recall。</p>
+                <dl>
+                  <dt>对象</dt><dd>进入候选池的 entity 与 detector 证据行</dd>
+                  <dt>排序</dt><dd>evidence_strength 与业务评分联合排序</dd>
+                  <dt>解释</dt><dd>全量 detector 结果、证据一致性、推荐动作</dd>
+                </dl>
+              </article>
+            </div>
+            <div class="architecture-note">
+              TopK recall 的 K 必须使用实际入选占比。直接 TopK 时 \(K_{\text{actual}}=\frac{\text{selected_count}}{\text{evaluation_population}}\)；如果先做多模型 union，再用 union 结果评估 TopK recall，则必须用 union 后的实际占比回填 K，例如 requested 10% 但 union 覆盖 12.8%，页面展示为 TopK actual 12.8%。
+            </div>
+            <div class="arch-formula-grid">
+              <article class="arch-card">
+                <h3>AUC</h3>
+                <div class="math-panel">\[ \text{AUC}=P(s^+ &gt; s^-) \]</div>
+                <p>衡量真实风险 entity 是否排在非风险 entity 前面。</p>
+              </article>
+              <article class="arch-card">
+                <h3>PRAUC</h3>
+                <div class="math-panel">\[ \text{PRAUC}=\int_0^1 \text{Precision}(r)\,d\text{Recall}(r) \]</div>
+                <p>衡量正例稀少时，模型在不同召回水平下保持精确识别的能力。</p>
+              </article>
+              <article class="arch-card">
+                <h3>PR-AUC Lift</h3>
+                <div class="math-panel">\[ \text{PR-AUC Lift}=\frac{\text{PR-AUC}}{\text{Positive Rate}} \]</div>
+                <p>衡量稀有风险场景下，相比基础正例率的识别增益。</p>
+              </article>
+              <article class="arch-card">
+                <h3>ECE</h3>
+                <div class="math-panel">\[ \text{ECE}=\sum_m \frac{|B_m|}{n}\left|\text{acc}(B_m)-\text{conf}(B_m)\right| \]</div>
+                <p>衡量概率校准能力，让 80% 风险概率对应接近 80% 的真实风险发生率。</p>
+              </article>
+              <article class="arch-card">
+                <h3>Brier</h3>
+                <div class="math-panel">\[ \text{Brier}=\frac{1}{n}\sum_i(p_i-y_i)^2 \]</div>
+                <p>衡量概率预测和真实标签之间的平方误差。</p>
+              </article>
+              <article class="arch-card">
+                <h3>LogLoss</h3>
+                <div class="math-panel">\[ \text{LogLoss}=-\frac{1}{n}\sum_i\left[y_i\log(p_i)+(1-y_i)\log(1-p_i)\right] \]</div>
+                <p>衡量概率分布质量，对高置信错误给予更高惩罚。</p>
+              </article>
+              <article class="arch-card">
+                <h3>Recall@K</h3>
+                <div class="math-panel">\[ \text{Recall@K}=\text{Recall@K_{\text{actual}}}=\frac{\text{TopK 命中的真实风险数}}{\text{全部真实风险数}},\quad K_{\text{actual}}=\frac{\text{selected_count}}{\text{evaluation_population}} \]</div>
+                <p>衡量有限线索容量下，前 K 条是否覆盖足够多真实风险。</p>
+              </article>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="layout/layout.js"></script>
+  </body>
+</html>

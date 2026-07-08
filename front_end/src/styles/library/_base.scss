@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(135deg, rgba(248, 250, 252, .98), rgba(239, 246, 255, .88) 52%, rgba(241, 245, 249, .94));
+  color: var(--text-main);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+code,
+.text-mono {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
