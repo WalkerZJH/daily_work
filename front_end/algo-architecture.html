@@ -332,6 +332,52 @@
                 <p>衡量有限线索容量下，前列名单是否覆盖足够多真实风险。</p>
               </article>
             </div>
+
+            <div class="panel-title arch-formula-title">
+              <h2>补充口径：召回与精度</h2>
+              <span class="muted">名单命中解释</span>
+            </div>
+            <div class="arch-confusion-section">
+              <div class="confusion-matrix" aria-label="召回与精度四宫格">
+                <div class="matrix-corner"></div>
+                <div class="matrix-axis">实际风险</div>
+                <div class="matrix-axis">实际稳定</div>
+                <div class="matrix-axis matrix-row">入选名单</div>
+                <div class="matrix-cell matrix-hit">
+                  <strong>TP</strong>
+                  <span>命中风险</span>
+                  <small>入选且后续发生风险</small>
+                </div>
+                <div class="matrix-cell matrix-false">
+                  <strong>FP</strong>
+                  <span>误报</span>
+                  <small>入选但后续保持稳定</small>
+                </div>
+                <div class="matrix-axis matrix-row">未入选名单</div>
+                <div class="matrix-cell matrix-miss">
+                  <strong>FN</strong>
+                  <span>漏报</span>
+                  <small>未入选但后续发生风险</small>
+                </div>
+                <div class="matrix-cell matrix-correct">
+                  <strong>TN</strong>
+                  <span>正确排除</span>
+                  <small>未入选且后续保持稳定</small>
+                </div>
+              </div>
+              <div class="arch-formula-grid arch-supplement-formulas">
+                <article class="arch-card">
+                  <h3>Recall</h3>
+                  <div class="math-panel">\[ \text{Recall}=\frac{TP}{TP+FN} \]</div>
+                  <p>衡量真实风险对象中有多少被名单覆盖，适合判断线索池是否漏掉关键风险。</p>
+                </article>
+                <article class="arch-card">
+                  <h3>Precision</h3>
+                  <div class="math-panel">\[ \text{Precision}=\frac{TP}{TP+FP} \]</div>
+                  <p>衡量入选名单中有多少后来被验证为真实风险，适合判断跟进名单的命中质量。</p>
+                </article>
+              </div>
+            </div>
           </section>
         </div>
       </main>
