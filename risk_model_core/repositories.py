@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 import json
+import os
 
 import pandas as pd
 
@@ -121,8 +122,9 @@ class ParquetRiskResultRepository(RiskResultRepository):
             self.batch_dir / "page_payloads" / f"{clean}_payload.json",
         ]
         for path in candidates:
-            if path.exists():
-                return json.loads(path.read_text(encoding="utf-8"))
+            if path_exists(path):
+                with open(long_path(path), encoding="utf-8") as fh:
+                    return json.load(fh)
         raise FileNotFoundError(f"Page payload not found: {page_name}")
 
 
@@ -224,3 +226,14 @@ def apply_filters(df: pd.DataFrame, filters: dict[str, Any]) -> pd.DataFrame:
             continue
         out = out[out[key].astype(str).eq(str(value))]
     return out
+
+
+def long_path(path: Path) -> str:
+    resolved = str(path.resolve())
+    if os.name == "nt" and not resolved.startswith("\\\\?\\"):
+        return "\\\\?\\" + resolved
+    return resolved
+
+
+def path_exists(path: Path) -> bool:
+    return os.path.exists(long_path(path))

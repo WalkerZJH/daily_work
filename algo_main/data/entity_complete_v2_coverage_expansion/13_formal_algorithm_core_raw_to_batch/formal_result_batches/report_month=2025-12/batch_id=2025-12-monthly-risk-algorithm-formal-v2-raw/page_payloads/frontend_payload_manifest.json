@@ -1,0 +1,136 @@
+{
+  "batch_dir": "C:\\Users\\admin\\Myprojects\\for_git\\algo_main\\data\\entity_complete_v2_coverage_expansion\\13_formal_algorithm_core_raw_to_batch\\formal_result_batches\\report_month=2025-12\\batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw",
+  "generated_at": "2026-07-08T01:41:32.480549+00:00",
+  "schema_source": "C:\\Users\\admin\\Myprojects\\for_git\\project\\app\\schemas\\frontend_pages.py",
+  "validated_with_project_schema": true,
+  "payload_files": [
+    "frontend_monthly_reports_payload.json",
+    "frontend_oneshot_payload.json",
+    "frontend_proof_cases_payload.json",
+    "frontend_risk_entities_payload.json",
+    "frontend_workbench_payload.json"
+  ],
+  "detail_payloads": [
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL360220|ZA16DAP0017010402404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_1093cc42ef1988cd_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_e8d7c2b3ae0ce4cd_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611570|ZA16DAP0017010202404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_1f67e62b75d56789_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_468c19e15622cdfb_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H12",
+      "detail_payload_file": "frontend_risk_entity_detail_76a8bd3c06441d42_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H12",
+      "detail_payload_file": "frontend_risk_entity_detail_43a2235221a9c75c_payload.json"
+    },
+    {
+      "entity_id": "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12",
+      "detail_payload_file": "frontend_risk_entity_detail_ec30a0a5a8408cb1_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H12",
+      "detail_payload_file": "frontend_risk_entity_detail_dd114b0e8729fee8_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_d962c5c9ecaa2bc8_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL373688|ZA16DAP0017010402404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_c38b6fade0263a9a_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL3500133|ZA16DAP0017010402404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_e1a96ca0e74e7d85_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL4200319|ZA16DAP0017010202404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_acf3f66fead54599_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_9c1318ff1d6ee3d7_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H6",
+      "detail_payload_file": "frontend_risk_entity_detail_9dbeaa7000b57fb7_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL132590|ZA16DAP0017010402404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_eeb744c5d9d8cad8_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H6",
+      "detail_payload_file": "frontend_risk_entity_detail_f1e857b0be56b3f9_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL360220|ZA16DAP0017010402404|H6",
+      "detail_payload_file": "frontend_risk_entity_detail_42e28e351f82ba15_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H6",
+      "detail_payload_file": "frontend_risk_entity_detail_50aa17670518b06f_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611570|ZA16DAP0017010202404|H6",
+      "detail_payload_file": "frontend_risk_entity_detail_91b1436b4638acb1_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL415917|ZA16DAP0017010402404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_0245c8d37f00a9f7_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL610370|ZA16DAP0017010402404|H3",
+      "detail_payload_file": "frontend_risk_entity_detail_4a59eb4006e06b01_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H6",
+      "detail_payload_file": "frontend_risk_entity_detail_ab4b9e20d7f59c19_payload.json"
+    },
+    {
+      "entity_id": "DFC52F4CCF384D849D053242EA2935F3|YL445495|ZA12AAN0014010103711|H12",
+      "detail_payload_file": "frontend_risk_entity_detail_e828ef1058fd7912_payload.json"
+    },
+    {
+      "entity_id": "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL4200319|ZA16DAP0017010202404|H6",
+      "detail_payload_file": "frontend_risk_entity_detail_6db951a7742d06e4_payload.json"
+    },
+    {
+      "entity_id": "7de4fd63-eac3-4347-87c4-3bd90dbf08bd|YL333260|XA11CCW047E002010201564|H6",
+      "detail_payload_file": "frontend_risk_entity_detail_f1f42af6b7ab23b9_payload.json"
+    },
+    {
+      "entity_id": "7de4fd63-eac3-4347-87c4-3bd90dbf08bd|YL333260|XA11CCW047E002010201564|H12",
+      "detail_payload_file": "frontend_risk_entity_detail_73e38b0105babeb8_payload.json"
+    },
+    {
+      "entity_id": "3fc2389a-d9f9-4933-a714-f9c877f0f86f|YL431113|e737ff99ee7da35e95c98554e844a8c8|H12",
+      "detail_payload_file": "frontend_risk_entity_detail_4386131bdd16ee24_payload.json"
+    }
+  ],
+  "detail_payload_count": 27,
+  "workbench_row_count": 20,
+  "risk_entities_count": 27,
+  "oneshot_count": 50,
+  "proof_case_count": 0,
+  "monthly_report_count": 1,
+  "forbidden_text_check_passed": true,
+  "caveats_for_internal_review": [
+    "average_consumption_in_window set to 0 because no numeric amount proxy is present in the current result batch",
+    "xgboost_shap arrays are empty because no verified SHAP/contribution table is present",
+    "oneshot repurchase_propensity is rule-tiered from one-shot attention score, not recurring churn probability"
+  ],
+  "validation_report": "C:\\Users\\admin\\Myprojects\\for_git\\algo_main\\reports\\entity_complete_v2_coverage_expansion\\22_frontend_payload_delivery\\frontend_payload_schema_validation.md"
+}

@@ -68,10 +68,17 @@ class PagePayloadBuilder:
 
     def build_frontend_risk_entity_detail_payload(self, risk_entity_id: str) -> dict[str, Any]:
         default_details = build_default_frontend_payloads()["risk_entity_details"]
-        return self._payload_or_build(
-            f"frontend_risk_entity_detail_{risk_entity_id}_payload",
-            lambda: _detail_or_raise(default_details, risk_entity_id),
-        )
+        try:
+            return self.repository.get_page_payload(f"frontend_risk_entity_detail_{risk_entity_id}_payload")
+        except FileNotFoundError:
+            try:
+                manifest = self.repository.get_page_payload("frontend_payload_manifest")
+                for item in manifest.get("detail_payloads", []):
+                    if str(item.get("entity_id")) == str(risk_entity_id):
+                        return self.repository.get_page_payload(str(item["detail_payload_file"]))
+            except FileNotFoundError:
+                pass
+        return _detail_or_raise(default_details, risk_entity_id)
 
     def build_frontend_oneshot_payload(self) -> dict[str, Any]:
         return self._payload_or_build(

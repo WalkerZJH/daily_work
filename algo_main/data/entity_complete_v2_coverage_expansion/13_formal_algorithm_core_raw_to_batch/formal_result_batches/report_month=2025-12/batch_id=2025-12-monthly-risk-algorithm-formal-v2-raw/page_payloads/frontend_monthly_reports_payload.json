@@ -1,0 +1,50 @@
+{
+  "batch_context": {
+    "report_month": "2025-12",
+    "score_as_of_date": "2025-12-31",
+    "data_watermark_at": "2025-12-31T23:59:59+08:00",
+    "score_batch_id": "score_202512_h6",
+    "result_batch_id": "2025-12-monthly-risk-algorithm-formal-v2-raw",
+    "primary_horizon": "H6",
+    "primary_horizon_label": "6-month window",
+    "score_formula": "risk_probability * average_consumption_in_window"
+  },
+  "overview_metrics": [
+    {
+      "label": "Risk entities",
+      "value": "27",
+      "tone": "warning"
+    },
+    {
+      "label": "New terminal items",
+      "value": "50",
+      "tone": "neutral"
+    }
+  ],
+  "model_metrics": [],
+  "daily_report_options": [
+    {
+      "daily_report_id": "monthly_selector_2025-12",
+      "date": "2025-12-31",
+      "label": "2025-12 monthly batch",
+      "title": "2025-12 monthly risk review",
+      "report_month": "2025-12",
+      "score_batch_id": "score_202512_h6",
+      "data_watermark_at": "2025-12-31T23:59:59+08:00",
+      "high_risk_entities": 27,
+      "oneshot_count": 50,
+      "detector_alerts": 4197,
+      "summary": "Monthly batch selector for the current risk review."
+    }
+  ],
+  "monthly_reports": [
+    {
+      "monthly_report_id": "monthly_2025-12",
+      "title": "2025-12 monthly risk clue review",
+      "report_month": "2025-12",
+      "score_batch_id": "score_202512_h6",
+      "data_watermark_at": "2025-12-31T23:59:59+08:00",
+      "summary": "1291 bounded worklist entities generated for monthly review."
+    }
+  ]
+}

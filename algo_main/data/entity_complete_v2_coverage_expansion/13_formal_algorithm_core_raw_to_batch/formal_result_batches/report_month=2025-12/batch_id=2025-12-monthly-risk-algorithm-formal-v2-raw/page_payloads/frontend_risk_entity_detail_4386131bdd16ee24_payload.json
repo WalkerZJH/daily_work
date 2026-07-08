@@ -1,0 +1,303 @@
+{
+  "entity": {
+    "entity_id": "3fc2389a-d9f9-4933-a714-f9c877f0f86f|YL431113|e737ff99ee7da35e95c98554e844a8c8|H12",
+    "hospital_name": "YL431113",
+    "drug_name": "e737ff99ee7da35e95c98554e844a8c8",
+    "manufacturer_code": "3fc2389a-d9f9-4933-a714-f9c877f0f86f",
+    "region": "430000",
+    "horizon": "H12",
+    "risk_probability": 0.286577,
+    "average_consumption_in_window": 0,
+    "business_score": 0,
+    "risk_band": "Observation",
+    "risk_color": "yellow",
+    "last_purchase_date": "unknown",
+    "days_since_last_purchase": 0,
+    "risk_card_count": 4,
+    "status": "confirm",
+    "monthly_status": "current_month_selected",
+    "value_level": "high",
+    "primary_reason": "Selected by the current monthly risk worklist policy."
+  },
+  "horizon_profiles": {
+    "H3": {
+      "horizon": "H3",
+      "label": "3-month window",
+      "risk_probability": 0.286577,
+      "average_consumption_in_window": 0,
+      "business_score": 0,
+      "reason": "3-month window: monthly risk review for purchasing rhythm and selected evidence.",
+      "detector_results": [
+        {
+          "detector_id": "purchase_gap",
+          "detector_name": "Purchase gap",
+          "score": 0.7,
+          "signal": "selected_evidence",
+          "status": "hit",
+          "evidence": "Selected for monthly purchasing risk review.\nTime since last purchase is above historical rhythm.\nRecent purchase frequency is below baseline.",
+          "action": "review_context"
+        },
+        {
+          "detector_id": "frequency_drop",
+          "detector_name": "Frequency drop",
+          "score": 0.7,
+          "signal": "selected_evidence",
+          "status": "hit",
+          "evidence": "Selected for monthly purchasing risk review.\nTime since last purchase is above historical rhythm.\nRecent purchase frequency is below baseline.",
+          "action": "review_context"
+        },
+        {
+          "detector_id": "quantity_drop",
+          "detector_name": "Quantity drop",
+          "score": 0.7,
+          "signal": "selected_evidence",
+          "status": "hit",
+          "evidence": "Selected for monthly purchasing risk review.\nTime since last purchase is above historical rhythm.\nRecent purchase frequency is below baseline.",
+          "action": "review_context"
+        },
+        {
+          "detector_id": "terminal_loss",
+          "detector_name": "Stored terminal risk",
+          "score": 0.0,
+          "signal": "not_hit",
+          "status": "stable",
+          "evidence": "No selected business-visible evidence in the current monthly batch.",
+          "action": "monitor"
+        },
+        {
+          "detector_id": "new_terminal",
+          "detector_name": "New terminal",
+          "score": 0.0,
+          "signal": "not_applicable",
+          "status": "not_applicable",
+          "evidence": "This detector is not applicable for the selected recurring entity.",
+          "action": "no_action"
+        },
+        {
+          "detector_id": "delivery_time",
+          "detector_name": "Delivery timing",
+          "score": 0.0,
+          "signal": "not_customer_claim",
+          "status": "data_insufficient",
+          "evidence": "Source data is not sufficient for a customer-facing conclusion.",
+          "action": "use_as_internal_context"
+        },
+        {
+          "detector_id": "delivery_rate",
+          "detector_name": "Delivery fulfillment",
+          "score": 0.0,
+          "signal": "not_applicable",
+          "status": "not_applicable",
+          "evidence": "This detector is not applicable for the selected recurring entity.",
+          "action": "no_action"
+        },
+        {
+          "detector_id": "price_signal",
+          "detector_name": "Price signal",
+          "score": 0.0,
+          "signal": "not_customer_claim",
+          "status": "data_insufficient",
+          "evidence": "Source data is not sufficient for a customer-facing conclusion.",
+          "action": "use_as_internal_context"
+        },
+        {
+          "detector_id": "sku_wallet",
+          "detector_name": "Portfolio signal",
+          "score": 0.0,
+          "signal": "not_applicable",
+          "status": "not_applicable",
+          "evidence": "This detector is not applicable for the selected recurring entity.",
+          "action": "no_action"
+        }
+      ],
+      "xgboost_shap": [],
+      "detector_narrative": "Risk review is mainly supported by purchasing rhythm evidence and selected monthly worklist status."
+    },
+    "H6": {
+      "horizon": "H6",
+      "label": "6-month window",
+      "risk_probability": 0.286577,
+      "average_consumption_in_window": 0,
+      "business_score": 0,
+      "reason": "6-month window: monthly risk review for purchasing rhythm and selected evidence.",
+      "detector_results": [
+        {
+          "detector_id": "purchase_gap",
+          "detector_name": "Purchase gap",
+          "score": 0.7,
+          "signal": "selected_evidence",
+          "status": "hit",
+          "evidence": "Selected for monthly purchasing risk review.\nTime since last purchase is above historical rhythm.\nRecent purchase frequency is below baseline.",
+          "action": "review_context"
+        },
+        {
+          "detector_id": "frequency_drop",
+          "detector_name": "Frequency drop",
+          "score": 0.7,
+          "signal": "selected_evidence",
+          "status": "hit",
+          "evidence": "Selected for monthly purchasing risk review.\nTime since last purchase is above historical rhythm.\nRecent purchase frequency is below baseline.",
+          "action": "review_context"
+        },
+        {
+          "detector_id": "quantity_drop",
+          "detector_name": "Quantity drop",
+          "score": 0.7,
+          "signal": "selected_evidence",
+          "status": "hit",
+          "evidence": "Selected for monthly purchasing risk review.\nTime since last purchase is above historical rhythm.\nRecent purchase frequency is below baseline.",
+          "action": "review_context"
+        },
+        {
+          "detector_id": "terminal_loss",
+          "detector_name": "Stored terminal risk",
+          "score": 0.0,
+          "signal": "not_hit",
+          "status": "stable",
+          "evidence": "No selected business-visible evidence in the current monthly batch.",
+          "action": "monitor"
+        },
+        {
+          "detector_id": "new_terminal",
+          "detector_name": "New terminal",
+          "score": 0.0,
+          "signal": "not_applicable",
+          "status": "not_applicable",
+          "evidence": "This detector is not applicable for the selected recurring entity.",
+          "action": "no_action"
+        },
+        {
+          "detector_id": "delivery_time",
+          "detector_name": "Delivery timing",
+          "score": 0.0,
+          "signal": "not_customer_claim",
+          "status": "data_insufficient",
+          "evidence": "Source data is not sufficient for a customer-facing conclusion.",
+          "action": "use_as_internal_context"
+        },
+        {
+          "detector_id": "delivery_rate",
+          "detector_name": "Delivery fulfillment",
+          "score": 0.0,
+          "signal": "not_applicable",
+          "status": "not_applicable",
+          "evidence": "This detector is not applicable for the selected recurring entity.",
+          "action": "no_action"
+        },
+        {
+          "detector_id": "price_signal",
+          "detector_name": "Price signal",
+          "score": 0.0,
+          "signal": "not_customer_claim",
+          "status": "data_insufficient",
+          "evidence": "Source data is not sufficient for a customer-facing conclusion.",
+          "action": "use_as_internal_context"
+        },
+        {
+          "detector_id": "sku_wallet",
+          "detector_name": "Portfolio signal",
+          "score": 0.0,
+          "signal": "not_applicable",
+          "status": "not_applicable",
+          "evidence": "This detector is not applicable for the selected recurring entity.",
+          "action": "no_action"
+        }
+      ],
+      "xgboost_shap": [],
+      "detector_narrative": "Risk review is mainly supported by purchasing rhythm evidence and selected monthly worklist status."
+    },
+    "H12": {
+      "horizon": "H12",
+      "label": "12-month window",
+      "risk_probability": 0.286577,
+      "average_consumption_in_window": 0,
+      "business_score": 0,
+      "reason": "12-month window: monthly risk review for purchasing rhythm and selected evidence.",
+      "detector_results": [
+        {
+          "detector_id": "purchase_gap",
+          "detector_name": "Purchase gap",
+          "score": 0.7,
+          "signal": "selected_evidence",
+          "status": "hit",
+          "evidence": "Selected for monthly purchasing risk review.\nTime since last purchase is above historical rhythm.\nRecent purchase frequency is below baseline.",
+          "action": "review_context"
+        },
+        {
+          "detector_id": "frequency_drop",
+          "detector_name": "Frequency drop",
+          "score": 0.7,
+          "signal": "selected_evidence",
+          "status": "hit",
+          "evidence": "Selected for monthly purchasing risk review.\nTime since last purchase is above historical rhythm.\nRecent purchase frequency is below baseline.",
+          "action": "review_context"
+        },
+        {
+          "detector_id": "quantity_drop",
+          "detector_name": "Quantity drop",
+          "score": 0.7,
+          "signal": "selected_evidence",
+          "status": "hit",
+          "evidence": "Selected for monthly purchasing risk review.\nTime since last purchase is above historical rhythm.\nRecent purchase frequency is below baseline.",
+          "action": "review_context"
+        },
+        {
+          "detector_id": "terminal_loss",
+          "detector_name": "Stored terminal risk",
+          "score": 0.0,
+          "signal": "not_hit",
+          "status": "stable",
+          "evidence": "No selected business-visible evidence in the current monthly batch.",
+          "action": "monitor"
+        },
+        {
+          "detector_id": "new_terminal",
+          "detector_name": "New terminal",
+          "score": 0.0,
+          "signal": "not_applicable",
+          "status": "not_applicable",
+          "evidence": "This detector is not applicable for the selected recurring entity.",
+          "action": "no_action"
+        },
+        {
+          "detector_id": "delivery_time",
+          "detector_name": "Delivery timing",
+          "score": 0.0,
+          "signal": "not_customer_claim",
+          "status": "data_insufficient",
+          "evidence": "Source data is not sufficient for a customer-facing conclusion.",
+          "action": "use_as_internal_context"
+        },
+        {
+          "detector_id": "delivery_rate",
+          "detector_name": "Delivery fulfillment",
+          "score": 0.0,
+          "signal": "not_applicable",
+          "status": "not_applicable",
+          "evidence": "This detector is not applicable for the selected recurring entity.",
+          "action": "no_action"
+        },
+        {
+          "detector_id": "price_signal",
+          "detector_name": "Price signal",
+          "score": 0.0,
+          "signal": "not_customer_claim",
+          "status": "data_insufficient",
+          "evidence": "Source data is not sufficient for a customer-facing conclusion.",
+          "action": "use_as_internal_context"
+        },
+        {
+          "detector_id": "sku_wallet",
+          "detector_name": "Portfolio signal",
+          "score": 0.0,
+          "signal": "not_applicable",
+          "status": "not_applicable",
+          "evidence": "This detector is not applicable for the selected recurring entity.",
+          "action": "no_action"
+        }
+      ],
+      "xgboost_shap": [],
+      "detector_narrative": "Risk review is mainly supported by purchasing rhythm evidence and selected monthly worklist status."
+    }
+  }
+}
