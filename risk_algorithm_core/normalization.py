@@ -22,9 +22,11 @@ def normalize_orders(orders: pd.DataFrame, cutoff_date: str | None = None) -> tu
     df["order_amount"] = pd.to_numeric(df["order_amount"], errors="coerce").fillna(0.0)
     df = df.dropna(subset=["order_date", "manufacturer_code", "hospital_code", "drug_code"])
     df = df[(df["manufacturer_code"] != "") & (df["hospital_code"] != "") & (df["drug_code"] != "")]
-    df = df[df["order_quantity"] > 0]
     if cutoff_date:
-        df = df[df["order_date"] <= pd.Timestamp(cutoff_date)]
+        cutoff = pd.Timestamp(cutoff_date)
+        if cutoff == cutoff.normalize():
+            cutoff = cutoff + pd.Timedelta(days=1) - pd.Timedelta(nanoseconds=1)
+        df = df[df["order_date"] <= cutoff]
     profile = pd.DataFrame(
         [
             {"metric": "normalized_order_rows", "value": len(df)},
@@ -92,4 +94,33 @@ def normalize_raw_tables(tables: dict[str, pd.DataFrame], cutoff_date: str) -> t
     normalized["product_line_mapping"] = normalize_product_line_mapping(tables.get("product_line_mapping", pd.DataFrame()))
     normalized["delivery_events"] = normalize_delivery_events(tables.get("delivery_events", pd.DataFrame()))
     normalized["price_reference"] = normalize_price_reference(tables.get("price_reference", pd.DataFrame()))
+    normalized["fact_entity_month"] = normalize_fact_entity_month(tables.get("fact_entity_month", pd.DataFrame()))
+    normalized["entity_purchase_sequence"] = normalize_entity_purchase_sequence(tables.get("entity_purchase_sequence", pd.DataFrame()))
     return normalized, order_profile
+
+
+def normalize_fact_entity_month(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    if out.empty:
+        return out
+    for col in ["manufacturer_code", "hospital_code", "drug_group", "drug_group_source"]:
+        if col in out:
+            out[col] = out[col].fillna("").astype(str)
+    if "purchase_month" in out:
+        out["purchase_month"] = pd.to_datetime(out["purchase_month"], errors="coerce")
+    if "last_purchase_time_in_month" in out:
+        out["last_purchase_time_in_month"] = pd.to_datetime(out["last_purchase_time_in_month"], errors="coerce")
+    return out
+
+
+def normalize_entity_purchase_sequence(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    if out.empty:
+        return out
+    for col in ["manufacturer_code", "hospital_code", "drug_group", "drug_group_source"]:
+        if col in out:
+            out[col] = out[col].fillna("").astype(str)
+    for col in ["purchase_time", "previous_purchase_time"]:
+        if col in out:
+            out[col] = pd.to_datetime(out[col], errors="coerce")
+    return out

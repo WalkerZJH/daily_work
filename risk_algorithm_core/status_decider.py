@@ -17,7 +17,7 @@ class StatusDecider:
         out["detector_hit_count"] = out["detector_hit_count"].fillna(0).astype(int)
         out["strong_detector_hit_count"] = out["strong_detector_hit_count"].fillna(0).astype(int)
         out["is_one_shot"] = out["candidate_type"].eq("one_shot")
-        out["is_observation"] = out["candidate_type"].eq("observation")
+        out["is_observation"] = out["candidate_type"].isin(["observation", "demand_shape_observation"])
         out["is_high_risk"] = out["candidate_type"].eq("recurring") & (out["churn_probability_H"] >= 0.6)
         out["final_candidate_status"] = np.select(
             [

@@ -25,7 +25,7 @@ from .detectors import (
 )
 from .entity_builder import build_monthly_entities
 from .evidence_builder import build_risk_card_evidence, build_risk_cards
-from .feature_engineering import engineer_features
+from .feature_engineering import engineer_features, engineer_features_from_facts
 from .normalization import normalize_raw_tables
 from .production_feature_builder import build_model_feature_frame
 from .raw_input import read_raw_input_batch
@@ -59,7 +59,10 @@ class MonthlyRiskRunner:
             cutoff_date,
             cfg.available_horizons,
         )
-        features, feature_report = engineer_features(entity_base, normalized["orders"], cutoff_date)
+        if not normalized.get("fact_entity_month", pd.DataFrame()).empty:
+            features, feature_report = engineer_features_from_facts(entity_base, normalized["fact_entity_month"], cutoff_date)
+        else:
+            features, feature_report = engineer_features(entity_base, normalized["orders"], cutoff_date)
         if use_rule_baseline:
             scorer = RuleBaselineScorer()
             model_artifact_id = "dry_run_rule_baseline"

@@ -22,6 +22,8 @@ OPTIONAL_TABLES = [
     "product_line_mapping",
     "price_reference",
     "delivery_events",
+    "fact_entity_month",
+    "entity_purchase_sequence",
 ]
 
 

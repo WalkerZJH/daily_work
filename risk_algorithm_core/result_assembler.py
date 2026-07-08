@@ -131,7 +131,12 @@ def _build_risk_entities(status: pd.DataFrame, report_month: str) -> pd.DataFram
     out["is_probability_allowed"] = False
     out["user_visible_caveat"] = status["selection_caveat"]
     out["suggested_action_short"] = status["candidate_type"].map(
-        {"recurring": "Review purchasing context", "one_shot": "Check second-purchase opportunity", "observation": "Continue monitoring"}
+        {
+            "recurring": "Review purchasing context",
+            "one_shot": "Check second-purchase opportunity",
+            "observation": "Continue monitoring",
+            "demand_shape_observation": "Continue monitoring",
+        }
     ).fillna("Manual review")
     out["auto_dispatch_allowed"] = False
     out["created_at"] = dt.datetime.now(dt.UTC).isoformat()

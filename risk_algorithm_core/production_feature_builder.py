@@ -39,7 +39,13 @@ def build_model_feature_frame(features: pd.DataFrame, artifact: LoadedModelArtif
         else:
             status = "available_from_raw_feature_engineering"
         before_missing = int(work[feature].isna().sum())
-        work[feature] = _coerce_feature(work[feature], dtype_policy.get(feature), default_values.get(feature))
+        fill_existing_missing = status == "generated_from_schema_default"
+        work[feature] = _coerce_feature(
+            work[feature],
+            dtype_policy.get(feature),
+            default_values.get(feature),
+            fill_missing=fill_existing_missing,
+        )
         after_missing = int(work[feature].isna().sum())
         rows.append(
             {
@@ -68,17 +74,22 @@ def build_model_feature_frame(features: pd.DataFrame, artifact: LoadedModelArtif
     return ProductionFeatureBuildResult(model_frame, pd.DataFrame(rows))
 
 
-def _coerce_feature(series: pd.Series, dtype_name: str | None, default_value: Any) -> pd.Series:
+def _coerce_feature(series: pd.Series, dtype_name: str | None, default_value: Any, *, fill_missing: bool) -> pd.Series:
     if dtype_name in {"float", "float64", "number", "numeric"}:
         out = pd.to_numeric(series, errors="coerce").replace([np.inf, -np.inf], np.nan)
-        if default_value is not None:
+        if fill_missing and default_value is not None:
             out = out.fillna(float(default_value))
         return out
     if dtype_name in {"int", "int64"}:
         out = pd.to_numeric(series, errors="coerce").replace([np.inf, -np.inf], np.nan)
-        if default_value is not None:
+        if fill_missing and default_value is not None:
             out = out.fillna(int(default_value))
         return out.astype("int64", errors="ignore")
     if dtype_name in {"bool", "boolean"}:
-        return series.fillna(bool(default_value) if default_value is not None else False).astype(bool)
-    return series.astype("string").fillna(str(default_value) if default_value is not None else "__missing__").astype(object)
+        if fill_missing:
+            return series.fillna(bool(default_value) if default_value is not None else False).astype(bool)
+        return series.astype("boolean")
+    out = series.astype("string")
+    if fill_missing:
+        out = out.fillna(str(default_value) if default_value is not None else "__missing__")
+    return out.astype(object)

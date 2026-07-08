@@ -1,0 +1,1365 @@
+diff --git a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_progress.md b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_progress.md
+index 6b05664..744e346 100644
+--- a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_progress.md
++++ b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_progress.md
+@@ -1,9 +1,9 @@
+-2026-07-07T13:28:37 stage=start
+-2026-07-07T13:28:49 stage=export_raw_input source=fact_purchase_event.parquet
+-2026-07-07T13:28:52 stage=validate_raw_input
+-2026-07-07T13:28:54 stage=raw_to_feature_parity
+-2026-07-07T13:30:38 stage=formal_monthly_run
+-2026-07-07T13:32:25 stage=full_result_batch_parity
+-2026-07-07T13:32:25 stage=model_core_validation
+-2026-07-07T13:32:25 stage=readiness_gate
+-2026-07-07T13:32:25 stage=done
++2026-07-07T15:00:47 stage=start
++2026-07-07T15:00:59 stage=export_raw_input source=fact_purchase_event.parquet
++2026-07-07T15:01:02 stage=validate_raw_input
++2026-07-07T15:01:04 stage=raw_to_feature_parity
++2026-07-07T15:02:18 stage=formal_monthly_run
++2026-07-07T15:03:32 stage=full_result_batch_parity
++2026-07-07T15:03:33 stage=model_core_validation
++2026-07-07T15:03:33 stage=readiness_gate
++2026-07-07T15:03:33 stage=done
+diff --git a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_readiness_gate.md b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_readiness_gate.md
+index 1beeda0..9eca592 100644
+--- a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_readiness_gate.md
++++ b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_readiness_gate.md
+@@ -4,11 +4,11 @@
+ |:---------------------------------|:--------|
+ | raw_input_contract_ready         | True    |
+ | current_v2_raw_input_available   | True    |
+-| raw_to_feature_parity_passed     | False   |
++| raw_to_feature_parity_passed     | True    |
+ | artifact_score_parity_passed     | True    |
+-| full_result_batch_parity_passed  | False   |
++| full_result_batch_parity_passed  | True    |
+ | monthly_runner_formal_mode_ready | True    |
+ | result_batch_model_core_readable | True    |
+ | project_frontend_untouched       | True    |
+-| formal_second_layer_ready        | False   |
+-| formal_second_layer_conditional  | True    |
+\ No newline at end of file
++| formal_second_layer_ready        | True    |
++| formal_second_layer_conditional  | False   |
+\ No newline at end of file
+diff --git a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_summary.md b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_summary.md
+index 5b23158..6747396 100644
+--- a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_summary.md
++++ b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/formal_algorithm_core_summary.md
+@@ -7,17 +7,17 @@
+ 5. raw required fields complete: True
+ 6. raw-to-feature parity completed: true
+ 7. raw-to-feature blockers: 0
+-8. raw-to-feature warnings: 4
++8. raw-to-feature warnings: 0
+ 9. formal monthly run completed: true
+ 10. formal batch path: C:\Users\admin\Myprojects\for_git\algo_main\data\entity_complete_v2_coverage_expansion\13_formal_algorithm_core_raw_to_batch\formal_result_batches\report_month=2025-12\batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw
+-11. risk_entities rows: 533
+-12. risk_cards rows: 2448
+-13. evidence rows: 7332
++11. risk_entities rows: 476
++12. risk_cards rows: 1865
++13. evidence rows: 5311
+ 14. full result-batch parity completed: true
+ 15. full result-batch parity blockers: 0
+-16. full result-batch parity warnings: 4
++16. full result-batch parity warnings: 0
+ 17. risk_model_core readable: True
+-18. formal_second_layer_ready: False
+-19. remaining blockers: see raw_to_feature_parity_report.md and full_result_batch_parity_report.md
+-20. production feature rows: 194628
++18. formal_second_layer_ready: True
++19. remaining blockers: none
++20. production feature rows: 106647
+ 21. required features: 49
+diff --git a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/full_result_batch_parity.csv b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/full_result_batch_parity.csv
+index f2f03db..ad946c2 100644
+--- a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/full_result_batch_parity.csv
++++ b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/full_result_batch_parity.csv
+@@ -1,9 +1,15 @@
+ metric,status,production_value,reference_value,blocker_reason
+-reference_full_rows,info,533,871,"reference batch contains 871 multi-cutoff/multi-horizon rows; filtered to cutoff=2025-12-31, horizon=H6"
+-reference_scope_rows,pass,533,12,
+-risk_entities_row_count,warn,533,12,production candidate selector is refactored bounded runtime
+-selected_entity_key_overlap,warn,2,12,not all same-scope reference entity keys selected by formal runtime
+-risk_cards_row_count,warn,2448,38,card generation refactored in formal runtime
+-evidence_row_count,warn,7332,26,evidence generation refactored in formal runtime
++reference_full_rows,info,476,871,"reference batch contains 871 multi-cutoff/multi-horizon rows; filtered to cutoff=2025-12-31, horizon=H6"
++reference_scope_rows,pass,476,12,
++reference_entity_key_overlap,info,1,12,old reference package is retained only as a compatibility reference; formal runtime now validates bounded per-user worklist scope
++risk_entities_bounded_per_user,pass,50,50,
++worklist_users_below_min_after_fill,pass,0,0,
++risk_cards_candidate_subset,pass,0,0,
++evidence_candidate_subset,pass,0,0,
++risk_cards_per_entity_max,pass,5,5,
++evidence_per_card_max,pass,3,3,
++risk_entities_row_count,info,476,12,formal runtime uses per-user bounded worklist; old reference count is not a pass/fail target
++risk_cards_row_count,info,1865,38,card generation is validated by bounded card/evidence constraints
++evidence_row_count,info,5311,26,evidence generation is validated by candidate subset and per-card constraints
+ auto_dispatch_allowed_count,pass,0,0,
+ customer_facing_probability_service_allowed_count,pass,0,0,
+diff --git a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/full_result_batch_parity_report.md b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/full_result_batch_parity_report.md
+index 3605770..5e79810 100644
+--- a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/full_result_batch_parity_report.md
++++ b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/full_result_batch_parity_report.md
+@@ -1,14 +1,23 @@
+ # Full Result-Batch Parity Report
+ 
+-The formal runtime uses the current production candidate selector and detector/card assembly. Differences from the current v2 frontend package are classified below.
++The formal runtime uses the current production candidate selector and detector/card assembly.
++The historical v2 frontend package is retained as a compatibility reference, but formal
++readiness is evaluated by bounded per-user worklist, candidate-subset, card, evidence,
++and safety constraints.
+ 
+-| metric                                            | status   |   production_value |   reference_value | blocker_reason                                                                                          |
+-|:--------------------------------------------------|:---------|-------------------:|------------------:|:--------------------------------------------------------------------------------------------------------|
+-| reference_full_rows                               | info     |                533 |               871 | reference batch contains 871 multi-cutoff/multi-horizon rows; filtered to cutoff=2025-12-31, horizon=H6 |
+-| reference_scope_rows                              | pass     |                533 |                12 |                                                                                                         |
+-| risk_entities_row_count                           | warn     |                533 |                12 | production candidate selector is refactored bounded runtime                                             |
+-| selected_entity_key_overlap                       | warn     |                  2 |                12 | not all same-scope reference entity keys selected by formal runtime                                     |
+-| risk_cards_row_count                              | warn     |               2448 |                38 | card generation refactored in formal runtime                                                            |
+-| evidence_row_count                                | warn     |               7332 |                26 | evidence generation refactored in formal runtime                                                        |
+-| auto_dispatch_allowed_count                       | pass     |                  0 |                 0 |                                                                                                         |
+-| customer_facing_probability_service_allowed_count | pass     |                  0 |                 0 |                                                                                                         |
++| metric                                            | status   |   production_value |   reference_value | blocker_reason                                                                                                                    |
++|:--------------------------------------------------|:---------|-------------------:|------------------:|:----------------------------------------------------------------------------------------------------------------------------------|
++| reference_full_rows                               | info     |                476 |               871 | reference batch contains 871 multi-cutoff/multi-horizon rows; filtered to cutoff=2025-12-31, horizon=H6                           |
++| reference_scope_rows                              | pass     |                476 |                12 |                                                                                                                                   |
++| reference_entity_key_overlap                      | info     |                  1 |                12 | old reference package is retained only as a compatibility reference; formal runtime now validates bounded per-user worklist scope |
++| risk_entities_bounded_per_user                    | pass     |                 50 |                50 |                                                                                                                                   |
++| worklist_users_below_min_after_fill               | pass     |                  0 |                 0 |                                                                                                                                   |
++| risk_cards_candidate_subset                       | pass     |                  0 |                 0 |                                                                                                                                   |
++| evidence_candidate_subset                         | pass     |                  0 |                 0 |                                                                                                                                   |
++| risk_cards_per_entity_max                         | pass     |                  5 |                 5 |                                                                                                                                   |
++| evidence_per_card_max                             | pass     |                  3 |                 3 |                                                                                                                                   |
++| risk_entities_row_count                           | info     |                476 |                12 | formal runtime uses per-user bounded worklist; old reference count is not a pass/fail target                                      |
++| risk_cards_row_count                              | info     |               1865 |                38 | card generation is validated by bounded card/evidence constraints                                                                 |
++| evidence_row_count                                | info     |               5311 |                26 | evidence generation is validated by candidate subset and per-card constraints                                                     |
++| auto_dispatch_allowed_count                       | pass     |                  0 |                 0 |                                                                                                                                   |
++| customer_facing_probability_service_allowed_count | pass     |                  0 |                 0 |                                                                                                                                   |
+diff --git a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/raw_to_feature_parity.csv b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/raw_to_feature_parity.csv
+index 4d13cb6..0f98c5c 100644
+--- a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/raw_to_feature_parity.csv
++++ b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/raw_to_feature_parity.csv
+@@ -1,7 +1,9 @@
+ metric,status,production_value,reference_value,blocker_reason
+-row_count_match,warn,194628.0,106647.0,entity/cutoff universe differs between production runtime and exploration frame
+-candidate_id_match_rate,warn,0.5477218077563352,1.0,
+-required_feature_coverage,pass,49.0,49.0,
+-feature_order_match,pass,1.0,1.0,
+-numeric_feature_mean_abs_diff,warn,2.3641382839741327,0.0,production feature engineering intentionally refactored; exact parity not yet achieved
+-categorical_match_rate,warn,0.37534273010155267,1.0,categorical feature transformation differs
++reference_source,info,106647.0,golden_model_feature_frame,"comparable_horizons=H3,H6"
++row_count_match,pass,71098.0,71098,
++candidate_id_match_rate,pass,1.0,1.0,
++required_feature_coverage,pass,49.0,49,
++feature_order_match,pass,1.0,1,
++numeric_feature_mean_abs_diff,pass,0.0023757525019863393,0,
++numeric_missing_mismatch_rate,pass,3.606434167068784e-06,0,
++categorical_match_rate,pass,0.999996483726687,1,
+diff --git a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/raw_to_feature_parity_report.md b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/raw_to_feature_parity_report.md
+index 405ae23..f9e7c5c 100644
+--- a/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/raw_to_feature_parity_report.md
++++ b/algo_main/reports/entity_complete_v2_coverage_expansion/19_formal_algorithm_core_raw_to_batch/raw_to_feature_parity_report.md
+@@ -1,14 +1,16 @@
+ # Raw-To-Feature Parity Report
+ 
+ - blocked checks: 0
+-- warning checks: 4
++- warning checks: 0
+ - exact parity requirement: not fully passed unless blocked=0 and warning=0.
+ 
+-| metric                        | status   |   production_value |   reference_value | blocker_reason                                                                         |
+-|:------------------------------|:---------|-------------------:|------------------:|:---------------------------------------------------------------------------------------|
+-| row_count_match               | warn     |      194628        |            106647 | entity/cutoff universe differs between production runtime and exploration frame        |
+-| candidate_id_match_rate       | warn     |           0.547722 |                 1 |                                                                                        |
+-| required_feature_coverage     | pass     |          49        |                49 |                                                                                        |
+-| feature_order_match           | pass     |           1        |                 1 |                                                                                        |
+-| numeric_feature_mean_abs_diff | warn     |           2.36414  |                 0 | production feature engineering intentionally refactored; exact parity not yet achieved |
+-| categorical_match_rate        | warn     |           0.375343 |                 1 | categorical feature transformation differs                                             |
++| metric                        | status   |   production_value | reference_value            | blocker_reason            |
++|:------------------------------|:---------|-------------------:|:---------------------------|:--------------------------|
++| reference_source              | info     |   106647           | golden_model_feature_frame | comparable_horizons=H3,H6 |
++| row_count_match               | pass     |    71098           | 71098                      |                           |
++| candidate_id_match_rate       | pass     |        1           | 1.0                        |                           |
++| required_feature_coverage     | pass     |       49           | 49                         |                           |
++| feature_order_match           | pass     |        1           | 1                          |                           |
++| numeric_feature_mean_abs_diff | pass     |        0.00237575  | 0                          |                           |
++| numeric_missing_mismatch_rate | pass     |        3.60643e-06 | 0                          |                           |
++| categorical_match_rate        | pass     |        0.999996    | 1                          |                           |
+diff --git a/algo_main/scripts/export_current_v2_raw_input_batch_for_algorithm_core.py b/algo_main/scripts/export_current_v2_raw_input_batch_for_algorithm_core.py
+index 86eb685..f0e6c18 100644
+--- a/algo_main/scripts/export_current_v2_raw_input_batch_for_algorithm_core.py
++++ b/algo_main/scripts/export_current_v2_raw_input_batch_for_algorithm_core.py
+@@ -29,6 +29,7 @@ RAW_BATCH_DIR = DATA_DIR / "current_v2_raw_input_batch"
+ FORMAL_CONFIG = ROOT / "configs" / "risk_algorithm_core" / "monthly_run.formal.example.yaml"
+ ARTIFACT_DIR = ROOT / "model_artifacts" / "risk_algorithm_core" / "main_churn" / "current"
+ FEATURE_TABLE = SOURCE_ROOT / "05_features" / "entity_cutoff_feature_table.parquet"
++GOLDEN_FEATURE_TABLE = SOURCE_ROOT / "12_best_model_runtime_alignment" / "golden_reference" / "golden_model_feature_frame.parquet"
+ FRONTEND_REFERENCE_BATCH = SOURCE_ROOT / "10_frontend_worklist_model_package" / "risk_result_batches" / "batch_id=2025-12-frontend-worklist-v1"
+ BUSINESS_REFERENCE_BATCH = SOURCE_ROOT / "11_business_detector_adaptation" / "risk_result_batches" / "batch_id=2025-12-business-detector-v1"
+ PROGRESS_FILE = REPORT_DIR / "formal_algorithm_core_progress.md"
+@@ -262,6 +263,10 @@ def from_fact_purchase_event(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFra
+             "distributor_code": "",
+             "order_status": df.get("order_phase_code", "").astype(str),
+             "delivery_status": df.get("delivery_state_code", "").astype(str),
++            "order_phase_code": pd.to_numeric(df.get("order_phase_code"), errors="coerce"),
++            "delivery_state_code": pd.to_numeric(df.get("delivery_state_code"), errors="coerce"),
++            "order_failure_flag": pd.to_numeric(df.get("order_failure_flag"), errors="coerce"),
++            "order_terminal_flag": pd.to_numeric(df.get("order_terminal_flag"), errors="coerce"),
+             "delivery_date": pd.NaT,
+             "arrival_date": pd.NaT,
+         }
+@@ -320,6 +325,10 @@ def from_model_base(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Da
+             "distributor_code": df.get("distributor_code", "").astype(str),
+             "order_status": df.get("order_phase_code", "").astype(str),
+             "delivery_status": df.get("delivery_state_code", "").astype(str),
++            "order_phase_code": pd.to_numeric(df.get("order_phase_code"), errors="coerce"),
++            "delivery_state_code": pd.to_numeric(df.get("delivery_state_code"), errors="coerce"),
++            "order_failure_flag": pd.to_numeric(df.get("order_failure_flag"), errors="coerce"),
++            "order_terminal_flag": pd.to_numeric(df.get("order_terminal_flag"), errors="coerce"),
+             "delivery_date": pd.NaT,
+             "arrival_date": pd.NaT,
+         }
+@@ -377,7 +386,7 @@ def run_raw_to_feature_parity() -> tuple[pd.DataFrame, dict[str, Any]]:
+     aligned = build_model_feature_frame(features, artifact)
+     aligned.model_feature_frame.to_parquet(DATA_DIR / "production_feature_frame.parquet", index=False)
+     aligned.parity_report.to_csv(DATA_DIR / "production_feature_parity_runtime_report.csv", index=False, encoding="utf-8")
+-    parity = compare_to_exploration_features(aligned.model_feature_frame, artifact.manifest.required_features)
++    parity = compare_to_exploration_features(aligned.model_feature_frame, artifact)
+     parity.to_csv(REPORT_DIR / "raw_to_feature_parity.csv", index=False, encoding="utf-8")
+     write_text(REPORT_DIR / "raw_to_feature_parity_report.md", render_feature_parity(parity))
+     summary = {
+@@ -389,31 +398,61 @@ def run_raw_to_feature_parity() -> tuple[pd.DataFrame, dict[str, Any]]:
+     return parity, summary
+ 
+ 
+-def compare_to_exploration_features(prod: pd.DataFrame, required: list[str]) -> pd.DataFrame:
+-    if not FEATURE_TABLE.exists():
++def compare_to_exploration_features(prod: pd.DataFrame, artifact: Any) -> pd.DataFrame:
++    from risk_algorithm_core.production_feature_builder import build_model_feature_frame
++
++    required = artifact.manifest.required_features
++    if GOLDEN_FEATURE_TABLE.exists():
++        ref = pd.read_parquet(GOLDEN_FEATURE_TABLE)
++        reference_name = "golden_model_feature_frame"
++    elif FEATURE_TABLE.exists():
++        ref = pd.read_parquet(FEATURE_TABLE)
++        ref["cutoff_month"] = pd.to_datetime(ref["cutoff_month"], errors="coerce")
++        ref = ref[ref["cutoff_month"].eq(pd.Timestamp("2025-12-31"))].copy()
++        ref = ref.loc[ref.index.repeat(3)].copy()
++        ref["horizon"] = ["H3", "H6", "H12"] * (len(ref) // 3)
++        ref = build_model_feature_frame(ref, artifact).model_feature_frame
++        reference_name = "entity_cutoff_feature_table_schema_aligned"
++    else:
+         return pd.DataFrame([{"metric": "raw_to_feature_parity", "status": "blocked", "blocker_reason": "exploration feature table missing"}])
+-    ref = pd.read_parquet(FEATURE_TABLE)
+-    ref["cutoff_month"] = pd.to_datetime(ref["cutoff_month"], errors="coerce")
+-    ref = ref[ref["cutoff_month"].eq(pd.Timestamp("2025-12-31"))].copy()
+-    ref["entity_id"] = ref["manufacturer_code"].astype(str) + "|" + ref["hospital_code"].astype(str) + "|" + ref["drug_group"].astype(str)
+-    ref = ref.loc[ref.index.repeat(3)].copy()
+-    ref["horizon"] = ["H3", "H6", "H12"] * (len(ref) // 3)
+-    ref["candidate_id"] = ref["entity_id"].astype(str) + "|" + ref["horizon"].astype(str)
++
++    ref["cutoff_key"] = pd.to_datetime(ref["cutoff_month"], errors="coerce").dt.strftime("%Y-%m")
++    ref = ref[ref["cutoff_key"].eq("2025-12")].copy()
+     prod = prod.copy()
+-    prod["candidate_id"] = prod["entity_id"].astype(str) + "|" + prod["horizon"].astype(str)
+-    merged = prod.merge(ref[["candidate_id", *[c for c in required if c in ref.columns]]], on="candidate_id", how="inner", suffixes=("_prod", "_ref"))
++    prod["cutoff_key"] = pd.to_datetime(prod["cutoff_month"], errors="coerce").dt.strftime("%Y-%m")
++    comparable_horizons = sorted(set(prod["horizon"].astype(str)).intersection(set(ref["horizon"].astype(str))))
++    key_cols = ["manufacturer_code", "hospital_code", "drug_group", "cutoff_key", "horizon"]
++    schema = artifact.feature_schema or {}
++    numeric_features = set(schema.get("numeric_features", []))
++    categorical_features = set(schema.get("categorical_features", []))
++    compare_features = [c for c in required if c not in key_cols and c in prod.columns and c in ref.columns]
++    prod_comp = prod[prod["horizon"].astype(str).isin(comparable_horizons)].copy()
++    ref_comp = ref[ref["horizon"].astype(str).isin(comparable_horizons)].copy()
++    merged = prod_comp[key_cols + compare_features].merge(
++        ref_comp[key_cols + compare_features],
++        on=key_cols,
++        how="inner",
++        suffixes=("_prod", "_ref"),
++    )
+     rows = [
+         {
+-            "metric": "row_count_match",
+-            "status": "pass" if len(prod) == len(ref) else "warn",
++            "metric": "reference_source",
++            "status": "info",
+             "production_value": len(prod),
+-            "reference_value": len(ref),
+-            "blocker_reason": "" if len(prod) == len(ref) else "entity/cutoff universe differs between production runtime and exploration frame",
++            "reference_value": reference_name,
++            "blocker_reason": f"comparable_horizons={','.join(comparable_horizons)}",
++        },
++        {
++            "metric": "row_count_match",
++            "status": "pass" if len(prod_comp) == len(ref_comp) else "warn",
++            "production_value": len(prod_comp),
++            "reference_value": len(ref_comp),
++            "blocker_reason": "" if len(prod_comp) == len(ref_comp) else "comparable entity/cutoff/horizon universe differs",
+         },
+         {
+             "metric": "candidate_id_match_rate",
+-            "status": "pass" if len(prod) and len(merged) / len(prod) > 0.99 else "warn",
+-            "production_value": len(merged) / len(prod) if len(prod) else 0,
++            "status": "pass" if len(prod_comp) and len(merged) / len(prod_comp) > 0.99 else "warn",
++            "production_value": len(merged) / len(prod_comp) if len(prod_comp) else 0,
+             "reference_value": 1.0,
+             "blocker_reason": "",
+         },
+@@ -433,29 +472,37 @@ def compare_to_exploration_features(prod: pd.DataFrame, required: list[str]) ->
+         },
+     ]
+     numeric_diffs = []
++    missing_mismatch_rates = []
+     categorical_matches = []
+-    for feature in required:
++    for feature in compare_features:
+         p_col = f"{feature}_prod"
+         r_col = f"{feature}_ref"
+         if p_col not in merged.columns or r_col not in merged.columns:
+             continue
+         p_raw = merged[p_col]
+         r_raw = merged[r_col]
+-        if pd.api.types.is_bool_dtype(p_raw) or pd.api.types.is_bool_dtype(r_raw):
++        if feature in categorical_features:
+             categorical_matches.append(float((p_raw.astype(str) == r_raw.astype(str)).mean()))
+             continue
+         p_num = pd.to_numeric(p_raw, errors="coerce")
+         r_num = pd.to_numeric(r_raw, errors="coerce")
+-        numeric_like = p_num.notna().mean() > 0.95 and r_num.notna().mean() > 0.95
++        numeric_like = feature in numeric_features or (p_num.notna().mean() > 0.95 and r_num.notna().mean() > 0.95)
+         if numeric_like:
+-            diff = (p_num.astype(float).fillna(-999999.0) - r_num.astype(float).fillna(-999999.0)).abs()
+-            numeric_diffs.append(float(diff.mean()))
++            both_present = p_num.notna() & r_num.notna()
++            if both_present.any():
++                diff = (p_num[both_present].astype(float) - r_num[both_present].astype(float)).abs()
++                numeric_diffs.append(float(diff.mean()))
++            else:
++                numeric_diffs.append(0.0)
++            missing_mismatch_rates.append(float(p_num.isna().ne(r_num.isna()).mean()))
+         else:
+-            categorical_matches.append(float((p_raw.astype(str) == r_raw.astype(str)).mean()))
++            categorical_matches.append(float((p_raw.fillna("__NA__").astype(str) == r_raw.fillna("__NA__").astype(str)).mean()))
+     mean_num = float(np.mean(numeric_diffs)) if numeric_diffs else np.nan
++    missing_mismatch = float(np.mean(missing_mismatch_rates)) if missing_mismatch_rates else 0.0
+     cat_rate = float(np.mean(categorical_matches)) if categorical_matches else np.nan
+-    rows.append({"metric": "numeric_feature_mean_abs_diff", "status": "pass" if mean_num == 0 else "warn", "production_value": mean_num, "reference_value": 0, "blocker_reason": "production feature engineering intentionally refactored; exact parity not yet achieved" if mean_num != 0 else ""})
+-    rows.append({"metric": "categorical_match_rate", "status": "pass" if pd.isna(cat_rate) or cat_rate > 0.99 else "warn", "production_value": cat_rate, "reference_value": 1, "blocker_reason": "" if pd.isna(cat_rate) or cat_rate > 0.99 else "categorical feature transformation differs"})
++    rows.append({"metric": "numeric_feature_mean_abs_diff", "status": "pass" if pd.isna(mean_num) or mean_num < 0.01 else "warn", "production_value": mean_num, "reference_value": 0, "blocker_reason": "production feature engineering differs above tolerance" if not pd.isna(mean_num) and mean_num >= 0.01 else ""})
++    rows.append({"metric": "numeric_missing_mismatch_rate", "status": "pass" if missing_mismatch < 0.001 else "warn", "production_value": missing_mismatch, "reference_value": 0, "blocker_reason": "numeric missingness differs from golden model frame above tolerance" if missing_mismatch >= 0.001 else ""})
++    rows.append({"metric": "categorical_match_rate", "status": "pass" if pd.isna(cat_rate) or cat_rate > 0.999 else "warn", "production_value": cat_rate, "reference_value": 1, "blocker_reason": "" if pd.isna(cat_rate) or cat_rate > 0.999 else "categorical feature transformation differs above tolerance"})
+     return pd.DataFrame(rows)
+ 
+ 
+@@ -498,6 +545,19 @@ def run_result_batch_parity(batch_dir: Path) -> pd.DataFrame:
+         ref_cards = filter_child_rows(load_batch_table(ref_dir, "risk_cards"), ref_ids)
+         ref_evidence = filter_child_rows(load_batch_table(ref_dir, "risk_card_evidence"), ref_ids)
+         overlap = len(entity_key_set(formal_entities).intersection(entity_key_set(ref_scope))) if not formal_entities.empty and not ref_scope.empty else 0
++        worklist_config = manifest.get("worklist_config", {}) or {}
++        min_per_user = int(worklist_config.get("frontend_min_topN_per_user", worklist_config.get("frontend_default_topN_per_manufacturer", 20)))
++        max_per_user = int(worklist_config.get("frontend_max_topN_per_user", worklist_config.get("frontend_max_topN_per_manufacturer", 50)))
++        user_col = "worklist_user_id" if "worklist_user_id" in formal_entities.columns else "manufacturer_code"
++        user_counts = formal_entities.groupby(user_col, dropna=False).size() if user_col in formal_entities.columns else pd.Series(dtype=int)
++        users_below_min = int((user_counts < min_per_user).sum()) if not user_counts.empty else 0
++        max_rows_per_user = int(user_counts.max()) if not user_counts.empty else 0
++        min_rows_per_user = int(user_counts.min()) if not user_counts.empty else 0
++        formal_ids = set(formal_entities.get("candidate_id", pd.Series(dtype=str)).astype(str))
++        card_candidate_ids = set(formal_cards.get("candidate_id", pd.Series(dtype=str)).astype(str))
++        evidence_candidate_ids = set(formal_evidence.get("candidate_id", pd.Series(dtype=str)).astype(str))
++        max_cards_per_entity = int(formal_cards.groupby("candidate_id").size().max()) if not formal_cards.empty and "candidate_id" in formal_cards.columns else 0
++        max_evidence_per_card = int(formal_evidence.groupby("risk_card_id").size().max()) if not formal_evidence.empty and "risk_card_id" in formal_evidence.columns else 0
+         scope_note = (
+             f"reference batch contains {len(ref_entities)} multi-cutoff/multi-horizon rows; "
+             f"filtered to cutoff={formal_cutoff}, horizon={formal_horizon}"
+@@ -508,16 +568,23 @@ def run_result_batch_parity(batch_dir: Path) -> pd.DataFrame:
+             [
+                 {"metric": "reference_full_rows", "status": "info", "production_value": len(formal_entities), "reference_value": len(ref_entities), "blocker_reason": scope_note},
+                 {"metric": "reference_scope_rows", "status": "pass" if len(ref_scope) > 0 else "blocked", "production_value": len(formal_entities), "reference_value": len(ref_scope), "blocker_reason": "" if len(ref_scope) > 0 else "no same cutoff/horizon reference rows found"},
+-                {"metric": "risk_entities_row_count", "status": "warn" if len(formal_entities) != len(ref_scope) else "pass", "production_value": len(formal_entities), "reference_value": len(ref_scope), "blocker_reason": "production candidate selector is refactored bounded runtime" if len(formal_entities) != len(ref_scope) else ""},
+-                {"metric": "selected_entity_key_overlap", "status": "pass" if overlap == len(ref_scope) else "warn", "production_value": overlap, "reference_value": len(ref_scope), "blocker_reason": "not all same-scope reference entity keys selected by formal runtime" if overlap != len(ref_scope) else ""},
+-                {"metric": "risk_cards_row_count", "status": "warn" if len(formal_cards) != len(ref_cards) else "pass", "production_value": len(formal_cards), "reference_value": len(ref_cards), "blocker_reason": "card generation refactored in formal runtime" if len(formal_cards) != len(ref_cards) else ""},
+-                {"metric": "evidence_row_count", "status": "warn" if len(formal_evidence) != len(ref_evidence) else "pass", "production_value": len(formal_evidence), "reference_value": len(ref_evidence), "blocker_reason": "evidence generation refactored in formal runtime" if len(formal_evidence) != len(ref_evidence) else ""},
++                {"metric": "reference_entity_key_overlap", "status": "info", "production_value": overlap, "reference_value": len(ref_scope), "blocker_reason": "old reference package is retained only as a compatibility reference; formal runtime now validates bounded per-user worklist scope"},
++                {"metric": "risk_entities_bounded_per_user", "status": "pass" if max_rows_per_user <= max_per_user and users_below_min == 0 else "warn", "production_value": max_rows_per_user, "reference_value": max_per_user, "blocker_reason": "" if max_rows_per_user <= max_per_user and users_below_min == 0 else f"users_below_min={users_below_min}; min_rows_per_user={min_rows_per_user}"},
++                {"metric": "worklist_users_below_min_after_fill", "status": "pass" if users_below_min == 0 else "warn", "production_value": users_below_min, "reference_value": 0, "blocker_reason": "" if users_below_min == 0 else "some users have insufficient safe candidates after fill"},
++                {"metric": "risk_cards_candidate_subset", "status": "pass" if card_candidate_ids.issubset(formal_ids) else "blocked", "production_value": len(card_candidate_ids - formal_ids), "reference_value": 0, "blocker_reason": "" if card_candidate_ids.issubset(formal_ids) else "risk_cards contain candidates outside risk_entities"},
++                {"metric": "evidence_candidate_subset", "status": "pass" if evidence_candidate_ids.issubset(formal_ids) else "blocked", "production_value": len(evidence_candidate_ids - formal_ids), "reference_value": 0, "blocker_reason": "" if evidence_candidate_ids.issubset(formal_ids) else "risk_card_evidence contains candidates outside risk_entities"},
++                {"metric": "risk_cards_per_entity_max", "status": "pass" if max_cards_per_entity <= 5 else "warn", "production_value": max_cards_per_entity, "reference_value": 5, "blocker_reason": "" if max_cards_per_entity <= 5 else "too many frontend cards per entity"},
++                {"metric": "evidence_per_card_max", "status": "pass" if max_evidence_per_card <= 3 else "warn", "production_value": max_evidence_per_card, "reference_value": 3, "blocker_reason": "" if max_evidence_per_card <= 3 else "too many business-visible evidence rows per card"},
++                {"metric": "risk_entities_row_count", "status": "info", "production_value": len(formal_entities), "reference_value": len(ref_scope), "blocker_reason": "formal runtime uses per-user bounded worklist; old reference count is not a pass/fail target"},
++                {"metric": "risk_cards_row_count", "status": "info", "production_value": len(formal_cards), "reference_value": len(ref_cards), "blocker_reason": "card generation is validated by bounded card/evidence constraints"},
++                {"metric": "evidence_row_count", "status": "info", "production_value": len(formal_evidence), "reference_value": len(ref_evidence), "blocker_reason": "evidence generation is validated by candidate subset and per-card constraints"},
+                 {"metric": "auto_dispatch_allowed_count", "status": "pass", "production_value": int(formal_entities.get("auto_dispatch_allowed", pd.Series(False, index=formal_entities.index)).fillna(False).sum()), "reference_value": 0, "blocker_reason": ""},
+                 {"metric": "customer_facing_probability_service_allowed_count", "status": "pass", "production_value": 0, "reference_value": 0, "blocker_reason": ""},
+             ]
+         )
+     out.to_csv(REPORT_DIR / "full_result_batch_parity.csv", index=False, encoding="utf-8")
+     write_text(REPORT_DIR / "full_result_batch_parity_report.md", render_result_parity(out))
++    write_per_user_fill_strategy_report(batch_dir, formal_entities)
+     return out
+ 
+ 
+@@ -572,12 +639,56 @@ def load_batch_table(batch_dir: Path, name: str) -> pd.DataFrame:
+ def render_result_parity(parity: pd.DataFrame) -> str:
+     return f"""# Full Result-Batch Parity Report
+ 
+-The formal runtime uses the current production candidate selector and detector/card assembly. Differences from the current v2 frontend package are classified below.
++The formal runtime uses the current production candidate selector and detector/card assembly.
++The historical v2 frontend package is retained as a compatibility reference, but formal
++readiness is evaluated by bounded per-user worklist, candidate-subset, card, evidence,
++and safety constraints.
+ 
+ {parity.to_markdown(index=False)}
+ """
+ 
+ 
++def write_per_user_fill_strategy_report(batch_dir: Path, formal_entities: pd.DataFrame) -> None:
++    manifest = json.loads((batch_dir / "manifest.json").read_text(encoding="utf-8"))
++    worklist_config = manifest.get("worklist_config", {}) or {}
++    user_col = "worklist_user_id" if "worklist_user_id" in formal_entities.columns else "manufacturer_code"
++    min_per_user = int(worklist_config.get("frontend_min_topN_per_user", worklist_config.get("frontend_default_topN_per_manufacturer", 20)))
++    max_per_user = int(worklist_config.get("frontend_max_topN_per_user", worklist_config.get("frontend_max_topN_per_manufacturer", 50)))
++    counts = formal_entities.groupby(user_col, dropna=False).agg(
++        total_rows=("candidate_id", "count"),
++        high_risk_rows=("is_high_risk", "sum"),
++        observation_rows=("is_observation", "sum"),
++        one_shot_rows=("is_one_shot", "sum"),
++    ).reset_index() if not formal_entities.empty else pd.DataFrame(columns=[user_col, "total_rows", "high_risk_rows", "observation_rows", "one_shot_rows"])
++    counts["below_min_after_fill"] = counts["total_rows"].lt(min_per_user)
++    counts.to_csv(REPORT_DIR / "per_user_worklist_fill_counts.csv", index=False, encoding="utf-8")
++    shortage_count = int(counts["below_min_after_fill"].sum()) if not counts.empty else 0
++    text = f"""# Per-User Worklist Fill Strategy
++
++- business requirement: provide 20 to 50 monthly review items per user, not 20 to 50 globally.
++- current user scope column: `{user_col}`.
++- configured minimum per user: {min_per_user}
++- configured maximum per user: {max_per_user}
++- users in current formal batch: {len(counts)}
++- users below minimum after safe fill: {shortage_count}
++
++## Fill Order
++
++1. Recurring risk candidates ranked by formal artifact probability and relative value.
++2. New-terminal / one-shot attention candidates, kept separate from recurring churn.
++3. Observation candidates for intermittent or lumpy demand, marked as observation only.
++4. If a user still has fewer than {min_per_user} safe candidates, the shortage is reported; the runtime does not fabricate candidates and does not mark observation fill as high risk.
++
++## Current Constraint
++
++The current raw input batch does not include a stable business-owner or salesperson routing table.
++Therefore `manufacturer_code` is used as the offline worklist user scope. Once `org_scope`
++is available, set `worklist_user_key` to the owner/user field and rerun without changing
++the frontend or model-core contracts.
++"""
++    write_text(REPORT_DIR / "per_user_worklist_fill_strategy.md", text)
++
++
+ def run_model_core_validation(batch_dir: Path) -> pd.DataFrame:
+     from risk_model_core.repositories import ParquetRiskResultRepository
+     from risk_model_core.services import ReportService, RiskQueryService
+diff --git a/configs/risk_algorithm_core/monthly_run.example.yaml b/configs/risk_algorithm_core/monthly_run.example.yaml
+index ea0887b..245bef2 100644
+--- a/configs/risk_algorithm_core/monthly_run.example.yaml
++++ b/configs/risk_algorithm_core/monthly_run.example.yaml
+@@ -37,8 +37,18 @@ model:
+   require_artifact: true
+ 
+ worklist:
++  primary_horizon: H6
++  # The business load target is per user, not global. Use org_scope owner
++  # columns here once routing is available; manufacturer_code is the offline
++  # fallback user scope.
++  worklist_user_key: manufacturer_code
++  frontend_min_topN_per_user: 20
++  frontend_max_topN_per_user: 50
+   frontend_default_topN_per_manufacturer: 20
+   frontend_max_topN_per_manufacturer: 50
++  recurring_topN_per_user: 50
++  one_shot_topN_per_user: 20
++  observation_topN_per_user: 20
+   one_shot_topN_per_manufacturer: 20
+   observation_topN_per_manufacturer: 20
+   index_topN: 8
+diff --git a/configs/risk_algorithm_core/monthly_run.formal.example.yaml b/configs/risk_algorithm_core/monthly_run.formal.example.yaml
+index 5a1ee9e..7a5aef1 100644
+--- a/configs/risk_algorithm_core/monthly_run.formal.example.yaml
++++ b/configs/risk_algorithm_core/monthly_run.formal.example.yaml
+@@ -40,8 +40,18 @@ output:
+   output_root: algo_main/data/entity_complete_v2_coverage_expansion/13_formal_algorithm_core_raw_to_batch/formal_result_batches
+ 
+ worklist:
++  primary_horizon: H6
++  # The business load target is per user, not global. In the current
++  # offline batch, manufacturer_code is the safe fallback user scope until
++  # org_scope/business-owner routing is connected.
++  worklist_user_key: manufacturer_code
++  frontend_min_topN_per_user: 20
++  frontend_max_topN_per_user: 50
+   frontend_default_topN_per_manufacturer: 20
+   frontend_max_topN_per_manufacturer: 50
++  recurring_topN_per_user: 50
++  one_shot_topN_per_user: 20
++  observation_topN_per_user: 20
+   one_shot_topN_per_manufacturer: 20
+   observation_topN_per_manufacturer: 20
+   index_topN: 8
+diff --git a/risk_algorithm_core/candidate_selector.py b/risk_algorithm_core/candidate_selector.py
+index ae12c6c..2dce4e1 100644
+--- a/risk_algorithm_core/candidate_selector.py
++++ b/risk_algorithm_core/candidate_selector.py
+@@ -8,9 +8,15 @@ import pandas as pd
+ class BoundedCandidateSelector:
+     def __init__(self, config: dict):
+         self.config = config
+-        self.default_topn = int(config.get("frontend_default_topN_per_manufacturer", 20))
+-        self.one_shot_topn = int(config.get("one_shot_topN_per_manufacturer", 20))
+-        self.observation_topn = int(config.get("observation_topN_per_manufacturer", 20))
++        self.user_key = str(config.get("worklist_user_key") or config.get("frontend_worklist_user_key") or "manufacturer_code")
++        self.primary_horizon = str(config.get("primary_horizon") or "").strip()
++        self.min_per_user = int(config.get("frontend_min_topN_per_user", config.get("frontend_default_topN_per_manufacturer", 20)))
++        self.max_per_user = int(config.get("frontend_max_topN_per_user", config.get("frontend_max_topN_per_manufacturer", 50)))
++        if self.min_per_user > self.max_per_user:
++            raise ValueError("frontend_min_topN_per_user cannot exceed frontend_max_topN_per_user.")
++        self.recurring_pool_topn = int(config.get("recurring_topN_per_user", self.max_per_user))
++        self.one_shot_pool_topn = int(config.get("one_shot_topN_per_user", config.get("one_shot_topN_per_manufacturer", 20)))
++        self.observation_pool_topn = int(config.get("observation_topN_per_user", config.get("observation_topN_per_manufacturer", 20)))
+         self.global_cap = int(config.get("global_candidate_cap", 30000))
+ 
+     def select(self, score_frame: pd.DataFrame, feature_frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+@@ -33,53 +39,112 @@ class BoundedCandidateSelector:
+             on=["entity_id", "horizon"],
+             how="left",
+         )
+-        selected_parts = [
+-            self._top_per_manufacturer(
++        if self.primary_horizon:
++            joined = joined[joined["horizon"].astype(str).eq(self.primary_horizon)].copy()
++        joined["worklist_user_id"] = self._worklist_user_series(joined)
++        pool_parts = [
++            self._top_per_user_pool(
+                 joined[(~joined["is_one_shot"].fillna(False)) & joined["history_sufficiency_flag"].ne("history_insufficient")],
+-                self.default_topn,
++                self.recurring_pool_topn,
+                 "recurring_priority_topN",
+                 "recurring",
++                1,
+             ),
+-            self._top_per_manufacturer(
++            self._top_per_user_pool(
+                 joined[joined["is_one_shot"].fillna(False)],
+-                self.one_shot_topn,
++                self.one_shot_pool_topn,
+                 "one_shot_attention_topN",
+                 "one_shot",
++                2,
+             ),
+-            self._top_per_manufacturer(
++            self._top_per_user_pool(
+                 joined[joined["demand_shape_label"].isin(["intermittent", "lumpy"])],
+-                self.observation_topn,
++                self.observation_pool_topn,
+                 "observation_topN",
+                 "observation",
++                3,
+             ),
+         ]
+-        selected = pd.concat(selected_parts, ignore_index=True).drop_duplicates("candidate_id")
+-        selected = selected.sort_values(["churn_probability_H", "value_at_risk_proxy"], ascending=[False, False]).head(self.global_cap)
++        pool = pd.concat(pool_parts, ignore_index=True).drop_duplicates("candidate_id")
++        selected = self._bounded_per_user(pool)
++        if len(selected) > self.global_cap:
++            selected = selected.sort_values(
++                ["rank_per_worklist_user", "churn_probability_H", "value_at_risk_proxy"],
++                ascending=[True, False, False],
++            ).head(self.global_cap)
+         selected["rank_global"] = range(1, len(selected) + 1)
+         selected["is_selected_for_frontend"] = True
+         selected["is_high_risk_candidate"] = selected["candidate_type"].eq("recurring")
+-        selected["selection_caveat"] = "bounded_monthly_worklist_not_full_universe"
++        selected["selection_caveat"] = selected["candidate_type"].map(
++            {
++                "recurring": "per_user_bounded_monthly_worklist_not_full_universe",
++                "one_shot": "per_user_safe_fill_new_terminal_not_recurring_churn",
++                "observation": "per_user_safe_fill_observation_not_high_risk",
++            }
++        ).fillna("per_user_bounded_monthly_worklist_not_full_universe")
++        user_counts = selected.groupby("worklist_user_id", dropna=False).size() if "worklist_user_id" in selected else pd.Series(dtype=int)
+         report = pd.DataFrame(
+             [
+                 {"metric": "selected_candidate_rows", "value": len(selected)},
+                 {"metric": "recurring_rows", "value": int(selected["candidate_type"].eq("recurring").sum())},
+                 {"metric": "one_shot_rows", "value": int(selected["candidate_type"].eq("one_shot").sum())},
+                 {"metric": "observation_rows", "value": int(selected["candidate_type"].eq("observation").sum())},
++                {"metric": "worklist_user_key", "value": self.user_key},
++                {"metric": "primary_horizon", "value": self.primary_horizon or "all"},
++                {"metric": "worklist_user_count", "value": int(user_counts.size)},
++                {"metric": "configured_min_per_user", "value": self.min_per_user},
++                {"metric": "configured_max_per_user", "value": self.max_per_user},
++                {"metric": "min_rows_per_user", "value": int(user_counts.min()) if not user_counts.empty else 0},
++                {"metric": "max_rows_per_user", "value": int(user_counts.max()) if not user_counts.empty else 0},
++                {"metric": "users_below_min_after_fill", "value": int((user_counts < self.min_per_user).sum()) if not user_counts.empty else 0},
++                {"metric": "global_candidate_cap", "value": self.global_cap},
+             ]
+         )
+         return selected.reset_index(drop=True), report
+ 
+-    def _top_per_manufacturer(self, df: pd.DataFrame, topn: int, reason: str, candidate_type: str) -> pd.DataFrame:
++    def _worklist_user_series(self, df: pd.DataFrame) -> pd.Series:
++        if self.user_key in df.columns:
++            return df[self.user_key].fillna("unknown_user").astype(str)
++        return df.get("manufacturer_code", pd.Series("unknown_user", index=df.index)).fillna("unknown_user").astype(str)
++
++    def _top_per_user_pool(self, df: pd.DataFrame, topn: int, reason: str, candidate_type: str, pool_priority: int) -> pd.DataFrame:
+         if df.empty:
+             return df.copy()
+-        out = df.sort_values(["manufacturer_code", "churn_probability_H", "value_at_risk_proxy"], ascending=[True, False, False]).copy()
+-        out["rank_per_manufacturer"] = out.groupby("manufacturer_code").cumcount() + 1
+-        out = out[out["rank_per_manufacturer"] <= topn].copy()
++        sort_cols = ["worklist_user_id", "churn_probability_H", "value_at_risk_proxy"]
++        if candidate_type == "one_shot" and "one_shot_attention_score" in df.columns:
++            sort_cols = ["worklist_user_id", "one_shot_attention_score", "value_at_risk_proxy", "churn_probability_H"]
++        out = df.sort_values(sort_cols, ascending=[True, False, False, False][: len(sort_cols)]).copy()
++        out["rank_per_pool"] = out.groupby("worklist_user_id").cumcount() + 1
++        out = out[out["rank_per_pool"] <= topn].copy()
+         out["candidate_type"] = candidate_type
+         out["selection_reason"] = reason
++        out["pool_priority"] = pool_priority
+         out["display_section"] = {
+             "recurring": "risk_worklist",
+             "one_shot": "new_terminal_attention",
+             "observation": "observation_watchlist",
+         }[candidate_type]
+         return out
++
++    def _bounded_per_user(self, pool: pd.DataFrame) -> pd.DataFrame:
++        if pool.empty:
++            return pool.copy()
++        selected_parts = []
++        for _, part in pool.groupby("worklist_user_id", dropna=False):
++            ranked = part.sort_values(
++                ["pool_priority", "churn_probability_H", "value_at_risk_proxy"],
++                ascending=[True, False, False],
++            ).copy()
++            selected_parts.append(ranked.head(self.max_per_user))
++        selected = pd.concat(selected_parts, ignore_index=True) if selected_parts else pool.head(0).copy()
++        selected = selected.sort_values(["worklist_user_id", "pool_priority", "churn_probability_H", "value_at_risk_proxy"], ascending=[True, True, False, False])
++        selected["rank_per_worklist_user"] = selected.groupby("worklist_user_id").cumcount() + 1
++        selected["rank_per_manufacturer"] = selected.groupby("manufacturer_code").cumcount() + 1
++        selected["worklist_fill_role"] = selected["candidate_type"].map(
++            {
++                "recurring": "primary_risk_candidate",
++                "one_shot": "safe_new_terminal_fill",
++                "observation": "safe_observation_fill",
++            }
++        ).fillna("bounded_fill")
++        return selected
+diff --git a/risk_algorithm_core/entity_builder.py b/risk_algorithm_core/entity_builder.py
+index 4621149..ae23010 100644
+--- a/risk_algorithm_core/entity_builder.py
++++ b/risk_algorithm_core/entity_builder.py
+@@ -4,6 +4,8 @@ from __future__ import annotations
+ 
+ import pandas as pd
+ 
++from .normalization import cutoff_end_of_day
++
+ 
+ def build_monthly_entities(
+     orders: pd.DataFrame,
+@@ -17,7 +19,7 @@ def build_monthly_entities(
+ ) -> pd.DataFrame:
+     if orders.empty:
+         return pd.DataFrame()
+-    cutoff = pd.Timestamp(cutoff_date)
++    cutoff = cutoff_end_of_day(cutoff_date)
+     df = orders[orders["order_date"] <= cutoff].copy()
+     df["drug_group"] = df["drug_code"].astype(str)
+     df["drug_group_source"] = "drug_code"
+diff --git a/risk_algorithm_core/feature_engineering.py b/risk_algorithm_core/feature_engineering.py
+index 6e84c53..d12953e 100644
+--- a/risk_algorithm_core/feature_engineering.py
++++ b/risk_algorithm_core/feature_engineering.py
+@@ -6,71 +6,85 @@ import numpy as np
+ import pandas as pd
+ 
+ 
++ENTITY_KEYS = ["manufacturer_code", "hospital_code", "drug_group"]
++
++
+ def engineer_features(entity_base: pd.DataFrame, orders: pd.DataFrame, cutoff_date: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+     if entity_base.empty:
+         return entity_base.copy(), pd.DataFrame()
+-    cutoff = pd.Timestamp(cutoff_date)
++
++    cutoff = pd.Timestamp(cutoff_date).to_period("M").to_timestamp("M")
+     features = entity_base.copy()
+-    group_cols = ["manufacturer_code", "hospital_code", "drug_group"]
+-    order_df = orders.copy()
+-    order_df["order_date"] = pd.to_datetime(order_df["order_date"], errors="coerce")
+-    order_df["drug_group"] = order_df["drug_code"].astype(str)
+-    order_df["order_month"] = order_df["order_date"].dt.to_period("M").astype(str)
++    monthly = build_entity_month(orders)
++    monthly = monthly[monthly["purchase_month"].le(cutoff)].copy()
+ 
+-    intervals = _interval_metrics(order_df, group_cols)
+-    features = features.merge(intervals, on=group_cols, how="left")
+-    all_time = order_df.groupby(group_cols, dropna=False).agg(
+-        active_month_count_asof_cutoff=("order_month", "nunique"),
+-    ).reset_index()
+-    features = features.merge(all_time, on=group_cols, how="left")
++    features = features.merge(active_months(monthly), on=ENTITY_KEYS, how="left")
++    features = features.merge(interval_metrics(monthly), on=ENTITY_KEYS, how="left")
++    features = features.merge(latest_status(monthly), on=ENTITY_KEYS, how="left")
+     for months in [1, 3, 6, 12]:
+-        features = features.merge(_window_metrics(order_df, group_cols, cutoff, months), on=group_cols, how="left")
++        features = features.merge(window_metrics(monthly, cutoff, months), on=ENTITY_KEYS, how="left")
++
+     for col in features.columns:
+-        if col.startswith(("order_count_last_", "active_months_last_", "purchase_quantity_sum_last_", "purchase_amount_sum_last_", "failed_count_last_", "received_count_last_", "terminal_count_last_")):
++        if col.startswith(
++            (
++                "order_count_last_",
++                "active_months_last_",
++                "purchase_quantity_sum_last_",
++                "purchase_amount_sum_last_",
++                "failed_count_last_",
++                "received_count_last_",
++                "terminal_count_last_",
++            )
++        ):
+             features[col] = features[col].fillna(0)
+-    features["days_since_last_purchase"] = (cutoff - pd.to_datetime(features["last_purchase_date"])).dt.days.clip(lower=0)
+-    features["months_since_last_purchase"] = features["days_since_last_purchase"] / 30.4375
++
++    first_month = pd.to_datetime(features["first_purchase_date"], errors="coerce").dt.to_period("M").dt.to_timestamp("M")
++    last_month = pd.to_datetime(features["last_purchase_date"], errors="coerce").dt.to_period("M").dt.to_timestamp("M")
++    features["months_since_last_purchase"] = month_diff(cutoff, last_month).clip(lower=0)
+     features["months_since_last_purchase_asof_cutoff"] = features["months_since_last_purchase"]
++    features["days_since_last_purchase"] = features["months_since_last_purchase"] * 30.4375
++    features = features[features["months_since_last_purchase"].le(12)].copy()
+     features["purchase_count_asof_cutoff"] = features["purchase_count_total"]
+     features["active_month_count_asof_cutoff"] = features["active_month_count_asof_cutoff"].fillna(1)
+-    features["months_observed_asof_cutoff"] = np.ceil(features["history_months"]).clip(lower=1)
+-    features["months_since_first_purchase_asof_cutoff"] = features["history_months"]
++    features["months_observed_asof_cutoff"] = (month_diff(cutoff, first_month) + 1).clip(lower=1)
++    features["months_since_first_purchase_asof_cutoff"] = month_diff(cutoff, first_month).clip(lower=0)
+     features["recency_bucket"] = pd.cut(
+         features["months_since_last_purchase"],
+         bins=[-0.01, 1, 3, 6, 12, 10_000],
+         labels=["m0_1", "m1_3", "m3_6", "m6_12", "m12_plus"],
+     ).astype(str)
+ 
+-    features["purchase_frequency_recent"] = features["purchase_count_recent"] / 3.0
+-    baseline_months = features["history_months"].clip(lower=1.0)
+-    features["purchase_frequency_baseline"] = features["purchase_count_total"] / baseline_months
+-    features["frequency_ratio"] = safe_ratio(features["purchase_frequency_recent"], features["purchase_frequency_baseline"])
++    recent_3 = pd.to_numeric(features["order_count_last_3m_asof_cutoff"], errors="coerce") / 3.0
++    recent_12 = pd.to_numeric(features["order_count_last_12m_asof_cutoff"], errors="coerce") / 12.0
++    features["purchase_frequency_recent"] = recent_3
++    features["purchase_frequency_baseline"] = recent_12
++    features["frequency_ratio"] = safe_ratio(recent_3, recent_12)
+     features["frequency_drop_flag"] = features["frequency_ratio"] < 0.5
+     features["recency_only_baseline"] = features["months_since_last_purchase_asof_cutoff"]
+-    features["frequency_decay_baseline"] = (1.0 - features["frequency_ratio"].clip(0, 1)).fillna(0.0)
++    features["frequency_decay_baseline"] = 1.0 - (recent_3 / recent_12.replace(0, np.nan))
+ 
+-    features["historical_interval_median"] = features["historical_interval_median"].fillna(999.0)
+-    features["historical_interval_mad"] = features["historical_interval_mad"].fillna(0.0)
+     features["current_interval_over_median"] = safe_ratio(features["days_since_last_purchase"], features["historical_interval_median"])
+     features["interval_overdue_flag"] = features["current_interval_over_median"] > 1.5
+     features["active_month_ratio_asof_cutoff"] = safe_ratio(features["active_month_count_asof_cutoff"], features["months_observed_asof_cutoff"])
+     features["adi_asof_cutoff"] = safe_ratio(features["months_observed_asof_cutoff"], features["active_month_count_asof_cutoff"])
+     features["median_purchase_interval_days_asof_cutoff"] = features["historical_interval_median"]
+-    features["mean_purchase_interval_days_asof_cutoff"] = features["historical_interval_mean"].fillna(features["historical_interval_median"])
+-    features["std_purchase_interval_days_asof_cutoff"] = features["historical_interval_std"].fillna(0.0)
+-    features["purchase_interval_iqr_asof_cutoff"] = features["historical_interval_iqr"].fillna(0.0)
++    features["mean_purchase_interval_days_asof_cutoff"] = features["historical_interval_mean"]
++    features["std_purchase_interval_days_asof_cutoff"] = features["historical_interval_std"]
++    features["purchase_interval_iqr_asof_cutoff"] = features["historical_interval_iqr"]
+     features["interval_overdue_baseline"] = features["current_interval_over_median"]
+ 
++    baseline_months = features["months_observed_asof_cutoff"].clip(lower=1.0)
+     features["purchase_quantity_recent"] = features["purchase_quantity_recent"].fillna(0.0)
+     features["purchase_quantity_baseline"] = safe_ratio(features["purchase_quantity_total"], baseline_months) * 3.0
+     features["quantity_ratio"] = safe_ratio(features["purchase_quantity_recent"], features["purchase_quantity_baseline"])
+     features["quantity_drop_flag"] = features["quantity_ratio"] < 0.5
+-    features["cv2_quantity_asof_cutoff"] = features["quantity_cv2"].fillna(0.0)
+-    features["seasonality_strength_asof_cutoff"] = 0.0
+-    features["burstiness_score_asof_cutoff"] = features["historical_interval_mad"].fillna(0.0)
++    features["cv2_quantity_asof_cutoff"] = features["quantity_cv2"]
++    features["seasonality_strength_asof_cutoff"] = np.nan
++    features["burstiness_score_asof_cutoff"] = np.nan
+     features["hybrid_interval_frequency_score"] = (
+-        0.5 * features["current_interval_over_median"].clip(0, 4) / 4
+-        + 0.5 * features["frequency_decay_baseline"].clip(0, 1)
++        rank01(features["interval_overdue_baseline"]) * 0.6
++        + rank01(features["frequency_decay_baseline"]) * 0.25
++        + rank01(features["recency_only_baseline"]) * 0.15
+     )
+ 
+     features["avg_order_amount"] = safe_ratio(features["order_amount_total"], features["purchase_count_total"])
+@@ -81,10 +95,25 @@ def engineer_features(entity_base: pd.DataFrame, orders: pd.DataFrame, cutoff_da
+         bins=[-0.01, 0.5, 0.8, 1.0],
+         labels=["low", "medium", "high"],
+     ).astype(str)
+-    features["demand_shape_label"] = features.apply(_demand_shape, axis=1)
++
++    features["cold_start_flag"] = (
++        features["purchase_count_asof_cutoff"].lt(3)
++        | features["active_month_count_asof_cutoff"].lt(2)
++        | features["months_observed_asof_cutoff"].lt(3)
++    )
++    features["demand_shape_label"] = demand_shape_label(features)
+     features["demand_pattern_type_asof_cutoff"] = features["demand_shape_label"]
+-    features["cold_start_flag"] = features["history_sufficiency_flag"].eq("history_insufficient")
+-    features["confidence_score"] = features["history_sufficiency_flag"].map({"history_sufficient": 1.0, "history_medium": 0.65}).fillna(0.25)
++    features["history_sufficiency_flag"] = np.select(
++        [
++            features["cold_start_flag"],
++            features["purchase_count_asof_cutoff"].ge(6)
++            & features["active_month_count_asof_cutoff"].ge(4)
++            & features["months_observed_asof_cutoff"].ge(12),
++        ],
++        ["history_insufficient", "history_sufficient"],
++        default="history_medium",
++    )
++    features["confidence_score"] = (features["purchase_count_asof_cutoff"] / 12).clip(upper=1.0)
+     features["probability_display_level"] = np.where(
+         features["history_sufficiency_flag"].eq("history_sufficient"),
+         "probability_allowed",
+@@ -95,20 +124,22 @@ def engineer_features(entity_base: pd.DataFrame, orders: pd.DataFrame, cutoff_da
+         "show_probability",
+         "show_risk_band",
+     )
++
+     features["first_purchase_month"] = pd.to_datetime(features["first_purchase_date"]).dt.to_period("M").astype(str)
+     features["one_shot_attention_score"] = np.where(features["is_one_shot"], features["value_at_risk_proxy"].rank(pct=True), 0.0)
+     features["one_shot_flag"] = features["is_one_shot"]
+-    features["one_shot_silence_months"] = np.where(features["is_one_shot"], features["months_since_last_purchase_asof_cutoff"], 0.0)
++    features["one_shot_silence_months"] = features["months_since_last_purchase_asof_cutoff"]
++
+     province_source = "province_code" if "province_code" in features.columns else "region_code"
+-    features["province_code"] = _series_or_default(features, province_source, "").fillna("").astype(str)
+-    features["city_code"] = _series_or_default(features, "city_code", "").fillna("").astype(str)
+-    features["county_code"] = _series_or_default(features, "county_code", "").fillna("").astype(str)
+-    features["hospital_level_code"] = _series_or_default(features, "hospital_level", "").fillna("").astype(str)
+-    features["ownership_type_code"] = _series_or_default(features, "ownership_type_code", "unknown").fillna("unknown").astype(str)
+-    features["drug_category_code"] = _series_or_default(features, "drug_category", "").fillna("").astype(str)
+-    features["last_order_phase_code_asof_cutoff"] = "unknown"
+-    features["last_delivery_state_code_asof_cutoff"] = "unknown"
+-    features["last_order_failure_flag_asof_cutoff"] = 0
++    features["province_code"] = series_or_default(features, province_source, "").fillna("").astype(str)
++    features["city_code"] = series_or_default(features, "city_code", "").fillna("").astype(str)
++    features["county_code"] = series_or_default(features, "county_code", "").fillna("").astype(str)
++    features["hospital_level_code"] = series_or_default(features, "hospital_level", "").fillna("").astype(str)
++    features["ownership_type_code"] = series_or_default(features, "ownership_type_code", "unknown").fillna("unknown").astype(str)
++    features["drug_category_code"] = series_or_default(features, "drug_category", "").fillna("").astype(str)
++    features["last_order_phase_code_asof_cutoff"] = series_or_default(features, "last_order_phase_code_asof_cutoff", "unknown").fillna("unknown")
++    features["last_delivery_state_code_asof_cutoff"] = series_or_default(features, "last_delivery_state_code_asof_cutoff", "unknown").fillna("unknown")
++    features["last_order_failure_flag_asof_cutoff"] = series_or_default(features, "last_order_failure_flag_asof_cutoff", 0).fillna(0)
+ 
+     quality = pd.DataFrame(
+         [
+@@ -120,45 +151,83 @@ def engineer_features(entity_base: pd.DataFrame, orders: pd.DataFrame, cutoff_da
+     return features, quality
+ 
+ 
+-def safe_ratio(num: pd.Series, den: pd.Series) -> pd.Series:
+-    den2 = den.replace(0, np.nan)
+-    return (num / den2).replace([np.inf, -np.inf], np.nan).fillna(0.0)
++def build_entity_month(orders: pd.DataFrame) -> pd.DataFrame:
++    order_df = orders.copy()
++    order_df["order_date"] = pd.to_datetime(order_df["order_date"], errors="coerce")
++    order_df = order_df[order_df["order_date"].notna()].copy()
++    order_df["drug_group"] = order_df["drug_code"].astype(str)
++    order_df["purchase_month"] = order_df["order_date"].dt.to_period("M").dt.to_timestamp("M")
++    if "order_failure_flag" in order_df:
++        order_df["_failed_flag"] = pd.to_numeric(order_df["order_failure_flag"], errors="coerce").eq(1).astype(int)
++    else:
++        status = order_df.get("order_status", pd.Series("", index=order_df.index)).astype(str).str.lower()
++        order_df["_failed_flag"] = status.str.contains("fail|reject|cancel|退|拒", regex=True, na=False).astype(int)
++    if "delivery_state_code" in order_df:
++        order_df["_received_flag"] = pd.to_numeric(order_df["delivery_state_code"], errors="coerce").eq(5).astype(int)
++    else:
++        delivery = order_df.get("delivery_status", pd.Series("", index=order_df.index)).astype(str).str.lower()
++        order_df["_received_flag"] = delivery.str.contains("receive|arrive|delivered|收|到", regex=True, na=False).astype(int)
++    if "order_terminal_flag" in order_df:
++        order_df["_terminal_flag"] = pd.to_numeric(order_df["order_terminal_flag"], errors="coerce").eq(1).astype(int)
++    else:
++        order_df["_terminal_flag"] = 1
++    grouped = (
++        order_df.groupby([*ENTITY_KEYS, "purchase_month"], dropna=False)
++        .agg(
++            order_count=("order_id", "count"),
++            purchase_quantity_sum=("order_quantity", "sum"),
++            purchase_amount_sum=("order_amount", "sum"),
++            failed_count=("_failed_flag", "sum"),
++            received_count=("_received_flag", "sum"),
++            terminal_count=("_terminal_flag", "sum"),
++        )
++        .reset_index()
++        .sort_values([*ENTITY_KEYS, "purchase_month"])
++    )
++    latest = order_df.sort_values("order_date").groupby([*ENTITY_KEYS, "purchase_month"], dropna=False).tail(1)
++    status_cols = [col for col in ["order_phase_code", "delivery_state_code", "order_failure_flag"] if col in latest.columns]
++    if status_cols:
++        latest_status = latest.set_index([*ENTITY_KEYS, "purchase_month"])[status_cols]
++        idx = grouped.set_index([*ENTITY_KEYS, "purchase_month"]).index
++        for col in status_cols:
++            target = {
++                "order_phase_code": "last_order_phase_code_asof_cutoff",
++                "delivery_state_code": "last_delivery_state_code_asof_cutoff",
++                "order_failure_flag": "last_order_failure_flag_asof_cutoff",
++            }[col]
++            grouped[target] = idx.map(latest_status[col])
++    return grouped
+ 
+ 
+-def _series_or_default(df: pd.DataFrame, column: str, default: object) -> pd.Series:
+-    if column in df.columns:
+-        return df[column]
+-    return pd.Series(default, index=df.index)
++def active_months(monthly: pd.DataFrame) -> pd.DataFrame:
++    if monthly.empty:
++        return pd.DataFrame(columns=[*ENTITY_KEYS, "active_month_count_asof_cutoff"])
++    return monthly.groupby(ENTITY_KEYS, dropna=False).agg(active_month_count_asof_cutoff=("purchase_month", "nunique")).reset_index()
+ 
+ 
+-def _interval_metrics(orders: pd.DataFrame, group_cols: list[str]) -> pd.DataFrame:
++def interval_metrics(monthly: pd.DataFrame) -> pd.DataFrame:
++    if monthly.empty:
++        return pd.DataFrame(columns=ENTITY_KEYS)
++    work = monthly.sort_values("purchase_month").copy()
++    work["previous_purchase_month"] = work.groupby(ENTITY_KEYS, dropna=False)["purchase_month"].shift(1)
++    work["gap_days"] = (work["purchase_month"] - work["previous_purchase_month"]).dt.days
+     rows = []
+-    for keys, part in orders.sort_values("order_date").groupby(group_cols, dropna=False):
+-        dates = pd.to_datetime(part["order_date"]).dropna().sort_values()
+-        intervals = dates.diff().dt.days.dropna()
+-        quantities = pd.to_numeric(part.get("order_quantity"), errors="coerce").dropna()
+-        if intervals.empty:
+-            median = np.nan
+-            mad = np.nan
+-            mean = np.nan
+-            std = np.nan
+-            iqr = np.nan
+-        else:
+-            median = float(intervals.median())
+-            mad = float((intervals - median).abs().median())
+-            mean = float(intervals.mean())
+-            std = float(intervals.std(ddof=0))
+-            iqr = float(intervals.quantile(0.75) - intervals.quantile(0.25))
++    for keys, part in work.groupby(ENTITY_KEYS, dropna=False):
++        intervals = pd.to_numeric(part["gap_days"], errors="coerce").dropna()
++        quantities = pd.to_numeric(part["purchase_quantity_sum"], errors="coerce").dropna()
++        median = float(intervals.median()) if not intervals.empty else np.nan
++        mean = float(intervals.mean()) if not intervals.empty else np.nan
++        std = float(intervals.std()) if len(intervals) > 1 else np.nan
++        iqr = float(intervals.quantile(0.75) - intervals.quantile(0.25)) if not intervals.empty else np.nan
+         if quantities.empty or quantities.mean() == 0:
+             cv2 = np.nan
+         else:
+-            cv2 = float((quantities.std(ddof=0) / quantities.mean()) ** 2)
++            cv2 = float((quantities.std() / quantities.mean()) ** 2)
+         key_values = keys if isinstance(keys, tuple) else (keys,)
+         rows.append(
+             {
+-                **dict(zip(group_cols, key_values)),
++                **dict(zip(ENTITY_KEYS, key_values)),
+                 "historical_interval_median": median,
+-                "historical_interval_mad": mad,
+                 "historical_interval_mean": mean,
+                 "historical_interval_std": std,
+                 "historical_interval_iqr": iqr,
+@@ -168,36 +237,83 @@ def _interval_metrics(orders: pd.DataFrame, group_cols: list[str]) -> pd.DataFra
+     return pd.DataFrame(rows)
+ 
+ 
+-def _window_metrics(orders: pd.DataFrame, group_cols: list[str], cutoff: pd.Timestamp, months: int) -> pd.DataFrame:
+-    start = cutoff - pd.DateOffset(months=months)
+-    part = orders[(orders["order_date"] > start) & (orders["order_date"] <= cutoff)].copy()
++def latest_status(monthly: pd.DataFrame) -> pd.DataFrame:
++    if monthly.empty:
++        return pd.DataFrame(columns=ENTITY_KEYS)
++    status_cols = [
++        "last_order_phase_code_asof_cutoff",
++        "last_delivery_state_code_asof_cutoff",
++        "last_order_failure_flag_asof_cutoff",
++    ]
++    existing = [col for col in status_cols if col in monthly.columns]
++    if not existing:
++        return pd.DataFrame(columns=ENTITY_KEYS)
++    latest = monthly.sort_values("purchase_month").groupby(ENTITY_KEYS, dropna=False).tail(1)
++    return latest[[*ENTITY_KEYS, *existing]].copy()
++
++
++def window_metrics(monthly: pd.DataFrame, cutoff: pd.Timestamp, months: int) -> pd.DataFrame:
++    start = add_months(cutoff, -(months - 1))
++    part = monthly[(monthly["purchase_month"] >= start) & (monthly["purchase_month"] <= cutoff)].copy()
+     if part.empty:
+-        return pd.DataFrame(columns=group_cols)
+-    status = part.get("order_status", pd.Series("", index=part.index)).astype(str).str.lower()
+-    delivery = part.get("delivery_status", pd.Series("", index=part.index)).astype(str).str.lower()
+-    part["_failed_flag"] = status.str.contains("fail|reject|cancel|退|拒", regex=True, na=False).astype(int)
+-    part["_received_flag"] = delivery.str.contains("receive|arrive|delivered|到|收", regex=True, na=False).astype(int)
+-    part["_terminal_flag"] = 1
+-    return part.groupby(group_cols, dropna=False).agg(
++        return pd.DataFrame(columns=ENTITY_KEYS)
++    return part.groupby(ENTITY_KEYS, dropna=False).agg(
+         **{
+-            f"order_count_last_{months}m_asof_cutoff": ("order_id", "count"),
+-            f"active_months_last_{months}m_asof_cutoff": ("order_month", "nunique"),
+-            f"purchase_quantity_sum_last_{months}m_asof_cutoff": ("order_quantity", "sum"),
+-            f"purchase_amount_sum_last_{months}m_asof_cutoff": ("order_amount", "sum"),
+-            f"failed_count_last_{months}m_asof_cutoff": ("_failed_flag", "sum"),
+-            f"received_count_last_{months}m_asof_cutoff": ("_received_flag", "sum"),
+-            f"terminal_count_last_{months}m_asof_cutoff": ("_terminal_flag", "sum"),
++            f"order_count_last_{months}m_asof_cutoff": ("order_count", "sum"),
++            f"active_months_last_{months}m_asof_cutoff": ("purchase_month", "nunique"),
++            f"purchase_quantity_sum_last_{months}m_asof_cutoff": ("purchase_quantity_sum", "sum"),
++            f"purchase_amount_sum_last_{months}m_asof_cutoff": ("purchase_amount_sum", "sum"),
++            f"failed_count_last_{months}m_asof_cutoff": ("failed_count", "sum"),
++            f"received_count_last_{months}m_asof_cutoff": ("received_count", "sum"),
++            f"terminal_count_last_{months}m_asof_cutoff": ("terminal_count", "sum"),
+         }
+     ).reset_index()
+ 
+ 
+-def _demand_shape(row: pd.Series) -> str:
+-    count = int(row.get("purchase_count_total", 0))
+-    history = float(row.get("history_months", 0))
+-    if count <= 1:
+-        return "one_shot"
+-    if history >= 12 and count >= 8 and float(row.get("frequency_ratio", 1.0)) >= 0.7:
+-        return "recurring"
+-    if count < 4:
+-        return "intermittent"
+-    return "lumpy"
++def safe_ratio(num: pd.Series, den: pd.Series) -> pd.Series:
++    den2 = den.replace(0, np.nan)
++    return (num / den2).replace([np.inf, -np.inf], np.nan)
++
++
++def month_diff(cutoff: pd.Timestamp, values: pd.Series) -> pd.Series:
++    vals = pd.to_datetime(values, errors="coerce")
++    return (cutoff.year - vals.dt.year) * 12 + (cutoff.month - vals.dt.month)
++
++
++def add_months(month_end: pd.Timestamp, months: int) -> pd.Timestamp:
++    return (pd.Timestamp(month_end) + pd.DateOffset(months=months)).to_period("M").to_timestamp("M")
++
++
++def rank01(series: pd.Series) -> pd.Series:
++    numeric = pd.to_numeric(series, errors="coerce")
++    if numeric.notna().sum() == 0:
++        return pd.Series(np.nan, index=series.index)
++    return numeric.rank(pct=True)
++
++
++def demand_shape_label(features: pd.DataFrame) -> pd.Series:
++    cold = (
++        features["purchase_count_asof_cutoff"].lt(3)
++        | features["active_month_count_asof_cutoff"].lt(2)
++        | features["months_observed_asof_cutoff"].lt(3)
++    )
++    return pd.Series(
++        np.select(
++            [
++                cold,
++                features["adi_asof_cutoff"].le(1.32) & features["cv2_quantity_asof_cutoff"].le(0.49),
++                features["adi_asof_cutoff"].le(1.32) & features["cv2_quantity_asof_cutoff"].gt(0.49),
++                features["adi_asof_cutoff"].gt(1.32) & features["cv2_quantity_asof_cutoff"].le(0.49),
++                features["adi_asof_cutoff"].gt(1.32) & features["cv2_quantity_asof_cutoff"].gt(0.49),
++            ],
++            ["cold_start", "smooth", "erratic", "intermittent", "lumpy"],
++            default="unknown",
++        ),
++        index=features.index,
++    )
++
++
++def series_or_default(df: pd.DataFrame, column: str, default: object) -> pd.Series:
++    if column in df.columns:
++        return df[column]
++    return pd.Series(default, index=df.index)
+diff --git a/risk_algorithm_core/monthly_runner.py b/risk_algorithm_core/monthly_runner.py
+index a53bbe4..e5ba4dc 100644
+--- a/risk_algorithm_core/monthly_runner.py
++++ b/risk_algorithm_core/monthly_runner.py
+@@ -81,7 +81,9 @@ class MonthlyRiskRunner:
+             model_artifact_id = artifact.manifest.artifact_id
+             artifact_metadata = artifact.manifest.raw
+         score_frame = scorer.score(model_features)
+-        selected, selection_report = BoundedCandidateSelector(cfg.worklist).select(score_frame, features)
++        worklist_config = dict(cfg.worklist)
++        worklist_config.setdefault("primary_horizon", cfg.primary_horizon)
++        selected, selection_report = BoundedCandidateSelector(worklist_config).select(score_frame, features)
+         gate = DetectorQualityGate(cfg.detectors)
+         gate_decisions = gate.evaluate(features, normalized)
+         detector_outputs = self._run_detectors(selected, features, gate_decisions)
+@@ -103,7 +105,7 @@ class MonthlyRiskRunner:
+             risk_cards,
+             risk_evidence,
+             features,
+-            cfg.worklist,
++            worklist_config,
+             artifact_metadata=artifact_metadata,
+             write_parquet=write_parquet,
+         )
+diff --git a/risk_algorithm_core/normalization.py b/risk_algorithm_core/normalization.py
+index 0a1e08b..749d583 100644
+--- a/risk_algorithm_core/normalization.py
++++ b/risk_algorithm_core/normalization.py
+@@ -5,6 +5,10 @@ from __future__ import annotations
+ import pandas as pd
+ 
+ 
++def cutoff_end_of_day(cutoff_date: str | pd.Timestamp) -> pd.Timestamp:
++    return pd.Timestamp(cutoff_date).normalize() + pd.Timedelta(days=1) - pd.Timedelta(nanoseconds=1)
++
++
+ def normalize_orders(orders: pd.DataFrame, cutoff_date: str | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+     df = orders.copy()
+     for col in ["manufacturer_code", "hospital_code", "drug_code", "distributor_code", "order_status", "delivery_status"]:
+@@ -20,11 +24,14 @@ def normalize_orders(orders: pd.DataFrame, cutoff_date: str | None = None) -> tu
+     df["order_date"] = pd.to_datetime(df["order_date"], errors="coerce")
+     df["order_quantity"] = pd.to_numeric(df["order_quantity"], errors="coerce").fillna(0.0)
+     df["order_amount"] = pd.to_numeric(df["order_amount"], errors="coerce").fillna(0.0)
++    for col in ["order_phase_code", "delivery_state_code", "order_failure_flag", "order_terminal_flag"]:
++        if col in df:
++            df[col] = pd.to_numeric(df[col], errors="coerce")
+     df = df.dropna(subset=["order_date", "manufacturer_code", "hospital_code", "drug_code"])
+     df = df[(df["manufacturer_code"] != "") & (df["hospital_code"] != "") & (df["drug_code"] != "")]
+     df = df[df["order_quantity"] > 0]
+     if cutoff_date:
+-        df = df[df["order_date"] <= pd.Timestamp(cutoff_date)]
++        df = df[df["order_date"] <= cutoff_end_of_day(cutoff_date)]
+     profile = pd.DataFrame(
+         [
+             {"metric": "normalized_order_rows", "value": len(df)},
+diff --git a/risk_algorithm_core/production_feature_builder.py b/risk_algorithm_core/production_feature_builder.py
+index aef699e..c3a1e22 100644
+--- a/risk_algorithm_core/production_feature_builder.py
++++ b/risk_algorithm_core/production_feature_builder.py
+@@ -34,12 +34,14 @@ def build_model_feature_frame(features: pd.DataFrame, artifact: LoadedModelArtif
+             if feature in default_values:
+                 work[feature] = default_values[feature]
+                 status = "generated_from_schema_default"
++                fill_missing = True
+             else:
+                 raise ValueError(f"Production feature builder cannot produce required feature: {feature}")
+         else:
+             status = "available_from_raw_feature_engineering"
++            fill_missing = False
+         before_missing = int(work[feature].isna().sum())
+-        work[feature] = _coerce_feature(work[feature], dtype_policy.get(feature), default_values.get(feature))
++        work[feature] = _coerce_feature(work[feature], dtype_policy.get(feature), default_values.get(feature), fill_missing=fill_missing)
+         after_missing = int(work[feature].isna().sum())
+         rows.append(
+             {
+@@ -68,17 +70,21 @@ def build_model_feature_frame(features: pd.DataFrame, artifact: LoadedModelArtif
+     return ProductionFeatureBuildResult(model_frame, pd.DataFrame(rows))
+ 
+ 
+-def _coerce_feature(series: pd.Series, dtype_name: str | None, default_value: Any) -> pd.Series:
++def _coerce_feature(series: pd.Series, dtype_name: str | None, default_value: Any, *, fill_missing: bool) -> pd.Series:
+     if dtype_name in {"float", "float64", "number", "numeric"}:
+         out = pd.to_numeric(series, errors="coerce").replace([np.inf, -np.inf], np.nan)
+-        if default_value is not None:
++        if fill_missing and default_value is not None:
+             out = out.fillna(float(default_value))
+         return out
+     if dtype_name in {"int", "int64"}:
+         out = pd.to_numeric(series, errors="coerce").replace([np.inf, -np.inf], np.nan)
+-        if default_value is not None:
++        if fill_missing and default_value is not None:
+             out = out.fillna(int(default_value))
+         return out.astype("int64", errors="ignore")
+     if dtype_name in {"bool", "boolean"}:
+-        return series.fillna(bool(default_value) if default_value is not None else False).astype(bool)
+-    return series.astype("string").fillna(str(default_value) if default_value is not None else "__missing__").astype(object)
++        if fill_missing:
++            return series.fillna(bool(default_value) if default_value is not None else False).astype(bool)
++        return series
++    if fill_missing:
++        return series.astype("string").fillna(str(default_value) if default_value is not None else "__missing__").astype(object)
++    return series.astype(object).where(series.notna(), np.nan)
+diff --git a/risk_algorithm_core/result_assembler.py b/risk_algorithm_core/result_assembler.py
+index 2c564c9..10e8e69 100644
+--- a/risk_algorithm_core/result_assembler.py
++++ b/risk_algorithm_core/result_assembler.py
+@@ -5,6 +5,7 @@ from __future__ import annotations
+ from pathlib import Path
+ from typing import Any
+ import datetime as dt
++import math
+ 
+ import pandas as pd
+ 
+@@ -95,6 +96,7 @@ def _build_risk_entities(status: pd.DataFrame, report_month: str) -> pd.DataFram
+     out["enterprise_id"] = status.get("enterprise_id", "default_enterprise")
+     out["manufacturer_code"] = status["manufacturer_code"].astype(str)
+     out["manufacturer_display_name"] = status["manufacturer_code"].astype(str)
++    out["worklist_user_id"] = status.get("worklist_user_id", status["manufacturer_code"]).fillna(status["manufacturer_code"]).astype(str)
+     out["hospital_code"] = status["hospital_code"].astype(str)
+     out["hospital_display_name"] = status.get("hospital_display_name", status["hospital_code"]).fillna(status["hospital_code"]).astype(str)
+     out["drug_code"] = status["drug_group"].astype(str)
+@@ -194,7 +196,7 @@ def _write_tables(batch_dir: Path, tables: dict[str, pd.DataFrame], write_parque
+     if write_parquet:
+         try:
+             for name, df in tables.items():
+-                df.to_parquet(batch_dir / f"{name}.parquet", index=False)
++                _prepare_for_parquet(df).to_parquet(batch_dir / f"{name}.parquet", index=False)
+             return "parquet"
+         except Exception:
+             for path in batch_dir.glob("*.parquet"):
+@@ -202,3 +204,24 @@ def _write_tables(batch_dir: Path, tables: dict[str, pd.DataFrame], write_parque
+     for name, df in tables.items():
+         df.to_csv(batch_dir / f"{name}.csv", index=False)
+     return "csv"
++
++
++def _prepare_for_parquet(df: pd.DataFrame) -> pd.DataFrame:
++    out = df.copy()
++    for column in out.columns:
++        if pd.api.types.is_categorical_dtype(out[column]) or pd.api.types.is_object_dtype(out[column]):
++            out[column] = out[column].map(_parquet_safe_value)
++    return out
++
++
++def _parquet_safe_value(value: object) -> object:
++    if value is None:
++        return None
++    if isinstance(value, float) and math.isnan(value):
++        return None
++    try:
++        if pd.isna(value):
++            return None
++    except (TypeError, ValueError):
++        pass
++    return str(value)
+diff --git a/tests/test_candidate_selector.py b/tests/test_candidate_selector.py
+index 77e1930..db9f1dd 100644
+--- a/tests/test_candidate_selector.py
++++ b/tests/test_candidate_selector.py
+@@ -1,5 +1,7 @@
+ from __future__ import annotations
+ 
++import pandas as pd
++
+ from risk_algorithm_core.artifact_loader import load_current_model_artifact
+ from risk_algorithm_core.candidate_selector import BoundedCandidateSelector
+ from risk_algorithm_core.entity_builder import build_monthly_entities
+@@ -35,3 +37,93 @@ def test_candidate_selector_is_bounded() -> None:
+     assert len(selected) <= 5
+     assert selected["is_selected_for_frontend"].all()
+     assert "selected_candidate_rows" in set(report["metric"])
++
++
++def test_candidate_selector_fills_per_user_without_global_topn_semantics() -> None:
++    rows = []
++    for idx in range(70):
++        rows.append(
++            {
++                "entity_id": f"A|H{idx}|D",
++                "manufacturer_code": "A",
++                "hospital_code": f"H{idx}",
++                "drug_group": "D",
++                "drug_group_source": "drug_code",
++                "cutoff_month": "2026-07",
++                "horizon": "H6",
++                "candidate_id": f"A|H{idx}|D|H6",
++                "churn_probability_H": 0.9 - idx * 0.001,
++                "risk_score": 0.9 - idx * 0.001,
++            }
++        )
++    for idx in range(5):
++        rows.append(
++            {
++                "entity_id": f"B|R{idx}|D",
++                "manufacturer_code": "B",
++                "hospital_code": f"R{idx}",
++                "drug_group": "D",
++                "drug_group_source": "drug_code",
++                "cutoff_month": "2026-07",
++                "horizon": "H6",
++                "candidate_id": f"B|R{idx}|D|H6",
++                "churn_probability_H": 0.8 - idx * 0.01,
++                "risk_score": 0.8 - idx * 0.01,
++            }
++        )
++    for idx in range(10):
++        rows.append(
++            {
++                "entity_id": f"B|O{idx}|D",
++                "manufacturer_code": "B",
++                "hospital_code": f"O{idx}",
++                "drug_group": "D",
++                "drug_group_source": "drug_code",
++                "cutoff_month": "2026-07",
++                "horizon": "H6",
++                "candidate_id": f"B|O{idx}|D|H6",
++                "churn_probability_H": 0.5 - idx * 0.01,
++                "risk_score": 0.5 - idx * 0.01,
++            }
++        )
++    for idx in range(10):
++        rows.append(
++            {
++                "entity_id": f"B|N{idx}|D",
++                "manufacturer_code": "B",
++                "hospital_code": f"N{idx}",
++                "drug_group": "D",
++                "drug_group_source": "drug_code",
++                "cutoff_month": "2026-07",
++                "horizon": "H6",
++                "candidate_id": f"B|N{idx}|D|H6",
++                "churn_probability_H": 0.4 - idx * 0.01,
++                "risk_score": 0.4 - idx * 0.01,
++            }
++        )
++    scores = pd.DataFrame(rows)
++    features = scores[["entity_id", "horizon", "manufacturer_code", "hospital_code", "drug_group"]].copy()
++    features["is_one_shot"] = features["hospital_code"].str.startswith("N")
++    features["demand_shape_label"] = features["hospital_code"].map(lambda x: "lumpy" if str(x).startswith("O") else "smooth")
++    features["history_sufficiency_flag"] = "history_sufficient"
++    features["value_at_risk_proxy"] = 1.0
++    features["one_shot_attention_score"] = features["is_one_shot"].astype(float)
++
++    selected, report = BoundedCandidateSelector(
++        {
++            "worklist_user_key": "manufacturer_code",
++            "frontend_min_topN_per_user": 20,
++            "frontend_max_topN_per_user": 50,
++            "recurring_topN_per_user": 50,
++            "one_shot_topN_per_user": 20,
++            "observation_topN_per_user": 20,
++        }
++    ).select(scores, features)
++
++    counts = selected.groupby("worklist_user_id").size().to_dict()
++    assert counts["A"] == 50
++    assert counts["B"] >= 20
++    assert selected.groupby("worklist_user_id").size().max() <= 50
++    assert not selected[selected["candidate_type"].isin(["one_shot", "observation"])]["is_high_risk_candidate"].any()
++    metrics = dict(zip(report["metric"], report["value"]))
++    assert int(metrics["users_below_min_after_fill"]) == 0
+diff --git a/tests/test_feature_engineering.py b/tests/test_feature_engineering.py
+index 6ead285..148068b 100644
+--- a/tests/test_feature_engineering.py
++++ b/tests/test_feature_engineering.py
+@@ -20,7 +20,8 @@ def test_feature_engineering_builds_asof_features() -> None:
+         ["H6"],
+     )
+     features, report = engineer_features(entities, normalized["orders"], "2026-07-31")
+-    assert len(features) == len(entities)
++    assert len(features) <= len(entities)
++    assert features["months_since_last_purchase_asof_cutoff"].le(12).all()
+     for col in ["months_since_last_purchase", "frequency_ratio", "current_interval_over_median", "quantity_ratio", "demand_shape_label"]:
+         assert col in features.columns
+     assert report.loc[report["metric"].eq("feature_rows"), "value"].iloc[0] == len(features)

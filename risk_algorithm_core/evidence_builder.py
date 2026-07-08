@@ -50,6 +50,7 @@ def build_risk_cards(candidate_status: pd.DataFrame, detector_outputs: pd.DataFr
                     "candidate_reason": str(detector.reason_code),
                     "is_primary": False,
                     "source_module": "detector",
+                    "source_detector_name": str(detector.detector_name),
                     "evidence_count": 0,
                     "suggested_action": _suggested_action(row.candidate_type),
                     "user_visible_caveat": str(detector.caveat),
@@ -68,21 +69,29 @@ def build_risk_card_evidence(risk_cards: pd.DataFrame, detector_outputs: pd.Data
     if risk_cards.empty:
         return pd.DataFrame(columns=["evidence_id", "risk_card_id", "risk_entity_id", "candidate_id", "evidence_type", "evidence_text", "business_metric_name", "business_metric_value", "source_feature_name", "source_feature_value", "visibility_level", "sort_order"])
     for card in risk_cards.itertuples():
-        det = detector_outputs[(detector_outputs["candidate_id"].astype(str) == str(card.candidate_id)) & detector_outputs["hit_flag"].fillna(False)]
-        if det.empty:
+        if bool(getattr(card, "is_primary", False)):
             rows.append(_evidence_row(card, "selection_reason", str(card.card_summary), "", "", 1))
-        else:
-            for idx, row in enumerate(det.head(3).itertuples(), start=1):
-                rows.append(
-                    _evidence_row(
-                        card,
-                        str(row.evidence_type),
-                        _evidence_text(str(row.detector_name)),
-                        str(row.metric_name),
-                        row.metric_value,
-                        idx,
-                    )
+            continue
+        detector_name = getattr(card, "source_detector_name", "")
+        det = detector_outputs[
+            (detector_outputs["candidate_id"].astype(str) == str(card.candidate_id))
+            & detector_outputs["hit_flag"].fillna(False)
+            & detector_outputs["detector_name"].astype(str).eq(str(detector_name))
+        ]
+        if det.empty:
+            rows.append(_evidence_row(card, "detector_note", str(card.card_summary), "", "", 1))
+            continue
+        for idx, row in enumerate(det.head(3).itertuples(), start=1):
+            rows.append(
+                _evidence_row(
+                    card,
+                    str(row.evidence_type),
+                    _evidence_text(str(row.detector_name)),
+                    str(row.metric_name),
+                    row.metric_value,
+                    idx,
                 )
+            )
     return pd.DataFrame(rows)
 
 
@@ -105,11 +114,21 @@ def _evidence_row(card: object, evidence_type: str, text: str, metric_name: str,
 
 
 def _primary_card_type(candidate_type: str) -> str:
-    return {"recurring": "primary_risk", "one_shot": "one_shot_attention", "observation": "demand_shape_observation"}.get(candidate_type, "primary_risk")
+    return {
+        "recurring": "primary_risk",
+        "one_shot": "one_shot_attention",
+        "observation": "demand_shape_observation",
+        "demand_shape_observation": "demand_shape_observation",
+    }.get(candidate_type, "primary_risk")
 
 
 def _card_title(candidate_type: str) -> str:
-    return {"recurring": "Monthly risk review", "one_shot": "New terminal attention", "observation": "Observation item"}.get(candidate_type, "Monthly risk review")
+    return {
+        "recurring": "Monthly risk review",
+        "one_shot": "New terminal attention",
+        "observation": "Observation item",
+        "demand_shape_observation": "Observation item",
+    }.get(candidate_type, "Monthly risk review")
 
 
 def _card_summary(candidate_type: str) -> str:
@@ -117,6 +136,7 @@ def _card_summary(candidate_type: str) -> str:
         "recurring": "Selected for monthly purchasing risk review.",
         "one_shot": "Selected as a new terminal attention item; not recurring churn.",
         "observation": "Selected for observation; not a strong warning.",
+        "demand_shape_observation": "Selected for observation; not a strong warning.",
     }.get(candidate_type, "Selected for monthly review.")
 
 
@@ -125,6 +145,7 @@ def _suggested_action(candidate_type: str) -> str:
         "recurring": "Review recent purchasing plans and demand context.",
         "one_shot": "Check whether a second purchase can be encouraged.",
         "observation": "Continue monitoring without treating it as high risk.",
+        "demand_shape_observation": "Continue monitoring without treating it as high risk.",
     }.get(candidate_type, "Manual review recommended.")
 
 
@@ -133,6 +154,7 @@ def _caveat(candidate_type: str) -> str:
         "recurring": "Risk clue requires business verification.",
         "one_shot": "New terminal attention is not recurring churn probability.",
         "observation": "Observation item is not high risk.",
+        "demand_shape_observation": "Observation item is not high risk.",
     }.get(candidate_type, "Business review required.")
 
 

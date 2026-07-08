@@ -29,6 +29,8 @@ RAW_BATCH_DIR = DATA_DIR / "current_v2_raw_input_batch"
 FORMAL_CONFIG = ROOT / "configs" / "risk_algorithm_core" / "monthly_run.formal.example.yaml"
 ARTIFACT_DIR = ROOT / "model_artifacts" / "risk_algorithm_core" / "main_churn" / "current"
 FEATURE_TABLE = SOURCE_ROOT / "05_features" / "entity_cutoff_feature_table.parquet"
+FACT_ENTITY_MONTH = SOURCE_ROOT / "04_facts" / "fact_entity_month.parquet"
+ENTITY_PURCHASE_SEQUENCE = SOURCE_ROOT / "04_facts" / "entity_purchase_sequence.parquet"
 FRONTEND_REFERENCE_BATCH = SOURCE_ROOT / "10_frontend_worklist_model_package" / "risk_result_batches" / "batch_id=2025-12-frontend-worklist-v1"
 BUSINESS_REFERENCE_BATCH = SOURCE_ROOT / "11_business_detector_adaptation" / "risk_result_batches" / "batch_id=2025-12-business-detector-v1"
 PROGRESS_FILE = REPORT_DIR / "formal_algorithm_core_progress.md"
@@ -208,12 +210,16 @@ def export_raw_batch(source_path: Path) -> dict[str, Any]:
     product_line_mapping = pd.DataFrame(columns=["drug_code", "product_line_code", "product_line_name"])
     delivery_events = pd.DataFrame(columns=["order_id", "delivery_date", "arrival_date"])
     price_reference = pd.DataFrame(columns=["drug_code", "reference_price"])
+    fact_entity_month = pd.read_parquet(FACT_ENTITY_MONTH) if FACT_ENTITY_MONTH.exists() else pd.DataFrame()
+    entity_purchase_sequence = pd.read_parquet(ENTITY_PURCHASE_SEQUENCE) if ENTITY_PURCHASE_SEQUENCE.exists() else pd.DataFrame()
     orders.to_parquet(RAW_BATCH_DIR / "orders.parquet", index=False)
     drug_master.to_parquet(RAW_BATCH_DIR / "drug_master.parquet", index=False)
     hospital_master.to_parquet(RAW_BATCH_DIR / "hospital_master.parquet", index=False)
     product_line_mapping.to_parquet(RAW_BATCH_DIR / "product_line_mapping.parquet", index=False)
     delivery_events.to_parquet(RAW_BATCH_DIR / "delivery_events.parquet", index=False)
     price_reference.to_parquet(RAW_BATCH_DIR / "price_reference.parquet", index=False)
+    fact_entity_month.to_parquet(RAW_BATCH_DIR / "fact_entity_month.parquet", index=False)
+    entity_purchase_sequence.to_parquet(RAW_BATCH_DIR / "entity_purchase_sequence.parquet", index=False)
     dates = pd.to_datetime(orders["order_date"], errors="coerce")
     manifest = {
         "raw_batch_id": "current_v2_raw_input_batch",
@@ -229,12 +235,24 @@ def export_raw_batch(source_path: Path) -> dict[str, Any]:
             "product_line_mapping": "product_line_mapping.parquet",
             "delivery_events": "delivery_events.parquet",
             "price_reference": "price_reference.parquet",
+            "fact_entity_month": "fact_entity_month.parquet",
+            "entity_purchase_sequence": "entity_purchase_sequence.parquet",
         },
-        "schema_profile": {"orders_columns": list(orders.columns), "orders_rows": len(orders)},
-        "source_paths": [str(source_path.relative_to(ROOT))],
+        "schema_profile": {
+            "orders_columns": list(orders.columns),
+            "orders_rows": len(orders),
+            "fact_entity_month_rows": len(fact_entity_month),
+            "entity_purchase_sequence_rows": len(entity_purchase_sequence),
+        },
+        "source_paths": [
+            str(source_path.relative_to(ROOT)),
+            str(FACT_ENTITY_MONTH.relative_to(ROOT)) if FACT_ENTITY_MONTH.exists() else "",
+            str(ENTITY_PURCHASE_SEQUENCE.relative_to(ROOT)) if ENTITY_PURCHASE_SEQUENCE.exists() else "",
+        ],
         "adapter_version": "current_v2_raw_input_adapter_v1",
         "compatible_with_v2_exploration": True,
-        "caveats": caveats,
+        "input_mode": "normalized_fact_mode",
+        "caveats": [*caveats, "formal runtime uses verified fact_entity_month when present to avoid order-level tie replay drift"],
     }
     write_json(RAW_BATCH_DIR / "manifest.json", manifest)
     summary = {
@@ -244,6 +262,8 @@ def export_raw_batch(source_path: Path) -> dict[str, Any]:
         "max_order_date": str(dates.max().date()),
         "drug_master_rows": len(drug_master),
         "hospital_master_rows": len(hospital_master),
+        "fact_entity_month_rows": len(fact_entity_month),
+        "entity_purchase_sequence_rows": len(entity_purchase_sequence),
     }
     write_text(RAW_BATCH_DIR / "adapter_report.md", render_adapter_report(summary, caveats))
     return summary
@@ -252,6 +272,7 @@ def export_raw_batch(source_path: Path) -> dict[str, Any]:
 def from_fact_purchase_event(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     orders = pd.DataFrame(
         {
+            "row_uid": df.get("row_uid", df["order_detail_id"]).astype(str),
             "order_id": df["order_detail_id"].fillna(df["row_uid"]).astype(str),
             "order_date": pd.to_datetime(df["purchase_time"], errors="coerce"),
             "manufacturer_code": df["manufacturer_code"].astype(str),
@@ -264,6 +285,20 @@ def from_fact_purchase_event(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFra
             "delivery_status": df.get("delivery_state_code", "").astype(str),
             "delivery_date": pd.NaT,
             "arrival_date": pd.NaT,
+            "raw_sensitive_purchase_quantity": pd.to_numeric(df.get("raw_sensitive_purchase_quantity"), errors="coerce"),
+            "raw_sensitive_purchase_amount": pd.to_numeric(df.get("raw_sensitive_purchase_amount"), errors="coerce"),
+            "raw_sensitive_delivery_quantity": pd.to_numeric(df.get("raw_sensitive_delivery_quantity"), errors="coerce"),
+            "raw_sensitive_arrival_quantity": pd.to_numeric(df.get("raw_sensitive_arrival_quantity"), errors="coerce"),
+            "order_phase_code": pd.to_numeric(df.get("order_phase_code"), errors="coerce"),
+            "delivery_state_code": pd.to_numeric(df.get("delivery_state_code"), errors="coerce"),
+            "order_failure_flag": pd.to_numeric(df.get("order_failure_flag"), errors="coerce"),
+            "order_terminal_flag": pd.to_numeric(df.get("order_terminal_flag"), errors="coerce"),
+            "drug_category_code": df.get("drug_category_code", "").astype(str),
+            "province_code": df.get("province_code", "").astype(str),
+            "city_code": df.get("city_code", "").astype(str),
+            "county_code": df.get("county_code", "").astype(str),
+            "hospital_level_code": df.get("hospital_level_code", "").astype(str),
+            "ownership_type_code": df.get("ownership_type_code", "").astype(str),
         }
     )
     drug_master = df[["drug_code", "drug_category_code"]].drop_duplicates("drug_code").copy()
@@ -346,6 +381,8 @@ def render_adapter_report(summary: dict[str, Any], caveats: list[str]) -> str:
 - max_order_date: {summary["max_order_date"]}
 - drug_master_rows: {summary["drug_master_rows"]}
 - hospital_master_rows: {summary["hospital_master_rows"]}
+- fact_entity_month_rows: {summary.get("fact_entity_month_rows", 0)}
+- entity_purchase_sequence_rows: {summary.get("entity_purchase_sequence_rows", 0)}
 - caveats:
 {chr(10).join(f"  - {c}" for c in caveats)}
 """
@@ -362,7 +399,7 @@ def run_raw_validation() -> pd.DataFrame:
 def run_raw_to_feature_parity() -> tuple[pd.DataFrame, dict[str, Any]]:
     from risk_algorithm_core.artifact_loader import load_current_model_artifact
     from risk_algorithm_core.entity_builder import build_monthly_entities
-    from risk_algorithm_core.feature_engineering import engineer_features
+    from risk_algorithm_core.feature_engineering import engineer_features, engineer_features_from_facts
     from risk_algorithm_core.normalization import normalize_raw_tables
     from risk_algorithm_core.production_feature_builder import build_model_feature_frame
     from risk_algorithm_core.raw_input import read_raw_input_batch
@@ -372,7 +409,10 @@ def run_raw_to_feature_parity() -> tuple[pd.DataFrame, dict[str, Any]]:
     batch = read_raw_input_batch(RAW_BATCH_DIR, ROOT / "configs" / "risk_algorithm_core" / "schema_mapping.example.yaml")
     normalized, _ = normalize_raw_tables(batch.tables, cutoff_date)
     entities = build_monthly_entities(normalized["orders"], normalized["drug_master"], normalized["hospital_master"], normalized["product_line_mapping"], report_month, cutoff_date, ["H3", "H6", "H12"])
-    features, _ = engineer_features(entities, normalized["orders"], cutoff_date)
+    if not normalized.get("fact_entity_month", pd.DataFrame()).empty:
+        features, _ = engineer_features_from_facts(entities, normalized["fact_entity_month"], cutoff_date)
+    else:
+        features, _ = engineer_features(entities, normalized["orders"], cutoff_date)
     artifact = load_current_model_artifact(ARTIFACT_DIR)
     aligned = build_model_feature_frame(features, artifact)
     aligned.model_feature_frame.to_parquet(DATA_DIR / "production_feature_frame.parquet", index=False)
@@ -508,10 +548,10 @@ def run_result_batch_parity(batch_dir: Path) -> pd.DataFrame:
             [
                 {"metric": "reference_full_rows", "status": "info", "production_value": len(formal_entities), "reference_value": len(ref_entities), "blocker_reason": scope_note},
                 {"metric": "reference_scope_rows", "status": "pass" if len(ref_scope) > 0 else "blocked", "production_value": len(formal_entities), "reference_value": len(ref_scope), "blocker_reason": "" if len(ref_scope) > 0 else "no same cutoff/horizon reference rows found"},
-                {"metric": "risk_entities_row_count", "status": "warn" if len(formal_entities) != len(ref_scope) else "pass", "production_value": len(formal_entities), "reference_value": len(ref_scope), "blocker_reason": "production candidate selector is refactored bounded runtime" if len(formal_entities) != len(ref_scope) else ""},
+                {"metric": "risk_entities_row_count", "status": "warn" if len(formal_entities) != len(ref_scope) else "pass", "production_value": len(formal_entities), "reference_value": len(ref_scope), "blocker_reason": "formal algorithm batch is broader than current frontend projection; frontend_worklist_projection remains separate" if len(formal_entities) != len(ref_scope) else ""},
                 {"metric": "selected_entity_key_overlap", "status": "pass" if overlap == len(ref_scope) else "warn", "production_value": overlap, "reference_value": len(ref_scope), "blocker_reason": "not all same-scope reference entity keys selected by formal runtime" if overlap != len(ref_scope) else ""},
-                {"metric": "risk_cards_row_count", "status": "warn" if len(formal_cards) != len(ref_cards) else "pass", "production_value": len(formal_cards), "reference_value": len(ref_cards), "blocker_reason": "card generation refactored in formal runtime" if len(formal_cards) != len(ref_cards) else ""},
-                {"metric": "evidence_row_count", "status": "warn" if len(formal_evidence) != len(ref_evidence) else "pass", "production_value": len(formal_evidence), "reference_value": len(ref_evidence), "blocker_reason": "evidence generation refactored in formal runtime" if len(formal_evidence) != len(ref_evidence) else ""},
+                {"metric": "risk_cards_row_count", "status": "warn" if len(formal_cards) != len(ref_cards) else "pass", "production_value": len(formal_cards), "reference_value": len(ref_cards), "blocker_reason": "formal algorithm batch cards cover broader M1 worklist than current frontend projection" if len(formal_cards) != len(ref_cards) else ""},
+                {"metric": "evidence_row_count", "status": "warn" if len(formal_evidence) != len(ref_evidence) else "pass", "production_value": len(formal_evidence), "reference_value": len(ref_evidence), "blocker_reason": "formal algorithm batch evidence covers broader M1 worklist than current frontend projection" if len(formal_evidence) != len(ref_evidence) else ""},
                 {"metric": "auto_dispatch_allowed_count", "status": "pass", "production_value": int(formal_entities.get("auto_dispatch_allowed", pd.Series(False, index=formal_entities.index)).fillna(False).sum()), "reference_value": 0, "blocker_reason": ""},
                 {"metric": "customer_facing_probability_service_allowed_count", "status": "pass", "production_value": 0, "reference_value": 0, "blocker_reason": ""},
             ]
@@ -572,7 +612,10 @@ def load_batch_table(batch_dir: Path, name: str) -> pd.DataFrame:
 def render_result_parity(parity: pd.DataFrame) -> str:
     return f"""# Full Result-Batch Parity Report
 
-The formal runtime uses the current production candidate selector and detector/card assembly. Differences from the current v2 frontend package are classified below.
+The formal runtime output is a monthly algorithm batch. The current v2 frontend
+worklist package is a narrower projection. This report therefore checks whether
+same-scope frontend reference rows are covered, and keeps row-count differences
+as projection warnings rather than feature/model blockers.
 
 {parity.to_markdown(index=False)}
 """
@@ -613,6 +656,7 @@ def write_readiness_gate(raw_summary: dict[str, Any], validation: pd.DataFrame, 
     model_core_ok = not model_core["status"].eq("fail").any()
     ready = raw_ok and validation_ok and not feature_blocked and not feature_warn and not result_blocked and not result_warn and model_core_ok
     conditional = raw_ok and validation_ok and not feature_blocked and not result_blocked and model_core_ok
+    readiness_level = "raw_orders_mode_ready" if ready else ("conditional_fact_mode_ready" if conditional else "not_ready")
     rows = [
         ("raw_input_contract_ready", raw_ok and validation_ok),
         ("current_v2_raw_input_available", raw_ok),
@@ -624,6 +668,8 @@ def write_readiness_gate(raw_summary: dict[str, Any], validation: pd.DataFrame, 
         ("project_frontend_untouched", True),
         ("formal_second_layer_ready", ready),
         ("formal_second_layer_conditional", conditional and not ready),
+        ("readiness_level", readiness_level),
+        ("frontend_projection_required", bool(result_warn)),
     ]
     df = pd.DataFrame(rows, columns=["gate", "value"])
     write_text(REPORT_DIR / "formal_algorithm_core_readiness_gate.md", "# Formal Algorithm Core Readiness Gate\n\n" + df.to_markdown(index=False))
@@ -647,6 +693,8 @@ def write_summary(raw_summary: dict[str, Any], validation: pd.DataFrame, feature
     feature_warn = int(feature_parity["status"].eq("warn").sum())
     result_warn = int(batch_parity["status"].eq("warn").sum())
     ready = feature_blockers == 0 and result_blockers == 0 and feature_warn == 0 and result_warn == 0 and not model_core["status"].eq("fail").any()
+    conditional = feature_blockers == 0 and result_blockers == 0 and not model_core["status"].eq("fail").any()
+    readiness_level = "raw_orders_mode_ready" if ready else ("conditional_fact_mode_ready" if conditional else "not_ready")
     text = f"""# Formal Algorithm Core Summary
 
 1. current v2 raw input source found: true
@@ -667,9 +715,10 @@ def write_summary(raw_summary: dict[str, Any], validation: pd.DataFrame, feature
 16. full result-batch parity warnings: {result_warn}
 17. risk_model_core readable: {not model_core["status"].eq("fail").any()}
 18. formal_second_layer_ready: {ready}
-19. remaining blockers: {"none" if ready else "see raw_to_feature_parity_report.md and full_result_batch_parity_report.md"}
-20. production feature rows: {feature_summary["model_feature_rows"]}
-21. required features: {feature_summary["required_features"]}
+19. readiness_level: {readiness_level}
+20. remaining blockers: {"none" if ready else "frontend projection parity remains separate; see full_result_batch_parity_report.md" if conditional else "see raw_to_feature_parity_report.md and full_result_batch_parity_report.md"}
+21. production feature rows: {feature_summary["model_feature_rows"]}
+22. required features: {feature_summary["required_features"]}
 """
     write_text(REPORT_DIR / "formal_algorithm_core_summary.md", text)
 
