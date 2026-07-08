@@ -1,0 +1,33 @@
+{
+  "gates": {
+    "source_of_truth_ready": "CONDITIONAL_READY",
+    "risk_algorithm_core_ready": "CONDITIONAL_READY",
+    "raw_to_feature_parity_ready": "READY",
+    "best_model_artifact_ready": "READY",
+    "monthly_runner_ready": "READY",
+    "result_batch_contract_ready": "READY",
+    "risk_model_core_ready": "READY",
+    "backend_api_contract_ready": "CONDITIONAL_READY",
+    "frontend_payload_contract_ready": "CONDITIONAL_READY",
+    "customer_visibility_safe": "READY",
+    "detector_business_boundary_ready": "CONDITIONAL_READY",
+    "proof_case_ready": "CONDITIONAL_READY",
+    "work_order_ready": "CONDITIONAL_READY",
+    "export_ready": "CONDITIONAL_READY",
+    "formal_frontend_backend_integration_ready": "CONDITIONAL_READY"
+  },
+  "first_pages": [
+    "index/workbench",
+    "clues/risk list",
+    "clue-detail/risk cards",
+    "dashboard/monthly"
+  ],
+  "deferred_pages": [
+    "proof-case/backtest",
+    "verify/recovery",
+    "distributor alerts",
+    "order detail",
+    "PDF export"
+  ],
+  "blockers": []
+}

@@ -1,0 +1,10 @@
+table,rows,exists
+risk_entities,1291,True
+risk_cards,4197,True
+risk_card_evidence,4197,True
+risk_entity_timeline,1291,True
+hospital_aggregates,612,True
+drug_aggregates,32,True
+monthly_reports,1,True
+proof_cases,0,True
+work_order_reserved,1291,True

@@ -1,0 +1,52 @@
+{
+  "batch_id": "2025-12-monthly-risk-algorithm-pg",
+  "report_type": "monthly",
+  "report_month": "2025-12",
+  "report_date": "2026-07-08",
+  "score_cutoff_month": "2025-12",
+  "cutoff_date": "2025-12-31",
+  "primary_horizon": "H6",
+  "available_horizons": [
+    "H3",
+    "H6",
+    "H12"
+  ],
+  "schema_version": "risk_result_batch_monthly_v1",
+  "data_backend": "csv",
+  "raw_batch_id": "current_v2_raw_input_batch",
+  "algorithm_core_version": "risk_algorithm_core_v1",
+  "model_artifact_id": "xgboost_small_without_choice_set_20260707043129",
+  "model_family": "xgboost_small",
+  "feature_group": "all_safe_features_without_choice_set",
+  "calibration": "raw",
+  "excludes_choice_set": true,
+  "risk_result_schema_version": "risk_result_batch_monthly_v1",
+  "feature_schema_version": "xgboost_small_without_choice_set_v1",
+  "detector_config_version": "detector_runtime_v1",
+  "worklist_config": {
+    "frontend_default_topN_per_manufacturer": 20,
+    "frontend_max_topN_per_manufacturer": 50,
+    "one_shot_topN_per_manufacturer": 20,
+    "observation_topN_per_manufacturer": 20,
+    "index_topN": 8,
+    "global_candidate_cap": 30000
+  },
+  "allowed_usage": [
+    "internal_diagnostic",
+    "analyst_view",
+    "monthly_business_review"
+  ],
+  "forbidden_usage": [
+    "auto_dispatch",
+    "formal_customer_probability_service",
+    "definitive_churn_claim"
+  ],
+  "customer_facing_probability_service_allowed": false,
+  "auto_dispatch_allowed": false,
+  "proof_case_report_allowed": false,
+  "caveats": [
+    "bounded monthly worklist",
+    "not full SQL universe claim",
+    "business review required"
+  ]
+}

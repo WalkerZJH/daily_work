@@ -1,0 +1,15 @@
+{
+  "report_month": "2025-12",
+  "cutoff_date": "2025-12-31",
+  "raw_batch_id": "current_v2_raw_input_batch",
+  "entity_rows": 194652,
+  "feature_rows": 106647,
+  "score_rows": 106647,
+  "selected_candidate_rows": 1291,
+  "detector_output_rows": 4428,
+  "risk_card_rows": 4197,
+  "evidence_rows": 4197,
+  "batch_dir": "algo_main\\data\\entity_complete_v2_coverage_expansion\\14_pre_frontend_backend_integration_gate\\smoke\\report_month=2025-12\\batch_id=2025-12-monthly-risk-algorithm-pg",
+  "model_artifact_id": "xgboost_small_without_choice_set_20260707043129",
+  "dry_run_rule_baseline": false
+}

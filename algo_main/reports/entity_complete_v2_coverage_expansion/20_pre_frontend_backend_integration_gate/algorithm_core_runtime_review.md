@@ -1,0 +1,22 @@
+# Algorithm Core Runtime Review
+
+- gate: CONDITIONAL_READY
+- formal monthly config: `configs\risk_algorithm_core\monthly_run.formal.example.yaml`
+- smoke config: `algo_main\data\entity_complete_v2_coverage_expansion\14_pre_frontend_backend_integration_gate\monthly_run.pre_integration_smoke.yaml`
+- smoke command returncode: 0
+- smoke batch dir: `C:\Users\admin\Myprojects\for_git\algo_main\data\entity_complete_v2_coverage_expansion\14_pre_frontend_backend_integration_gate\smoke\report_month=2025-12\batch_id=2025-12-monthly-risk-algorithm-pg`
+- report_month: 2025-12
+- cutoff_date: 2025-12-31
+- model_artifact_id: xgboost_small_without_choice_set_20260707043129
+- model_family: xgboost_small
+- feature_group: all_safe_features_without_choice_set
+- calibration: raw
+- excludes_choice_set: true
+- raw-to-feature parity: PASS
+- model input parity: PASS
+- score parity: PASS
+- result-batch parity: CONDITIONAL_PASS; differences are formal algorithm batch vs frontend projection
+- artifact missing behavior: fail fast by config `require_artifact=true`
+- dry-run baseline: limited to dry-run/test path
+- detector boundary: delivery-time/price/SKU/wallet remain disabled/deferred for customer claims
+- monthly runner one-command smoke: `C:\Users\admin\anaconda3\python.exe -m risk_algorithm_core.cli run --config algo_main\data\entity_complete_v2_coverage_expansion\14_pre_frontend_backend_integration_gate\monthly_run.pre_integration_smoke.yaml`
