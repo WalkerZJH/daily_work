@@ -291,6 +291,27 @@ def test_frontend_risk_entities_api_reuses_top_entity_service() -> None:
     assert len(entities) == 2
 
 
+def test_user_top_entities_prefers_entity_display_lookup_names() -> None:
+    from app.services.user_top_entity_service import TopEntityService, UserManufacturerScopeService
+
+    payload = TopEntityService(
+        _repository(),
+        scope_service=UserManufacturerScopeService.from_rows(_scope_rows()),
+    ).list_user_top_entities(
+        user_id="user_a",
+        top_n=1,
+        ranking_strategy="probability",
+    )
+
+    entity = payload["groups"][0]["entities"][0]
+    assert entity["risk_entity_id"] == "m1_high"
+    assert entity["manufacturer_display_name"] == "Lookup Manufacturer M1"
+    assert entity["hospital_display_name"] == "Lookup Hospital m1_high"
+    assert entity["drug_display_name"] == "Lookup Drug m1_high"
+    assert entity["region_display_name"] == "Lookup Region m1_high"
+    assert "DISPLAY_LOOKUP_MISSING" not in payload["warnings"]
+
+
 def test_formal_top_entity_path_does_not_import_algo_main_or_raw_source_db() -> None:
     project_root = Path(__file__).resolve().parents[1]
     sources = [
@@ -344,7 +365,8 @@ def _repository() -> InMemoryRiskResultRepository:
                     _entity("m5_recurring", "M5", 0.60),
                     _entity("m5_oneshot", "M5", None, is_one_shot=True, risk_score_display=0.83),
                 ]
-            )
+            ),
+            "entity_display_lookup": _entity_display_lookup(),
         },
     )
 
@@ -427,6 +449,40 @@ def _scope_rows() -> list[dict[str, object]]:
             "enabled": True,
         },
     ]
+
+
+def _entity_display_lookup() -> pd.DataFrame:
+    rows = []
+    for entity_id, manufacturer_code in [
+        ("m1_high", "M1"),
+        ("m2_high", "M2"),
+        ("m4_recurring", "M4"),
+        ("m5_recurring", "M5"),
+    ]:
+        drug_group = entity_id + "_drug"
+        rows.append(
+            {
+                "tenant_id": "tenant",
+                "report_month": "2025-12",
+                "manufacturer_code": manufacturer_code,
+                "manufacturer_display_name": f"Lookup Manufacturer {manufacturer_code}",
+                "hospital_code": entity_id + "_hospital",
+                "hospital_display_name": f"Lookup Hospital {entity_id}",
+                "drug_code": drug_group,
+                "drug_group": drug_group,
+                "drug_display_name": f"Lookup Drug {entity_id}",
+                "product_line_code": "",
+                "product_line_name": "",
+                "region_code": "lookup_region",
+                "region_display_name": f"Lookup Region {entity_id}",
+                "display_key": f"tenant|2025-12|{manufacturer_code}|{entity_id}_hospital|{drug_group}",
+                "display_name_source": "master",
+                "display_name_quality": "master",
+                "source_raw_batch_id": "raw-test",
+                "updated_at": "2026-07-08T00:00:00+00:00",
+            }
+        )
+    return pd.DataFrame(rows)
 
 
 def _manifest() -> RiskResultManifest:

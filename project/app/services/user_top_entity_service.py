@@ -175,6 +175,8 @@ class TopEntityService:
 
         selected_month = _select_report_month(entities, report_month)
         batch = _filter_value(entities, "report_month", selected_month)
+        batch, lookup_warnings = self._apply_display_lookup(batch, selected_month)
+        warnings.extend(lookup_warnings)
         batch = _filter_value(batch, "primary_horizon", horizon)
         available_codes = _dedupe(
             batch.get("manufacturer_code", pd.Series(dtype=object)).dropna().astype(str).tolist()
@@ -350,6 +352,60 @@ class TopEntityService:
                 out["_ranking_score"] = pd.to_numeric(out[column], errors="coerce").fillna(-1)
                 out["_ranking_score_source"] = column
         return out.sort_values("_ranking_score", ascending=False)
+
+    def _apply_display_lookup(self, frame: pd.DataFrame, report_month: str) -> tuple[pd.DataFrame, list[str]]:
+        if frame.empty:
+            return frame.copy(), []
+        try:
+            lookup = self.repository.load_entity_display_lookup(report_month=report_month)
+        except (FileNotFoundError, NotImplementedError, ValueError, AttributeError):
+            return frame.copy(), ["DISPLAY_LOOKUP_MISSING"]
+        if lookup.empty:
+            return frame.copy(), ["DISPLAY_LOOKUP_MISSING"]
+        join_cols = [
+            "tenant_id",
+            "report_month",
+            "manufacturer_code",
+            "hospital_code",
+            "drug_group",
+        ]
+        if not set(join_cols).issubset(frame.columns) or not set(join_cols).issubset(lookup.columns):
+            return frame.copy(), ["DISPLAY_LOOKUP_KEY_COLUMNS_MISSING"]
+        display_cols = [
+            "manufacturer_display_name",
+            "hospital_display_name",
+            "drug_display_name",
+            "region_code",
+            "region_display_name",
+            "product_line_code",
+            "product_line_name",
+            "display_name_source",
+            "display_name_quality",
+        ]
+        available_cols = [col for col in display_cols if col in lookup.columns]
+        joined = frame.merge(
+            lookup[join_cols + available_cols].drop_duplicates(join_cols, keep="first"),
+            on=join_cols,
+            how="left",
+            suffixes=("", "_lookup"),
+        )
+        for col in display_cols:
+            lookup_col = f"{col}_lookup"
+            if lookup_col not in joined.columns:
+                continue
+            if col in joined.columns:
+                lookup_values = joined[lookup_col].map(_none_or_str)
+                existing_values = joined[col].map(_none_or_str)
+                joined[col] = lookup_values.where(lookup_values.notna(), existing_values)
+                joined = joined.drop(columns=[lookup_col])
+            else:
+                joined = joined.rename(columns={lookup_col: col})
+        warnings: list[str] = []
+        if "display_name_quality" in joined and joined["display_name_quality"].astype(str).eq("code_fallback").any():
+            warnings.append("DISPLAY_NAME_CODE_FALLBACK")
+        if "hospital_display_name" in joined and joined["hospital_display_name"].isna().any():
+            warnings.append("DISPLAY_LOOKUP_PARTIAL")
+        return joined, warnings
 
     @staticmethod
     def _effective_strategy(frame: pd.DataFrame, ranking_strategy: str) -> tuple[str, list[str]]:
