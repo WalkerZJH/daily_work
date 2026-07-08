@@ -1,0 +1,71 @@
+run:
+  run_id: clickhouse-smoke
+  report_type: monthly
+  report_month: "2025-12"
+  run_date: "2026-01-05"
+  timezone: Asia/Shanghai
+  cutoff_policy: month_end
+
+output:
+  output_root: algo_main/data/entity_complete_v2_coverage_expansion/15_clickhouse_raw_input_integration/result_batches
+
+input:
+  raw_batch_dir: configs/risk_algorithm_core/clickhouse_raw_input_batch
+  table_format: clickhouse
+  schema_mapping_path: configs/risk_algorithm_core/schema_mapping.clickhouse_drug_purchase_orders.yaml
+
+scope:
+  tenant_id: default_tenant
+  enterprise_id: default_enterprise
+  manufacturer_codes: all
+  region_scope: all
+
+entity:
+  grain: manufacturer_hospital_drug
+  drug_group_source_priority:
+    - drug_code
+
+horizon:
+  primary_horizon: H6
+  available_horizons:
+    - H3
+    - H6
+    - H12
+
+model:
+  artifact_alias: current
+  artifact_dir: model_artifacts/risk_algorithm_core/main_churn/current
+  require_artifact: true
+
+worklist:
+  frontend_default_topN_per_manufacturer: 20
+  frontend_max_topN_per_manufacturer: 50
+  one_shot_topN_per_manufacturer: 20
+  observation_topN_per_manufacturer: 20
+  index_topN: 8
+  global_candidate_cap: 30000
+
+detectors:
+  enable_terminal_loss: true
+  enable_interval_overdue: true
+  enable_frequency_drop: true
+  enable_quantity_drop: true
+  enable_one_shot_attention: true
+  enable_low_delivery_rate_if_quality_passed: false
+  enable_delivery_time_detectors: false
+  enable_price_detectors: false
+  enable_sku_wallet_detectors: false
+
+safety:
+  auto_dispatch_allowed: false
+  customer_facing_probability_service_allowed: false
+  proof_case_report_allowed: false
+  forbid_causal_claims: true
+
+export:
+  write_parquet: true
+  write_csv_sample: true
+  write_page_payloads: false
+  export_ready: true
+  write_clickhouse_result_tables: false
+  fallback_to_local_files_when_clickhouse_write_denied: true

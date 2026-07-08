@@ -86,6 +86,9 @@ project/artifacts/smoke_tests/**
 !project/artifacts/smoke_tests/
 !project/artifacts/smoke_tests/README.md
 
+# Local ClickHouse smoke outputs may contain real business rows.
+algo_main/data/entity_complete_v2_coverage_expansion/15_clickhouse_raw_input_integration/
+
 # Compressed packages (remove a rule when the archive is source material)
 *.zip
 *.7z

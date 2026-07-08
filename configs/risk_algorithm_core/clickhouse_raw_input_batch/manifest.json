@@ -1,0 +1,39 @@
+{
+  "raw_batch_id": "clickhouse_drug_purchase_orders_smoke",
+  "source_system": "clickhouse",
+  "data_as_of_date": "2025-12-31",
+  "min_order_date": "2025-12-01",
+  "max_order_date": "2025-12-31",
+  "table_format": "clickhouse",
+  "database": "gyl_data",
+  "source_table": "drug_purchase_orders",
+  "table_paths": {
+    "orders": "drug_purchase_orders",
+    "drug_master": "drug_purchase_orders",
+    "hospital_master": "drug_purchase_orders",
+    "manufacturer_master": "drug_purchase_orders",
+    "delivery_events": "drug_purchase_orders"
+  },
+  "from_date": "2025-12-01",
+  "to_date": "2025-12-31 23:59:59",
+  "row_limit": 5000,
+  "table_queries": {
+    "orders": "SELECT order_detail_id, purchase_time, manufacturer_code, manufacturer_name, hospital_code, hospital_name, drug_code, generic_name, drug_category, purchase_quantity, purchase_amount, delivery_enterprise_code, delivery_enterprise_name, order_status, delivery_time, received_time, city_code, city, hospital_level FROM {table} WHERE purchase_time > toDateTime('1971-01-01') AND purchase_time >= toDateTime('{from_date}') AND purchase_time <= toDateTime('{to_date}') {limit_clause}",
+    "drug_master": "SELECT DISTINCT drug_code, generic_name, drug_category FROM {table} WHERE purchase_time > toDateTime('1971-01-01') AND purchase_time >= toDateTime('{from_date}') AND purchase_time <= toDateTime('{to_date}') AND drug_code != '' {limit_clause}",
+    "hospital_master": "SELECT DISTINCT hospital_code, hospital_name, city_code, city, hospital_level FROM {table} WHERE purchase_time > toDateTime('1971-01-01') AND purchase_time >= toDateTime('{from_date}') AND purchase_time <= toDateTime('{to_date}') AND hospital_code != '' {limit_clause}",
+    "manufacturer_master": "SELECT DISTINCT manufacturer_code, manufacturer_name FROM {table} WHERE purchase_time > toDateTime('1971-01-01') AND purchase_time >= toDateTime('{from_date}') AND purchase_time <= toDateTime('{to_date}') AND manufacturer_code != '' {limit_clause}",
+    "delivery_events": "SELECT order_detail_id, delivery_time, received_time, order_status, delivery_enterprise_code, delivery_enterprise_name FROM {table} WHERE purchase_time > toDateTime('1971-01-01') AND purchase_time >= toDateTime('{from_date}') AND purchase_time <= toDateTime('{to_date}') {limit_clause}"
+  },
+  "schema_profile": "clickhouse_drug_purchase_orders_v1",
+  "contains_drug_master": true,
+  "contains_hospital_master": true,
+  "contains_product_line_mapping": false,
+  "contains_delivery_events": true,
+  "contains_price_reference": false,
+  "contains_org_scope": false,
+  "caveats": [
+    "smoke manifest limits each ClickHouse query to 5000 rows",
+    "delivery_time and received_time contain many 1970 sentinel values and must not enable delivery-time detector by default",
+    "product_line mapping is not available; drug_category is only a display fallback"
+  ]
+}

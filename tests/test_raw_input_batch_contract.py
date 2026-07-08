@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from risk_algorithm_core.raw_input import ClickHouseRawTableReader, SqlRawTableReader, read_raw_input_batch
+import pandas as pd
+
+from risk_algorithm_core.raw_input import ClickHouseRawTableReader, RawInputManifest, SqlRawTableReader, read_raw_input_batch
 from tests.risk_algorithm_core_test_utils import RAW_FIXTURE, SCHEMA_MAPPING
 
 
@@ -14,3 +16,67 @@ def test_raw_input_batch_reads_local_csv_tables() -> None:
 def test_sql_and_clickhouse_reader_interfaces_are_reserved() -> None:
     assert SqlRawTableReader is not None
     assert ClickHouseRawTableReader is not None
+
+
+def test_clickhouse_reader_uses_manifest_query_and_limit_clause() -> None:
+    class FakeClient:
+        def __init__(self) -> None:
+            self.queries: list[str] = []
+
+        def query_df(self, sql: str) -> pd.DataFrame:
+            self.queries.append(sql)
+            return pd.DataFrame(
+                [
+                    {
+                        "order_date": "2025-12-01",
+                        "manufacturer_code": "m1",
+                        "hospital_code": "h1",
+                        "drug_code": "d1",
+                        "order_quantity": 1,
+                        "order_amount": 10,
+                    }
+                ]
+            )
+
+    manifest = RawInputManifest(
+        raw_batch_id="clickhouse-smoke",
+        source_system="clickhouse",
+        data_as_of_date="2025-12-31",
+        table_format="clickhouse",
+        table_paths={"orders": "drug_purchase_orders"},
+        raw={
+            "from_date": "2025-12-01",
+            "to_date": "2025-12-31",
+            "row_limit": 10,
+            "table_queries": {
+                "orders": "SELECT purchase_time AS order_date FROM {table} WHERE purchase_time >= toDateTime('{from_date}') {limit_clause}"
+            },
+        },
+    )
+
+    reader = ClickHouseRawTableReader(client=FakeClient())
+    frame = reader.read(manifest, "orders")
+
+    assert len(frame) == 1
+    assert "LIMIT 10" in reader.client.queries[0]
+    assert "drug_purchase_orders" in reader.client.queries[0]
+
+
+def test_clickhouse_reader_returns_empty_for_unconfigured_optional_tables() -> None:
+    class FakeClient:
+        def query_df(self, sql: str) -> pd.DataFrame:
+            raise AssertionError("unconfigured optional table should not query source table")
+
+    manifest = RawInputManifest(
+        raw_batch_id="clickhouse-smoke",
+        source_system="clickhouse",
+        data_as_of_date="2025-12-31",
+        table_format="clickhouse",
+        table_paths={"orders": "drug_purchase_orders"},
+        raw={"source_table": "drug_purchase_orders"},
+    )
+
+    reader = ClickHouseRawTableReader(client=FakeClient())
+    frame = reader.read(manifest, "fact_entity_month")
+
+    assert frame.empty

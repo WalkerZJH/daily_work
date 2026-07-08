@@ -1,0 +1,11 @@
+{
+  "orders_rows": 5000,
+  "order_date_min": "2025-12-15 11:20:14",
+  "order_date_max": "2025-12-15 12:21:07",
+  "manufacturer_count": 47,
+  "hospital_count": 1434,
+  "drug_count": 482,
+  "drug_master_rows": 1025,
+  "hospital_master_rows": 5000,
+  "manufacturer_master_rows": 65
+}

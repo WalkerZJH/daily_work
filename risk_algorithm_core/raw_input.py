@@ -9,6 +9,7 @@ import json
 
 import pandas as pd
 
+from .clickhouse_io import ClickHouseHttpClient
 from .schema_mapping import SchemaMapping, apply_schema_mapping, ensure_columns, load_schema_mapping
 
 
@@ -75,13 +76,17 @@ class SqlRawTableReader(RawTableReader):
 
 
 class ClickHouseRawTableReader(RawTableReader):
-    """Read-only ClickHouse interface placeholder for future raw table extraction."""
+    """Read raw/source business tables from ClickHouse for algorithm-core runs."""
 
-    def __init__(self, connection_url: str | None = None):
+    def __init__(self, connection_url: str | None = None, client: Any | None = None):
         self.connection_url = connection_url
+        self.client = client or ClickHouseHttpClient()
 
     def read(self, manifest: RawInputManifest, table_name: str) -> pd.DataFrame:
-        raise NotImplementedError("ClickHouse raw reader interface is reserved; use local raw batch in this stage.")
+        query = _clickhouse_query_for_table(manifest, table_name)
+        if not query:
+            return pd.DataFrame()
+        return self.client.query_df(query)
 
 
 def load_raw_manifest(raw_batch_dir: str | Path) -> RawInputManifest:
@@ -101,7 +106,11 @@ def load_raw_manifest(raw_batch_dir: str | Path) -> RawInputManifest:
 def read_raw_input_batch(raw_batch_dir: str | Path, schema_mapping_path: str | Path | None = None) -> RawInputBatch:
     manifest = load_raw_manifest(raw_batch_dir)
     mapping = load_schema_mapping(schema_mapping_path)
-    reader = LocalRawTableReader(raw_batch_dir)
+    reader: RawTableReader
+    if manifest.source_system.lower() == "clickhouse" or manifest.table_format.lower() == "clickhouse":
+        reader = ClickHouseRawTableReader()
+    else:
+        reader = LocalRawTableReader(raw_batch_dir)
     tables: dict[str, pd.DataFrame] = {}
     for table_name in ["orders", *OPTIONAL_TABLES]:
         df = reader.read(manifest, table_name)
@@ -109,6 +118,26 @@ def read_raw_input_batch(raw_batch_dir: str | Path, schema_mapping_path: str | P
         tables[table_name] = df
     validate_raw_tables(tables)
     return RawInputBatch(manifest=manifest, tables=tables)
+
+
+def _clickhouse_query_for_table(manifest: RawInputManifest, table_name: str) -> str:
+    queries = manifest.raw.get("table_queries", {})
+    template = queries.get(table_name)
+    table = manifest.table_paths.get(table_name)
+    if not template:
+        if not table:
+            return ""
+        template = "SELECT * FROM {table} {limit_clause}"
+    row_limit = manifest.raw.get("row_limit")
+    limit_clause = f"LIMIT {int(row_limit)}" if row_limit not in {None, "", 0, "0"} else ""
+    values = {
+        "table": str(table),
+        "database": str(manifest.raw.get("database") or ""),
+        "from_date": str(manifest.raw.get("from_date") or "1971-01-01"),
+        "to_date": str(manifest.raw.get("to_date") or manifest.data_as_of_date or "2100-01-01"),
+        "limit_clause": limit_clause,
+    }
+    return template.format(**values)
 
 
 def validate_raw_tables(tables: dict[str, pd.DataFrame]) -> None:

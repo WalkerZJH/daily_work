@@ -1,0 +1,49 @@
+orders:
+  columns:
+    order_detail_id: order_id
+    purchase_time: order_date
+    manufacturer_code: manufacturer_code
+    manufacturer_name: manufacturer_display_name
+    hospital_code: hospital_code
+    hospital_name: hospital_name
+    drug_code: drug_code
+    generic_name: drug_name
+    drug_category: drug_category
+    purchase_quantity: order_quantity
+    purchase_amount: order_amount
+    delivery_enterprise_code: distributor_code
+    delivery_enterprise_name: distributor_name
+    order_status: order_status
+    delivery_time: delivery_date
+    received_time: arrival_date
+    city_code: region_code
+    city: region_name
+    hospital_level: hospital_level
+
+drug_master:
+  columns:
+    drug_code: drug_code
+    generic_name: drug_name
+    drug_category: drug_category
+
+hospital_master:
+  columns:
+    hospital_code: hospital_code
+    hospital_name: hospital_name
+    city_code: region_code
+    city: region_name
+    hospital_level: hospital_level
+
+manufacturer_master:
+  columns:
+    manufacturer_code: manufacturer_code
+    manufacturer_name: manufacturer_name
+
+delivery_events:
+  columns:
+    order_detail_id: order_id
+    delivery_time: delivery_date
+    received_time: arrival_date
+    order_status: delivery_status
+    delivery_enterprise_code: distributor_code
+    delivery_enterprise_name: distributor_name
