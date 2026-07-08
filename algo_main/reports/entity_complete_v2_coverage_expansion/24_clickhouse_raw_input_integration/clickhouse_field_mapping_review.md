@@ -13,6 +13,6 @@
 | distributor_code | delivery_enterprise_code | high | delivery enterprise code |
 | delivery_date | delivery_time | low | many 1970 sentinel values; detector remains disabled |
 | arrival_date | received_time | low | many 1970 sentinel values; detector remains disabled |
-| region_code | city_code | medium | city-level routing fallback; confirm if province/county preferred |
-| region_name | city | medium | city-level routing fallback; confirm if province/county preferred |
+| region_code | province_code | high | business region uses province-level code |
+| region_name | province | high | business region uses province-level name |
 | product_line_name | drug_category | low | display fallback only; not portfolio mapping |

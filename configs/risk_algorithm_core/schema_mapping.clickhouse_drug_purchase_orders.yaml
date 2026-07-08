@@ -16,8 +16,8 @@ orders:
     order_status: order_status
     delivery_time: delivery_date
     received_time: arrival_date
-    city_code: region_code
-    city: region_name
+    province_code: region_code
+    province: region_name
     hospital_level: hospital_level
 
 drug_master:
@@ -30,8 +30,8 @@ hospital_master:
   columns:
     hospital_code: hospital_code
     hospital_name: hospital_name
-    city_code: region_code
-    city: region_name
+    province_code: region_code
+    province: region_name
     hospital_level: hospital_level
 
 manufacturer_master:

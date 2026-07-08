@@ -45,9 +45,8 @@ Needs business confirmation:
 
 - `generic_name` -> `drug_name`: acceptable as generic-name display, but
   `brand_name` may be needed for product display in some pages.
-- `city_code/city` -> `region_code/region_name`: current smoke uses city-level
-  routing fallback; confirm whether region should be province, city, county, or
-  business territory.
+- `province_code/province` -> `region_code/region_name`: business region uses
+  province-level code and name.
 - `drug_category` -> `product_line_name`: display fallback only; not a true
   product-line or portfolio mapping.
 
