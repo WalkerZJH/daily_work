@@ -28,6 +28,21 @@ class RiskResultRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def list_rankable_entities(
+        self,
+        *,
+        manufacturer_codes: list[str] | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        candidate_type: str | list[str] | None = None,
+        sort_by: str | list[str] | None = None,
+        ascending: bool = False,
+        limit: int | None = None,
+    ) -> pd.DataFrame:
+        """Return sortable result-batch rows within a backend-resolved scope."""
+        raise NotImplementedError
+
+    @abstractmethod
     def get_risk_entity(self, risk_entity_id: str) -> dict[str, Any] | None:
         raise NotImplementedError
 
@@ -88,6 +103,28 @@ class ParquetRiskResultRepository(RiskResultRepository):
     def list_risk_entities(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("risk_entities"), filters)
 
+    def list_rankable_entities(
+        self,
+        *,
+        manufacturer_codes: list[str] | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        candidate_type: str | list[str] | None = None,
+        sort_by: str | list[str] | None = None,
+        ascending: bool = False,
+        limit: int | None = None,
+    ) -> pd.DataFrame:
+        return select_rankable_entities(
+            self.load_table("risk_entities"),
+            manufacturer_codes=manufacturer_codes,
+            report_month=report_month,
+            horizon=horizon,
+            candidate_type=candidate_type,
+            sort_by=sort_by,
+            ascending=ascending,
+            limit=limit,
+        )
+
     def get_risk_entity(self, risk_entity_id: str) -> dict[str, Any] | None:
         df = self.load_table("risk_entities")
         row = df[df["risk_entity_id"].astype(str).eq(str(risk_entity_id))]
@@ -143,6 +180,28 @@ class InMemoryRiskResultRepository(RiskResultRepository):
     def list_risk_entities(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("risk_entities"), filters)
 
+    def list_rankable_entities(
+        self,
+        *,
+        manufacturer_codes: list[str] | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        candidate_type: str | list[str] | None = None,
+        sort_by: str | list[str] | None = None,
+        ascending: bool = False,
+        limit: int | None = None,
+    ) -> pd.DataFrame:
+        return select_rankable_entities(
+            self.load_table("risk_entities"),
+            manufacturer_codes=manufacturer_codes,
+            report_month=report_month,
+            horizon=horizon,
+            candidate_type=candidate_type,
+            sort_by=sort_by,
+            ascending=ascending,
+            limit=limit,
+        )
+
     def get_risk_entity(self, risk_entity_id: str) -> dict[str, Any] | None:
         rows = self.list_risk_entities(risk_entity_id=risk_entity_id)
         return None if rows.empty else rows.iloc[0].to_dict()
@@ -191,6 +250,19 @@ class ClickHouseRiskResultRepository(RiskResultRepository):
     def list_risk_entities(self, **filters: Any) -> pd.DataFrame:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
+    def list_rankable_entities(
+        self,
+        *,
+        manufacturer_codes: list[str] | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        candidate_type: str | list[str] | None = None,
+        sort_by: str | list[str] | None = None,
+        ascending: bool = False,
+        limit: int | None = None,
+    ) -> pd.DataFrame:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
     def get_risk_entity(self, risk_entity_id: str) -> dict[str, Any] | None:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
@@ -224,8 +296,103 @@ def apply_filters(df: pd.DataFrame, filters: dict[str, Any]) -> pd.DataFrame:
     for key, value in filters.items():
         if value is None or key not in out:
             continue
-        out = out[out[key].astype(str).eq(str(value))]
+        if isinstance(value, (list, tuple, set)):
+            allowed = {str(item) for item in value}
+            out = out[out[key].astype(str).isin(allowed)]
+        else:
+            out = out[out[key].astype(str).eq(str(value))]
     return out
+
+
+DEFAULT_RANKABLE_SORT_FIELDS = [
+    "business_priority_score",
+    "risk_score_display",
+    "risk_probability_value",
+    "value_at_risk_proxy",
+    "recent_order_amount",
+    "avg_order_amount",
+    "purchase_interval_overdue_score",
+    "purchase_frequency_drop_score",
+]
+
+
+def select_rankable_entities(
+    df: pd.DataFrame,
+    *,
+    manufacturer_codes: list[str] | None = None,
+    report_month: str | None = None,
+    horizon: str | None = None,
+    candidate_type: str | list[str] | None = None,
+    sort_by: str | list[str] | None = None,
+    ascending: bool = False,
+    limit: int | None = None,
+) -> pd.DataFrame:
+    """Filter and sort entity rows for a backend-resolved user scope.
+
+    The model layer intentionally treats ``manufacturer_codes`` as an already
+    resolved visibility set from the backend. It does not infer users from
+    manufacturers and does not fill a minimum worklist size.
+    """
+    out = df.copy()
+    if out.empty:
+        return out
+    if manufacturer_codes is not None:
+        if not manufacturer_codes:
+            return out.iloc[0:0].copy()
+        out = out[out["manufacturer_code"].astype(str).isin({str(code) for code in manufacturer_codes})]
+    if report_month is not None and "report_month" in out:
+        out = out[out["report_month"].astype(str).eq(str(report_month))]
+    if horizon is not None:
+        horizon_col = "primary_horizon" if "primary_horizon" in out else "horizon"
+        if horizon_col in out:
+            out = out[out[horizon_col].astype(str).eq(str(horizon))]
+    if candidate_type is not None:
+        out = out[_candidate_type_mask(out, candidate_type)]
+
+    sort_fields = _rank_sort_fields(out, sort_by)
+    if sort_fields:
+        out = out.sort_values(sort_fields, ascending=ascending, na_position="last", kind="mergesort")
+    if limit is not None:
+        out = out.head(max(int(limit), 0))
+    return out.reset_index(drop=True)
+
+
+def _rank_sort_fields(df: pd.DataFrame, sort_by: str | list[str] | None) -> list[str]:
+    requested = [sort_by] if isinstance(sort_by, str) else sort_by
+    fields = requested or DEFAULT_RANKABLE_SORT_FIELDS
+    return [field for field in fields if field in df]
+
+
+def _candidate_type_mask(df: pd.DataFrame, candidate_type: str | list[str]) -> pd.Series:
+    types = [candidate_type] if isinstance(candidate_type, str) else candidate_type
+    mask = pd.Series(False, index=df.index)
+    for item in types:
+        key = str(item).lower()
+        if key in {"all", "*"}:
+            return pd.Series(True, index=df.index)
+        if key in {"one_shot", "oneshot", "new_terminal", "one_shot_attention"}:
+            mask |= _truthy(df, "is_one_shot") | _equals_any(df, ["final_candidate_status", "risk_type_label"], "one_shot_attention")
+        elif key in {"observation", "observation_only", "watchlist"}:
+            mask |= _truthy(df, "is_observation") | _equals_any(df, ["final_candidate_status", "risk_type_label"], "observation_only")
+        elif key in {"recurring", "backbone"}:
+            mask |= ~(_truthy(df, "is_one_shot") | _truthy(df, "is_observation"))
+        else:
+            mask |= _equals_any(df, ["candidate_type", "final_candidate_status", "risk_type_label", "review_status"], key)
+    return mask
+
+
+def _truthy(df: pd.DataFrame, column: str) -> pd.Series:
+    if column not in df:
+        return pd.Series(False, index=df.index)
+    return df[column].astype(str).str.lower().isin({"true", "1", "yes", "y"})
+
+
+def _equals_any(df: pd.DataFrame, columns: list[str], value: str) -> pd.Series:
+    mask = pd.Series(False, index=df.index)
+    for column in columns:
+        if column in df:
+            mask |= df[column].astype(str).str.lower().eq(value)
+    return mask
 
 
 def long_path(path: Path) -> str:

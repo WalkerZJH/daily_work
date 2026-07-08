@@ -1,0 +1,11 @@
+field_or_concept,owner,current_status,notes
+manufacturer_codes,project backend,ready_to_pass_to_model_core,Resolved from org_scope or routing table outside model-core
+report_month,risk_model_core filter,ready,Exact filter over result batch
+horizon,risk_model_core filter,ready,Uses primary_horizon or horizon when present
+candidate_type,risk_model_core filter,ready,Supports recurring one-shot observation and status-like values
+risk_probability_value,risk_model_core passthrough,ready,Not interpreted as customer-facing probability unless backend policy allows
+risk_score_display,risk_model_core passthrough,ready,Sortable score field from result batch
+business_priority_score,risk_model_core passthrough,conditional,Preserved when present
+interval/frequency fields,risk_model_core passthrough,conditional,Preserved when present
+20_to_50_fill,project backend policy,not_model_core_responsibility,Model-core returns counts and shortage only
+permission_scope,project backend policy,not_model_core_responsibility,Model-core never treats manufacturer_code as user_scope

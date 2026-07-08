@@ -15,6 +15,55 @@ class RiskQueryService:
     def list_entities(self, **filters: Any) -> list[dict[str, Any]]:
         return self.repository.list_risk_entities(**filters).to_dict("records")
 
+    def list_rankable_entities(
+        self,
+        *,
+        manufacturer_codes: list[str] | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        candidate_type: str | list[str] | None = None,
+        sort_by: str | list[str] | None = None,
+        ascending: bool = False,
+        limit: int | None = None,
+        target_min: int | None = None,
+    ) -> dict[str, Any]:
+        """Return sortable rows for a backend-resolved user visibility scope.
+
+        The backend owns org/user permission resolution and any 20-50 item fill
+        policy. This service only applies the already resolved manufacturer
+        filter, preserves rankable fields, and reports count metadata.
+        """
+        available = self.repository.list_rankable_entities(
+            manufacturer_codes=manufacturer_codes,
+            report_month=report_month,
+            horizon=horizon,
+            candidate_type=candidate_type,
+            sort_by=sort_by,
+            ascending=ascending,
+            limit=None,
+        )
+        rows = available if limit is None else available.head(max(int(limit), 0))
+        shortage_count = 0
+        if target_min is not None:
+            shortage_count = max(int(target_min) - len(rows), 0)
+        return {
+            "items": rows.to_dict("records"),
+            "available_count": int(len(available)),
+            "returned_count": int(len(rows)),
+            "shortage_count": int(shortage_count),
+            "scope": {
+                "manufacturer_codes": [str(code) for code in manufacturer_codes] if manufacturer_codes is not None else None,
+                "scope_resolved_by_backend": True,
+                "manufacturer_code_is_user_scope": False,
+            },
+            "filters": {
+                "report_month": report_month,
+                "horizon": horizon,
+                "candidate_type": candidate_type,
+            },
+            "sort_by": sort_by,
+        }
+
     def get_detail(self, risk_entity_id: str) -> dict[str, Any]:
         entity = self.repository.get_risk_entity(risk_entity_id)
         if entity is None:
