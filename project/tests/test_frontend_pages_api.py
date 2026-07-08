@@ -22,24 +22,40 @@ def test_frontend_workbench_returns_twenty_rows_sorted_by_business_score() -> No
     assert all(row["business_score"] == round(row["risk_probability"] * row["average_consumption_in_window"]) for row in rows)
 
 
-def test_frontend_workbench_exposes_model_metrics_with_actual_topk_share() -> None:
+def test_frontend_workbench_exposes_static_model_metrics_from_algorithm_exploration() -> None:
     response = TestClient(app).get("/api/v1/workbench")
 
     assert response.status_code == 200
     metrics = response.json()["model_metrics"]
 
     assert metrics
+    h6_metric = next(item for item in metrics if item["model_id"] == "backbone_xgboost_h6")
+    assert h6_metric["auc"] == 0.814
+    assert h6_metric["prauc"] == 0.686
+    assert h6_metric["pr_auc_lift"] == 1.857
+    assert h6_metric["ece"] == 0.022
+    assert h6_metric["brier"] == 0.169
+
+    oneshot_metric = next(item for item in metrics if item["model_id"] == "oneshot_repurchase_h6")
+    assert oneshot_metric["auc"] == 0.307
+    assert oneshot_metric["prauc"] == 0.264
+    assert oneshot_metric["topk_recall"] == []
+
+    detector_metric = next(item for item in metrics if item["model_id"] == "frequency_detector_evidence")
+    detector_topk = detector_metric["topk_recall"][0]
+    assert detector_metric["auc"] == 0.672
+    assert detector_metric["prauc"] == 0.516
+    assert detector_topk["actual_k_percent"] == round(
+        detector_topk["selected_count"] / detector_topk["evaluation_population"],
+        4,
+    )
+
     for metric in metrics:
-        assert {"auc", "prauc", "ece", "brier", "topk_recall"}.issubset(metric)
+        assert {"auc", "prauc", "pr_auc_lift", "ece", "brier", "topk_recall"}.issubset(metric)
         for topk in metric["topk_recall"]:
             actual_share = round(topk["selected_count"] / topk["evaluation_population"], 4)
             assert topk["actual_k_percent"] == actual_share
             assert 0 <= topk["recall"] <= 1
-
-    union_metric = next(item for item in metrics if item["model_id"] == "detector_evidence_ranker")
-    union_topk = union_metric["topk_recall"][0]
-    assert union_topk["k_policy"] == "union_backfilled_actual_share"
-    assert union_topk["actual_k_percent"] > union_topk["requested_k_percent"]
 
 
 def test_frontend_risk_entities_and_detail_expose_horizons_detectors_and_explanations() -> None:

@@ -1,0 +1,4 @@
+work_order_id,risk_entity_id,candidate_id,work_order_status,auto_dispatch_allowed
+reserved_m2|h4|d4|H12,m2|h4|d4|H12,m2|h4|d4|H12,reserved_not_created,False
+reserved_m2|h4|d4|H3,m2|h4|d4|H3,m2|h4|d4|H3,reserved_not_created,False
+reserved_m2|h4|d4|H6,m2|h4|d4|H6,m2|h4|d4|H6,reserved_not_created,False

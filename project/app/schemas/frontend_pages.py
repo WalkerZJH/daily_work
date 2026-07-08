@@ -45,6 +45,7 @@ class ModelEvaluationMetric(FrontendPageModel):
     evaluation_window: str
     auc: float = Field(ge=0, le=1)
     prauc: float = Field(ge=0, le=1)
+    pr_auc_lift: float | None = None
     ece: float = Field(ge=0, le=1)
     brier: float = Field(ge=0, le=1)
     topk_recall: list[TopKRecallMetric]

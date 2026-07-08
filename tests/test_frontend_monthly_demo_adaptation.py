@@ -42,14 +42,15 @@ def test_vue_homepage_uses_monthly_report_worklist_contract_language():
         "月报工作清单",
         "report_month",
         "score_as_of_date",
-        "H6 主视角",
+        "6月主视角",
         "RiskEntity",
         "RiskCard",
         "建议动作",
         "高价值终端",
         "模型关键指标",
         "PRAUC",
-        "TopK 使用实际入选占比",
+        "PR-AUC Lift",
+        "前列名单表现",
     ]
     for term in required_terms:
         assert term in text
@@ -68,7 +69,8 @@ def test_vue_monthly_report_surfaces_batch_context():
         "高风险实体",
         "生产商",
         "批次模型指标",
-        "TopK recall",
+        "PR-AUC Lift",
+        "前列名单表现",
     ]
     for term in required_terms:
         assert term in text
@@ -79,6 +81,7 @@ def test_vue_worklist_pages_separate_entities_cards_and_fill_candidates():
     detail = (FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityDetailView.vue").read_text(encoding="utf-8")
     workbench = (FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue").read_text(encoding="utf-8")
     backtest = (FRONTEND / "src" / "modules" / "monthly-report" / "ProofCaseView.vue").read_text(encoding="utf-8")
+    demo_data = (FRONTEND / "src" / "modules" / "monthly-demo" / "demoData.js").read_text(encoding="utf-8")
 
     for term in ["RiskEntity", "RiskCard", "证据链", "人工复核"]:
         assert term in clues
@@ -86,8 +89,12 @@ def test_vue_worklist_pages_separate_entities_cards_and_fill_candidates():
         assert term in detail
     for term in ["workbenchDisplayRows", "医院 × 药品", "填充到 20 个", "补充算法"]:
         assert term in workbench
-    for term in ["Proof-case", "历史命中案例", "成功案例", "产品效果"]:
+    for term in ["selectedHorizon", "proofCaseHorizonTabs", "高价值命中清单", "历史命中复盘", "产品提前识别价值"]:
         assert term in backtest
+    for term in ["proofCaseHorizonSets", "3月风险", "6月风险", "12月风险", "平煤神马医疗集团总医院", "盐酸倍他司汀注射液", "深圳市南山区人民医院"]:
+        assert term in demo_data
+    for term in ["医院 YL", "药品 e55aab", "药品 XA11CCW"]:
+        assert term not in demo_data
 
 
 def test_static_pages_are_vue_mount_shells_for_duplicate_demo_pages():
@@ -143,6 +150,7 @@ def test_user_visible_copy_removes_cautious_and_stage_language():
         FRONTEND / "src" / "modules" / "oneshot-monitor" / "OneshotMonitorView.vue",
         FRONTEND / "src" / "modules" / "monthly-report" / "MonthlyReportView.vue",
         FRONTEND / "src" / "modules" / "monthly-report" / "ProofCaseView.vue",
+        FRONTEND / "algo-architecture.html",
     ]
     banned_terms = [
         "仅供",
@@ -165,6 +173,16 @@ def test_user_visible_copy_removes_cautious_and_stage_language():
         "默认人工复核",
         "auto_dispatch_allowed=false",
         "不得标成高风险",
+        "selected_count",
+        "evaluation_population",
+        "requested 10%",
+        "actual",
+        "union",
+        "k_policy",
+        "payload",
+        "model_id",
+        "model_role",
+        "TopK actual",
     ]
 
     offenders = []

@@ -18,7 +18,7 @@ export const navSections = [
     label: '月报与案例',
     items: [
       { key: 'dashboard', href: 'dashboard.html', icon: '▣', text: '月报与批次' },
-      { key: 'backtest', href: 'backtest.html', icon: '↗', text: 'Proof-case 案例' }
+      { key: 'backtest', href: 'backtest.html', icon: '↗', text: '历史命中复盘' }
     ]
   },
   {

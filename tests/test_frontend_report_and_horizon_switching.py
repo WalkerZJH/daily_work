@@ -39,17 +39,17 @@ def test_horizon_switch_is_bound_to_riskcard_detail_not_global_pages():
         "riskCardHorizonTabs",
         "selectedHorizon",
         "activeRiskCard",
-        "风险卡 H 切换",
+        "风险窗口切换",
         "horizon-switcher",
-        "H3",
-        "H6",
-        "H12",
+        "3月",
+        "6月",
+        "12月",
     ]:
         assert term in data or term in detail
 
     assert "@click=\"selectedHorizon = horizon\"" in detail
     assert "v-for=\"horizon in riskCardHorizonTabs\"" in detail
-    assert detail.index("风险卡 H 切换") > detail.index("RiskCard 主卡")
+    assert detail.index("风险窗口切换") > detail.index("RiskCard 主卡")
 
     assert "selectedHorizon" not in workbench
     assert "horizon-switcher" not in workbench

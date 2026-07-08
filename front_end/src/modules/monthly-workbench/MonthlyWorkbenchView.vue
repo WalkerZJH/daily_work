@@ -34,7 +34,7 @@ onMounted(async () => {
       <div class="batch-card">
         <div class="batch-row"><span>score_batch_id</span><strong>{{ state.batchContext.scoreBatchId }}</strong></div>
         <div class="batch-row"><span>data_watermark_at</span><strong>{{ state.batchContext.dataWatermarkAt }}</strong></div>
-        <div class="batch-row"><span>default_horizon</span><strong>{{ state.batchContext.primaryHorizon }}</strong></div>
+        <div class="batch-row"><span>默认风险窗口</span><strong>{{ state.batchContext.primaryHorizon }}</strong></div>
         <div class="batch-row"><span>score_formula</span><strong>{{ state.batchContext.scoreFormula }}</strong></div>
         <div class="batch-row"><span>workbench_target</span><strong>{{ state.workbenchFillPolicy.workbenchTargetCount }} 个医院 × 药品</strong></div>
       </div>
@@ -50,7 +50,7 @@ onMounted(async () => {
       />
     </div>
 
-    <SectionCard title="模型关键指标" subtitle="主干模型与可输出结果模型 · TopK 使用实际入选占比">
+    <SectionCard title="模型关键指标" subtitle="主干模型、新进终端复购倾向与证据模块的回测表现">
       <div class="data-table-wrap">
         <table>
           <thead>
@@ -59,9 +59,10 @@ onMounted(async () => {
               <th>窗口</th>
               <th>AUC</th>
               <th>PRAUC</th>
+              <th>PR-AUC Lift</th>
               <th>ECE</th>
               <th>Brier</th>
-              <th>TopK recall</th>
+              <th>前列名单表现</th>
             </tr>
           </thead>
           <tbody>
@@ -76,11 +77,11 @@ onMounted(async () => {
               </td>
               <td>{{ metric.auc }}</td>
               <td>{{ metric.prauc }}</td>
+              <td>{{ metric.praucLift }}</td>
               <td>{{ metric.ece }}</td>
               <td>{{ metric.brier }}</td>
               <td>
                 <strong>{{ metric.topK }}</strong>
-                <div class="muted">{{ metric.topKPolicy }}</div>
               </td>
             </tr>
           </tbody>
@@ -88,7 +89,7 @@ onMounted(async () => {
       </div>
     </SectionCard>
 
-    <SectionCard title="主工作台 20 个医院 × 药品行为" subtitle="H6 主视角 · global 当月数量不足时，直接由补充算法填充到 20 个">
+    <SectionCard title="主工作台 20 个医院 × 药品行为" subtitle="6月主视角 · global 当月数量不足时，直接由补充算法填充到 20 个">
       <div class="data-table-wrap">
         <table>
           <thead>

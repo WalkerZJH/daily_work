@@ -19,7 +19,7 @@
       label: '月报与案例',
       items: [
         { key: 'dashboard', href: 'dashboard.html', icon: '▣', text: '月报与批次' },
-        { key: 'backtest', href: 'backtest.html', icon: '↗', text: 'Proof-case 案例' }
+        { key: 'backtest', href: 'backtest.html', icon: '↗', text: '历史命中复盘' }
       ]
     },
     {
@@ -31,7 +31,7 @@
   ]
 
   const pageDefaults = {
-    'index.html': { active: 'index', tag: '月报工作台 · H6 主视角' },
+    'index.html': { active: 'index', tag: '月报工作台 · 6月主视角' },
     'clues.html': { active: 'clues', tag: '风险实体清单' },
     'clue-detail.html': { active: 'clues', tag: 'RiskCard 详情' },
     'order-detail.html': { active: 'clues', tag: '订单详情' },
@@ -39,7 +39,7 @@
     'verify.html': { active: 'verify', tag: '挽回核验' },
     'distributor.html': { active: 'distributor', tag: '配送商预警' },
     'dashboard.html': { active: 'dashboard', tag: 'MonthlyReport · 批次总览' },
-    'backtest.html': { active: 'backtest', tag: 'Proof-case · 历史命中案例' },
+    'backtest.html': { active: 'backtest', tag: '月报命中复盘' },
     'algo-architecture.html': { active: 'algo-architecture', tag: '算法链路说明' }
   }
 

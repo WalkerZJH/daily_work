@@ -13,7 +13,7 @@ const pageName = window.location.pathname.split('/').pop() || 'index.html'
 const routeMap = {
   'index.html': {
     active: 'index',
-    tag: '月报工作台 · H6 主视角',
+    tag: '月报工作台 · 6月主视角',
     component: MonthlyWorkbenchView
   },
   'dashboard.html': {
@@ -38,7 +38,7 @@ const routeMap = {
   },
   'backtest.html': {
     active: 'backtest',
-    tag: 'Proof-case · 历史命中案例',
+    tag: '月报命中复盘',
     component: ProofCaseView
   }
 }

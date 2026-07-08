@@ -12,6 +12,11 @@ const selectedHorizon = ref(riskCardHorizonTabs.includes(requestedHorizon) ? req
 const horizonProfiles = ref(initialData.horizonProfiles)
 const activeRiskCard = computed(() => horizonProfiles.value[selectedHorizon.value] || horizonProfiles.value.H6)
 
+function horizonLabel(horizon) {
+  const labels = { H3: '3月', H6: '6月', H12: '12月' }
+  return labels[horizon] || horizon
+}
+
 onMounted(async () => {
   const data = await loadRiskEntityDetailData(entity.value.id)
   if (!data) return
@@ -45,10 +50,10 @@ onMounted(async () => {
       <SectionCard title="RiskCard 主卡">
         <div class="riskcard-toolbar">
           <div>
-            <span class="eyebrow">风险卡 H 切换</span>
-            <h3>{{ activeRiskCard.horizon }} · {{ activeRiskCard.label }}</h3>
+            <span class="eyebrow">风险窗口切换</span>
+            <h3>{{ activeRiskCard.horizonLabel || horizonLabel(activeRiskCard.horizon) }} · {{ activeRiskCard.label }}</h3>
           </div>
-          <div class="segmented-control horizon-switcher" aria-label="风险卡 H 切换">
+          <div class="segmented-control horizon-switcher" aria-label="风险窗口切换">
             <button
               v-for="horizon in riskCardHorizonTabs"
               :key="horizon"
@@ -57,7 +62,7 @@ onMounted(async () => {
               :class="{ active: selectedHorizon === horizon }"
               @click="selectedHorizon = horizon"
             >
-              {{ horizon }}
+              {{ horizonLabel(horizon) }}
             </button>
           </div>
         </div>
@@ -71,7 +76,7 @@ onMounted(async () => {
       </SectionCard>
     </div>
 
-    <SectionCard title="Detector 结果明细" :subtitle="`${selectedHorizon} 视角 · 入选 entity 展示所有 detector 计算结果`">
+    <SectionCard title="Detector 结果明细" :subtitle="`${horizonLabel(selectedHorizon)}视角 · 入选 entity 展示所有 detector 计算结果`">
       <div class="detector-result-grid">
         <article v-for="detector in activeRiskCard.detectorResults" :key="detector.id" class="detector-result-card">
           <div class="detector-result-head">

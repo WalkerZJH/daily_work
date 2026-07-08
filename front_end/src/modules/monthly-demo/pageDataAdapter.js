@@ -8,6 +8,8 @@ import {
   oneshotSummary,
   oneshotTerminals,
   overviewMetrics,
+  proofCaseHorizonSets,
+  proofCaseHorizonTabs,
   proofCases,
   riskCardHorizonProfiles,
   riskEntities,
@@ -53,7 +55,7 @@ export function createStaticMonthlyReportsData() {
 }
 
 export function createStaticProofCasesData() {
-  return { proofCases }
+  return { proofCaseHorizonTabs, proofCaseHorizonSets, proofCases }
 }
 
 export async function loadWorkbenchData() {
@@ -136,7 +138,7 @@ function mapBatchContext(context) {
     dataWatermarkAt: context.data_watermark_at,
     scoreBatchId: context.score_batch_id,
     resultBatchId: context.result_batch_id,
-    primaryHorizon: `${context.primary_horizon} ${context.primary_horizon_label}`,
+    primaryHorizon: `${formatHorizonLabel(context.primary_horizon)} ${context.primary_horizon_label}`,
     scoreFormula: '风险概率 × 预测窗口内平均消费金额'
   }
 }
@@ -193,7 +195,7 @@ function mapRiskEntity(item) {
     daysSinceLast: item.days_since_last_purchase,
     cards: item.risk_card_count,
     valueLevel: item.value_level,
-    reason: item.primary_reason,
+    reason: replaceHorizonCodes(item.primary_reason),
     evidence: [],
     detectorNarrative: '',
     shapHighlights: [],
@@ -204,6 +206,7 @@ function mapRiskEntity(item) {
 function mapHorizonProfile(profile) {
   return {
     horizon: profile.horizon,
+    horizonLabel: formatHorizonLabel(profile.horizon),
     label: profile.label,
     riskProbability: profile.risk_probability,
     probabilityDisplay: formatPercent(profile.risk_probability),
@@ -211,12 +214,12 @@ function mapHorizonProfile(profile) {
     averageConsumptionText: formatMoney(profile.average_consumption_in_window),
     businessScore: profile.business_score,
     businessScoreText: formatMoney(profile.business_score),
-    reason: profile.reason,
-    detectorNarrative: profile.detector_narrative,
+    reason: replaceHorizonCodes(profile.reason),
+    detectorNarrative: replaceHorizonCodes(profile.detector_narrative),
     shapHighlights: profile.xgboost_shap.map((item) => ({
       feature: item.feature,
       contribution: formatContribution(item.contribution),
-      explanation: item.explanation
+      explanation: replaceHorizonCodes(item.explanation)
     })),
     detectorResults: profile.detector_results.map((item) => ({
       id: item.detector_id,
@@ -224,7 +227,7 @@ function mapHorizonProfile(profile) {
       score: item.score,
       signal: item.signal,
       status: item.status,
-      evidence: item.evidence,
+      evidence: replaceHorizonCodes(item.evidence),
       action: item.action
     }))
   }
@@ -252,7 +255,7 @@ function mapOneshotPayload(payload) {
       repurchasePropensityText: formatPercent(item.repurchase_propensity),
       expectedRepurchaseAmountText: formatMoney(item.expected_repurchase_amount),
       priority: item.priority,
-      reason: item.reason
+      reason: replaceHorizonCodes(item.reason)
     }))
   }
 }
@@ -273,7 +276,7 @@ function mapMonthlyReportsPayload(payload) {
       highRiskEntities: String(item.high_risk_entities),
       oneshotCount: String(item.oneshot_count),
       detectorAlerts: String(item.detector_alerts),
-      summary: item.summary
+      summary: replaceHorizonCodes(item.summary)
     })),
     monthlyReports: payload.monthly_reports.map((item) => ({
       id: item.monthly_report_id,
@@ -281,7 +284,7 @@ function mapMonthlyReportsPayload(payload) {
       reportMonth: item.report_month,
       scoreBatchId: item.score_batch_id,
       dataWatermarkAt: item.data_watermark_at,
-      summary: item.summary
+      summary: replaceHorizonCodes(item.summary)
     }))
   }
 }
@@ -290,26 +293,57 @@ function mapModelMetrics(items) {
   return (items || []).map((item) => {
     if (item.auc !== undefined && item.topK !== undefined) return item
     const firstTopK = (item.topk_recall || [])[0] || {}
-    const actualPercent =
-      firstTopK.actual_k_percent !== undefined ? formatMetricPercent(firstTopK.actual_k_percent) : '-'
-    const requestedPercent =
-      firstTopK.requested_k_percent !== undefined ? formatMetricPercent(firstTopK.requested_k_percent) : '-'
+    const listShare = firstTopK.actual_k_percent !== undefined ? formatMetricPercent(firstTopK.actual_k_percent) : '-'
     const recall = firstTopK.recall !== undefined ? formatMetricPercent(firstTopK.recall) : '-'
-    const prefix = firstTopK.k_policy === 'union_backfilled_actual_share' ? 'Union TopK' : firstTopK.label || 'TopK'
+    const precision =
+      firstTopK.true_positive_count !== undefined && firstTopK.selected_count
+        ? formatMetricPercent(firstTopK.true_positive_count / firstTopK.selected_count)
+        : '-'
+    const positiveRate =
+      item.positive_count !== undefined && item.sample_count ? item.positive_count / item.sample_count : undefined
+    const lift =
+      positiveRate && firstTopK.true_positive_count !== undefined && firstTopK.selected_count
+        ? `${(firstTopK.true_positive_count / firstTopK.selected_count / positiveRate).toFixed(2)}倍`
+        : '-'
     return {
       id: item.model_id,
-      name: item.model_name,
-      role: item.model_role,
-      horizon: item.horizon || '-',
-      window: item.evaluation_window,
+      name: replaceHorizonCodes(item.model_name),
+      role: modelRoleLabel(item.model_role),
+      horizon: formatHorizonLabel(item.horizon),
+      window: replaceHorizonCodes(item.evaluation_window),
       auc: formatMetric(item.auc),
       prauc: formatMetric(item.prauc),
+      praucLift: item.pr_auc_lift !== undefined ? formatMetric(item.pr_auc_lift) : formatMetric(item.prauc_lift),
       ece: formatMetric(item.ece),
       brier: formatMetric(item.brier),
-      topK: `${prefix} requested ${requestedPercent} / actual ${actualPercent} / recall ${recall}`,
-      topKPolicy: firstTopK.k_policy || 'direct_actual_share'
+      topK: firstTopK.selected_count
+        ? `前${listShare}名单：召回${recall}，命中精度${precision}，提升${lift}`
+        : '复购倾向分层指标'
     }
   })
+}
+
+function modelRoleLabel(role) {
+  const labels = {
+    backbone_risk_probability: '风险概率识别',
+    oneshot_repurchase_propensity: '新进终端复购倾向',
+    detector_evidence_ranker: '证据排序',
+    detector_evidence: '证据识别'
+  }
+  return labels[role] || role || '模型指标'
+}
+
+function formatHorizonLabel(value) {
+  const labels = { H3: '3月', H6: '6月', H12: '12月' }
+  return labels[value] || replaceHorizonCodes(value || '-')
+}
+
+function replaceHorizonCodes(value) {
+  if (value === null || value === undefined) return value
+  return String(value)
+    .replaceAll('H12', '12月')
+    .replaceAll('H6', '6月')
+    .replaceAll('H3', '3月')
 }
 
 function formatPercent(value) {

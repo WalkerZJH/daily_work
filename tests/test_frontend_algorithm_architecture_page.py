@@ -62,7 +62,6 @@ def test_algorithm_architecture_page_renders_latex_formulas():
         "\\text{ECE}",
         "\\text{PR-AUC Lift}",
         "\\text{Recall@K}",
-        "K_{\\text{actual}}",
         "\\text{Brier}",
         "\\text{LogLoss}",
     ]
@@ -120,22 +119,43 @@ def test_algorithm_architecture_page_documents_per_user_fill_strategy_in_chinese
         assert term in text
 
 
-def test_algorithm_architecture_page_documents_model_metrics_and_actual_topk_share():
+def test_algorithm_architecture_page_surfaces_customer_ready_model_metrics():
     text = (FRONTEND / "algo-architecture.html").read_text(encoding="utf-8")
 
     required_terms = [
+        "模型实际指标",
+        "当前算法探索结果",
         "主干风险概率模型",
-        "oneshot 复购倾向模型",
-        "detector 证据排序模型",
-        "AUC、PRAUC、ECE、Brier 和 TopK recall",
-        "TopK recall 的 K 必须使用实际入选占比",
-        "selected_count",
-        "evaluation_population",
-        "union 后的实际占比回填 K",
-        "TopK actual 12.8%",
+        "主干风险模型 6月",
+        "AUC 0.814",
+        "ECE 0.022",
+        "前10%名单召回 21.12%",
+        "新进终端复购倾向 6月",
+        "0.307",
+        "0.264",
+        "采购频次证据模块",
+        "采购间隔证据模块",
+        "命中后风险率 59.98%",
+        "命中后风险率 58.41%",
+        "PR-AUC Lift",
     ]
     for term in required_terms:
         assert term in text
+
+    forbidden_terms = [
+        "selected_count",
+        "evaluation_population",
+        "requested",
+        "actual",
+        "union",
+        "k_policy",
+        "payload",
+        "model_id",
+        "model_role",
+        "TopK actual",
+    ]
+    for term in forbidden_terms:
+        assert term not in text
 
 
 def test_algorithm_architecture_page_is_in_static_navigation():

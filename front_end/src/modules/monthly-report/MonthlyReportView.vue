@@ -67,7 +67,7 @@ onMounted(async () => {
       />
     </div>
 
-    <SectionCard title="批次模型指标" subtitle="主干模型、oneshot 复购模型与 detector 排序模型">
+    <SectionCard title="批次模型指标" subtitle="主干模型、新进终端复购倾向与证据模块的回测表现">
       <div class="data-table-wrap">
         <table>
           <thead>
@@ -76,9 +76,10 @@ onMounted(async () => {
               <th>评估窗口</th>
               <th>AUC</th>
               <th>PRAUC</th>
+              <th>PR-AUC Lift</th>
               <th>ECE</th>
               <th>Brier</th>
-              <th>TopK recall</th>
+              <th>前列名单表现</th>
             </tr>
           </thead>
           <tbody>
@@ -90,11 +91,11 @@ onMounted(async () => {
               <td>{{ metric.window }}</td>
               <td>{{ metric.auc }}</td>
               <td>{{ metric.prauc }}</td>
+              <td>{{ metric.praucLift }}</td>
               <td>{{ metric.ece }}</td>
               <td>{{ metric.brier }}</td>
               <td>
                 <strong>{{ metric.topK }}</strong>
-                <div class="muted">{{ metric.topKPolicy }}</div>
               </td>
             </tr>
           </tbody>

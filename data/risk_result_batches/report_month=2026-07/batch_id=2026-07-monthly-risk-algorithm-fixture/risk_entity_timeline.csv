@@ -1,0 +1,4 @@
+timeline_id,risk_entity_id,candidate_id,tenant_id,month,purchase_count,purchase_amount_display,purchase_quantity_display,last_purchase_date,days_since_last_purchase,risk_probability_display,palive_display,display_note
+tl_m2|h4|d4|H12,m2|h4|d4|H12,m2|h4|d4|H12,default_tenant,2026-07,,relative_or_unavailable,available_in_source_features,,,risk band,hidden,monthly timeline placeholder generated from current batch
+tl_m2|h4|d4|H3,m2|h4|d4|H3,m2|h4|d4|H3,default_tenant,2026-07,,relative_or_unavailable,available_in_source_features,,,risk band,hidden,monthly timeline placeholder generated from current batch
+tl_m2|h4|d4|H6,m2|h4|d4|H6,m2|h4|d4|H6,default_tenant,2026-07,,relative_or_unavailable,available_in_source_features,,,risk band,hidden,monthly timeline placeholder generated from current batch
