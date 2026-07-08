@@ -44,6 +44,24 @@
   "customer_facing_probability_service_allowed": false,
   "auto_dispatch_allowed": false,
   "proof_case_report_allowed": false,
+  "result_table_row_counts": {
+    "risk_entities": 3,
+    "risk_cards": 12,
+    "risk_card_evidence": 12,
+    "risk_entity_timeline": 3,
+    "hospital_aggregates": 1,
+    "drug_aggregates": 1,
+    "monthly_reports": 1,
+    "proof_cases": 0,
+    "work_order_reserved": 3,
+    "entity_display_lookup": 1
+  },
+  "entity_display_lookup": {
+    "table_name": "entity_display_lookup",
+    "schema_version": "entity_display_lookup_v1",
+    "path": "entity_display_lookup.csv",
+    "row_count": 1
+  },
   "caveats": [
     "bounded monthly worklist",
     "not full SQL universe claim",

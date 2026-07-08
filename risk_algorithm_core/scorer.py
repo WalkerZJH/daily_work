@@ -29,7 +29,7 @@ class ArtifactRiskScorer(BaseRiskScorer):
         elif isinstance(self.artifact.model, dict) and self.artifact.model.get("type") == "per_horizon_pipeline":
             probs = _per_horizon_pipeline_predict(feature_frame, self.artifact.model, required)
         elif hasattr(self.artifact.model, "predict_proba"):
-            probs = self.artifact.model.predict_proba(feature_frame[required])[:, 1]
+            probs = self.artifact.model.predict_proba(_model_runtime_input(feature_frame[required]))[:, 1]
         else:
             raise TypeError("Unsupported model artifact type for production scoring.")
         probs = np.asarray(probs, dtype=float)
@@ -81,9 +81,15 @@ def _per_horizon_pipeline_predict(df: pd.DataFrame, model: dict[str, Any], requi
         pipeline = horizon_models.get(key)
         if pipeline is None:
             raise ValueError(f"Model artifact missing fitted pipeline for horizon {key}.")
-        scores = pipeline.predict_proba(part[required])[:, 1]
+        scores = pipeline.predict_proba(_model_runtime_input(part[required]))[:, 1]
         out[part.index.to_numpy()] = np.asarray(scores, dtype=float)
     return out
+
+
+def _model_runtime_input(df: pd.DataFrame) -> pd.DataFrame:
+    """Convert pandas extension missing values to model-runtime NaN."""
+    out = df.astype(object).copy()
+    return out.where(pd.notna(out), np.nan)
 
 
 def _score_frame(features: pd.DataFrame, probs: Any, source: str, artifact_id: str, *, feature_schema_version: str) -> pd.DataFrame:

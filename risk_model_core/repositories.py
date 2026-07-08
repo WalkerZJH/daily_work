@@ -75,6 +75,10 @@ class RiskResultRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def load_entity_display_lookup(self, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError
+
+    @abstractmethod
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         raise NotImplementedError
 
@@ -158,6 +162,9 @@ class ParquetRiskResultRepository(RiskResultRepository):
     def list_proof_cases(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("proof_cases"), filters)
 
+    def load_entity_display_lookup(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("entity_display_lookup"), normalize_entity_display_lookup_filters(filters))
+
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         clean = page_name[:-5] if page_name.endswith(".json") else page_name
         candidates = [
@@ -240,6 +247,9 @@ class InMemoryRiskResultRepository(RiskResultRepository):
     def list_proof_cases(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("proof_cases"), filters)
 
+    def load_entity_display_lookup(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("entity_display_lookup"), normalize_entity_display_lookup_filters(filters))
+
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         key = page_name[:-5] if page_name.endswith(".json") else page_name
         if key not in self.payloads:
@@ -302,6 +312,9 @@ class ClickHouseRiskResultRepository(RiskResultRepository):
     def list_proof_cases(self, **filters: Any) -> pd.DataFrame:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
+    def load_entity_display_lookup(self, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
@@ -317,6 +330,14 @@ def apply_filters(df: pd.DataFrame, filters: dict[str, Any]) -> pd.DataFrame:
         else:
             out = out[out[key].astype(str).eq(str(value))]
     return out
+
+
+def normalize_entity_display_lookup_filters(filters: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(filters)
+    manufacturer_codes = normalized.pop("manufacturer_codes", None)
+    if manufacturer_codes is not None:
+        normalized["manufacturer_code"] = manufacturer_codes
+    return normalized
 
 
 DEFAULT_RANKABLE_SORT_FIELDS = [

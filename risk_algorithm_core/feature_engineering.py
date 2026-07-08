@@ -50,6 +50,7 @@ def engineer_features(entity_base: pd.DataFrame, orders: pd.DataFrame, cutoff_da
     expanded["cutoff_month"] = pd.to_datetime(expanded["cutoff_month"], errors="coerce")
     expanded = _add_runtime_sidecar_features(expanded)
     expanded = _merge_runtime_metadata(expanded, entity_base)
+    expanded = _ensure_entity_base_coverage(expanded, entity_base, cutoff_ts)
 
     quality = _quality_report(
         feature_rows=len(expanded),
@@ -102,6 +103,7 @@ def engineer_features_from_facts(
     expanded["cutoff_month"] = pd.to_datetime(expanded["cutoff_month"], errors="coerce")
     expanded = _add_runtime_sidecar_features(expanded)
     expanded = _merge_runtime_metadata(expanded, entity_base)
+    expanded = _ensure_entity_base_coverage(expanded, entity_base, cutoff_ts)
 
     quality = _quality_report(
         feature_rows=len(expanded),
@@ -179,6 +181,41 @@ def _merge_runtime_metadata(features: pd.DataFrame, entity_base: pd.DataFrame) -
     return _fallback_metadata(out)
 
 
+def _ensure_entity_base_coverage(features: pd.DataFrame, entity_base: pd.DataFrame, cutoff_ts: pd.Timestamp) -> pd.DataFrame:
+    join_cols = ["manufacturer_code", "hospital_code", "drug_group", "horizon"]
+    if entity_base.empty or not set(join_cols).issubset(entity_base.columns):
+        return features
+
+    base = entity_base.drop_duplicates(join_cols).copy()
+    existing = features[join_cols].drop_duplicates() if set(join_cols).issubset(features.columns) else pd.DataFrame(columns=join_cols)
+    missing = base.merge(existing.assign(_present=True), on=join_cols, how="left")
+    missing = missing[missing["_present"].isna()].drop(columns=["_present"])
+    if missing.empty:
+        return features
+
+    rows = pd.DataFrame(index=missing.index, columns=features.columns)
+    for col in missing.columns:
+        if col in rows.columns:
+            rows[col] = missing[col].to_numpy()
+    rows["cutoff_month"] = cutoff_ts
+    rows["entity_id"] = (
+        rows["manufacturer_code"].astype(str)
+        + "|"
+        + rows["hospital_code"].astype(str)
+        + "|"
+        + rows["drug_group"].astype(str)
+    )
+    rows["candidate_id"] = rows["entity_id"].astype(str) + "|" + rows["horizon"].astype(str)
+    for col in ["purchase_count_asof_cutoff", "active_month_count_asof_cutoff", "months_observed_asof_cutoff"]:
+        if col in rows.columns:
+            rows[col] = pd.to_numeric(rows[col], errors="coerce").fillna(0)
+    for col in ["one_shot_flag", "is_one_shot"]:
+        if col in rows.columns:
+            rows[col] = rows[col].where(rows[col].notna(), False).astype(bool)
+    rows = _fallback_metadata(rows).dropna(axis=1, how="all")
+    return pd.concat([features, rows], ignore_index=True)
+
+
 def _fallback_metadata(features: pd.DataFrame) -> pd.DataFrame:
     out = features.copy()
     out["hospital_display_name"] = out.get("hospital_display_name", out["hospital_code"]).fillna(out["hospital_code"]).astype(str)
@@ -242,6 +279,7 @@ def _quality_report(
 ) -> pd.DataFrame:
     rows = [
         {"metric": "runtime_input_mode", "value": input_mode},
+        {"metric": "feature_rows", "value": feature_rows},
         {"metric": "source_truth_feature_rows", "value": feature_rows},
         {"metric": "fact_purchase_event_rows", "value": fact_rows},
         {"metric": "fact_entity_month_rows", "value": entity_month_rows},

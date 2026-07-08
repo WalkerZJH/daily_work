@@ -9,6 +9,8 @@ import pandas as pd
 
 from .manifest import load_manifest
 from .schemas import (
+    ENTITY_DISPLAY_LOOKUP_REQUIRED_COLUMNS,
+    ENTITY_DISPLAY_LOOKUP_UNIQUE_KEY,
     MONTHLY_REPORT_REQUIRED_COLUMNS,
     RISK_CARD_REQUIRED_COLUMNS,
     RISK_ENTITY_REQUIRED_COLUMNS,
@@ -37,11 +39,14 @@ def validate_result_batch(batch_dir: str | Path) -> None:
     risk_cards = _load_table(batch, "risk_cards")
     risk_card_evidence = _load_table(batch, "risk_card_evidence")
     monthly_reports = _load_table(batch, "monthly_reports")
+    entity_display_lookup = _load_table(batch, "entity_display_lookup")
 
     _require_columns(risk_entities, RISK_ENTITY_REQUIRED_COLUMNS, "risk_entities")
     _require_columns(risk_cards, RISK_CARD_REQUIRED_COLUMNS, "risk_cards")
     _require_columns(risk_card_evidence, RISK_EVIDENCE_REQUIRED_COLUMNS, "risk_card_evidence")
     _require_columns(monthly_reports, MONTHLY_REPORT_REQUIRED_COLUMNS, "monthly_reports")
+    _require_columns(entity_display_lookup, ENTITY_DISPLAY_LOOKUP_REQUIRED_COLUMNS, "entity_display_lookup")
+    _require_unique(entity_display_lookup, ENTITY_DISPLAY_LOOKUP_UNIQUE_KEY, "entity_display_lookup")
 
     if "auto_dispatch_allowed" in risk_entities and bool(risk_entities["auto_dispatch_allowed"].fillna(False).any()):
         raise ValueError("risk_entities contains auto_dispatch_allowed=true.")
@@ -70,6 +75,14 @@ def _require_columns(df: pd.DataFrame, columns: Iterable[str], name: str) -> Non
     missing = [col for col in columns if col not in df.columns]
     if missing:
         raise ValueError(f"{name} missing columns: {missing}")
+
+
+def _require_unique(df: pd.DataFrame, columns: list[str], name: str) -> None:
+    if df.empty:
+        return
+    duplicated = df.duplicated(columns, keep=False)
+    if bool(duplicated.any()):
+        raise ValueError(f"{name} duplicate key rows: {columns}")
 
 
 def _validate_no_forbidden_claims(df: pd.DataFrame, columns: list[str]) -> None:

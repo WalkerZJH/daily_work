@@ -1,6 +1,7 @@
 metric,value
 runtime_input_mode,raw_orders_mode
-source_truth_feature_rows,15
+feature_rows,21
+source_truth_feature_rows,21
 fact_purchase_event_rows,21
 fact_entity_month_rows,21
 entity_purchase_sequence_rows,21

@@ -1,0 +1,2 @@
+tenant_id,report_month,manufacturer_code,manufacturer_display_name,hospital_code,hospital_display_name,drug_code,drug_group,drug_display_name,product_line_code,product_line_name,region_code,region_display_name,display_key,display_name_source,display_name_quality,source_raw_batch_id,updated_at
+default_tenant,2026-07,m2,m2,h4,Hospital 4,d4,d4,Drug 4,pl_b,Line B,r2,Region 2,default_tenant|2026-07|m2|h4|d4,master,master,raw_fixture_monthly_v1,2026-07-08T03:40:58+00:00

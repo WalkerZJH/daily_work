@@ -107,6 +107,7 @@ class MonthlyRiskRunner:
             risk_evidence,
             features,
             cfg.worklist,
+            normalized_tables=normalized,
             artifact_metadata=artifact_metadata,
             write_parquet=write_parquet,
         )

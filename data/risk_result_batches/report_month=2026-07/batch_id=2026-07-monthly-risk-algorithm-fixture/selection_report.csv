@@ -1,7 +1,7 @@
 horizon,cutoff_month,candidate_policy,full_universe_rows,candidate_count,candidate_rate,manufacturer_coverage,metric,value
-H12,2026-07-31,multi_recall_union_top10,5.0,1.0,0.2,1.0,,
-H3,2026-07-31,multi_recall_union_top10,5.0,1.0,0.2,1.0,,
-H6,2026-07-31,multi_recall_union_top10,5.0,1.0,0.2,1.0,,
+H12,2026-07-31,multi_recall_union_top10,7.0,1.0,0.14285714285714285,1.0,,
+H3,2026-07-31,multi_recall_union_top10,7.0,1.0,0.14285714285714285,1.0,,
+H6,2026-07-31,multi_recall_union_top10,7.0,1.0,0.14285714285714285,1.0,,
 ,,,,,,,candidate_policy_rows,3.0
 ,,,,,,,selected_candidate_rows,3.0
 ,,,,,,,recurring_rows,0.0

@@ -13,6 +13,7 @@ STANDARD_TABLES = [
     "monthly_reports",
     "proof_cases",
     "work_order_reserved",
+    "entity_display_lookup",
 ]
 
 RISK_ENTITY_REQUIRED_COLUMNS = [
@@ -56,4 +57,33 @@ MONTHLY_REPORT_REQUIRED_COLUMNS = [
     "report_month",
     "title",
     "summary_text",
+]
+
+ENTITY_DISPLAY_LOOKUP_REQUIRED_COLUMNS = [
+    "tenant_id",
+    "report_month",
+    "manufacturer_code",
+    "manufacturer_display_name",
+    "hospital_code",
+    "hospital_display_name",
+    "drug_code",
+    "drug_group",
+    "drug_display_name",
+    "product_line_code",
+    "product_line_name",
+    "region_code",
+    "region_display_name",
+    "display_key",
+    "display_name_source",
+    "display_name_quality",
+    "source_raw_batch_id",
+    "updated_at",
+]
+
+ENTITY_DISPLAY_LOOKUP_UNIQUE_KEY = [
+    "tenant_id",
+    "report_month",
+    "manufacturer_code",
+    "hospital_code",
+    "drug_group",
 ]

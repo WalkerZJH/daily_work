@@ -9,6 +9,7 @@ import datetime as dt
 import pandas as pd
 
 from risk_result_contracts import validate_result_batch, write_manifest
+from .entity_display_lookup import ENTITY_DISPLAY_LOOKUP_SCHEMA_VERSION, build_entity_display_lookup
 
 
 def assemble_result_batch(
@@ -25,6 +26,7 @@ def assemble_result_batch(
     risk_card_evidence: pd.DataFrame,
     feature_frame: pd.DataFrame,
     worklist_config: dict[str, Any],
+    normalized_tables: dict[str, pd.DataFrame] | None = None,
     artifact_metadata: dict[str, Any] | None = None,
     write_parquet: bool = True,
 ) -> Path:
@@ -39,6 +41,12 @@ def assemble_result_batch(
     monthly_reports = _build_monthly_reports(report_month, risk_entities)
     proof_cases = pd.DataFrame(columns=["proof_case_id", "risk_entity_id", "candidate_id", "proof_status"])
     work_order_reserved = _build_work_order_reserved(risk_entities)
+    entity_display_lookup = build_entity_display_lookup(
+        risk_entities,
+        normalized_tables or {},
+        report_month,
+        raw_batch_id,
+    )
 
     tables = {
         "risk_entities": risk_entities,
@@ -50,6 +58,7 @@ def assemble_result_batch(
         "monthly_reports": monthly_reports,
         "proof_cases": proof_cases,
         "work_order_reserved": work_order_reserved,
+        "entity_display_lookup": entity_display_lookup,
     }
     data_backend = _write_tables(batch_dir, tables, write_parquet)
     artifact_metadata = artifact_metadata or {}
@@ -80,6 +89,13 @@ def assemble_result_batch(
         "customer_facing_probability_service_allowed": False,
         "auto_dispatch_allowed": False,
         "proof_case_report_allowed": False,
+        "result_table_row_counts": {name: int(len(df)) for name, df in tables.items()},
+        "entity_display_lookup": {
+            "table_name": "entity_display_lookup",
+            "schema_version": ENTITY_DISPLAY_LOOKUP_SCHEMA_VERSION,
+            "path": f"entity_display_lookup.{data_backend}",
+            "row_count": int(len(entity_display_lookup)),
+        },
         "caveats": ["bounded monthly worklist", "not full SQL universe claim", "business review required"],
     }
     write_manifest(batch_dir, manifest)
