@@ -8,8 +8,8 @@ routing, or equivalent business rules, then passes the visible
 `manufacturer_codes` into model-core query methods.
 
 Model-core may filter, sort, and return stable result-batch fields. It must not
-treat `manufacturer_code` as a user identifier and must not force a 20-50 item
-worklist.
+treat `manufacturer_code` as a user identifier and must not force a fixed
+workbench size.
 
 ## Runtime Contract
 
@@ -64,7 +64,7 @@ Model-core does not:
 
 - resolve user, role, region, or salesperson permissions;
 - assume one user equals one `manufacturer_code`;
-- fill every user to 20-50 items;
+- enforce a backend workbench-size policy;
 - choose whether to fill shortage with observation or one-shot rows;
 - create work orders;
 - dispatch tasks;
@@ -75,6 +75,5 @@ Model-core does not:
 ## Current Readiness
 
 This update makes model-core ready for backend-resolved user scopes across
-multiple manufacturers. True per-user 20-50 delivery remains a backend policy
+multiple manufacturers. True per-user workbench delivery remains a backend policy
 that depends on `org_scope` or equivalent routing data.
-

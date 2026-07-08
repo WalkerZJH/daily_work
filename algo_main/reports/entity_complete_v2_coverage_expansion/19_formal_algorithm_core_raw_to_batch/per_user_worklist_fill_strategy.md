@@ -1,6 +1,6 @@
 # Backend-Resolved User Worklist Strategy
 
-- business requirement: provide 20 to 50 monthly review items per backend-resolved user scope, not 20 to 50 globally.
+- business requirement: the backend may request a business-defined number of monthly review items per resolved user scope, not a fixed global count.
 - real user scope source: `org_scope` / salesperson / regional-manager routing table in the backend.
 - current user scope column: not available in this batch.
 - offline audit scope used only for strategy-shape validation: `manufacturer_code`.
@@ -13,7 +13,7 @@
 own multiple manufacturers, and one manufacturer may need to be routed through a
 business organization table. The model layer therefore exposes rankable entities
 filtered by `manufacturer_codes: list[str]`; it does not resolve permissions and
-does not enforce 20-50 items.
+does not enforce a fixed workbench size.
 
 ## Fill Order
 
@@ -31,6 +31,6 @@ Therefore `manufacturer_code` was used only as an offline audit grouping key. On
 codes and pass that set to `risk_model_core` without changing the result-batch
 contract.
 
-This means the current formal algorithm batch can prove the query and fill-policy
-shape, but it cannot prove true per-user 20 to 50 delivery until `org_scope` or an
-equivalent user routing table is provided.
+This means the current formal algorithm batch can prove the query shape, but it
+cannot prove true per-user workbench delivery until `org_scope` or an equivalent
+user routing table is provided.

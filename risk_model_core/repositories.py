@@ -131,10 +131,16 @@ class ParquetRiskResultRepository(RiskResultRepository):
         return None if row.empty else row.iloc[0].to_dict()
 
     def list_risk_cards(self, risk_entity_id: str) -> pd.DataFrame:
-        return self.load_table("risk_cards").query("risk_entity_id == @risk_entity_id")
+        df = self.load_table("risk_cards")
+        if df.empty or "risk_entity_id" not in df:
+            return df.iloc[0:0].copy()
+        return df[df["risk_entity_id"].astype(str).eq(str(risk_entity_id))]
 
     def list_evidence(self, risk_card_id: str) -> pd.DataFrame:
-        return self.load_table("risk_card_evidence").query("risk_card_id == @risk_card_id")
+        df = self.load_table("risk_card_evidence")
+        if df.empty or "risk_card_id" not in df:
+            return df.iloc[0:0].copy()
+        return df[df["risk_card_id"].astype(str).eq(str(risk_card_id))]
 
     def list_timeline(self, risk_entity_id: str) -> pd.DataFrame:
         df = self.load_table("risk_entity_timeline")
@@ -207,10 +213,16 @@ class InMemoryRiskResultRepository(RiskResultRepository):
         return None if rows.empty else rows.iloc[0].to_dict()
 
     def list_risk_cards(self, risk_entity_id: str) -> pd.DataFrame:
-        return self.load_table("risk_cards").query("risk_entity_id == @risk_entity_id")
+        df = self.load_table("risk_cards")
+        if df.empty or "risk_entity_id" not in df:
+            return df.iloc[0:0].copy()
+        return df[df["risk_entity_id"].astype(str).eq(str(risk_entity_id))]
 
     def list_evidence(self, risk_card_id: str) -> pd.DataFrame:
-        return self.load_table("risk_card_evidence").query("risk_card_id == @risk_card_id")
+        df = self.load_table("risk_card_evidence")
+        if df.empty or "risk_card_id" not in df:
+            return df.iloc[0:0].copy()
+        return df[df["risk_card_id"].astype(str).eq(str(risk_card_id))]
 
     def list_timeline(self, risk_entity_id: str) -> pd.DataFrame:
         df = self.load_table("risk_entity_timeline")
@@ -236,7 +248,10 @@ class InMemoryRiskResultRepository(RiskResultRepository):
 
 
 class ClickHouseRiskResultRepository(RiskResultRepository):
-    """Reserved repository stub for backend storage integration."""
+    """Reserved repository stub for backend storage integration.
+
+    This repository reads result-batch serving tables only. It must not read raw business/source tables.
+    """
 
     def __init__(self, *_: Any, **__: Any):
         pass

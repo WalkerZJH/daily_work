@@ -29,9 +29,9 @@ class RiskQueryService:
     ) -> dict[str, Any]:
         """Return sortable rows for a backend-resolved user visibility scope.
 
-        The backend owns org/user permission resolution and any 20-50 item fill
-        policy. This service only applies the already resolved manufacturer
-        filter, preserves rankable fields, and reports count metadata.
+        The backend owns org/user permission resolution and workbench sizing.
+        This service only applies the already resolved manufacturer filter,
+        preserves rankable fields, and reports count metadata.
         """
         available = self.repository.list_rankable_entities(
             manufacturer_codes=manufacturer_codes,

@@ -1,16 +1,56 @@
-"""Page payload builder for backend MVC integration."""
+"""Page payload builder for backend MVC integration.
+
+The builder serves standard result batches. It never reads source business
+tables, never recalculates model output, and never resolves real user scope.
+"""
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from typing import Any
+import math
+
+import pandas as pd
 
 from .repositories import RiskResultRepository
 
 
+OPTIONAL_RANKING_FIELDS = [
+    "risk_probability_value",
+    "churn_probability_H",
+    "risk_score_display",
+    "risk_score",
+    "probability_rank_score",
+    "interval_rank_score",
+    "frequency_rank_score",
+    "business_priority_score_H",
+    "value_at_risk_H",
+    "overdue_ratio",
+    "frequency_decay_baseline",
+    "interval_overdue_baseline",
+    "recency_only_baseline",
+    "candidate_type",
+    "display_section",
+    "probability_display_level",
+]
+
+DETECTOR_TEMPLATES = [
+    ("purchase_gap", "Purchase gap", "purchase_interval_overdue_warning"),
+    ("frequency_drop", "Frequency drop", "purchase_frequency_fluctuation_warning"),
+    ("quantity_drop", "Quantity drop", "purchase_quantity_fluctuation_warning"),
+    ("terminal_loss", "Stored terminal risk", "terminal_loss_warning"),
+    ("new_terminal", "New terminal", "new_terminal_detection"),
+    ("delivery_time", "Delivery timing", ""),
+    ("delivery_rate", "Delivery fulfillment", ""),
+    ("price_signal", "Price signal", ""),
+    ("sku_wallet", "Portfolio signal", ""),
+]
+
+
 class PagePayloadBuilder:
-    def __init__(self, repository: RiskResultRepository):
+    def __init__(self, repository: RiskResultRepository, *, prefer_existing_payloads: bool = True):
         self.repository = repository
+        self.prefer_existing_payloads = prefer_existing_payloads
 
     def build_index_payload(self) -> dict[str, Any]:
         return self._payload_or_build("index_payload", self._build_index_payload)
@@ -30,23 +70,23 @@ class PagePayloadBuilder:
     def build_watchlist_payload(self) -> dict[str, Any]:
         return self._payload_or_build(
             "watchlist_payload",
-            lambda: {"items": self.repository.list_risk_entities(is_observation=True).to_dict("records")},
+            lambda: {"items": self.repository.list_rankable_entities(candidate_type="observation").to_dict("records")},
         )
 
     def build_dashboard_payload(self) -> dict[str, Any]:
         return self._payload_or_build(
             "dashboard_payload",
-            lambda: {"kpi_cards": {"feedback": "pending feedback integration"}},
+            lambda: {"kpi_cards": self._dashboard_metrics()},
         )
 
     def build_backtest_payload(self) -> dict[str, Any]:
         return self._payload_or_build(
             "backtest_payload",
-            lambda: {"proof_case_report_allowed": False, "placeholder_cases": []},
+            lambda: {"proof_case_report_allowed": False, "items": self.repository.list_proof_cases().to_dict("records")},
         )
 
     def build_verify_payload(self) -> dict[str, Any]:
-        return self._payload_or_build("verify_payload", lambda: {"verification_enabled": False})
+        return self._payload_or_build("verify_payload", lambda: {"verification_enabled": False, "items": []})
 
     def build_distributor_payload(self) -> dict[str, Any]:
         return self._payload_or_build(
@@ -54,59 +94,91 @@ class PagePayloadBuilder:
             lambda: {"delivery_detector_enabled": False, "alerts": []},
         )
 
-    def build_frontend_workbench_payload(self) -> dict[str, Any]:
+    def build_frontend_workbench_payload(
+        self,
+        *,
+        manufacturer_codes: list[str] | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        top_n: int | None = None,
+    ) -> dict[str, Any]:
         return self._payload_or_build(
             "frontend_workbench_payload",
-            lambda: build_default_frontend_payloads()["workbench"],
+            lambda: self._build_frontend_workbench_payload(
+                manufacturer_codes=manufacturer_codes,
+                report_month=report_month,
+                horizon=horizon,
+                top_n=top_n,
+            ),
         )
 
-    def build_frontend_risk_entities_payload(self) -> dict[str, Any]:
+    def build_frontend_risk_entities_payload(
+        self,
+        *,
+        manufacturer_codes: list[str] | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        top_n: int | None = None,
+    ) -> dict[str, Any]:
         return self._payload_or_build(
             "frontend_risk_entities_payload",
-            lambda: build_default_frontend_payloads()["risk_entities"],
+            lambda: self._build_frontend_risk_entities_payload(
+                manufacturer_codes=manufacturer_codes,
+                report_month=report_month,
+                horizon=horizon,
+                top_n=top_n,
+            ),
         )
 
     def build_frontend_risk_entity_detail_payload(self, risk_entity_id: str) -> dict[str, Any]:
-        default_details = build_default_frontend_payloads()["risk_entity_details"]
-        try:
-            return self.repository.get_page_payload(f"frontend_risk_entity_detail_{risk_entity_id}_payload")
-        except FileNotFoundError:
+        if self.prefer_existing_payloads:
             try:
-                manifest = self.repository.get_page_payload("frontend_payload_manifest")
-                for item in manifest.get("detail_payloads", []):
-                    if str(item.get("entity_id")) == str(risk_entity_id):
-                        return self.repository.get_page_payload(str(item["detail_payload_file"]))
+                return self.repository.get_page_payload(f"frontend_risk_entity_detail_{risk_entity_id}_payload")
             except FileNotFoundError:
-                pass
-        return _detail_or_raise(default_details, risk_entity_id)
+                try:
+                    manifest = self.repository.get_page_payload("frontend_payload_manifest")
+                    for item in manifest.get("detail_payloads", []):
+                        if str(item.get("entity_id")) == str(risk_entity_id):
+                            return self.repository.get_page_payload(str(item["detail_payload_file"]))
+                except FileNotFoundError:
+                    pass
+        return self._build_frontend_risk_entity_detail_payload(risk_entity_id)
 
-    def build_frontend_oneshot_payload(self) -> dict[str, Any]:
+    def build_frontend_oneshot_payload(
+        self,
+        *,
+        manufacturer_codes: list[str] | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        top_n: int | None = None,
+    ) -> dict[str, Any]:
         return self._payload_or_build(
             "frontend_oneshot_payload",
-            lambda: build_default_frontend_payloads()["oneshot_terminals"],
+            lambda: self._build_frontend_oneshot_payload(
+                manufacturer_codes=manufacturer_codes,
+                report_month=report_month,
+                horizon=horizon,
+                top_n=top_n,
+            ),
         )
 
     def build_frontend_monthly_reports_payload(self) -> dict[str, Any]:
-        return self._payload_or_build(
-            "frontend_monthly_reports_payload",
-            lambda: build_default_frontend_payloads()["monthly_reports"],
-        )
+        return self._payload_or_build("frontend_monthly_reports_payload", self._build_frontend_monthly_reports_payload)
 
     def build_frontend_proof_cases_payload(self) -> dict[str, Any]:
-        return self._payload_or_build(
-            "frontend_proof_cases_payload",
-            lambda: build_default_frontend_payloads()["proof_cases"],
-        )
+        return self._payload_or_build("frontend_proof_cases_payload", self._build_frontend_proof_cases_payload)
 
     def _payload_or_build(self, page_name: str, builder: Callable[[], dict[str, Any]]) -> dict[str, Any]:
-        try:
-            return self.repository.get_page_payload(page_name)
-        except FileNotFoundError:
-            return builder()
+        if self.prefer_existing_payloads:
+            try:
+                return self.repository.get_page_payload(page_name)
+            except FileNotFoundError:
+                pass
+        return builder()
 
     def _build_index_payload(self) -> dict[str, Any]:
         entities = self.repository.list_risk_entities()
-        high_risk_count = int(entities["is_high_risk"].sum()) if "is_high_risk" in entities else 0
+        high_risk_count = int(_truthy_series(entities, "is_high_risk").sum()) if not entities.empty else 0
         return {
             "page_title": "workbench",
             "top_clues": entities.head(8).to_dict("records"),
@@ -120,430 +192,437 @@ class PagePayloadBuilder:
         entities = self.repository.list_risk_entities()
         return {"items": entities.to_dict("records"), "pagination": {"total_items": len(entities)}}
 
-
-def build_default_frontend_payloads() -> dict[str, Any]:
-    """Return deterministic page payloads used while algorithm batch integration is settling."""
-
-    batch_context = {
-        "report_month": "2026-07",
-        "score_as_of_date": "2026-07-31",
-        "data_watermark_at": "2026-07-07 13:32",
-        "score_batch_id": "2026-07-monthly-risk-score",
-        "result_batch_id": "2026-07-monthly-risk-result",
-        "primary_horizon": "H6",
-        "primary_horizon_label": "主视角",
-        "score_formula": "risk_probability * average_consumption_in_window",
-    }
-    entities = sorted(_risk_entities(), key=lambda item: item["business_score"], reverse=True)
-    details = {entity["entity_id"]: _risk_entity_detail(entity) for entity in entities}
-    workbench_rows = _workbench_rows(entities)
-    daily_reports = _daily_reports(batch_context)
-    oneshot = _oneshot_payload(batch_context)
-
-    overview_metrics = [
-        {"label": "主工作台", "value": str(len(workbench_rows)), "tone": "danger"},
-        {"label": "风险卡", "value": "24", "tone": "warning"},
-        {"label": "新进终端", "value": str(oneshot["summary"]["oneshot_count"]), "tone": "info"},
-        {"label": "高价值待跟进", "value": "21", "tone": "success"},
-    ]
-
-    return {
-        "workbench": {
-            "batch_context": batch_context,
-            "overview_metrics": overview_metrics,
-            "fill_policy": {
-                "manufacturer_code": "M001",
-                "workbench_target_count": 20,
-                "global_current_month_hospital_drug_count": len(entities),
-                "fill_reason": "global 当月医院 × 药品数量不足时，主工作台使用补充算法填充到 20 个。",
-            },
-            "rows": workbench_rows,
-        },
-        "risk_entities": {
-            "batch_context": batch_context,
-            "entities": entities,
-            "pagination": {"total_items": len(entities)},
-        },
-        "risk_entity_details": details,
-        "oneshot_terminals": oneshot,
-        "monthly_reports": {
-            "batch_context": batch_context,
-            "overview_metrics": overview_metrics,
-            "daily_report_options": daily_reports,
-            "monthly_reports": [
-                {
-                    "monthly_report_id": "monthly_2026_07",
-                    "title": "2026-07 MonthlyReport",
-                    "report_month": "2026-07",
-                    "score_batch_id": batch_context["score_batch_id"],
-                    "data_watermark_at": batch_context["data_watermark_at"],
-                    "summary": "本月报告沉淀风险排序、detector 证据链、新进终端复购倾向与成功案例。",
-                },
-                {
-                    "monthly_report_id": "monthly_2026_06",
-                    "title": "2026-06 MonthlyReport",
-                    "report_month": "2026-06",
-                    "score_batch_id": "2026-06-monthly-risk-score",
-                    "data_watermark_at": "2026-06-30 23:59",
-                    "summary": "历史月报用于比较新增、持续、缓解、oneshot 复购倾向与主工作台补齐变化。",
-                },
-            ],
-        },
-        "proof_cases": {
-            "items": [
-                {
-                    "proof_case_id": "proof_xiehe_2025",
-                    "title": "Proof-case · 北京协和历史命中案例",
-                    "visible": "业务可见",
-                    "outcome": "历史高风险线索后续发生停购，证据包括采购间隔超期和品规收缩。",
-                    "case_summary": "成功案例展示采购间隔超期、品规收缩和后续停购结果，突出产品提前识别价值。",
-                },
-                {
-                    "proof_case_id": "proof_huaxi_2025",
-                    "title": "Proof-case · 华西配送侧案例",
-                    "visible": "业务可见",
-                    "outcome": "系统提前识别配送履约恶化，业务复核后归因为断供侧问题。",
-                    "case_summary": "成功案例展示配送履约恶化信号，帮助团队提前定位断供风险。",
-                },
-            ]
-        },
-    }
-
-
-def _risk_entities() -> list[dict[str, Any]]:
-    rows = [
-        {
-            "entity_id": "re_huaxi_c_h6",
-            "hospital_name": "四川大学华西医院",
-            "drug_name": "C产品线 · 肿瘤",
-            "manufacturer_code": "M001",
-            "region": "西南",
-            "horizon": "H6",
-            "risk_probability": 0.74,
-            "average_consumption_in_window": 1_950_000,
-            "risk_band": "high",
-            "risk_color": "red",
-            "last_purchase_date": "2026-04-18",
-            "days_since_last_purchase": 80,
-            "risk_card_count": 5,
-            "status": "优先跟进",
-            "monthly_status": "persistent",
-            "value_level": "高",
-            "primary_reason": "连续停购苗头叠加配送履约恶化，需要判断需求流失还是断供问题。",
-        },
-        {
-            "entity_id": "re_xiehe_a_h6",
-            "hospital_name": "北京协和医院",
-            "drug_name": "A产品线 · 心血管",
-            "manufacturer_code": "M001",
-            "region": "华北",
-            "horizon": "H6",
-            "risk_probability": 0.82,
-            "average_consumption_in_window": 1_280_000,
-            "risk_band": "high",
-            "risk_color": "red",
-            "last_purchase_date": "2026-05-02",
-            "days_since_last_purchase": 66,
-            "risk_card_count": 4,
-            "status": "优先跟进",
-            "monthly_status": "new",
-            "value_level": "高",
-            "primary_reason": "采购间隔超出历史节奏，近 3 月频次下降，品规从 4 个缩至 1 个。",
-        },
-        {
-            "entity_id": "re_renji_a_h6",
-            "hospital_name": "上海仁济医院",
-            "drug_name": "A产品线 · 心血管",
-            "manufacturer_code": "M002",
-            "region": "华东",
-            "horizon": "H6",
-            "risk_probability": 0.61,
-            "average_consumption_in_window": 860_000,
-            "risk_band": "medium",
-            "risk_color": "orange",
-            "last_purchase_date": "2026-05-29",
-            "days_since_last_purchase": 39,
-            "risk_card_count": 3,
-            "status": "跟进中",
-            "monthly_status": "worsening",
-            "value_level": "中",
-            "primary_reason": "采购量和采购频次同步下降，需要确认是否为正常窗口波动。",
-        },
-    ]
-    for row in rows:
-        row["business_score"] = round(row["risk_probability"] * row["average_consumption_in_window"])
-    return rows
-
-
-def _risk_entity_detail(entity: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "entity": entity,
-        "horizon_profiles": {
-            "H3": _horizon_profile(entity, "H3", "短窗预警", -0.14, 0.48, 0.86),
-            "H6": _horizon_profile(entity, "H6", "主视角", 0, 1, 1),
-            "H12": _horizon_profile(entity, "H12", "长窗经营影响", 0.08, 1.72, 1.08),
-        },
-    }
-
-
-def _horizon_profile(
-    entity: dict[str, Any],
-    horizon: str,
-    label: str,
-    probability_delta: float,
-    consumption_multiplier: float,
-    detector_factor: float,
-) -> dict[str, Any]:
-    probability = min(0.96, max(0.05, round(entity["risk_probability"] + probability_delta, 2)))
-    consumption = round(entity["average_consumption_in_window"] * consumption_multiplier)
-    return {
-        "horizon": horizon,
-        "label": label,
-        "risk_probability": probability,
-        "average_consumption_in_window": consumption,
-        "business_score": round(probability * consumption),
-        "reason": f"{horizon} {label}: {entity['primary_reason']}",
-        "detector_results": [_detector_result(item, horizon, label, detector_factor) for item in _detector_templates(entity)],
-        "xgboost_shap": _shap_highlights(entity, horizon),
-        "detector_narrative": (
-            f"{horizon} detector 结果自然语言聚合：采购间隔、频次、品规和履约信号共同解释 "
-            f"{entity['hospital_name']} × {entity['drug_name']} 的业务评分排序。"
-        ),
-    }
-
-
-def _detector_templates(entity: dict[str, Any]) -> list[dict[str, Any]]:
-    return [
-        {
-            "detector_id": "gap",
-            "detector_name": "采购间隔 detector",
-            "score": 0.88 if entity["risk_band"] == "high" else 0.54,
-            "signal": "强命中" if entity["risk_band"] == "high" else "关注",
-            "status": "采购间隔超期",
-            "evidence": f"当前间隔 {entity['days_since_last_purchase']} 天，高于自身历史采购节奏。",
-            "action": "确认院内采购计划、竞品替代和配送节奏变化。",
-        },
-        {
-            "detector_id": "frequency",
-            "detector_name": "频次下降 detector",
-            "score": 0.81 if entity["risk_band"] == "high" else 0.76,
-            "signal": "命中",
-            "status": "采购频次下降",
-            "evidence": "近 90 天采购频次低于 12 个月基线。",
-            "action": "复核科室需求和采购计划变化。",
-        },
-        {
-            "detector_id": "sku",
-            "detector_name": "品规收缩 detector",
-            "score": 0.72 if entity["risk_band"] == "high" else 0.58,
-            "signal": "命中" if entity["risk_band"] == "high" else "关注",
-            "status": "品规覆盖收缩",
-            "evidence": "活跃品规覆盖减少，主力规格需要重点确认。",
-            "action": "检查竞品替代、规格替换和院内目录变化。",
-        },
-        {
-            "detector_id": "fulfillment",
-            "detector_name": "配送履约 detector",
-            "score": 0.83 if entity["entity_id"] == "re_huaxi_c_h6" else 0.46,
-            "signal": "命中" if entity["entity_id"] == "re_huaxi_c_h6" else "关注",
-            "status": "配送履约波动",
-            "evidence": "配送完成率较前期出现波动，结合需求侧信号统一判断。",
-            "action": "同步配送侧确认近期履约稳定性。",
-        },
-    ]
-
-
-def _detector_result(template: dict[str, Any], horizon: str, label: str, factor: float) -> dict[str, Any]:
-    return {
-        **template,
-        "score": round(min(0.99, template["score"] * factor), 2),
-        "evidence": f"{horizon} {label}: {template['evidence']}",
-    }
-
-
-def _shap_highlights(entity: dict[str, Any], horizon: str) -> list[dict[str, Any]]:
-    return [
-        {
-            "feature": f"avg_consumption_{horizon.lower()}",
-            "contribution": 0.24 if entity["business_score"] > 1_000_000 else 0.11,
-            "explanation": f"{horizon} 预测窗口内平均消费金额放大业务优先级。",
-        },
-        {
-            "feature": "days_since_last_purchase",
-            "contribution": 0.18,
-            "explanation": "距离末次采购天数抬升风险概率。",
-        },
-        {
-            "feature": "frequency_drop_90d",
-            "contribution": 0.15,
-            "explanation": "近 90 天采购频次低于自身基线。",
-        },
-    ]
-
-
-def _workbench_rows(entities: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    rows = [
-        {
-            "row_id": entity["entity_id"],
-            "entity_id": entity["entity_id"],
-            "manufacturer_code": entity["manufacturer_code"],
-            "hospital_name": entity["hospital_name"],
-            "drug_name": entity["drug_name"],
-            "region": entity["region"],
-            "risk_probability": entity["risk_probability"],
-            "average_consumption_in_window": entity["average_consumption_in_window"],
-            "business_score": entity["business_score"],
-            "source_type": "global 当月命中",
-            "fill_source": "主干风险模型",
-            "action": "查看风险卡",
-        }
-        for entity in entities
-    ]
-    for index, hospital in enumerate(_fill_hospitals(), start=1):
-        probability = round(0.58 - (index - 1) * 0.012, 2)
-        consumption = 760_000 - (index - 1) * 18_000
-        rows.append(
-            {
-                "row_id": f"fill_{index:02d}",
-                "entity_id": None,
-                "manufacturer_code": "M001",
-                "hospital_name": hospital,
-                "drug_name": _fill_drugs()[(index - 1) % len(_fill_drugs())],
-                "region": ["华东", "华中", "华北", "华南", "西南"][(index - 1) % 5],
-                "risk_probability": probability,
-                "average_consumption_in_window": consumption,
-                "business_score": round(probability * consumption),
-                "source_type": "补充算法",
-                "fill_source": _fill_sources()[(index - 1) % len(_fill_sources())],
-                "action": "进入主工作台跟进清单",
-            }
+    def _build_frontend_workbench_payload(
+        self,
+        *,
+        manufacturer_codes: list[str] | None,
+        report_month: str | None,
+        horizon: str | None,
+        top_n: int | None,
+    ) -> dict[str, Any]:
+        rows = self._rankable_entity_items(
+            manufacturer_codes=manufacturer_codes,
+            report_month=report_month,
+            horizon=horizon,
+            candidate_type="recurring",
+            top_n=top_n,
         )
-    return sorted(rows, key=lambda item: item["business_score"], reverse=True)[:20]
+        return {
+            "batch_context": self._batch_context(),
+            "overview_metrics": [
+                {"label": "Workbench rows", "value": str(len(rows)), "tone": "neutral"},
+                {"label": "Result-batch entities", "value": str(len(self.repository.list_risk_entities())), "tone": "neutral"},
+            ],
+            "model_metrics": [],
+            "fill_policy": {
+                "manufacturer_code": "backend_resolved_scope",
+                "workbench_target_count": len(rows),
+                "global_current_month_hospital_drug_count": len(rows),
+                "fill_reason": "Backend may request top_n; model core did not fill user worklists.",
+            },
+            "rows": [_workbench_row(item) for item in rows],
+            "meta": {
+                "top_n_requested": top_n,
+                "user_scope_resolved_by_backend": True,
+                "model_core_filled_shortage": False,
+            },
+        }
+
+    def _build_frontend_risk_entities_payload(
+        self,
+        *,
+        manufacturer_codes: list[str] | None,
+        report_month: str | None,
+        horizon: str | None,
+        top_n: int | None,
+    ) -> dict[str, Any]:
+        items = self._rankable_entity_items(
+            manufacturer_codes=manufacturer_codes,
+            report_month=report_month,
+            horizon=horizon,
+            candidate_type="recurring",
+            top_n=top_n,
+        )
+        return {
+            "batch_context": self._batch_context(),
+            "entities": items,
+            "pagination": {"total_items": len(items)},
+            "meta": {
+                "top_n_requested": top_n,
+                "user_scope_resolved_by_backend": True,
+                "model_core_filled_shortage": False,
+            },
+        }
+
+    def _build_frontend_risk_entity_detail_payload(self, risk_entity_id: str) -> dict[str, Any]:
+        row = self.repository.get_risk_entity(risk_entity_id)
+        if row is None:
+            raise KeyError(risk_entity_id)
+        item = _entity_item(pd.Series(row), self._card_counts())
+        profiles = {}
+        for horizon, label in [("H3", "3-month window"), ("H6", "6-month window"), ("H12", "12-month window")]:
+            profiles[horizon] = {
+                "horizon": horizon,
+                "label": label,
+                "risk_probability": item["risk_probability"],
+                "average_consumption_in_window": item["average_consumption_in_window"],
+                "business_score": item["business_score"],
+                "reason": f"{label}: review selected result-batch evidence.",
+                "detector_results": self._detector_results(risk_entity_id),
+                "xgboost_shap": [],
+                "detector_narrative": "Risk review is supported by result-batch evidence and purchasing rhythm context.",
+            }
+        return {"entity": item, "horizon_profiles": profiles}
+
+    def _build_frontend_oneshot_payload(
+        self,
+        *,
+        manufacturer_codes: list[str] | None,
+        report_month: str | None,
+        horizon: str | None,
+        top_n: int | None,
+    ) -> dict[str, Any]:
+        rows = self.repository.list_rankable_entities(
+            manufacturer_codes=manufacturer_codes,
+            report_month=report_month,
+            horizon=horizon,
+            candidate_type="one_shot",
+            sort_by=["risk_score_display", "risk_score"],
+            limit=top_n,
+        )
+        items = []
+        for _, row in rows.iterrows():
+            propensity = _probability(row.get("risk_score_display", row.get("risk_score", 0)))
+            items.append(
+                {
+                    "oneshot_id": str(row["risk_entity_id"]),
+                    "hospital_name": _display_name(row, "hospital_display_name", "hospital_code", "Hospital"),
+                    "drug_name": _display_name(row, "drug_display_name", "drug_group", "Drug"),
+                    "region": _text(row.get("region_display_name")) or _text(row.get("region_code")) or "Unknown region",
+                    "first_purchase_date": str(self.repository.manifest().score_cutoff_month),
+                    "first_purchase_amount": 0,
+                    "days_since_first_purchase": 0,
+                    "repurchase_propensity": propensity,
+                    "expected_repurchase_amount": 0,
+                    "priority": "high" if propensity >= 0.75 else "medium",
+                    "reason": "New terminal attention score indicates a follow-up opportunity for a second purchase.",
+                }
+            )
+        avg = round(sum(item["repurchase_propensity"] for item in items) / len(items), 4) if items else 0.0
+        return {
+            "report_month": self.repository.manifest().report_month,
+            "summary": {
+                "oneshot_count": len(items),
+                "high_repurchase_propensity_count": sum(1 for item in items if item["repurchase_propensity"] >= 0.75),
+                "average_repurchase_propensity": avg,
+                "expected_repurchase_amount": 0,
+            },
+            "items": items,
+        }
+
+    def _build_frontend_monthly_reports_payload(self) -> dict[str, Any]:
+        reports = self.repository.list_monthly_reports()
+        monthly_reports = []
+        for _, row in reports.iterrows():
+            monthly_reports.append(
+                {
+                    "monthly_report_id": str(row.get("monthly_report_id") or f"monthly_{self.repository.manifest().report_month}"),
+                    "title": str(row.get("title") or f"{self.repository.manifest().report_month} monthly risk review"),
+                    "report_month": str(row.get("report_month") or self.repository.manifest().report_month),
+                    "score_batch_id": self._batch_context()["score_batch_id"],
+                    "data_watermark_at": self._batch_context()["data_watermark_at"],
+                    "summary": str(row.get("summary_text") or "Monthly risk review generated from the current result batch."),
+                }
+            )
+        if not monthly_reports:
+            monthly_reports.append(
+                {
+                    "monthly_report_id": f"monthly_{self.repository.manifest().report_month}",
+                    "title": f"{self.repository.manifest().report_month} monthly risk review",
+                    "report_month": self.repository.manifest().report_month,
+                    "score_batch_id": self._batch_context()["score_batch_id"],
+                    "data_watermark_at": self._batch_context()["data_watermark_at"],
+                    "summary": "Monthly risk review generated from the current result batch.",
+                }
+            )
+        return {
+            "batch_context": self._batch_context(),
+            "overview_metrics": [{"label": "Monthly reports", "value": str(len(monthly_reports)), "tone": "neutral"}],
+            "model_metrics": [],
+            "daily_report_options": [
+                {
+                    "daily_report_id": f"monthly_selector_{self.repository.manifest().report_month}",
+                    "date": self.repository.manifest().score_cutoff_month,
+                    "label": f"{self.repository.manifest().report_month} monthly batch",
+                    "title": f"{self.repository.manifest().report_month} monthly risk review",
+                    "report_month": self.repository.manifest().report_month,
+                    "score_batch_id": self._batch_context()["score_batch_id"],
+                    "data_watermark_at": self._batch_context()["data_watermark_at"],
+                    "high_risk_entities": len(self.repository.list_rankable_entities(candidate_type="recurring")),
+                    "oneshot_count": len(self.repository.list_rankable_entities(candidate_type="one_shot")),
+                    "detector_alerts": len(self.repository.load_table("risk_cards")),
+                    "summary": "Monthly batch selector for the current risk review.",
+                }
+            ],
+            "monthly_reports": monthly_reports,
+        }
+
+    def _build_frontend_proof_cases_payload(self) -> dict[str, Any]:
+        proof_cases = self.repository.list_proof_cases()
+        items = []
+        for _, row in proof_cases.iterrows():
+            if not _text(row.get("proof_case_id")):
+                continue
+            items.append(
+                {
+                    "proof_case_id": str(row.get("proof_case_id")),
+                    "title": str(row.get("title") or "Verified business case"),
+                    "visible": str(row.get("visible") or "business"),
+                    "outcome": str(row.get("outcome") or "verified"),
+                    "case_summary": str(row.get("case_summary") or "Verified business result."),
+                }
+            )
+        return {"items": items}
+
+    def _rankable_entity_items(
+        self,
+        *,
+        manufacturer_codes: list[str] | None,
+        report_month: str | None,
+        horizon: str | None,
+        candidate_type: str,
+        top_n: int | None,
+    ) -> list[dict[str, Any]]:
+        rows = self.repository.list_rankable_entities(
+            manufacturer_codes=manufacturer_codes,
+            report_month=report_month,
+            horizon=horizon,
+            candidate_type=candidate_type,
+            sort_by=["business_priority_score_H", "business_priority_score", "risk_score_display", "risk_probability_value"],
+            limit=top_n,
+        )
+        card_counts = self._card_counts()
+        return [_entity_item(row, card_counts) for _, row in rows.iterrows()]
+
+    def _batch_context(self) -> dict[str, Any]:
+        manifest = self.repository.manifest()
+        cutoff = manifest.score_cutoff_month
+        return {
+            "report_month": manifest.report_month,
+            "score_as_of_date": cutoff,
+            "data_watermark_at": f"{cutoff}T23:59:59+08:00",
+            "score_batch_id": f"score_{manifest.report_month.replace('-', '')}_{manifest.primary_horizon.lower()}",
+            "result_batch_id": manifest.batch_id,
+            "primary_horizon": manifest.primary_horizon,
+            "primary_horizon_label": f"{manifest.primary_horizon} window",
+            "score_formula": "risk_probability * average_consumption_in_window",
+        }
+
+    def _card_counts(self) -> dict[str, int]:
+        cards = self.repository.load_table("risk_cards")
+        if cards.empty or "risk_entity_id" not in cards:
+            return {}
+        return cards.groupby("risk_entity_id").size().to_dict()
+
+    def _detector_results(self, risk_entity_id: str) -> list[dict[str, Any]]:
+        cards = self.repository.list_risk_cards(risk_entity_id)
+        evidence = self.repository.load_table("risk_card_evidence")
+        if not evidence.empty and "risk_entity_id" in evidence:
+            evidence = evidence[evidence["risk_entity_id"].astype(str).eq(str(risk_entity_id))]
+        names = set(cards.get("source_detector_name", pd.Series(dtype=str)).dropna().astype(str))
+        evidence_text = "\n".join(evidence.get("evidence_text", pd.Series(dtype=str)).dropna().astype(str).head(3).tolist())
+        results = []
+        for detector_id, detector_name, source_name in DETECTOR_TEMPLATES:
+            if source_name and source_name in names:
+                status = "hit"
+                signal = "selected_evidence"
+                score = 0.7
+                text = evidence_text or "Selected evidence supports business review."
+                action = "review_context"
+            elif detector_id in {"delivery_time", "price_signal"}:
+                status = "data_insufficient"
+                signal = "not_customer_claim"
+                score = 0.0
+                text = "Source data is not sufficient for a customer-facing conclusion."
+                action = "use_as_internal_context"
+            elif detector_id in {"delivery_rate", "sku_wallet", "new_terminal"}:
+                status = "not_applicable"
+                signal = "not_applicable"
+                score = 0.0
+                text = "This detector is not applicable for the selected recurring entity."
+                action = "no_action"
+            else:
+                status = "stable"
+                signal = "not_hit"
+                score = 0.0
+                text = "No selected business-visible evidence in the current monthly batch."
+                action = "monitor"
+            results.append(
+                {
+                    "detector_id": detector_id,
+                    "detector_name": detector_name,
+                    "score": score,
+                    "signal": signal,
+                    "status": status,
+                    "evidence": text,
+                    "action": action,
+                }
+            )
+        return results
+
+    def _dashboard_metrics(self) -> dict[str, Any]:
+        entities = self.repository.list_risk_entities()
+        return {
+            "risk_entity_count": int(len(entities)),
+            "auto_dispatch_allowed": False,
+            "customer_facing_probability_service_allowed": False,
+        }
 
 
-def _fill_hospitals() -> list[str]:
-    return [
-        "南京鼓楼医院",
-        "中南大学湘雅医院",
-        "山东大学齐鲁医院",
-        "武汉同济医院",
-        "广州中山肿瘤医院",
-        "重庆医科大学附属第一医院",
-        "安徽医科大学第一附属医院",
-        "北京朝阳医院",
-        "复旦大学附属华山医院",
-        "天津医科大学总医院",
-        "西安交通大学第一附属医院",
-        "大连医科大学附属第一医院",
-        "厦门大学附属第一医院",
-        "徐州医科大学附属医院",
-        "新疆医科大学第一附属医院",
-        "海南省人民医院",
-        "贵州医科大学附属医院",
-    ]
+def _entity_item(row: pd.Series, card_counts: dict[str, int]) -> dict[str, Any]:
+    entity_id = str(row["risk_entity_id"])
+    probability = _entity_probability(row)
+    average = _average_consumption(row)
+    item = {
+        "entity_id": entity_id,
+        "hospital_name": _display_name(row, "hospital_display_name", "hospital_code", "Hospital"),
+        "drug_name": _display_name(row, "drug_display_name", "drug_group", "Drug"),
+        "manufacturer_code": str(row.get("manufacturer_code", "unknown")),
+        "region": _text(row.get("region_display_name")) or _text(row.get("region_code")) or "Unknown region",
+        "horizon": str(row.get("primary_horizon", row.get("horizon", "H6"))),
+        "risk_probability": probability,
+        "average_consumption_in_window": average,
+        "business_score": round(probability * average),
+        "risk_band": _risk_band(row),
+        "risk_color": _risk_color(row),
+        "last_purchase_date": _text(row.get("last_purchase_date")) or "unknown",
+        "days_since_last_purchase": int(_number(row.get("days_since_last_purchase"), 0)),
+        "risk_card_count": int(card_counts.get(entity_id, row.get("risk_card_count", 0) or 0)),
+        "status": _status_label(row),
+        "monthly_status": _text(row.get("monthly_status")) or "current_month_selected",
+        "value_level": _text(row.get("potential_value_level")) or "unknown",
+        "primary_reason": _safe_reason(row.get("risk_type_label") or row.get("main_reason_summary")),
+    }
+    for field in OPTIONAL_RANKING_FIELDS:
+        if field in row.index and not _is_missing(row.get(field)):
+            item[field] = _json_value(row.get(field))
+    return item
 
 
-def _fill_drugs() -> list[str]:
-    return ["A产品线 · 心血管", "B产品线 · 抗感染", "C产品线 · 肿瘤", "D产品线 · 消化"]
-
-
-def _fill_sources() -> list[str]:
-    return ["oneshot 复购倾向", "detector 补充排序", "历史节奏回补", "高价值终端覆盖"]
-
-
-def _oneshot_payload(batch_context: dict[str, Any]) -> dict[str, Any]:
-    items = [
-        _oneshot_item("os_001", "浙江大学医学院附属第一医院", "D产品线 · 消化", "华东", "2026-06-18", 320_000, 19, 0.79, 410_000),
-        _oneshot_item("os_002", "郑州大学第一附属医院", "A产品线 · 心血管", "华中", "2026-06-24", 180_000, 13, 0.64, 260_000),
-        _oneshot_item("os_003", "苏州大学附属第一医院", "C产品线 · 肿瘤", "华东", "2026-06-05", 510_000, 32, 0.71, 850_000),
-        _oneshot_item("os_004", "南方医科大学南方医院", "B产品线 · 抗感染", "华南", "2026-06-21", 220_000, 16, 0.68, 300_000),
-        _oneshot_item("os_005", "吉林大学第一医院", "A产品线 · 心血管", "东北", "2026-06-12", 150_000, 25, 0.57, 190_000),
-        _oneshot_item("os_006", "昆明医科大学第一附属医院", "D产品线 · 消化", "西南", "2026-06-28", 260_000, 9, 0.73, 360_000),
-    ]
+def _workbench_row(item: dict[str, Any]) -> dict[str, Any]:
     return {
-        "report_month": batch_context["report_month"],
-        "summary": {
-            "oneshot_count": len(items),
-            "high_repurchase_propensity_count": sum(1 for item in items if item["repurchase_propensity"] >= 0.7),
-            "average_repurchase_propensity": round(sum(item["repurchase_propensity"] for item in items) / len(items), 2),
-            "expected_repurchase_amount": sum(item["expected_repurchase_amount"] for item in items),
-        },
-        "items": sorted(items, key=lambda item: item["repurchase_propensity"], reverse=True),
+        "row_id": item["entity_id"],
+        "entity_id": item["entity_id"],
+        "manufacturer_code": item["manufacturer_code"],
+        "hospital_name": item["hospital_name"],
+        "drug_name": item["drug_name"],
+        "region": item["region"],
+        "risk_probability": item["risk_probability"],
+        "average_consumption_in_window": item["average_consumption_in_window"],
+        "business_score": item["business_score"],
+        "source_type": "result_batch",
+        "fill_source": "backend_scope_query",
+        "action": "view_detail",
     }
 
 
-def _oneshot_item(
-    oneshot_id: str,
-    hospital_name: str,
-    drug_name: str,
-    region: str,
-    first_purchase_date: str,
-    first_purchase_amount: int,
-    days_since_first_purchase: int,
-    repurchase_propensity: float,
-    expected_repurchase_amount: int,
-) -> dict[str, Any]:
-    priority = "高复购倾向" if repurchase_propensity >= 0.7 else "中高复购倾向"
-    return {
-        "oneshot_id": oneshot_id,
-        "hospital_name": hospital_name,
-        "drug_name": drug_name,
-        "region": region,
-        "first_purchase_date": first_purchase_date,
-        "first_purchase_amount": first_purchase_amount,
-        "days_since_first_purchase": days_since_first_purchase,
-        "repurchase_propensity": repurchase_propensity,
-        "expected_repurchase_amount": expected_repurchase_amount,
-        "priority": priority,
-        "reason": "首采金额、首采后天数和区域同类终端复购表现共同推高复购促进优先级。",
-    }
+def _entity_probability(row: pd.Series) -> float:
+    for field in ["risk_probability_value", "churn_probability_H", "risk_probability", "risk_score_display", "risk_score"]:
+        if field in row.index and not _is_missing(row.get(field)):
+            return _probability(row.get(field))
+    return 0.0
 
 
-def _daily_reports(batch_context: dict[str, Any]) -> list[dict[str, Any]]:
-    return [
-        {
-            "daily_report_id": "daily_2026_07_07",
-            "date": "2026-07-07",
-            "label": "当前日报",
-            "title": "2026-07-07 风险日报",
-            "report_month": batch_context["report_month"],
-            "score_batch_id": batch_context["score_batch_id"],
-            "data_watermark_at": batch_context["data_watermark_at"],
-            "high_risk_entities": 9,
-            "oneshot_count": 6,
-            "detector_alerts": 24,
-            "summary": "当前日报聚焦 H6 高风险 entity、oneshot 复购倾向和 detector 证据链。",
-        },
-        {
-            "daily_report_id": "daily_2026_07_06",
-            "date": "2026-07-06",
-            "label": "上一期",
-            "title": "2026-07-06 风险日报",
-            "report_month": batch_context["report_month"],
-            "score_batch_id": "2026-07-daily-risk-20260706",
-            "data_watermark_at": "2026-07-06 18:00",
-            "high_risk_entities": 8,
-            "oneshot_count": 5,
-            "detector_alerts": 19,
-            "summary": "上一期日报用于对比新增、持续和缓解的风险实体变化。",
-        },
-        {
-            "daily_report_id": "daily_2026_07_05",
-            "date": "2026-07-05",
-            "label": "历史日报",
-            "title": "2026-07-05 风险日报",
-            "report_month": batch_context["report_month"],
-            "score_batch_id": "2026-07-daily-risk-20260705",
-            "data_watermark_at": "2026-07-05 18:00",
-            "high_risk_entities": 7,
-            "oneshot_count": 4,
-            "detector_alerts": 17,
-            "summary": "历史日报展示风险排序、detector 证据和新进终端复购倾向的连续变化。",
-        },
-    ]
+def _average_consumption(row: pd.Series) -> int:
+    for field in ["average_consumption_in_window", "value_at_risk_H", "value_at_risk_proxy", "recent_order_amount", "avg_order_amount"]:
+        if field in row.index and not _is_missing(row.get(field)):
+            return int(max(_number(row.get(field), 0), 0))
+    return 0
 
 
-def _detail_or_raise(details: dict[str, Any], risk_entity_id: str) -> dict[str, Any]:
-    if risk_entity_id not in details:
-        raise KeyError(risk_entity_id)
-    return details[risk_entity_id]
+def _risk_color(row: pd.Series) -> str:
+    color = str(row.get("risk_color") or row.get("risk_level") or "").lower()
+    if color in {"red", "orange", "yellow", "gray"}:
+        return color
+    if str(row.get("risk_level", "")).lower() == "high":
+        return "red"
+    return "gray"
+
+
+def _risk_band(row: pd.Series) -> str:
+    if _truthy(row.get("is_observation")) or str(row.get("final_candidate_status", "")).lower() == "observation_only":
+        return "Observation"
+    return {"red": "High risk", "orange": "Medium risk", "yellow": "Observation", "gray": "Data insufficient"}[_risk_color(row)]
+
+
+def _status_label(row: pd.Series) -> str:
+    status = str(row.get("final_candidate_status") or row.get("review_status") or "").lower()
+    if "priority" in status:
+        return "follow_up"
+    if "manual" in status:
+        return "confirm"
+    if "observation" in status:
+        return "observe"
+    if "one_shot" in status:
+        return "new_terminal"
+    return "review"
+
+
+def _display_name(row: pd.Series, display_col: str, code_col: str, prefix: str) -> str:
+    display = _text(row.get(display_col))
+    if display:
+        return display
+    code = _text(row.get(code_col)) or "unknown"
+    return f"{prefix}_{code}"
+
+
+def _safe_reason(value: Any) -> str:
+    text = _text(value)
+    if not text or text == "multi_recall_union_top10":
+        return "Selected by the current monthly risk worklist policy."
+    return text.replace("multi_recall_union_top10", "monthly_risk_worklist")
+
+
+def _probability(value: Any) -> float:
+    return round(min(1.0, max(0.0, _number(value, 0.0))), 6)
+
+
+def _number(value: Any, default: float) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return default
+    if math.isnan(number):
+        return default
+    return number
+
+
+def _text(value: Any) -> str:
+    if _is_missing(value):
+        return ""
+    text = str(value).strip()
+    return "" if text.lower() in {"", "nan", "none"} else text
+
+
+def _truthy(value: Any) -> bool:
+    if _is_missing(value):
+        return False
+    return str(value).lower() in {"true", "1", "yes", "y"}
+
+
+def _truthy_series(df: pd.DataFrame, column: str) -> pd.Series:
+    if column not in df:
+        return pd.Series(False, index=df.index)
+    return df[column].astype(str).str.lower().isin({"true", "1", "yes", "y"})
+
+
+def _is_missing(value: Any) -> bool:
+    return value is None or (isinstance(value, float) and math.isnan(value)) or pd.isna(value)
+
+
+def _json_value(value: Any) -> Any:
+    if _is_missing(value):
+        return None
+    if hasattr(value, "item"):
+        return value.item()
+    return value
