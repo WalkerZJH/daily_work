@@ -56,6 +56,7 @@ def daily_detector_dates(
 def daily_detector_status(
     service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
     report_context_service: Annotated[ReportContextService, Depends(get_report_context_service)],
+    observation_date: str | None = None,
     report_month: str | None = None,
     run_date: str | None = None,
     horizon: str | None = None,
@@ -63,14 +64,21 @@ def daily_detector_status(
     user_id: str | None = None,
 ) -> dict:
     context = report_context_service.resolve(
+        observation_date=observation_date,
         report_month=report_month,
         run_date=run_date,
         horizon=horizon,
         manufacturer_code=manufacturer_code,
         user_id=user_id,
     )
+    if not context.get("detector_run_available"):
+        return _with_report_context(
+            _missing_detector_status_payload(context),
+            context,
+        )
+    contextual_service = _detector_service_for_context(service, report_context_service, context)
     return _with_report_context(
-        service.status(
+        contextual_service.status(
             report_month=context.get("effective_report_month") or report_month,
             run_date=context.get("effective_run_date") or run_date,
         ),
@@ -110,6 +118,7 @@ def detector_clues(
 def daily_detector_clues(
     service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
     report_context_service: Annotated[ReportContextService, Depends(get_report_context_service)],
+    observation_date: str | None = None,
     report_month: str | None = None,
     run_date: str | None = None,
     manufacturer_code: str | None = None,
@@ -124,13 +133,20 @@ def daily_detector_clues(
     limit: int | None = Query(default=None, ge=1, le=200),
 ) -> dict:
     context = report_context_service.resolve(
+        observation_date=observation_date,
         report_month=report_month,
         run_date=run_date,
         horizon=horizon,
         manufacturer_code=manufacturer_code,
         user_id=None,
     )
-    return _with_report_context(service.clues(
+    if not context.get("detector_run_available"):
+        return _with_report_context(
+            _missing_detector_clues_payload(context, page=page, page_size=top_n or limit or page_size),
+            context,
+        )
+    contextual_service = _detector_service_for_context(service, report_context_service, context)
+    return _with_report_context(contextual_service.clues(
         run_date=context.get("effective_run_date") or run_date,
         manufacturer_code=manufacturer_code,
         horizon=context.get("effective_horizon") or horizon,
@@ -150,19 +166,40 @@ def daily_detector_clues(
 def risk_entity_detector_evidence(
     risk_entity_id: str,
     service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
+    report_context_service: Annotated[ReportContextService, Depends(get_report_context_service)],
+    observation_date: str | None = None,
+    report_month: str | None = None,
     detector_run_id: str | None = None,
     run_date: str | None = None,
+    horizon: str | None = None,
+    manufacturer_code: str | None = None,
+    user_id: str | None = None,
     detector_family: str | None = None,
     detector_id: str | None = None,
 ) -> dict:
+    context = report_context_service.resolve(
+        observation_date=observation_date,
+        report_month=report_month,
+        run_date=run_date,
+        horizon=horizon,
+        manufacturer_code=manufacturer_code,
+        user_id=user_id,
+    )
+    contextual_service = _detector_service_for_context(service, report_context_service, context)
+    evidence_run_date = (
+        run_date
+        if contextual_service.repository.__class__.__name__ == "InMemoryRiskResultRepository"
+        else context.get("effective_run_date") or run_date
+    )
     try:
-        return service.risk_entity_detector_evidence(
+        payload = contextual_service.risk_entity_detector_evidence(
             risk_entity_id=risk_entity_id,
             detector_run_id=detector_run_id,
-            run_date=run_date,
+            run_date=detector_run_id and run_date or evidence_run_date,
             detector_family=detector_family,
             detector_id=detector_id,
         )
+        return _with_report_context(payload, context)
     except KeyError as exc:
         raise HTTPException(
             status_code=404, detail=f"Unknown risk entity: {risk_entity_id}"
@@ -180,9 +217,64 @@ def _with_report_context(payload: dict, report_context: dict) -> dict:
     return {
         **payload,
         "report_context": report_context,
+        "observation_date": report_context.get("observation_date"),
+        "probability_report_month": report_context.get("probability_report_month"),
+        "probability_batch_available": report_context.get("probability_batch_available"),
+        "detector_run_date": report_context.get("detector_run_date"),
+        "detector_run_available": report_context.get("detector_run_available"),
+        "context_status": report_context.get("context_status"),
+        "manual_selection_required": report_context.get("manual_selection_required"),
+        "partial_ready": report_context.get("partial_ready", False),
         "requested_report_month": report_context.get("requested_report_month"),
         "effective_report_month": report_context.get("effective_report_month"),
         "requested_run_date": report_context.get("requested_run_date"),
         "effective_run_date": report_context.get("effective_run_date"),
         "date_resolution_status": report_context.get("date_resolution_status"),
+    }
+
+
+def _detector_service_for_context(
+    service: DetectorResultService,
+    report_context_service: ReportContextService,
+    context: dict,
+) -> DetectorResultService:
+    if service.repository.__class__.__name__ == "InMemoryRiskResultRepository":
+        return service
+    repository = report_context_service.detector_repository(context)
+    return DetectorResultService(repository) if repository is not None else service
+
+
+def _missing_detector_status_payload(context: dict) -> dict:
+    return {
+        "ready": False,
+        "data_source": "risk_model_core",
+        "run_date": context.get("detector_run_date"),
+        "detector_run_id": context.get("detector_run_id"),
+        "detector_config_version": None,
+        "clue_count": 0,
+        "attached_high_risk_count": 0,
+        "highest_detector_score": None,
+        "enabled_detectors": None,
+        "config_effective_note": "规则参数调整后，将在下一次巡检运行后生效，历史结果不会被静默改写。",
+        "source": "risk_model_core",
+        "warnings": list(context.get("warnings") or ["DETECTOR_RUN_NOT_AVAILABLE"]),
+    }
+
+
+def _missing_detector_clues_payload(context: dict, *, page: int, page_size: int) -> dict:
+    return {
+        "ready": False,
+        "source": "risk_model_core",
+        "data_source": "risk_model_core",
+        "items": [],
+        "clues": [],
+        "total": 0,
+        "run_date": context.get("detector_run_date"),
+        "detector_run_id": context.get("detector_run_id"),
+        "pagination": {"page": page, "page_size": page_size, "total": 0},
+        "semantic_caveats": [
+            "detector_score is rule inspection score, not probability",
+            "daily detector clues do not create risk_entities",
+        ],
+        "warnings": list(context.get("warnings") or ["DETECTOR_RUN_NOT_AVAILABLE"]),
     }

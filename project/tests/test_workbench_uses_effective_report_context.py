@@ -34,4 +34,4 @@ def test_workbench_uses_effective_report_context_for_missing_today() -> None:
     assert payload["effective_run_date"] == "2025-12-31"
     assert payload["batch_context"]["report_month"] == "2025-12"
     assert payload["horizon"] == "H6"
-    assert payload["current_observation_date"] == "2025-12-31"
+    assert payload["current_observation_date"] == today

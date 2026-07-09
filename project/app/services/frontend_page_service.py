@@ -303,7 +303,17 @@ class FrontendPageService:
 
 @lru_cache(maxsize=1)
 def get_frontend_page_service() -> FrontendPageService:
-    return FrontendPageService(os.getenv("RISK_RESULT_BATCH_DIR"))
+    return FrontendPageService(_default_batch_dir())
+
+
+def _default_batch_dir() -> str | Path | None:
+    batch_root = os.getenv("RISK_RESULT_BATCH_ROOT")
+    if batch_root:
+        manifests = sorted(Path(batch_root).glob("report_month=*/batch_id=*/manifest.json"))
+        if manifests:
+            return manifests[-1].parent
+        return None
+    return os.getenv("RISK_RESULT_BATCH_DIR")
 
 
 def _strip_customer_hidden_fields(value: Any) -> Any:

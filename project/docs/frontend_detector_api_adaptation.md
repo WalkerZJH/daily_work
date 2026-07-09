@@ -39,35 +39,37 @@ object embedded in page APIs.
 
 Supported query params:
 
+- `observation_date`
 - `report_month`
-- `run_date`
+- `run_date`，旧兼容参数，等价映射为 `observation_date`
 - `horizon`
 - `manufacturer_code`
 - `user_id`
 
 Important fields:
 
-- `requested_report_month`
-- `effective_report_month`
-- `requested_run_date`
-- `effective_run_date`
-- `effective_batch_run_date`
+- `observation_date`
+- `probability_report_month`
+- `probability_batch_available`
+- `detector_run_date`
+- `detector_run_available`
+- `context_status`
+- `manual_selection_required`
 - `requested_horizon`
 - `effective_horizon`
-- `date_resolution_status`
-- `fallback_used`
 - `available_report_months`
-- `available_run_dates`
+- `available_detector_run_dates`
 - `available_horizons`
 
 Frontend rule:
 
-- If the user requests today and no today run exists, keep the selected UI date
-  visible as requested, but render data from `effective_run_date`.
-- `effective_run_date` is the detector inspection run date for daily APIs.
-- `effective_batch_run_date` is the result-batch/report generation date when it
-  differs from the detector inspection date.
-- Any fallback must be shown as a resolved-data state, not as demo data.
+- `observation_date` is the date the user is viewing.
+- `probability_report_month` is the most recent complete calendar month before
+  `observation_date`.
+- `detector_run_date` is the rule inspection date and should equal
+  `observation_date`.
+- If `detector_run_available=false`, render a partial/empty detector state.
+- Do not substitute a different detector date silently.
 
 ### Detector Readiness
 
@@ -309,11 +311,11 @@ Use this to populate daily report date selectors. These dates refer to detector
 inspection runs and do not imply monthly model probability recalculation.
 
 `GET /api/v1/daily-detector/status` and
-`GET /api/v1/daily-detector/clues` also accept requested `run_date`. If that date
-is unavailable, they return `200` with `date_resolution_status` and query the
-latest available effective run date. Empty clue tables return `ready=true`,
-`total=0`, and `items=[]`; the frontend should render an empty state, not mock
-rows.
+`GET /api/v1/daily-detector/clues` also accept `observation_date`. If that
+detector run does not exist, they return `200` with `ready=false`,
+`context_status=detector_run_unavailable`, `total=0`, and `items=[]`; the
+frontend should render a partial/empty state, not mock rows or request a
+different date.
 
 ## Components To Add Or Adjust
 

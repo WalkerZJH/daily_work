@@ -52,6 +52,7 @@ class DailyDetectorRunsResponse(DetectorResultModel):
 
 class DailyDetectorStatusResponse(DetectorResultModel):
     ready: bool
+    data_source: str = "risk_model_core"
     run_date: str | None = None
     detector_run_id: str | None = None
     detector_config_version: str | None = None
@@ -63,6 +64,14 @@ class DailyDetectorStatusResponse(DetectorResultModel):
     source: str
     warnings: list[str]
     report_context: dict[str, Any] = Field(default_factory=dict)
+    observation_date: str | None = None
+    probability_report_month: str | None = None
+    probability_batch_available: bool | None = None
+    detector_run_date: str | None = None
+    detector_run_available: bool | None = None
+    context_status: str | None = None
+    manual_selection_required: bool | None = None
+    partial_ready: bool = False
     requested_report_month: str | None = None
     effective_report_month: str | None = None
     requested_run_date: str | None = None
@@ -106,6 +115,7 @@ class DailyDetectorClueItem(DetectorResultModel):
 class DailyDetectorCluesResponse(DetectorResultModel):
     ready: bool
     source: str
+    data_source: str = "risk_model_core"
     clues: list[DailyDetectorClueItem] = Field(default_factory=list)
     items: list[DailyDetectorClueItem]
     total: int = Field(default=0, ge=0)
@@ -115,6 +125,14 @@ class DailyDetectorCluesResponse(DetectorResultModel):
     semantic_caveats: list[str]
     warnings: list[str]
     report_context: dict[str, Any] = Field(default_factory=dict)
+    observation_date: str | None = None
+    probability_report_month: str | None = None
+    probability_batch_available: bool | None = None
+    detector_run_date: str | None = None
+    detector_run_available: bool | None = None
+    context_status: str | None = None
+    manual_selection_required: bool | None = None
+    partial_ready: bool = False
     requested_report_month: str | None = None
     effective_report_month: str | None = None
     requested_run_date: str | None = None
@@ -146,6 +164,20 @@ class RiskEntityDetectorEvidenceResponse(DetectorResultModel):
     catalog_by_detector_id: dict[str, DetectorCatalogItem]
     semantic_caveats: list[str]
     warnings: list[str]
+    report_context: dict[str, Any] = Field(default_factory=dict)
+    observation_date: str | None = None
+    probability_report_month: str | None = None
+    probability_batch_available: bool | None = None
+    detector_run_date: str | None = None
+    detector_run_available: bool | None = None
+    context_status: str | None = None
+    manual_selection_required: bool | None = None
+    partial_ready: bool = False
+    requested_report_month: str | None = None
+    effective_report_month: str | None = None
+    requested_run_date: str | None = None
+    effective_run_date: str | None = None
+    date_resolution_status: str | None = None
 
 
 class DetectorConfigStatusResponse(DetectorResultModel):

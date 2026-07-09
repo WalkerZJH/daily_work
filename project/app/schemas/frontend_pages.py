@@ -91,7 +91,9 @@ class WorkbenchPayload(FrontendPageModel):
     display_lookup_status: dict[str, Any] | None = None
     rows: list[WorkbenchRow]
     scope: dict[str, Any] = Field(default_factory=dict)
+    scope_policy: dict[str, Any] = Field(default_factory=dict)
     query: dict[str, Any] = Field(default_factory=dict)
+    meta: dict[str, Any] = Field(default_factory=dict)
     detector_summary: dict[str, Any] = Field(default_factory=dict)
     current_user_id: str | None = None
     current_manufacturer_code: str | None = None
@@ -104,8 +106,20 @@ class WorkbenchPayload(FrontendPageModel):
     priority_risk_entity_count: int = 0
     today_high_score_rule_clues: list[dict[str, Any]] = Field(default_factory=list)
     monthly_risk_entities: list[dict[str, Any]] = Field(default_factory=list)
+    today_focus: dict[str, Any] = Field(default_factory=dict)
+    daily_detector_summary: dict[str, Any] = Field(default_factory=dict)
+    top_rule_clues: list[dict[str, Any]] = Field(default_factory=list)
+    risk_entities: list[dict[str, Any]] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     report_context: dict[str, Any] = Field(default_factory=dict)
+    observation_date: str | None = None
+    probability_report_month: str | None = None
+    probability_batch_available: bool | None = None
+    detector_run_date: str | None = None
+    detector_run_available: bool | None = None
+    context_status: str | None = None
+    manual_selection_required: bool | None = None
+    partial_ready: bool = False
     requested_report_month: str | None = None
     effective_report_month: str | None = None
     requested_run_date: str | None = None
@@ -146,9 +160,18 @@ class RiskEntitiesPayload(FrontendPageModel):
     display_lookup_status: dict[str, Any] | None = None
     scope: dict[str, Any] = Field(default_factory=dict)
     query: dict[str, Any] = Field(default_factory=dict)
+    meta: dict[str, Any] = Field(default_factory=dict)
     current_user_id: str | None = None
     warnings: list[str] = Field(default_factory=list)
     report_context: dict[str, Any] = Field(default_factory=dict)
+    observation_date: str | None = None
+    probability_report_month: str | None = None
+    probability_batch_available: bool | None = None
+    detector_run_date: str | None = None
+    detector_run_available: bool | None = None
+    context_status: str | None = None
+    manual_selection_required: bool | None = None
+    partial_ready: bool = False
     requested_report_month: str | None = None
     effective_report_month: str | None = None
     requested_run_date: str | None = None
@@ -196,6 +219,14 @@ class RiskEntityDetailPayload(FrontendPageModel):
     selected_horizon: str | None = None
     selected_horizon_profile: HorizonProfile | dict[str, Any] | None = None
     report_context: dict[str, Any] = Field(default_factory=dict)
+    observation_date: str | None = None
+    probability_report_month: str | None = None
+    probability_batch_available: bool | None = None
+    detector_run_date: str | None = None
+    detector_run_available: bool | None = None
+    context_status: str | None = None
+    manual_selection_required: bool | None = None
+    partial_ready: bool = False
     requested_report_month: str | None = None
     effective_report_month: str | None = None
     requested_run_date: str | None = None

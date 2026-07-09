@@ -668,10 +668,20 @@ class TopEntityService:
 
 
 def build_default_top_entity_service() -> TopEntityService:
-    batch_dir = os.getenv("RISK_RESULT_BATCH_DIR")
+    batch_dir = _default_batch_dir()
     if batch_dir:
         return TopEntityService(ParquetRiskResultRepository(batch_dir))
     return TopEntityService(_empty_repository(), scope_service=UserManufacturerScopeService())
+
+
+def _default_batch_dir() -> str | Path | None:
+    batch_root = os.getenv("RISK_RESULT_BATCH_ROOT")
+    if batch_root:
+        manifests = sorted(Path(batch_root).glob("report_month=*/batch_id=*/manifest.json"))
+        if manifests:
+            return manifests[-1].parent
+        return None
+    return os.getenv("RISK_RESULT_BATCH_DIR")
 
 
 def _filter_value(frame: pd.DataFrame, column: str, value: str | None) -> pd.DataFrame:

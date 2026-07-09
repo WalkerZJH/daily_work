@@ -19,6 +19,7 @@ def get_report_context_service() -> ReportContextService:
 @router.get("/report-context")
 def report_context(
     service: Annotated[ReportContextService, Depends(get_report_context_service)],
+    observation_date: str | None = Query(default=None),
     report_month: str | None = Query(default=None),
     run_date: str | None = Query(default=None),
     horizon: str | None = Query(default=None),
@@ -26,6 +27,7 @@ def report_context(
     user_id: str | None = Query(default=None),
 ) -> dict:
     return service.resolve(
+        observation_date=observation_date,
         report_month=report_month,
         run_date=run_date,
         horizon=horizon,

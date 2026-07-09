@@ -10,6 +10,7 @@ from app.main import app
 def test_formal_mode_without_result_batch_dir_does_not_inject_default_payload_or_metrics(monkeypatch) -> None:
     from app.api.routes_frontend_pages import get_frontend_page_service
 
+    monkeypatch.delenv("RISK_RESULT_BATCH_ROOT", raising=False)
     monkeypatch.delenv("RISK_RESULT_BATCH_DIR", raising=False)
     monkeypatch.delenv("ALLOW_MOCK_PAYLOADS", raising=False)
     get_frontend_page_service.cache_clear()
@@ -30,6 +31,7 @@ def test_formal_mode_without_result_batch_dir_does_not_inject_default_payload_or
 
 
 def test_formal_mode_without_result_batch_dir_does_not_claim_batch_manufacturer_ready(monkeypatch) -> None:
+    monkeypatch.delenv("RISK_RESULT_BATCH_ROOT", raising=False)
     monkeypatch.delenv("RISK_RESULT_BATCH_DIR", raising=False)
     monkeypatch.delenv("ALLOW_MOCK_PAYLOADS", raising=False)
 
@@ -40,4 +42,4 @@ def test_formal_mode_without_result_batch_dir_does_not_claim_batch_manufacturer_
     assert payload["ready"] is False
     assert payload["scope_source"] == "result_batch_unavailable"
     assert payload["manufacturers"] == []
-    assert payload["date_resolution_status"] == "no_available_batch"
+    assert payload["date_resolution_status"] == "no_available_context"
