@@ -8,7 +8,12 @@ import pandas as pd
 
 from .business_copy_renderer import validate_no_forbidden_claims
 from .manifest import load_manifest
-from .schemas import RISK_CARD_REQUIRED_COLUMNS, RISK_ENTITY_REQUIRED_COLUMNS, RISK_EVIDENCE_REQUIRED_COLUMNS
+from .schemas import (
+    RISK_CARD_REQUIRED_COLUMNS,
+    RISK_ENTITY_HORIZON_PROFILE_REQUIRED_COLUMNS,
+    RISK_ENTITY_REQUIRED_COLUMNS,
+    RISK_EVIDENCE_REQUIRED_COLUMNS,
+)
 
 
 def validate_batch(batch_dir: str | Path) -> None:
@@ -16,6 +21,9 @@ def validate_batch(batch_dir: str | Path) -> None:
     manifest = load_manifest(batch)
     _ = manifest
     validate_columns(load_table(batch, "risk_entities"), RISK_ENTITY_REQUIRED_COLUMNS, "risk_entities")
+    horizon_profiles = load_table(batch, "risk_entity_horizon_profiles")
+    if manifest.schema_version.endswith("_v2") or not horizon_profiles.empty:
+        validate_columns(horizon_profiles, RISK_ENTITY_HORIZON_PROFILE_REQUIRED_COLUMNS, "risk_entity_horizon_profiles")
     validate_columns(load_table(batch, "risk_cards"), RISK_CARD_REQUIRED_COLUMNS, "risk_cards")
     validate_columns(load_table(batch, "risk_card_evidence"), RISK_EVIDENCE_REQUIRED_COLUMNS, "risk_card_evidence")
 
@@ -38,4 +46,3 @@ def load_table(batch: Path, name: str) -> pd.DataFrame:
     if csv.exists():
         return pd.read_csv(csv)
     return pd.DataFrame()
-

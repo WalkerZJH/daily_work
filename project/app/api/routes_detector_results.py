@@ -41,6 +41,15 @@ def detector_runs(
     return service.runs(report_month=report_month, run_date=run_date, limit=limit)
 
 
+@router.get("/daily-detector/dates")
+def daily_detector_dates(
+    service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
+    report_month: str | None = None,
+    limit: int = Query(default=100, ge=1, le=500),
+) -> dict:
+    return service.run_dates(report_month=report_month, limit=limit)
+
+
 @router.get("/daily-detector/status", response_model=DailyDetectorStatusResponse)
 def daily_detector_status(
     service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
@@ -103,11 +112,17 @@ def risk_entity_detector_evidence(
     risk_entity_id: str,
     service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
     detector_run_id: str | None = None,
+    run_date: str | None = None,
+    detector_family: str | None = None,
+    detector_id: str | None = None,
 ) -> dict:
     try:
         return service.risk_entity_detector_evidence(
             risk_entity_id=risk_entity_id,
             detector_run_id=detector_run_id,
+            run_date=run_date,
+            detector_family=detector_family,
+            detector_id=detector_id,
         )
     except KeyError as exc:
         raise HTTPException(

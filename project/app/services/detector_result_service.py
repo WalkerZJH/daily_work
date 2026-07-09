@@ -25,6 +25,7 @@ SEMANTIC_CAVEATS = [
     "detector_score is rule inspection score, not probability",
     "daily detector clues do not create risk_entities",
     "monthly_risk_probability comes from monthly risk_result_batch and does not change daily",
+    "monthly model probabilities do not change daily",
 ]
 CONFIG_EDIT_SEMANTICS = (
     "配置修改只在下一次 detector 巡检运行后生效；历史 detector 结果不会被静默改写。"
@@ -86,6 +87,35 @@ class DetectorResultService:
             "warnings": [] if items else [MISSING_WARNING],
         }
 
+    def run_dates(
+        self,
+        *,
+        report_month: str | None = None,
+        limit: int = 100,
+    ) -> dict[str, Any]:
+        runs = self._read_frame("list_daily_detector_runs", report_month=report_month)
+        runs = _sort_frame(runs, ["run_date", "created_at"], ascending=False).head(max(int(limit), 0))
+        items = []
+        for _, row in runs.iterrows():
+            items.append(
+                {
+                    "detector_run_id": _text(row.get("detector_run_id")),
+                    "run_date": _text(row.get("run_date")),
+                    "report_month": _text(row.get("report_month")),
+                    "status": "ready",
+                    "detector_config_version": _text(row.get("detector_config_version")),
+                    "clue_count": _int(row.get("clue_count")),
+                    "attached_high_risk_count": _int(row.get("attached_high_risk_count")),
+                }
+            )
+        return {
+            "ready": bool(items),
+            "source": SOURCE,
+            "items": items,
+            "semantic_caveats": SEMANTIC_CAVEATS,
+            "warnings": [] if items else [MISSING_WARNING],
+        }
+
     def clues(
         self,
         *,
@@ -139,11 +169,22 @@ class DetectorResultService:
         *,
         risk_entity_id: str,
         detector_run_id: str | None = None,
+        run_date: str | None = None,
+        detector_family: str | None = None,
+        detector_id: str | None = None,
     ) -> dict[str, Any]:
         entity = self.repository.get_risk_entity(risk_entity_id)
         if entity is None:
             raise KeyError(risk_entity_id)
         evidence = self._read_high_risk_evidence(risk_entity_id, detector_run_id)
+        evidence = _filter_frame(
+            evidence,
+            {
+                "run_date": run_date,
+                "detector_family": detector_family,
+                "detector_id": detector_id,
+            },
+        )
         catalog = {item["detector_id"]: item for item in self.catalog()["items"]}
         return {
             "risk_entity_id": risk_entity_id,
@@ -295,6 +336,15 @@ def _sort_frame(frame: pd.DataFrame, columns: list[str], *, ascending: bool) -> 
     if not available:
         return frame
     return frame.sort_values(available, ascending=ascending, na_position="last", kind="mergesort")
+
+
+def _filter_frame(frame: pd.DataFrame, filters: dict[str, Any]) -> pd.DataFrame:
+    out = frame.copy()
+    for column, value in filters.items():
+        if value is None or column not in out:
+            continue
+        out = out[out[column].astype(str).eq(str(value))]
+    return out
 
 
 def _first_number(row: dict[str, Any], fields: list[str]) -> float | None:

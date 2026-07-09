@@ -16,6 +16,7 @@ from .schemas import (
     DETECTOR_CATALOG_REQUIRED_COLUMNS,
     HIGH_RISK_DETECTOR_EVIDENCE_REQUIRED_COLUMNS,
     MONTHLY_REPORT_REQUIRED_COLUMNS,
+    RISK_ENTITY_HORIZON_PROFILE_REQUIRED_COLUMNS,
     RISK_CARD_REQUIRED_COLUMNS,
     RISK_ENTITY_REQUIRED_COLUMNS,
     RISK_EVIDENCE_REQUIRED_COLUMNS,
@@ -34,12 +35,15 @@ FORBIDDEN_CLAIMS = [
 
 def validate_result_batch(batch_dir: str | Path) -> None:
     batch = Path(batch_dir)
-    load_manifest(batch)
+    manifest = load_manifest(batch)
     for table in STANDARD_TABLES:
+        if table == "risk_entity_horizon_profiles" and not _requires_horizon_profiles(manifest.schema_version):
+            continue
         if not (batch / f"{table}.parquet").exists() and not (batch / f"{table}.csv").exists():
             raise FileNotFoundError(f"Missing standard result table: {table}")
 
     risk_entities = _load_table(batch, "risk_entities")
+    risk_entity_horizon_profiles = _load_table(batch, "risk_entity_horizon_profiles")
     risk_cards = _load_table(batch, "risk_cards")
     risk_card_evidence = _load_table(batch, "risk_card_evidence")
     monthly_reports = _load_table(batch, "monthly_reports")
@@ -50,6 +54,8 @@ def validate_result_batch(batch_dir: str | Path) -> None:
     high_risk_detector_evidence = _load_table(batch, "high_risk_detector_evidence")
 
     _require_columns(risk_entities, RISK_ENTITY_REQUIRED_COLUMNS, "risk_entities")
+    if _requires_horizon_profiles(manifest.schema_version) or not risk_entity_horizon_profiles.empty:
+        _require_columns(risk_entity_horizon_profiles, RISK_ENTITY_HORIZON_PROFILE_REQUIRED_COLUMNS, "risk_entity_horizon_profiles")
     _require_columns(risk_cards, RISK_CARD_REQUIRED_COLUMNS, "risk_cards")
     _require_columns(risk_card_evidence, RISK_EVIDENCE_REQUIRED_COLUMNS, "risk_card_evidence")
     _require_columns(monthly_reports, MONTHLY_REPORT_REQUIRED_COLUMNS, "monthly_reports")
@@ -64,6 +70,13 @@ def validate_result_batch(batch_dir: str | Path) -> None:
         raise ValueError("risk_entities contains auto_dispatch_allowed=true.")
 
     entity_ids = set(risk_entities["risk_entity_id"].astype(str))
+    if not risk_entity_horizon_profiles.empty and not set(risk_entity_horizon_profiles["risk_entity_id"].astype(str)).issubset(entity_ids):
+        raise ValueError("risk_entity_horizon_profiles contains risk_entity_id outside risk_entities.")
+    if not risk_entity_horizon_profiles.empty and "involved_amount_source" in risk_entity_horizon_profiles:
+        forbidden_sources = {"order_amount_total", "purchase_amount_total", "full_history_amount", "all_history_amount"}
+        sources = set(risk_entity_horizon_profiles["involved_amount_source"].dropna().astype(str))
+        if sources & forbidden_sources:
+            raise ValueError("risk_entity_horizon_profiles involved_amount must not use full-history amount sources.")
     if not set(risk_cards["risk_entity_id"].astype(str)).issubset(entity_ids):
         raise ValueError("risk_cards contains risk_entity_id outside risk_entities.")
     if not set(risk_card_evidence["risk_entity_id"].astype(str)).issubset(entity_ids):
@@ -91,6 +104,10 @@ def _load_table(batch: Path, name: str) -> pd.DataFrame:
     if csv.exists():
         return pd.read_csv(csv)
     return pd.DataFrame()
+
+
+def _requires_horizon_profiles(schema_version: str) -> bool:
+    return str(schema_version).endswith("_v2") or "horizon_profile" in str(schema_version)
 
 
 def _require_columns(df: pd.DataFrame, columns: Iterable[str], name: str) -> None:

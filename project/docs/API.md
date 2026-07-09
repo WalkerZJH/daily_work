@@ -2,32 +2,146 @@
 
 ## Frontend Page API v1
 
-这些接口供 Vue 页面读取稳定页面数据，前端不直接组合调用 `/api/v0/backbone` 或 `/api/v0/detectors`。第二层算法抽离完成后，后端只需要让结果批次或 `risk_model_core` payload 按以下字段供数，前端链路无需改动。
+这些接口是前端的唯一正式数据源。前端不直接读取 `risk_result_batch` 文件，不直接调用 `risk_model_core`，不从 `algo_main` 静态文件取映射，也不自行做用户 scope、排序或裁剪。
 
-- `GET /api/v1/workbench`：返回生产商视角的医院 × 药品主工作台，`rows` 固定按 `business_score` 降序。`business_score = risk_probability * average_consumption_in_window`。当 global 当月数量不足时，后端直接补齐到 `fill_policy.workbench_target_count = 20`。
-- `GET /api/v1/risk-entities`：返回风险实体清单，核心字段包括 `entity_id`、`hospital_name`、`drug_name`、`manufacturer_code`、`horizon`、`risk_probability`、`average_consumption_in_window`、`business_score`、`risk_band`、`risk_card_count`、`primary_reason`。
-- `GET /api/v1/risk-entities/{entity_id}`：返回详情页数据，`horizon_profiles` 至少覆盖 `H3`、`H6`、`H12`；每个 horizon 包含 `detector_results`、`xgboost_shap`、`detector_narrative`。
-- `GET /api/v1/oneshot-terminals`：返回新进终端监测数据，核心字段包括 `oneshot_count`、`repurchase_propensity`、`expected_repurchase_amount`、`priority`、`reason`。
-- `GET /api/v1/monthly-reports`：返回往期日报切换、月报列表和批次上下文。
-- `GET /api/v1/proof-cases`：返回成功案例列表。
+正式链路为：
 
-页面批次上下文字段统一为 `report_month`、`score_as_of_date`、`data_watermark_at`、`score_batch_id`、`result_batch_id`、`primary_horizon`、`primary_horizon_label`。当前实现由 `risk_model_core.page_payload_builder` 提供确定性默认 payload；配置 `RISK_RESULT_BATCH_DIR` 后可读取结果批次中的页面 payload。
+```text
+front_end -> project API -> risk_model_core -> risk_result_batch
+```
 
-当前服务对外语义为 `supply_chain_order_risk_algo_backend`，API 前缀为 `/api/v0`。代码中若仍出现 `terminal_guard_algo_backend`，仅作为 legacy name 兼容。
+客户页面 API 不暴露 `loss_value`、`monthly_loss_value`、`business_score`、`expected_loss` 或 `model_metrics`。内部评估指标可以保留在算法报告或 internal service 中，但不作为当前客户工作台 payload 的必需字段。
 
-`GET /api/v1/workbench` 与 `GET /api/v1/monthly-reports` 均返回 `model_metrics`。主干模型和所有可输出具体结果的模型都需要提供关键指标，至少包括 `auc`、`prauc`、`ece`、`brier`、`topk_recall`。
+### Workbench
 
-`topk_recall` 必须同时提供：
+`GET /api/v1/workbench`
 
-- `requested_k_percent`：请求的 TopK 占比，例如 0.10。
-- `actual_k_percent`：实际评估占比，必须等于 `selected_count / evaluation_population` 四位小数回填。
-- `selected_count`：实际入选样本数。
-- `evaluation_population`：评估分母。
-- `true_positive_count`：TopK 命中真实风险数。
-- `recall`：`true_positive_count / positive_count` 的召回结果。
-- `k_policy`：`direct_actual_share` 或 `union_backfilled_actual_share`。
+查询参数：
 
-如果多模型 union 后再计算 TopK recall，页面和 API 均使用 union 之后的实际占比作为 K。例如请求 Top 10%，union 后覆盖 12.8%，则 `requested_k_percent=0.10`、`actual_k_percent=0.1280`、`k_policy=union_backfilled_actual_share`。
+- `manufacturer_code`：可重复传入；后端会与当前用户可见 scope 取交集，不能越权。
+- `report_month`：可选；用于选择月度风险清单。
+- `run_date`：可选；用于选择每日 detector 巡检结果，不代表月度模型概率每日重算。
+- `horizon`：`H3`、`H6`、`H12`，默认 `H6`。
+- `top_n`：动态参数，默认 20，最小 1，最大 100。
+- `sort_by`：`risk_probability` 或 `involved_amount`，默认 `risk_probability`。
+- `X-User-Id` header：当前用户标识；默认 `admin`。
+
+语义：
+
+- 月度风险清单按 `report_month + horizon + manufacturer_code + top_n + sort_by` 获取。
+- 每日巡检按 `run_date + manufacturer_code` 获取 detector 摘要。
+- `risk_probability` 是月报模型概率，不随 `run_date` 每日变化。
+- `involved_amount` 是所选 horizon 窗口内涉及金额，不是全历史金额。
+- detector 只作为规则巡检线索和证据摘要，`detector_score` 不是概率。
+
+返回重点字段：
+
+```json
+{
+  "batch_context": {
+    "report_month": "2025-12",
+    "result_batch_id": "risk_result_batch_monthly_v2",
+    "primary_horizon": "H6",
+    "involved_amount_definition": "selected horizon window consumption"
+  },
+  "scope": {
+    "manufacturer_count": 2,
+    "manufacturer_codes": ["M1", "M2"]
+  },
+  "query": {
+    "horizon": "H6",
+    "top_n": 20,
+    "sort_by": "risk_probability"
+  },
+  "detector_summary": {
+    "detector_clue_count": 12,
+    "latest_detector_run_date": "2026-07-09",
+    "detector_status_summary": "ready"
+  },
+  "rows": [
+    {
+      "entity_id": "RE-001",
+      "risk_entity_id": "RE-001",
+      "manufacturer_code": "M1",
+      "horizon": "H6",
+      "risk_probability": 0.82,
+      "involved_amount": 128000.0,
+      "involved_amount_source": "selected_horizon_profile",
+      "risk_band": "high",
+      "primary_reason": "purchase interval overdue"
+    }
+  ]
+}
+```
+
+### Risk Entity List
+
+`GET /api/v1/risk-entities`
+
+查询参数与 `/api/v1/workbench` 对齐：`manufacturer_code`、`report_month`、`horizon`、`top_n`、`sort_by`、`X-User-Id`。该接口复用 TopEntity service 的用户 scope、horizon profile 和排序逻辑。
+
+返回列表字段包括 `entity_id`、`risk_entity_id`、`manufacturer_code`、`hospital_name`、`drug_name`、`horizon`、`risk_probability`、`involved_amount`、`involved_amount_source`、`risk_band`、`risk_card_count`、`primary_reason`。不返回 `business_score`、`loss_value` 或 `expected_loss`。
+
+### Risk Entity Detail
+
+`GET /api/v1/risk-entities/{entity_id}?horizon=H6`
+
+返回已有月度风险实体详情。`selected_horizon_profile` 表示当前 horizon 的同口径字段：
+
+- `horizon`
+- `risk_probability`
+- `involved_amount`
+- `involved_amount_source`
+- `risk_level` / `risk_band`
+- `main_reason_summary`
+- `detector_evidence_count`
+- `updated_at`
+
+详情页不会因为每日 detector clue 创建新的风险实体。
+
+### Probability Trend
+
+`GET /api/v1/risk-entities/{entity_id}/probability-trend?horizon=H6`
+
+按同一 horizon 聚合返回历史月报趋势：
+
+```json
+{
+  "risk_entity_id": "RE-001",
+  "horizon": "H6",
+  "items": [
+    {
+      "report_month": "2025-10",
+      "horizon": "H6",
+      "risk_probability": 0.71,
+      "involved_amount": 98000.0
+    }
+  ]
+}
+```
+
+### Current User Manufacturer Options
+
+`GET /api/v1/my/manufacturers`
+
+查询参数：
+
+- `report_month`：可选。
+- `manufacturer_code`：可选，可重复传入；非管理员只返回当前用户 scope 的交集。
+- `X-User-Id` header：当前用户标识。
+
+返回字段包括 `user_id`、`manufacturer_count`、`manufacturers[].manufacturer_code`、`manufacturers[].manufacturer_display_name`。
+
+### Daily Detector Dates
+
+`GET /api/v1/daily-detector/dates`
+
+查询参数：
+
+- `report_month`：可选。
+- `limit`：默认 100，范围 1 到 500。
+
+返回可选日报日期及巡检状态，字段包括 `run_date`、`report_month`、`detector_run_id`、`detector_config_version`、`clue_count`、`attached_high_risk_count`。该接口只说明每日规则巡检批次，不暗示月度模型概率每日变化。
 
 ## User Scoped Top Entity API
 
@@ -46,7 +160,7 @@
 - `top_n`：动态参数，默认 20，最小 1。
 - `max_n`：默认 50，`top_n > max_n` 时后端 clamp 并返回 warning。
 - `group_by`：`user_scope` 或 `manufacturer`，默认 `user_scope`。`manufacturer` 保留为 deprecated/internal-only，用于后续企业均衡覆盖分析。
-- `ranking_strategy`：`probability`、`mixed_v2`、`business_priority`、`interval`、`frequency`，默认 `probability`。`mixed_v2` 保留为 deprecated/internal-only；缺少 interval/frequency/business priority 字段时返回明确 warning，并设置 `ranking_strategy_effective=probability`。
+- `ranking_strategy`：`probability`、`involved_amount`、`mixed_v2`、`business_priority`、`interval`、`frequency`，默认 `probability`。页面 API 的 `sort_by=risk_probability` 会映射为 `probability`，`sort_by=involved_amount` 会映射为 `involved_amount`。`mixed_v2` 保留为 deprecated/internal-only；缺少 interval/frequency/business priority 字段时返回明确 warning，并设置 `ranking_strategy_effective=probability`。
 - `candidate_type`：`recurring`、`one_shot`、`observation`、`all`，默认 `recurring`。
 - `probability_threshold`：可选，0 到 1；deprecated/internal-only，不是默认策略。
 - `include_threshold_overflow`：默认 `false`；deprecated/internal-only，不是默认策略。
@@ -91,6 +205,26 @@
 当前正式 batch 的 `risk_entities` 有 `risk_probability_value`，但可能缺少 interval、frequency、business priority 的数值排序字段。因此只有显式请求 `ranking_strategy=mixed_v2` 且字段不足时，response 才会保留请求策略，同时将 `effective_ranking_strategy` / `ranking_strategy_effective` 降级为 `probability` 并返回 `missing_mixed_fields` warning。该降级不是重新解释概率，也不会产生自动派单。
 
 接口不得返回 AUC、ECE、PR-AUC、XGBoost、feature ablation、leakage audit、hyperparameters 等内部算法指标。`observation_fill` 与 `one_shot_fill` 仅用于补足展示列表，返回项必须保留 `candidate_type`，且不标记为 high risk；one-shot 项不展示 recurring churn probability。
+
+## Detector Result Table APIs
+
+以下接口只读 Model 侧 result-batch detector 表，不在 `project` 后端重新计算 detector，不读取 raw/source DB，不依赖 `algo_main`。
+
+- `GET /api/v1/daily-detector/status`：返回当前 detector result tables 是否 ready、最新 `run_date`、source 和 warnings。
+- `GET /api/v1/daily-detector/dates`：返回可选日报日期，支持 `report_month`、`limit`。
+- `GET /api/v1/daily-detector/clues`：兼容入口，返回每日规则线索。
+- `GET /api/v1/detectors/catalog`：返回 detector catalog。`implemented` 表示可用；`interface_only`、`experimental`、`reserved` 不能包装成已上线能力。
+- `GET /api/v1/detectors/runs`：返回 detector run 列表，支持 `report_month`、`run_date`、`limit`，包含 `detector_config_version`。
+- `GET /api/v1/detectors/clues`：返回全部规则线索，支持 `detector_run_id`、`run_date`、`detector_id`、`detector_family`、`manufacturer_code`、`hospital_code`、`drug_group`、`only_monthly_high_risk`、`page`、`page_size`。
+- `GET /api/v1/risk-entities/{risk_entity_id}/detector-evidence`：返回已有月度风险实体上的 detector evidence，支持 `detector_run_id`、`run_date`、`detector_family`、`detector_id`。
+- `GET /api/v1/detectors/config-status`：返回当前结果使用的配置版本和配置修改语义。参数修改只在下一次 detector 巡检后生效，历史结果不会被静默改写。
+
+语义约束：
+
+- `detector_score` 是规则巡检分，不是概率，不代表 `risk_probability`。
+- `daily_detector_clues` 可以包含非月报高风险对象，但这些对象不能因此成为 `risk_entities`。
+- `high_risk_detector_evidence` 只附着到已有 `risk_entity_id`。
+- 每日 detector 巡检结果可以每日变化，但月度模型概率来自低频、稳定、可复现的 monthly result batch。
 
 ## Display Lookup Readiness API
 
@@ -205,7 +339,11 @@ lookup 就绪时返回 200：
 
 训练集构建可以使用多个历史 `origin_date`；`/api/v0/backbone/predict` 只能表示单个 `as_of_date` 的当前预测。对同一检测日，每个 `org_code × product_line_code` 只输出 1 条 P_alive 候选结果。模型缺失时 fallback 到 `palive_interval_proxy`，并通过 warnings 标明。
 
-## Detector 目录
+## Legacy Detector Runtime APIs
+
+以下 `/api/v0/detectors` 接口是旧版后端运行型 detector / debug 链路，不是当前客户页面正式数据源。正式月报页面、每日规则线索页和详情页 evidence 面板应使用 `/api/v1/detectors/*`、`/api/v1/daily-detector/*` 和 `/api/v1/risk-entities/{risk_entity_id}/detector-evidence`。
+
+### Detector 目录
 
 `GET /api/v0/detectors/catalog`
 

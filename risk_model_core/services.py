@@ -15,6 +15,20 @@ class RiskQueryService:
     def list_entities(self, **filters: Any) -> list[dict[str, Any]]:
         return self.repository.list_risk_entities(**filters).to_dict("records")
 
+    def list_horizon_profiles(
+        self,
+        risk_entity_id: str | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        **filters: Any,
+    ) -> list[dict[str, Any]]:
+        return self.repository.list_risk_entity_horizon_profiles(
+            risk_entity_id=risk_entity_id,
+            report_month=report_month,
+            horizon=horizon,
+            **filters,
+        ).to_dict("records")
+
     def list_rankable_entities(
         self,
         *,

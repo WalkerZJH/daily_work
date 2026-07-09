@@ -17,7 +17,8 @@ class BatchContext(FrontendPageModel):
     result_batch_id: str
     primary_horizon: str
     primary_horizon_label: str
-    score_formula: str
+    score_formula: str | None = None
+    involved_amount_definition: str | None = None
 
 
 class OverviewMetric(FrontendPageModel):
@@ -68,9 +69,12 @@ class WorkbenchRow(FrontendPageModel):
     hospital_name: str
     drug_name: str
     region: str
+    horizon: str | None = None
     risk_probability: float = Field(ge=0, le=1)
+    involved_amount: int = 0
+    involved_amount_source: str | None = None
     average_consumption_in_window: int
-    business_score: int
+    risk_band: str | None = None
     source_type: str
     fill_source: str
     action: str
@@ -79,10 +83,12 @@ class WorkbenchRow(FrontendPageModel):
 class WorkbenchPayload(FrontendPageModel):
     batch_context: BatchContext
     overview_metrics: list[OverviewMetric]
-    model_metrics: list[ModelEvaluationMetric] = Field(default_factory=list)
     display_lookup_status: dict[str, Any] | None = None
     fill_policy: WorkbenchFillPolicy
     rows: list[WorkbenchRow]
+    scope: dict[str, Any] = Field(default_factory=dict)
+    query: dict[str, Any] = Field(default_factory=dict)
+    detector_summary: dict[str, Any] = Field(default_factory=dict)
 
 
 class RiskEntityItem(FrontendPageModel):
@@ -93,8 +99,9 @@ class RiskEntityItem(FrontendPageModel):
     region: str
     horizon: str
     risk_probability: float = Field(ge=0, le=1)
+    involved_amount: int = 0
+    involved_amount_source: str | None = None
     average_consumption_in_window: int
-    business_score: int
     risk_band: str
     risk_color: str
     last_purchase_date: str
@@ -104,6 +111,7 @@ class RiskEntityItem(FrontendPageModel):
     monthly_status: str
     value_level: str
     primary_reason: str
+    main_reason_summary: str | None = None
 
 
 class RiskEntitiesPayload(FrontendPageModel):
@@ -111,6 +119,8 @@ class RiskEntitiesPayload(FrontendPageModel):
     entities: list[RiskEntityItem]
     pagination: dict[str, int]
     display_lookup_status: dict[str, Any] | None = None
+    scope: dict[str, Any] = Field(default_factory=dict)
+    query: dict[str, Any] = Field(default_factory=dict)
 
 
 class DetectorResultItem(FrontendPageModel):
@@ -133,8 +143,14 @@ class HorizonProfile(FrontendPageModel):
     horizon: str
     label: str
     risk_probability: float = Field(ge=0, le=1)
-    average_consumption_in_window: int
-    business_score: int
+    involved_amount: int = 0
+    involved_amount_source: str | None = None
+    average_consumption_in_window: int | None = None
+    risk_level: str | None = None
+    risk_band: str | None = None
+    main_reason_summary: str | None = None
+    detector_evidence_count: int | None = None
+    updated_at: str | None = None
     reason: str
     detector_results: list[DetectorResultItem]
     xgboost_shap: list[ShapHighlight]
@@ -144,6 +160,8 @@ class HorizonProfile(FrontendPageModel):
 class RiskEntityDetailPayload(FrontendPageModel):
     entity: RiskEntityItem
     horizon_profiles: dict[str, HorizonProfile]
+    selected_horizon: str | None = None
+    selected_horizon_profile: HorizonProfile | dict[str, Any] | None = None
 
 
 class OneshotSummary(FrontendPageModel):
@@ -199,7 +217,6 @@ class MonthlyReportItem(FrontendPageModel):
 class MonthlyReportsPayload(FrontendPageModel):
     batch_context: BatchContext
     overview_metrics: list[OverviewMetric]
-    model_metrics: list[ModelEvaluationMetric] = Field(default_factory=list)
     daily_report_options: list[DailyReportOption]
     monthly_reports: list[MonthlyReportItem]
 

@@ -43,6 +43,17 @@ class RiskResultRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def list_risk_entity_horizon_profiles(
+        self,
+        risk_entity_id: str | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        **filters: Any,
+    ) -> pd.DataFrame:
+        """Return per-horizon result-batch profile rows for frontend switching."""
+        raise NotImplementedError
+
+    @abstractmethod
     def get_risk_entity(self, risk_entity_id: str) -> dict[str, Any] | None:
         raise NotImplementedError
 
@@ -144,6 +155,22 @@ class ParquetRiskResultRepository(RiskResultRepository):
             ascending=ascending,
             limit=limit,
         )
+
+    def list_risk_entity_horizon_profiles(
+        self,
+        risk_entity_id: str | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        **filters: Any,
+    ) -> pd.DataFrame:
+        normalized = dict(filters)
+        if risk_entity_id is not None:
+            normalized["risk_entity_id"] = risk_entity_id
+        if report_month is not None:
+            normalized["report_month"] = report_month
+        if horizon is not None:
+            normalized["horizon"] = horizon
+        return apply_filters(self.load_table("risk_entity_horizon_profiles"), normalized)
 
     def get_risk_entity(self, risk_entity_id: str) -> dict[str, Any] | None:
         df = self.load_table("risk_entities")
@@ -248,6 +275,22 @@ class InMemoryRiskResultRepository(RiskResultRepository):
             limit=limit,
         )
 
+    def list_risk_entity_horizon_profiles(
+        self,
+        risk_entity_id: str | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        **filters: Any,
+    ) -> pd.DataFrame:
+        normalized = dict(filters)
+        if risk_entity_id is not None:
+            normalized["risk_entity_id"] = risk_entity_id
+        if report_month is not None:
+            normalized["report_month"] = report_month
+        if horizon is not None:
+            normalized["horizon"] = horizon
+        return apply_filters(self.load_table("risk_entity_horizon_profiles"), normalized)
+
     def get_risk_entity(self, risk_entity_id: str) -> dict[str, Any] | None:
         rows = self.list_risk_entities(risk_entity_id=risk_entity_id)
         return None if rows.empty else rows.iloc[0].to_dict()
@@ -335,6 +378,15 @@ class ClickHouseRiskResultRepository(RiskResultRepository):
         sort_by: str | list[str] | None = None,
         ascending: bool = False,
         limit: int | None = None,
+    ) -> pd.DataFrame:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
+    def list_risk_entity_horizon_profiles(
+        self,
+        risk_entity_id: str | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        **filters: Any,
     ) -> pd.DataFrame:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 

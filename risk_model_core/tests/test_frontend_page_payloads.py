@@ -55,6 +55,52 @@ def repository_without_payload_json() -> InMemoryRiskResultRepository:
         manifest,
         {
             "risk_entities": risk_entities,
+            "risk_entity_horizon_profiles": pd.DataFrame(
+                [
+                    {
+                        "risk_entity_id": "entity-1",
+                        "report_month": "2025-12",
+                        "horizon": "H3",
+                        "risk_probability": 0.7,
+                        "involved_amount": 30,
+                        "involved_amount_source": "purchase_amount_sum_last_3m_asof_cutoff",
+                        "risk_level": "yellow",
+                        "risk_band": "Observation",
+                        "main_reason_summary": "H3 profile",
+                        "reason": "H3 profile",
+                        "detector_evidence_count": 0,
+                        "updated_at": "2025-12-31T00:00:00+00:00",
+                    },
+                    {
+                        "risk_entity_id": "entity-1",
+                        "report_month": "2025-12",
+                        "horizon": "H6",
+                        "risk_probability": 0.8,
+                        "involved_amount": 60,
+                        "involved_amount_source": "purchase_amount_sum_last_6m_asof_cutoff",
+                        "risk_level": "high",
+                        "risk_band": "High risk",
+                        "main_reason_summary": "H6 profile",
+                        "reason": "H6 profile",
+                        "detector_evidence_count": 0,
+                        "updated_at": "2025-12-31T00:00:00+00:00",
+                    },
+                    {
+                        "risk_entity_id": "entity-1",
+                        "report_month": "2025-12",
+                        "horizon": "H12",
+                        "risk_probability": 0.9,
+                        "involved_amount": 120,
+                        "involved_amount_source": "purchase_amount_sum_last_12m_asof_cutoff",
+                        "risk_level": "high",
+                        "risk_band": "High risk",
+                        "main_reason_summary": "H12 profile",
+                        "reason": "H12 profile",
+                        "detector_evidence_count": 0,
+                        "updated_at": "2025-12-31T00:00:00+00:00",
+                    },
+                ]
+            ),
             "risk_cards": pd.DataFrame(),
             "risk_card_evidence": pd.DataFrame(),
             "risk_entity_timeline": pd.DataFrame(),
@@ -70,7 +116,9 @@ def test_dynamic_workbench_payload_uses_result_batch_rows_without_demo_fill() ->
     assert payload["batch_context"]["result_batch_id"] == "core-dynamic"
     assert len(payload["rows"]) == 1
     assert payload["rows"][0]["entity_id"] == "entity-1"
-    assert payload["rows"][0]["business_score"] == 80
+    assert payload["rows"][0]["involved_amount"] == 60
+    assert payload["rows"][0]["involved_amount_source"] == "purchase_amount_sum_last_6m_asof_cutoff"
+    assert "business_score" not in payload["rows"][0]
     assert payload["meta"]["model_core_filled_shortage"] is False
 
 
@@ -78,7 +126,10 @@ def test_dynamic_detail_payload_contains_all_horizons_and_neutral_shap() -> None
     detail = PagePayloadBuilder(repository_without_payload_json()).build_frontend_risk_entity_detail_payload("entity-1")
 
     assert set(detail["horizon_profiles"]) == {"H3", "H6", "H12"}
+    assert detail["horizon_profiles"]["H3"]["involved_amount"] == 30
+    assert detail["horizon_profiles"]["H12"]["risk_probability"] == 0.9
     for profile in detail["horizon_profiles"].values():
         assert profile["detector_results"]
         assert profile["xgboost_shap"] == []
         assert profile["detector_narrative"]
+        assert "business_score" not in profile

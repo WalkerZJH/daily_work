@@ -258,20 +258,8 @@ class PagePayloadBuilder:
         row = self.repository.get_risk_entity(risk_entity_id)
         if row is None:
             raise KeyError(risk_entity_id)
-        item = _entity_item(pd.Series(row), self._card_counts())
-        profiles = {}
-        for horizon, label in [("H3", "3-month window"), ("H6", "6-month window"), ("H12", "12-month window")]:
-            profiles[horizon] = {
-                "horizon": horizon,
-                "label": label,
-                "risk_probability": item["risk_probability"],
-                "average_consumption_in_window": item["average_consumption_in_window"],
-                "business_score": item["business_score"],
-                "reason": f"{label}: review selected result-batch evidence.",
-                "detector_results": self._detector_results(risk_entity_id),
-                "xgboost_shap": [],
-                "detector_narrative": "Risk review is supported by result-batch evidence and purchasing rhythm context.",
-            }
+        item = _entity_item(pd.Series(row), self._card_counts(), self._primary_profile(row))
+        profiles = self._horizon_profiles(risk_entity_id)
         return {"entity": item, "horizon_profiles": profiles}
 
     def _build_frontend_oneshot_payload(
@@ -402,7 +390,8 @@ class PagePayloadBuilder:
             limit=top_n,
         )
         card_counts = self._card_counts()
-        return [_entity_item(row, card_counts) for _, row in rows.iterrows()]
+        profiles = self.repository.load_table("risk_entity_horizon_profiles")
+        return [_entity_item(row, card_counts, _matching_primary_profile(row, profiles)) for _, row in rows.iterrows()]
 
     def _batch_context(self) -> dict[str, Any]:
         manifest = self.repository.manifest()
@@ -415,7 +404,7 @@ class PagePayloadBuilder:
             "result_batch_id": manifest.batch_id,
             "primary_horizon": manifest.primary_horizon,
             "primary_horizon_label": f"{manifest.primary_horizon} window",
-            "score_formula": "risk_probability * average_consumption_in_window",
+            "involved_amount_definition": "selected horizon window consumption from result-batch horizon profiles",
         }
 
     def _card_counts(self) -> dict[str, int]:
@@ -470,6 +459,60 @@ class PagePayloadBuilder:
             )
         return results
 
+    def _primary_profile(self, row: dict[str, Any]) -> dict[str, Any] | None:
+        profiles = self.repository.list_risk_entity_horizon_profiles(
+            risk_entity_id=str(row.get("risk_entity_id")),
+            horizon=str(row.get("primary_horizon", row.get("horizon", ""))),
+        )
+        if profiles.empty:
+            return None
+        return profiles.iloc[0].to_dict()
+
+    def _horizon_profiles(self, risk_entity_id: str) -> dict[str, dict[str, Any]]:
+        profile_rows = self.repository.list_risk_entity_horizon_profiles(risk_entity_id=risk_entity_id)
+        detector_results = self._detector_results(risk_entity_id)
+        if not profile_rows.empty:
+            profiles: dict[str, dict[str, Any]] = {}
+            for _, row in profile_rows.iterrows():
+                horizon = str(row["horizon"])
+                profiles[horizon] = {
+                    "horizon": horizon,
+                    "label": f"{horizon} window",
+                    "risk_probability": _json_value(row.get("risk_probability")),
+                    "involved_amount": int(_number(row.get("involved_amount"), 0)),
+                    "involved_amount_source": _text(row.get("involved_amount_source")),
+                    "risk_level": _text(row.get("risk_level")),
+                    "risk_band": _text(row.get("risk_band")),
+                    "main_reason_summary": _safe_reason(row.get("main_reason_summary") or row.get("reason")),
+                    "reason": _safe_reason(row.get("reason") or row.get("main_reason_summary")),
+                    "detector_evidence_count": int(_number(row.get("detector_evidence_count"), 0)),
+                    "updated_at": _text(row.get("updated_at")),
+                    "detector_results": detector_results,
+                    "xgboost_shap": [],
+                    "detector_narrative": "Risk review is supported by result-batch evidence and purchasing rhythm context.",
+                }
+            return profiles
+
+        item = _entity_item(pd.Series(self.repository.get_risk_entity(risk_entity_id) or {}), self._card_counts())
+        profiles = {}
+        for horizon, label in [("H3", "3-month window"), ("H6", "6-month window"), ("H12", "12-month window")]:
+            profiles[horizon] = {
+                "horizon": horizon,
+                "label": label,
+                "risk_probability": item["risk_probability"],
+                "involved_amount": item.get("involved_amount", item.get("average_consumption_in_window", 0)),
+                "involved_amount_source": "legacy_risk_entities_row",
+                "risk_level": item.get("risk_band", ""),
+                "risk_band": item.get("risk_band", ""),
+                "main_reason_summary": f"{label}: review selected result-batch evidence.",
+                "reason": f"{label}: review selected result-batch evidence.",
+                "detector_evidence_count": 0,
+                "detector_results": detector_results,
+                "xgboost_shap": [],
+                "detector_narrative": "Risk review is supported by result-batch evidence and purchasing rhythm context.",
+            }
+        return profiles
+
     def _dashboard_metrics(self) -> dict[str, Any]:
         entities = self.repository.list_risk_entities()
         return {
@@ -479,21 +522,24 @@ class PagePayloadBuilder:
         }
 
 
-def _entity_item(row: pd.Series, card_counts: dict[str, int]) -> dict[str, Any]:
+def _entity_item(row: pd.Series, card_counts: dict[str, int], horizon_profile: dict[str, Any] | None = None) -> dict[str, Any]:
     entity_id = str(row["risk_entity_id"])
-    probability = _entity_probability(row)
-    average = _average_consumption(row)
+    profile = horizon_profile or {}
+    probability = _probability(profile.get("risk_probability")) if not _is_missing(profile.get("risk_probability")) else _entity_probability(row)
+    involved_amount = int(_number(profile.get("involved_amount"), _average_consumption(row)))
+    involved_amount_source = _text(profile.get("involved_amount_source")) or "risk_entities_legacy_amount"
     item = {
         "entity_id": entity_id,
         "hospital_name": _display_name(row, "hospital_display_name", "hospital_code", "Hospital"),
         "drug_name": _display_name(row, "drug_display_name", "drug_group", "Drug"),
         "manufacturer_code": str(row.get("manufacturer_code", "unknown")),
         "region": _text(row.get("region_display_name")) or _text(row.get("region_code")) or "Unknown region",
-        "horizon": str(row.get("primary_horizon", row.get("horizon", "H6"))),
+        "horizon": _text(profile.get("horizon")) or str(row.get("primary_horizon", row.get("horizon", "H6"))),
         "risk_probability": probability,
-        "average_consumption_in_window": average,
-        "business_score": round(probability * average),
-        "risk_band": _risk_band(row),
+        "involved_amount": involved_amount,
+        "involved_amount_source": involved_amount_source,
+        "average_consumption_in_window": involved_amount,
+        "risk_band": _text(profile.get("risk_band")) or _risk_band(row),
         "risk_color": _risk_color(row),
         "last_purchase_date": _text(row.get("last_purchase_date")) or "unknown",
         "days_since_last_purchase": int(_number(row.get("days_since_last_purchase"), 0)),
@@ -501,7 +547,8 @@ def _entity_item(row: pd.Series, card_counts: dict[str, int]) -> dict[str, Any]:
         "status": _status_label(row),
         "monthly_status": _text(row.get("monthly_status")) or "current_month_selected",
         "value_level": _text(row.get("potential_value_level")) or "unknown",
-        "primary_reason": _safe_reason(row.get("risk_type_label") or row.get("main_reason_summary")),
+        "main_reason_summary": _safe_reason(profile.get("main_reason_summary") or profile.get("reason") or row.get("main_reason_summary")),
+        "primary_reason": _safe_reason(profile.get("reason") or profile.get("main_reason_summary") or row.get("risk_type_label") or row.get("main_reason_summary")),
     }
     for field in OPTIONAL_RANKING_FIELDS:
         if field in row.index and not _is_missing(row.get(field)):
@@ -518,12 +565,28 @@ def _workbench_row(item: dict[str, Any]) -> dict[str, Any]:
         "drug_name": item["drug_name"],
         "region": item["region"],
         "risk_probability": item["risk_probability"],
+        "involved_amount": item["involved_amount"],
+        "involved_amount_source": item["involved_amount_source"],
         "average_consumption_in_window": item["average_consumption_in_window"],
-        "business_score": item["business_score"],
         "source_type": "result_batch",
         "fill_source": "backend_scope_query",
         "action": "view_detail",
     }
+
+
+def _matching_primary_profile(row: pd.Series, profiles: pd.DataFrame) -> dict[str, Any] | None:
+    if profiles.empty or "risk_entity_id" not in profiles:
+        return None
+    risk_entity_id = str(row.get("risk_entity_id"))
+    horizon = str(row.get("primary_horizon", row.get("horizon", "")))
+    matches = profiles[profiles["risk_entity_id"].astype(str).eq(risk_entity_id)]
+    if horizon and "horizon" in matches:
+        primary = matches[matches["horizon"].astype(str).eq(horizon)]
+        if not primary.empty:
+            return primary.iloc[0].to_dict()
+    if not matches.empty:
+        return matches.iloc[0].to_dict()
+    return None
 
 
 def _entity_probability(row: pd.Series) -> float:

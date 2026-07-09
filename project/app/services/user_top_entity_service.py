@@ -25,12 +25,13 @@ from risk_model_core.manifest import RiskResultManifest  # noqa: E402
 
 USER_MANUFACTURER_SCOPE_PATH = PROJECT_ROOT / "config" / "user_manufacturer_scope.example.csv"
 
-RankingStrategy = Literal["mixed_v2", "probability", "business_priority", "interval", "frequency"]
+RankingStrategy = Literal["mixed_v2", "probability", "business_priority", "interval", "frequency", "involved_amount"]
 GroupBy = Literal["manufacturer", "user_scope"]
 CandidateType = Literal["recurring", "one_shot", "observation", "all"]
 FillPolicy = Literal["none", "observation_fill", "one_shot_fill"]
 
-PROBABILITY_COLUMNS = ["risk_probability_value", "churn_probability_H"]
+PROBABILITY_COLUMNS = ["_profile_risk_probability", "risk_probability", "risk_probability_value", "churn_probability_H"]
+INVOLVED_AMOUNT_COLUMNS = ["_profile_involved_amount", "involved_amount", "average_consumption_in_window"]
 INTERVAL_COLUMNS = ["interval_rank_score", "overdue_ratio", "current_interval_over_median"]
 FREQUENCY_COLUMNS = ["frequency_rank_score", "frequency_decay_baseline", "frequency_ratio"]
 BUSINESS_COLUMNS = ["business_priority_score_H", "business_priority_score", "value_at_risk_H"]
@@ -177,7 +178,8 @@ class TopEntityService:
         batch = _filter_value(entities, "report_month", selected_month)
         batch, lookup_warnings = self._apply_display_lookup(batch, selected_month)
         warnings.extend(lookup_warnings)
-        batch = _filter_value(batch, "primary_horizon", horizon)
+        batch, horizon_warnings = self._apply_horizon_profile(batch, selected_month, horizon)
+        warnings.extend(horizon_warnings)
         available_codes = _dedupe(
             batch.get("manufacturer_code", pd.Series(dtype=object)).dropna().astype(str).tolist()
         )
@@ -230,6 +232,7 @@ class TopEntityService:
             "report_month": selected_month,
             "horizon": horizon,
             "ranking_strategy": ranking_strategy,
+            "sort_by": _sort_by_from_strategy(ranking_strategy),
             "effective_ranking_strategy": effective_strategy,
             "ranking_strategy_effective": effective_strategy,
             "ranking_strategy_warning": "; ".join(strategy_warnings) if strategy_warnings else None,
@@ -246,6 +249,44 @@ class TopEntityService:
                 "manufacturer_codes": [item.manufacturer_code for item in scope],
             },
             "groups": groups,
+            "warnings": _dedupe(warnings),
+        }
+
+    def list_visible_manufacturers(
+        self,
+        *,
+        user_id: str,
+        report_month: str | None = None,
+        manufacturer_codes: list[str] | None = None,
+    ) -> dict[str, Any]:
+        entities = self.repository.list_risk_entities()
+        selected_month = _select_report_month(entities, report_month)
+        batch = _filter_value(entities, "report_month", selected_month)
+        batch, _ = self._apply_display_lookup(batch, selected_month)
+        available_codes = _dedupe(
+            batch.get("manufacturer_code", pd.Series(dtype=object)).dropna().astype(str).tolist()
+        )
+        scope, warnings = self.scope_service.resolve_scope(
+            user_id=user_id,
+            requested_manufacturer_codes=manufacturer_codes,
+            available_manufacturer_codes=available_codes,
+        )
+        display_by_code = _manufacturer_display_names(batch)
+        items = [
+            {
+                "manufacturer_code": item.manufacturer_code,
+                "manufacturer_display_name": item.manufacturer_display_name
+                or display_by_code.get(item.manufacturer_code)
+                or item.manufacturer_code,
+            }
+            for item in scope
+        ]
+        return {
+            "user_id": user_id,
+            "report_month": selected_month,
+            "manufacturer_count": len(items),
+            "manufacturers": items,
+            "items": items,
             "warnings": _dedupe(warnings),
         }
 
@@ -431,9 +472,14 @@ class TopEntityService:
     @staticmethod
     def _entity_payload(row: pd.Series, ranking_strategy: str) -> dict[str, Any]:
         candidate_type = _candidate_type(row)
-        risk_probability = _float_or_none(row.get("risk_probability_value"))
+        risk_probability = _float_or_none(
+            row.get("_profile_risk_probability", row.get("risk_probability_value"))
+        )
         if candidate_type in {"observation", "one_shot"}:
             risk_probability = None
+        involved_amount = _int_or_zero(
+            row.get("_profile_involved_amount", row.get("involved_amount"))
+        )
         is_high_risk = bool(row.get("is_high_risk")) and candidate_type == "recurring"
         return {
             "risk_entity_id": _none_or_str(row.get("risk_entity_id")),
@@ -448,9 +494,12 @@ class TopEntityService:
             "region_display_name": _none_or_str(row.get("region_display_name"))
             or _none_or_str(row.get("region")),
             "report_month": _none_or_str(row.get("report_month")),
-            "horizon": _none_or_str(row.get("primary_horizon")),
+            "horizon": _none_or_str(row.get("_selected_horizon") or row.get("primary_horizon")),
             "candidate_type": candidate_type,
             "risk_probability": risk_probability,
+            "involved_amount": involved_amount,
+            "involved_amount_source": _none_or_str(row.get("involved_amount_source")),
+            "risk_band": _none_or_str(row.get("risk_band")),
             "risk_level": _none_or_str(row.get("risk_level")),
             "risk_color": _none_or_str(row.get("risk_color")),
             "risk_score_display": _clean_value(row.get("risk_score_display")),
@@ -462,12 +511,63 @@ class TopEntityService:
             "is_observation": candidate_type == "observation",
             "is_one_shot": candidate_type == "one_shot",
             "auto_dispatch_allowed": False,
-            "main_reason_summary": _none_or_str(row.get("main_reason_summary")),
+            "main_reason_summary": _none_or_str(row.get("reason") or row.get("main_reason_summary")),
             "suggested_action_short": _none_or_str(row.get("suggested_action_short")),
             "ranking_score": _float_or_none(row.get("_ranking_score")),
             "ranking_score_source": _none_or_str(row.get("_ranking_score_source"))
             or ranking_strategy,
         }
+
+    def _apply_horizon_profile(
+        self,
+        frame: pd.DataFrame,
+        report_month: str,
+        horizon: str,
+    ) -> tuple[pd.DataFrame, list[str]]:
+        if frame.empty:
+            return frame.copy(), []
+        try:
+            profiles = self.repository.list_risk_entity_horizon_profiles(
+                report_month=report_month,
+                horizon=horizon,
+            )
+        except (FileNotFoundError, NotImplementedError, ValueError, AttributeError):
+            return _filter_value(frame, "primary_horizon", horizon), ["HORIZON_PROFILE_NOT_AVAILABLE"]
+        if profiles.empty:
+            return _filter_value(frame, "primary_horizon", horizon), ["HORIZON_PROFILE_NOT_AVAILABLE"]
+        profile_cols = [
+            "risk_entity_id",
+            "report_month",
+            "horizon",
+            "risk_probability",
+            "involved_amount",
+            "involved_amount_source",
+            "risk_level",
+            "risk_band",
+            "main_reason_summary",
+            "reason",
+            "detector_evidence_count",
+            "updated_at",
+        ]
+        available = [col for col in profile_cols if col in profiles.columns]
+        joined = frame.merge(
+            profiles[available].drop_duplicates(["risk_entity_id", "report_month", "horizon"], keep="first"),
+            on=["risk_entity_id", "report_month"],
+            how="inner",
+            suffixes=("", "_profile"),
+        )
+        if joined.empty:
+            return joined, ["HORIZON_PROFILE_EMPTY_FOR_SELECTED_SCOPE"]
+        joined["_selected_horizon"] = joined.get("horizon_profile", joined.get("horizon", horizon))
+        if "risk_probability" in joined:
+            joined["_profile_risk_probability"] = pd.to_numeric(joined["risk_probability"], errors="coerce")
+        if "involved_amount" in joined:
+            joined["_profile_involved_amount"] = pd.to_numeric(joined["involved_amount"], errors="coerce").fillna(0)
+        for column in ["risk_level", "risk_band", "main_reason_summary", "reason"]:
+            profile_column = f"{column}_profile"
+            if profile_column in joined:
+                joined[column] = joined[profile_column].where(joined[profile_column].notna(), joined.get(column))
+        return joined, []
 
     @staticmethod
     def _empty_response(
@@ -486,6 +586,7 @@ class TopEntityService:
             "report_month": report_month,
             "horizon": horizon,
             "ranking_strategy": ranking_strategy,
+            "sort_by": _sort_by_from_strategy(ranking_strategy),
             "effective_ranking_strategy": effective_ranking_strategy,
             "ranking_strategy_effective": effective_ranking_strategy,
             "ranking_strategy_warning": ranking_strategy_warning,
@@ -529,11 +630,11 @@ def _filter_candidate_type(frame: pd.DataFrame, candidate_type: CandidateType) -
     if frame.empty or candidate_type == "all":
         return frame.copy()
     if candidate_type == "one_shot":
-        return frame[frame.get("is_one_shot", False).map(_truthy)].copy()
+        return frame[_series_or_default(frame, "is_one_shot", False).map(_truthy)].copy()
     if candidate_type == "observation":
-        return frame[frame.get("is_observation", False).map(_truthy)].copy()
-    is_oneshot = frame.get("is_one_shot", pd.Series(False, index=frame.index)).map(_truthy)
-    is_observation = frame.get("is_observation", pd.Series(False, index=frame.index)).map(_truthy)
+        return frame[_series_or_default(frame, "is_observation", False).map(_truthy)].copy()
+    is_oneshot = _series_or_default(frame, "is_one_shot", False).map(_truthy)
+    is_observation = _series_or_default(frame, "is_observation", False).map(_truthy)
     return frame[~is_oneshot & ~is_observation].copy()
 
 
@@ -549,6 +650,8 @@ def _threshold_hits(frame: pd.DataFrame, threshold: float | None) -> pd.Series:
 def _score_column_for_strategy(frame: pd.DataFrame, strategy: str) -> str | None:
     if strategy == "probability":
         return _first_existing(frame, PROBABILITY_COLUMNS)
+    if strategy == "involved_amount":
+        return _first_existing(frame, INVOLVED_AMOUNT_COLUMNS)
     if strategy == "business_priority":
         return _first_existing(frame, BUSINESS_COLUMNS)
     if strategy == "interval":
@@ -560,6 +663,14 @@ def _score_column_for_strategy(frame: pd.DataFrame, strategy: str) -> str | None
 
 def _first_existing(frame: pd.DataFrame, columns: list[str]) -> str | None:
     return next((column for column in columns if column in frame.columns), None)
+
+
+def _sort_by_from_strategy(strategy: str) -> str:
+    if strategy == "involved_amount":
+        return "involved_amount"
+    if strategy == "probability":
+        return "risk_probability"
+    return strategy
 
 
 def _candidate_type(row: pd.Series) -> str:
@@ -583,6 +694,24 @@ def _truthy(value: Any) -> bool:
 
 def _dedupe(values: list[str]) -> list[str]:
     return list(dict.fromkeys(values))
+
+
+def _series_or_default(frame: pd.DataFrame, column: str, default: Any) -> pd.Series:
+    if column in frame:
+        return frame[column]
+    return pd.Series(default, index=frame.index)
+
+
+def _manufacturer_display_names(frame: pd.DataFrame) -> dict[str, str]:
+    if frame.empty or "manufacturer_code" not in frame:
+        return {}
+    display: dict[str, str] = {}
+    for _, row in frame.iterrows():
+        code = _none_or_str(row.get("manufacturer_code"))
+        name = _none_or_str(row.get("manufacturer_display_name"))
+        if code and name and code not in display:
+            display[code] = name
+    return display
 
 
 def _none_or_str(value: Any) -> str | None:

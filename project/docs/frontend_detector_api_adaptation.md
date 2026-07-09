@@ -20,6 +20,8 @@ Daily page changes come from daily rule inspection results, not from daily model
 probability changes.
 
 - Monthly model probability remains stable inside the monthly `risk_result_batch`.
+- Customer-facing pages show `risk_probability` and `involved_amount`; they should not show `loss_value`, `monthly_loss_value`, `business_score`, or `expected_loss`.
+- `involved_amount` means consumption amount inside the selected H3/H6/H12 horizon window, not full-history amount.
 - `detector_score` is a rule inspection score, not loss probability.
 - Daily detector clues are rule clues. They do not create new model high-risk entities.
 - Non-monthly-high-risk clues must be labeled as daily rule clues, not model high risk.
@@ -128,13 +130,13 @@ Important fields:
 - `is_monthly_high_risk_entity`
 - `risk_entity_id`
 - `monthly_risk_probability`
-- `monthly_loss_value`
 - `caveat`
 
 Display rules:
 
 - Render `detector_score` as "规则巡检分".
 - Do not render `detector_score` as probability or percent risk.
+- Do not display `monthly_loss_value`, `loss_value`, `business_score`, or `expected_loss` on customer pages even if a compatibility payload contains them.
 - If `is_monthly_high_risk_entity=false`, label the row as "今日规则线索".
 - Do not route non-monthly-high-risk clues into the monthly risk entity list.
 
@@ -149,7 +151,6 @@ Important fields:
 
 - `risk_entity_id`
 - `monthly_risk_probability`
-- `monthly_loss_value`
 - `items`
 - `catalog_by_detector_id`
 - `semantic_caveats`
@@ -199,36 +200,78 @@ Do not expose full detector hyperparameters on business-facing pages.
 
 `GET /api/v1/workbench`
 
-Keep this as the monthly high-risk workbench. It should not include every daily
-detector clue. It can show detector summaries such as latest run date and clue
-counts once the frontend has a design slot for them.
+Use this as the monthly high-risk workbench and the frontend's primary page
+source.
 
-The UI label for value ranking should be "损失价值". Prefer `loss_value` or
-`monthly_loss_value` when present. Existing `business_score` should be treated as
-a deprecated compatibility value and not displayed as "业务评分".
+Supported query params:
+
+- `manufacturer_code`
+- `report_month`
+- `run_date`
+- `horizon=H3|H6|H12`
+- `top_n`
+- `sort_by=risk_probability|involved_amount`
+
+Behavior:
+
+- It should not include every daily detector clue.
+- It returns monthly risk entities using the selected `horizon`.
+- It can show detector summaries such as latest run date and clue counts.
+- It must not display `loss_value`, `monthly_loss_value`, `business_score`, `expected_loss`, or model metrics.
+- `sort_by=involved_amount` sorts by selected horizon window involved amount.
 
 ### Risk Entities List
 
 `GET /api/v1/risk-entities`
 
-Keep this as the monthly risk entity list. Do not mix non-monthly-high-risk daily
-detector clues into this list. Use `/api/v1/detectors/clues` for the all-clues
-page.
+Keep this as the monthly risk entity list. It accepts the same customer-facing
+query params as `/api/v1/workbench`: `manufacturer_code`, `report_month`,
+`horizon`, `top_n`, and `sort_by`. Do not mix non-monthly-high-risk daily detector
+clues into this list. Use `/api/v1/detectors/clues` for the all-clues page.
 
 ### Risk Entity Detail
 
-`GET /api/v1/risk-entities/{risk_entity_id}`
+`GET /api/v1/risk-entities/{risk_entity_id}?horizon=H6`
 
-Keep existing monthly detail behavior. Add a detector evidence panel by calling:
+Use this for monthly risk entity detail. The selected horizon controls the
+displayed probability, involved amount, risk band, and reason summary. Add a
+detector evidence panel by calling:
 
 `GET /api/v1/risk-entities/{risk_entity_id}/detector-evidence`
+
+The detector evidence endpoint supports `run_date`, `detector_family`, and
+`detector_id` filters.
+
+### Probability Trend
+
+`GET /api/v1/risk-entities/{risk_entity_id}/probability-trend?horizon=H6`
+
+Use this for trend charts. It returns one series for the selected horizon with
+`report_month`, `risk_probability`, and `involved_amount`.
+
+### Manufacturer Options
+
+`GET /api/v1/my/manufacturers`
+
+Use this to populate manufacturer selectors. The backend resolves current-user
+scope and returns only visible manufacturers.
+
+### Daily Detector Date Options
+
+`GET /api/v1/daily-detector/dates`
+
+Use this to populate daily report date selectors. These dates refer to detector
+inspection runs and do not imply monthly model probability recalculation.
 
 ## Components To Add Or Adjust
 
 - Daily detector status badge: uses `/api/v1/daily-detector/status`.
+- Daily detector date selector: uses `/api/v1/daily-detector/dates`.
+- Manufacturer selector: uses `/api/v1/my/manufacturers`.
 - Detector capability/status panel: uses `/api/v1/detectors/catalog`.
 - All rule clues table: uses `/api/v1/detectors/clues`.
 - Risk detail detector evidence panel: uses `/api/v1/risk-entities/{risk_entity_id}/detector-evidence`.
+- Risk probability trend chart: uses `/api/v1/risk-entities/{risk_entity_id}/probability-trend`.
 - Internal config status notice: uses `/api/v1/detectors/config-status`.
 - Remove or hide customer-page "模型关键指标" component unless an internal admin route explicitly needs it.
 
@@ -261,3 +304,6 @@ Forbidden wording:
 - Risk detail detector evidence is fetched only for an existing `risk_entity_id`.
 - Catalog visually distinguishes `implemented`, `interface_only`, `experimental`, and `reserved`.
 - Customer-facing pages no longer show model evaluation metrics by default.
+- Customer-facing pages do not show `loss_value`, `monthly_loss_value`, `business_score`, or `expected_loss`.
+- H3/H6/H12 switching uses backend `horizon` query params instead of frontend-local recalculation.
+- `involved_amount` is displayed as the selected horizon window amount.

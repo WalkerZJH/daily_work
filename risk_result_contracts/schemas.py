@@ -5,6 +5,7 @@ from __future__ import annotations
 
 STANDARD_TABLES = [
     "risk_entities",
+    "risk_entity_horizon_profiles",
     "risk_cards",
     "risk_card_evidence",
     "risk_entity_timeline",
@@ -18,6 +19,21 @@ STANDARD_TABLES = [
     "daily_detector_runs",
     "daily_detector_clues",
     "high_risk_detector_evidence",
+]
+
+RISK_ENTITY_HORIZON_PROFILE_REQUIRED_COLUMNS = [
+    "risk_entity_id",
+    "report_month",
+    "horizon",
+    "risk_probability",
+    "involved_amount",
+    "involved_amount_source",
+    "risk_level",
+    "risk_band",
+    "main_reason_summary",
+    "reason",
+    "detector_evidence_count",
+    "updated_at",
 ]
 
 RISK_ENTITY_REQUIRED_COLUMNS = [
