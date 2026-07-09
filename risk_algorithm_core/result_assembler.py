@@ -85,9 +85,12 @@ def assemble_result_batch(
     artifact_metadata = artifact_metadata or {}
     manifest = {
         "batch_id": batch_id,
+        "result_batch_id": batch_id,
         "report_type": "monthly",
         "report_month": report_month,
         "report_date": dt.date.today().isoformat(),
+        "run_date": dt.date.today().isoformat(),
+        "score_as_of_date": cutoff_date,
         "score_cutoff_month": report_month,
         "cutoff_date": cutoff_date,
         "primary_horizon": primary_horizon,
@@ -125,6 +128,14 @@ def assemble_result_batch(
         "customer_facing_probability_service_allowed": False,
         "auto_dispatch_allowed": False,
         "proof_case_report_allowed": False,
+        "raw_orders_mode_ready": False,
+        "fact_mode_ready": True,
+        "conditional_fact_mode_ready": True,
+        "readiness_level": "conditional_fact_mode_ready",
+        "deprecated_frontend_fields": {
+            "business_score": "not emitted by model-core customer payloads; downstream display must use horizon profile involved_amount and probability fields",
+            "fill_policy": "removed from model-core payloads; user-scope selection is a backend responsibility",
+        },
         "result_table_row_counts": {name: int(len(df)) for name, df in tables.items()},
         "entity_display_lookup": {
             "table_name": "entity_display_lookup",
@@ -132,7 +143,12 @@ def assemble_result_batch(
             "path": f"entity_display_lookup.{data_backend}",
             "row_count": int(len(entity_display_lookup)),
         },
-        "caveats": ["bounded monthly worklist", "not full SQL universe claim", "business review required"],
+        "caveats": [
+            "bounded monthly worklist",
+            "not full SQL universe claim",
+            "business review required",
+            "raw_orders_mode_ready=false; current formal readiness is conditional_fact_mode_ready",
+        ],
     }
     write_manifest(batch_dir, manifest)
     validate_result_batch(batch_dir)

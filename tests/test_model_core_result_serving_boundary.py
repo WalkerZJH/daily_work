@@ -202,8 +202,9 @@ def test_page_payload_builder_constructs_real_payloads_when_json_is_absent() -> 
 
     assert workbench["batch_context"]["result_batch_id"] == "dynamic-test-batch"
     assert workbench["rows"][0]["entity_id"] == "recurring-1"
-    assert workbench["fill_policy"]["workbench_target_count"] == 1
-    assert "did not fill" in workbench["fill_policy"]["fill_reason"]
+    assert "fill_policy" not in workbench
+    assert workbench["scope_policy"]["model_core_does_not_fill_user_worklists"] is True
+    assert workbench["scope_policy"]["backend_may_request_top_n"] is True
     assert risk_entities["entities"][0]["entity_id"] == "recurring-1"
     assert detail["entity"]["entity_id"] == "recurring-1"
     assert detail["horizon_profiles"]["H6"]["detector_results"]
@@ -247,3 +248,23 @@ def test_model_core_does_not_fix_top_n_or_fill_user_worklists() -> None:
     assert payload["meta"]["top_n_requested"] is None
     assert payload["meta"]["model_core_filled_shortage"] is False
     assert payload["meta"]["user_scope_resolved_by_backend"] is True
+
+
+def test_customer_payloads_do_not_expose_deprecated_frontend_strategy_fields() -> None:
+    builder = PagePayloadBuilder(make_repository_without_page_payloads())
+    payload = builder.build_frontend_workbench_payload()
+    rendered = str(payload)
+
+    for forbidden in [
+        "fill_policy",
+        "补齐",
+        "回补",
+        "补充算法",
+        "新进终端补齐",
+        "规则巡检补充",
+        "历史节奏回补",
+        "高价值终端覆盖",
+        "risk_probability * average_consumption_in_window",
+        "RiskResultBatch",
+    ]:
+        assert forbidden not in rendered

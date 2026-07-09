@@ -1,0 +1,85 @@
+{
+  "batch_id": "2025-12-monthly-risk-algorithm-formal-v2-raw",
+  "report_type": "monthly",
+  "report_month": "2025-12",
+  "report_date": "2026-07-07",
+  "score_cutoff_month": "2025-12",
+  "cutoff_date": "2025-12-31",
+  "primary_horizon": "H6",
+  "available_horizons": [
+    "H3",
+    "H6",
+    "H12"
+  ],
+  "schema_version": "risk_result_batch_monthly_v1",
+  "data_backend": "csv",
+  "raw_batch_id": "current_v2_raw_input_batch",
+  "algorithm_core_version": "risk_algorithm_core_v1",
+  "model_artifact_id": "xgboost_small_without_choice_set_20260707043129",
+  "model_family": "xgboost_small",
+  "feature_group": "all_safe_features_without_choice_set",
+  "calibration": "raw",
+  "excludes_choice_set": true,
+  "risk_result_schema_version": "risk_result_batch_monthly_v1",
+  "feature_schema_version": "xgboost_small_without_choice_set_v1",
+  "detector_config_version": "daily_detector_rules_v1",
+  "worklist_config": {
+    "frontend_default_topN_per_manufacturer": 20,
+    "frontend_max_topN_per_manufacturer": 50,
+    "one_shot_topN_per_manufacturer": 20,
+    "observation_topN_per_manufacturer": 20,
+    "index_topN": 8,
+    "global_candidate_cap": 30000
+  },
+  "allowed_usage": [
+    "internal_diagnostic",
+    "analyst_view",
+    "monthly_business_review"
+  ],
+  "forbidden_usage": [
+    "auto_dispatch",
+    "formal_customer_probability_service",
+    "definitive_churn_claim"
+  ],
+  "customer_facing_probability_service_allowed": false,
+  "auto_dispatch_allowed": false,
+  "proof_case_report_allowed": false,
+  "caveats": [
+    "bounded monthly worklist",
+    "not full SQL universe claim",
+    "business review required",
+    "raw_orders_mode_ready=false; current formal readiness is conditional_fact_mode_ready"
+  ],
+  "result_table_row_counts": {
+    "entity_display_lookup": 634,
+    "detector_catalog": 7,
+    "daily_detector_runs": 1,
+    "daily_detector_clues": 0,
+    "high_risk_detector_evidence": 0
+  },
+  "entity_display_lookup": {
+    "table_name": "entity_display_lookup",
+    "schema_version": "entity_display_lookup_v1",
+    "path": "entity_display_lookup.csv",
+    "row_count": 634
+  },
+  "detector_tables": {
+    "detector_catalog": "detector_catalog.csv",
+    "daily_detector_runs": "daily_detector_runs.csv",
+    "daily_detector_clues": "daily_detector_clues.csv",
+    "high_risk_detector_evidence": "high_risk_detector_evidence.csv"
+  },
+  "detector_score_probability_interpretation": "detector_score_is_not_probability",
+  "detector_default_scope": "monthly_high_risk_entities",
+  "result_batch_id": "2025-12-monthly-risk-algorithm-formal-v2-raw",
+  "run_date": "2026-07-07",
+  "score_as_of_date": "2025-12-31",
+  "raw_orders_mode_ready": false,
+  "fact_mode_ready": true,
+  "conditional_fact_mode_ready": true,
+  "readiness_level": "conditional_fact_mode_ready",
+  "deprecated_frontend_fields": {
+    "business_score": "not emitted by model-core customer payloads; downstream display must use horizon profile involved_amount and probability fields",
+    "fill_policy": "removed from model-core payloads; user-scope selection is a backend responsibility"
+  }
+}

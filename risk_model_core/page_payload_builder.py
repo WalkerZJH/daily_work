@@ -214,11 +214,11 @@ class PagePayloadBuilder:
                 {"label": "Result-batch entities", "value": str(len(self.repository.list_risk_entities())), "tone": "neutral"},
             ],
             "model_metrics": [],
-            "fill_policy": {
-                "manufacturer_code": "backend_resolved_scope",
-                "workbench_target_count": len(rows),
-                "global_current_month_hospital_drug_count": len(rows),
-                "fill_reason": "Backend may request top_n; model core did not fill user worklists.",
+            "scope_policy": {
+                "manufacturer_code_scope": "backend_resolved_scope",
+                "returned_count": len(rows),
+                "backend_may_request_top_n": True,
+                "model_core_does_not_fill_user_worklists": True,
             },
             "rows": [_workbench_row(item) for item in rows],
             "meta": {

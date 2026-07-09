@@ -1,0 +1,2 @@
+detector_run_id,run_date,report_month,source_raw_batch_id,source_result_batch_id,detector_config_version,enabled_detectors,scanned_entity_count,clue_count,attached_high_risk_count,created_at
+2025-12-daily_detector_rules_v1-2026-07-08,2026-07-08,2025-12,current_v2_fact_mode,2025-12-monthly-risk-algorithm-formal-v2-raw,daily_detector_rules_v1,"purchase_interval_ipi,purchase_quantity_trend,purchase_frequency_drop",1291,0,0,2026-07-08T08:59:46.768520+00:00

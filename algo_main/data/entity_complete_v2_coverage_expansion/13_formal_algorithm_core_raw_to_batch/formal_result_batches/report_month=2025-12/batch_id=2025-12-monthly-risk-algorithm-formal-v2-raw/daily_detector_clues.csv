@@ -1,0 +1,1 @@
+detector_clue_id,detector_run_id,run_date,tenant_id,manufacturer_code,hospital_code,drug_group,detector_id,detector_family,detector_score,detector_level,confidence,hit_flag,root_cause_label,evidence_text,evidence_payload,is_monthly_high_risk_entity,risk_entity_id,monthly_risk_probability,monthly_loss_value,display_rank,caveat,created_at

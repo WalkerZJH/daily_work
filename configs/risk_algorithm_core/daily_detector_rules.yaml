@@ -1,6 +1,11 @@
 config_version: daily_detector_rules_v1
 effective_from: "2026-07-01"
 default_run_scope: monthly_high_risk_plus_daily_delta
+config_update_semantics:
+  generated_results_are_not_rewritten_by_config_change: true
+  new_config_applies_to_next_detector_run: true
+  historical_results_keep_detector_config_version: true
+  trigger_new_detector_run_for_immediate_effect: true
 detectors:
   purchase_interval_ipi:
     enabled: true
