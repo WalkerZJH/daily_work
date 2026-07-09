@@ -3,12 +3,23 @@ const DATABASE_REQUEST_TIMEOUT_MS = 120000
 const DISPLAY_LOOKUP_STATUS_TIMEOUT_MS = 3000
 
 export class BackendApi {
-  constructor(baseUrl) {
+  constructor(baseUrl, userId) {
     this.baseUrl = normalizeBaseUrl(baseUrl)
+    this.userId = userId || resolveDefaultUserId()
   }
 
   updateBaseUrl(baseUrl) {
     this.baseUrl = normalizeBaseUrl(baseUrl)
+  }
+
+  userOptions(options = {}) {
+    return {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        'X-User-Id': this.userId
+      }
+    }
   }
 
   async health() {
@@ -149,28 +160,28 @@ export class BackendApi {
     })
   }
 
-  async frontendWorkbench() {
-    return getJson(this.baseUrl, '/api/v1/workbench')
+  async frontendWorkbench(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/workbench', params, this.userOptions())
   }
 
-  async getWorkbench() {
-    return this.frontendWorkbench()
+  async getWorkbench(params = {}) {
+    return this.frontendWorkbench(params)
   }
 
-  async frontendRiskEntities() {
-    return getJson(this.baseUrl, '/api/v1/risk-entities')
+  async frontendRiskEntities(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/risk-entities', params, this.userOptions())
   }
 
-  async getRiskEntities(params) {
-    return getJson(this.baseUrl, '/api/v1/risk-entities', params)
+  async getRiskEntities(params = {}) {
+    return this.frontendRiskEntities(params)
   }
 
-  async frontendRiskEntityDetail(entityId) {
-    return getJson(this.baseUrl, `/api/v1/risk-entities/${entityId}`)
+  async frontendRiskEntityDetail(entityId, params = {}) {
+    return getJson(this.baseUrl, `/api/v1/risk-entities/${entityId}`, params, this.userOptions())
   }
 
-  async getRiskEntityDetail(entityId) {
-    return this.frontendRiskEntityDetail(entityId)
+  async getRiskEntityDetail(entityId, params = {}) {
+    return this.frontendRiskEntityDetail(entityId, params)
   }
 
   async frontendOneshotTerminals() {
@@ -207,24 +218,32 @@ export class BackendApi {
     return getJson(this.baseUrl, '/api/v1/detectors/clues', params)
   }
 
-  async getDailyDetectorStatus() {
-    return getJson(this.baseUrl, '/api/v1/daily-detector/status')
+  async getMyManufacturers() {
+    return getJson(this.baseUrl, '/api/v1/my/manufacturers', undefined, this.userOptions())
+  }
+
+  async getDailyDetectorDates(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/daily-detector/dates', params, this.userOptions())
+  }
+
+  async getDailyDetectorStatus(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/daily-detector/status', params, this.userOptions())
   }
 
   async getDailyDetectorClues(params = {}) {
-    return getJson(this.baseUrl, '/api/v1/daily-detector/clues', params)
+    return getJson(this.baseUrl, '/api/v1/daily-detector/clues', params, this.userOptions())
   }
 
   async getRiskEntityDetectorEvidence(riskEntityId, params = {}) {
-    return getJson(this.baseUrl, `/api/v1/risk-entities/${riskEntityId}/detector-evidence`, params)
+    return getJson(this.baseUrl, `/api/v1/risk-entities/${riskEntityId}/detector-evidence`, params, this.userOptions())
   }
 
   async getDetectorConfigStatus() {
     return getJson(this.baseUrl, '/api/v1/detectors/config-status')
   }
 
-  async getRiskEntityProbabilityTrend(riskEntityId) {
-    return getJson(this.baseUrl, `/api/v1/risk-entities/${riskEntityId}/probability-trend`)
+  async getRiskEntityProbabilityTrend(riskEntityId, params = {}) {
+    return getJson(this.baseUrl, `/api/v1/risk-entities/${riskEntityId}/probability-trend`, params, this.userOptions())
   }
 }
 
@@ -235,7 +254,10 @@ export async function requestJson(baseUrl, path, options = {}) {
   try {
     const response = await fetch(url, {
       method: options.method || 'GET',
-      headers: options.body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      headers: {
+        ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...(options.headers || {})
+      },
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: controller.signal
     })
@@ -265,6 +287,16 @@ export function postJson(baseUrl, path, body, query, options = {}) {
 
 export function normalizeBaseUrl(baseUrl) {
   return (baseUrl || 'http://127.0.0.1:8000').replace(/\/+$/, '')
+}
+
+function resolveDefaultUserId() {
+  if (typeof window === 'undefined') return 'demo-user'
+  const params = new URLSearchParams(window.location.search)
+  try {
+    return window.__USER_ID__ || params.get('user_id') || params.get('userId') || window.localStorage.getItem('userId') || 'demo-user'
+  } catch (error) {
+    return window.__USER_ID__ || params.get('user_id') || params.get('userId') || 'demo-user'
+  }
 }
 
 function buildUrl(baseUrl, path, query) {

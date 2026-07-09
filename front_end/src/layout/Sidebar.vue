@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { navSections } from './navigation'
 
 defineProps({

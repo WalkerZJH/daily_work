@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue'
 import MetricCard from '../../components/MetricCard.vue'
 import SectionCard from '../../components/SectionCard.vue'
@@ -23,9 +23,9 @@ onMounted(async () => {
 <template>
   <div class="page-shell">
     <div class="page-header">
-      <h1>月报与批次</h1>
+      <h1>月报切换</h1>
       <div class="subtitle">
-        MonthlyReport · RiskResultBatch · score_batch_id={{ state.batchContext.scoreBatchId }} · data_watermark_at={{ state.batchContext.dataWatermarkAt }}
+        查看不同月报日的风险对象、巡检线索与新进终端概览
       </div>
     </div>
 
@@ -49,11 +49,11 @@ onMounted(async () => {
         </button>
       </div>
       <dl class="definition-grid compact report-switch-meta">
-        <dt>score_batch_id</dt><dd class="text-mono">{{ activeDailyReport.scoreBatchId }}</dd>
-        <dt>data_watermark_at</dt><dd>{{ activeDailyReport.dataWatermarkAt }}</dd>
-        <dt>高风险 entity</dt><dd>{{ activeDailyReport.highRiskEntities }}</dd>
-        <dt>oneshot</dt><dd>{{ activeDailyReport.oneshotCount }}</dd>
-        <dt>detector 告警</dt><dd>{{ activeDailyReport.detectorAlerts }}</dd>
+        <dt>月报批次</dt><dd class="text-mono">{{ activeDailyReport.scoreBatchId }}</dd>
+        <dt>月报日期</dt><dd>{{ activeDailyReport.date }}</dd>
+        <dt>重点风险对象</dt><dd>{{ activeDailyReport.highRiskEntities }}</dd>
+        <dt>新进终端</dt><dd>{{ activeDailyReport.oneshotCount }}</dd>
+        <dt>巡检线索</dt><dd>{{ activeDailyReport.detectorAlerts }}</dd>
       </dl>
     </section>
 
@@ -67,7 +67,7 @@ onMounted(async () => {
       />
     </div>
 
-    <SectionCard title="日报规则巡检状态" subtitle="日报变化来自 detector 规则巡检，月报批次结论保持稳定">
+    <SectionCard title="日报规则巡检状态" subtitle="日报变化来自规则巡检">
       <dl class="definition-grid compact">
         <dt>巡检日期</dt><dd>{{ state.dailyDetectorStatus.runDate }}</dd>
         <dt>今日规则线索</dt><dd>{{ state.dailyDetectorStatus.clueCount }}</dd>
@@ -76,15 +76,15 @@ onMounted(async () => {
       </dl>
     </SectionCard>
 
-    <SectionCard title="MonthlyReport 列表" subtitle="生产商主视角 / 高风险实体 / 医院 × 药品补齐结果按月对齐">
+    <SectionCard title="月报列表" subtitle="生产商主视角下的风险对象与巡检概览">
       <div class="report-list">
         <article v-for="report in state.monthlyReports" :key="report.id" class="report-card">
           <h3>{{ report.title }}</h3>
           <p>{{ report.summary }}</p>
           <dl class="definition-grid compact">
-            <dt>report_month</dt><dd>{{ report.reportMonth }}</dd>
-            <dt>score_batch_id</dt><dd class="text-mono">{{ report.scoreBatchId }}</dd>
-            <dt>data_watermark_at</dt><dd>{{ report.dataWatermarkAt }}</dd>
+            <dt>月报月份</dt><dd>{{ report.reportMonth }}</dd>
+            <dt>月报批次</dt><dd class="text-mono">{{ report.scoreBatchId }}</dd>
+            <dt>月报日期</dt><dd>{{ report.dataWatermarkAt }}</dd>
           </dl>
         </article>
       </div>

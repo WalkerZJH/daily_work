@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, ref } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
 import { createStaticProofCasesData, loadProofCasesData } from '../monthly-demo/pageDataAdapter'
@@ -25,7 +25,7 @@ const readingPath = computed(() => [
     label: '月报日',
     date: activeSet.value.reportDate,
     title: '输出高价值风险清单',
-    text: '主干月报给出丢失概率，并按损失价值排序。'
+    text: '主干月报给出丢失概率，并按涉及金额排序。'
   },
   {
     label: `${activeSet.value.label || '风险'}跟进窗口`,
@@ -50,8 +50,8 @@ function meterWidth(value) {
   return `${Math.round(Math.max(0.05, Math.min(0.98, probability)) * 100)}%`
 }
 
-function lossValue(item) {
-  return item?.lossValue || item?.businessScore || '-'
+function involvedAmount(item) {
+  return item?.windowConsumption || item?.involvedAmount || '-'
 }
 
 onMounted(async () => {
@@ -86,8 +86,8 @@ onMounted(async () => {
         <p>{{ activeSet.narrative }}</p>
       </div>
       <div class="proof-hero-card">
-        <span>{{ activeSet.label }}核心样例损失价值</span>
-        <strong>{{ lossValue(spotlight) }}</strong>
+        <span>{{ activeSet.label }}核心样例涉及金额</span>
+        <strong>{{ involvedAmount(spotlight) }}</strong>
         <p>{{ spotlight.hospital }} × {{ spotlight.drug }}</p>
       </div>
     </section>
@@ -101,7 +101,7 @@ onMounted(async () => {
     </div>
 
     <div class="proof-spotlight-grid">
-      <SectionCard title="核心命中案例" subtitle="按损失价值排序">
+      <SectionCard title="核心命中案例" subtitle="按涉及金额排序">
         <article class="proof-spotlight-card">
           <div class="proof-spotlight-head">
             <span class="status-badge status-badge-ok">{{ spotlight.visible }}</span>
@@ -119,8 +119,8 @@ onMounted(async () => {
               <strong>{{ spotlight.windowConsumption }}</strong>
             </div>
             <div>
-              <span>损失价值</span>
-              <strong>{{ lossValue(spotlight) }}</strong>
+              <span>涉及金额</span>
+              <strong>{{ involvedAmount(spotlight) }}</strong>
             </div>
             <div>
               <span>窗口内续购</span>
@@ -162,7 +162,7 @@ onMounted(async () => {
           <p>{{ item.outcome }}</p>
           <dl class="definition-grid compact">
             <dt>生产商</dt><dd>{{ item.manufacturer }}</dd>
-            <dt>损失价值</dt><dd>{{ lossValue(item) }}</dd>
+            <dt>涉及金额</dt><dd>{{ involvedAmount(item) }}</dd>
             <dt>窗口消费</dt><dd>{{ item.windowConsumption }}</dd>
             <dt>无续购</dt><dd>月报后 {{ item.noPurchaseAfterReport }} · 自上次采购 {{ item.noPurchaseFromLast }}</dd>
           </dl>

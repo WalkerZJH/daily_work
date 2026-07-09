@@ -1,4 +1,4 @@
-.workbench-hero {
+﻿.workbench-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr);
   gap: 22px;
@@ -1302,6 +1302,58 @@
   line-height: 1.6;
 }
 
+.control-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.workbench-controls,
+.control-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.control-grid {
+  justify-content: flex-start;
+}
+
+.control-field,
+.control-group {
+  display: grid;
+  gap: 6px;
+}
+
+.control-field span,
+.control-label {
+  color: var(--text-sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.control-field select {
+  min-width: 150px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--navy);
+  padding: 9px 10px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
 @media (max-width: 1100px) {
   .workbench-hero,
   .clue-hero,
@@ -1327,6 +1379,18 @@
   .grid-4,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .control-header,
+  .workbench-controls,
+  .control-grid,
+  .table-toolbar {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .control-field select {
+    width: 100%;
   }
 
   .proof-hero-topline {

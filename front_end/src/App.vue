@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import Sidebar from './layout/Sidebar.vue'
 import Topbar from './layout/Topbar.vue'
 import MonthlyWorkbenchView from './modules/monthly-workbench/MonthlyWorkbenchView.vue'
@@ -13,7 +13,7 @@ const pageName = window.location.pathname.split('/').pop() || 'index.html'
 const routeMap = {
   'index.html': {
     active: 'index',
-    tag: '月报高风险工作台 · 每日规则巡检',
+    tag: 'VP 工作台 · 今日巡检线索',
     component: MonthlyWorkbenchView
   },
   'dashboard.html': {
@@ -23,7 +23,7 @@ const routeMap = {
   },
   'clues.html': {
     active: 'clues',
-    tag: '今日规则线索',
+    tag: '今日巡检线索',
     component: RiskEntityListView
   },
   'clue-detail.html': {
@@ -33,7 +33,7 @@ const routeMap = {
   },
   'oneshot.html': {
     active: 'oneshot',
-    tag: '新进终端监测 · oneshot 复购倾向',
+    tag: '新进终端监测 · 首采记录',
     component: OneshotMonitorView
   },
   'backtest.html': {

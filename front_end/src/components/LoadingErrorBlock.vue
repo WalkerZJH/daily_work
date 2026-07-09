@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 defineProps({
   loading: { type: Boolean, default: false },
   error: { type: String, default: '' }

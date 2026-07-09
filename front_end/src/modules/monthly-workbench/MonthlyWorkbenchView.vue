@@ -1,50 +1,160 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import MetricCard from '../../components/MetricCard.vue'
 import SectionCard from '../../components/SectionCard.vue'
-import { createStaticWorkbenchData, loadWorkbenchData } from '../monthly-demo/pageDataAdapter'
+import {
+  createStaticWorkbenchData,
+  createStaticWorkbenchOptions,
+  loadWorkbenchData,
+  loadWorkbenchOptions,
+  normalizeWorkbenchQuery
+} from '../monthly-demo/pageDataAdapter'
 
-const state = ref(createStaticWorkbenchData())
+const urlParams = new URLSearchParams(window.location.search)
+const query = reactive(
+  normalizeWorkbenchQuery({
+    manufacturerCode: urlParams.get('manufacturer_code'),
+    reportMonth: urlParams.get('report_month'),
+    runDate: urlParams.get('run_date'),
+    horizon: urlParams.get('horizon') || urlParams.get('h'),
+    topN: Number(urlParams.get('top_n')),
+    sortBy: urlParams.get('sort_by')
+  })
+)
+
+const options = ref(createStaticWorkbenchOptions())
+const state = ref(createStaticWorkbenchData(query))
+const isLoading = ref(false)
 
 const dailyDetectorMetrics = computed(() => [
-  { label: '今日巡检日期', value: state.value.dailyDetectorStatus.runDate || '-', tone: 'info' },
-  { label: '今日规则线索', value: String(state.value.dailyDetectorStatus.clueCount ?? '-'), tone: 'warning' },
-  { label: '已附着规则证据', value: String(state.value.dailyDetectorStatus.attachedHighRiskCount ?? '-'), tone: 'success' },
+  { label: '日报日期', value: state.value.dailyDetectorStatus.runDate || '-', tone: 'info' },
+  { label: '今日巡检线索', value: String(state.value.dailyDetectorStatus.clueCount ?? '-'), tone: 'warning' },
+  { label: '已附着证据', value: String(state.value.dailyDetectorStatus.attachedHighRiskCount ?? '-'), tone: 'success' },
   { label: '巡检对象', value: String(state.value.dailyDetectorStatus.scannedEntityCount ?? '-'), tone: 'neutral' }
 ])
 
-onMounted(async () => {
-  const data = await loadWorkbenchData()
-  if (data) state.value = data
+const queryParams = computed(() => {
+  const params = new URLSearchParams({
+    manufacturer_code: query.manufacturerCode,
+    report_month: query.reportMonth,
+    run_date: query.runDate,
+    horizon: query.horizon,
+    top_n: String(query.topN),
+    sort_by: query.sortBy
+  })
+  return params
 })
+
+function detailHref(row) {
+  const params = new URLSearchParams(queryParams.value)
+  params.set('id', row.entityId)
+  return `clue-detail.html?${params.toString()}`
+}
+
+function updateUrl() {
+  const nextUrl = `${window.location.pathname}?${queryParams.value.toString()}`
+  window.history.replaceState({}, '', nextUrl)
+}
+
+async function refreshWorkbench() {
+  isLoading.value = true
+  updateUrl()
+  const staticState = createStaticWorkbenchData(query)
+  const data = await loadWorkbenchData(query)
+  state.value = data || staticState
+  isLoading.value = false
+}
+
+onMounted(async () => {
+  const loadedOptions = await loadWorkbenchOptions(query)
+  if (loadedOptions) options.value = loadedOptions
+  await refreshWorkbench()
+})
+
+watch(
+  () => [query.manufacturerCode, query.runDate, query.horizon, query.topN, query.sortBy],
+  () => refreshWorkbench()
+)
 </script>
 
 <template>
   <div class="page-shell monthly-workbench">
-    <div class="page-header">
-      <h1>月报高风险工作台</h1>
-      <div class="subtitle">
-        report_month={{ state.batchContext.reportMonth }} · score_as_of_date={{ state.batchContext.scoreAsOfDate }} · {{ state.batchContext.primaryHorizon }}
+    <div class="page-header control-header">
+      <div>
+        <h1>VP 工作台</h1>
+        <div class="subtitle">今日重点风险对象 · 今日巡检线索 · 涉及金额与丢失概率按当前条件刷新</div>
+      </div>
+
+      <div class="workbench-controls" aria-label="工作台筛选">
+        <label class="control-field">
+          <span>生产企业</span>
+          <select v-model="query.manufacturerCode">
+            <option v-for="item in options.manufacturerOptions" :key="item.code" :value="item.code">
+              {{ item.name }}
+            </option>
+          </select>
+        </label>
+        <label class="control-field">
+          <span>日报日期</span>
+          <select v-model="query.runDate">
+            <option v-for="item in options.dailyDetectorDateOptions" :key="item.runDate" :value="item.runDate">
+              {{ item.label }}
+            </option>
+          </select>
+        </label>
       </div>
     </div>
 
     <section class="workbench-hero panel">
       <div>
-        <span class="eyebrow">Monthly Risk + Daily Rule Inspection</span>
-        <h2>月报主风险保持稳定复现，今日变化来自规则巡检结果</h2>
+        <span class="eyebrow">月报主风险 + 日报巡检</span>
+        <h2>今日重点风险对象</h2>
         <p>
-          本页展示生产商 {{ state.workbenchFillPolicy.manufacturer }} 视角下的月报高风险医院 × 药品对象。月报丢失概率来自低频稳定批次；
-          每日变化来自规则巡检结果，巡检分只用于筛选值得注意的对象，不代表业务紧迫度。
+          按当前生产企业、日报日期和预测窗口展示医院 × 药品对象。丢失概率来自月报结果；今日变化来自规则巡检线索。
         </p>
       </div>
       <div class="batch-card">
-        <div class="batch-row"><span>月报批次</span><strong>{{ state.batchContext.scoreBatchId }}</strong></div>
-        <div class="batch-row"><span>数据水位</span><strong>{{ state.batchContext.dataWatermarkAt }}</strong></div>
-        <div class="batch-row"><span>默认风险窗口</span><strong>{{ state.batchContext.primaryHorizon }}</strong></div>
-        <div class="batch-row"><span>损失价值</span><strong>{{ state.batchContext.scoreFormula }}</strong></div>
-        <div class="batch-row"><span>工作台容量</span><strong>{{ state.workbenchFillPolicy.workbenchTargetCount }} 个医院 × 药品</strong></div>
+        <div class="batch-row"><span>生产企业</span><strong>{{ state.scope.manufacturerName || state.scope.manufacturerCode }}</strong></div>
+        <div class="batch-row"><span>月报月份</span><strong>{{ query.reportMonth }}</strong></div>
+        <div class="batch-row"><span>日报日期</span><strong>{{ query.runDate }}</strong></div>
+        <div class="batch-row"><span>当前窗口</span><strong>{{ options.horizonOptions.find((item) => item.id === query.horizon)?.label }}</strong></div>
+        <div class="batch-row"><span>数据来源</span><strong>{{ state.displayLookupStatus.label }}</strong></div>
       </div>
     </section>
+
+    <SectionCard title="工作台设置" subtitle="切换后同步刷新当前列表与详情">
+      <div class="control-grid">
+        <div class="control-group">
+          <span class="control-label">预测窗口</span>
+          <div class="segmented-control">
+            <button
+              v-for="item in options.horizonOptions"
+              :key="item.id"
+              type="button"
+              class="segment-btn"
+              :class="{ active: query.horizon === item.id }"
+              @click="query.horizon = item.id"
+            >
+              {{ item.label }}
+            </button>
+          </div>
+        </div>
+        <label class="control-field">
+          <span>显示数量</span>
+          <select v-model.number="query.topN">
+            <option v-for="item in options.topNOptions" :key="item" :value="item">Top {{ item }}</option>
+          </select>
+        </label>
+        <label class="control-field">
+          <span>排序</span>
+          <select v-model="query.sortBy">
+            <option v-for="item in options.sortOptions" :key="item.id" :value="item.id">
+              {{ item.label }}
+            </option>
+          </select>
+        </label>
+      </div>
+    </SectionCard>
 
     <div class="grid-4">
       <MetricCard
@@ -56,7 +166,7 @@ onMounted(async () => {
       />
     </div>
 
-    <SectionCard title="今日规则巡检摘要" subtitle="今日巡检结果每天变化，月报批次结论保持稳定">
+    <SectionCard title="今日巡检线索" subtitle="日报日期对应当天巡检批次">
       <div class="grid-4">
         <MetricCard
           v-for="item in dailyDetectorMetrics"
@@ -71,27 +181,23 @@ onMounted(async () => {
         <strong>{{ state.dailyDetectorStatus.statusText }}</strong>
         <span>{{ state.dailyDetectorStatus.caveat }}</span>
       </div>
-      <div class="catalog-strip">
-        <article v-for="detector in state.detectorCatalogSummary" :key="detector.id" class="catalog-chip">
-          <strong>{{ detector.name }}</strong>
-          <span>{{ detector.family }} · {{ detector.statusLabel }}</span>
-        </article>
-      </div>
-      <div class="notice-strip">{{ state.detectorConfigStatus.message }}</div>
     </SectionCard>
 
-    <SectionCard title="月报高风险对象 20 个医院 × 药品行为" subtitle="按损失价值排序：月报丢失概率 × 预测窗口内平均消费金额">
+    <SectionCard title="今日重点风险对象" :subtitle="`按${options.sortOptions.find((item) => item.id === query.sortBy)?.label || '当前条件'}排序`">
+      <div class="table-toolbar">
+        <span class="status-badge status-badge-neutral" v-if="isLoading">刷新中</span>
+        <span class="muted">按当前条件展示 Top {{ query.topN }} 对象</span>
+      </div>
       <div class="data-table-wrap">
         <table>
           <thead>
             <tr>
               <th>排序</th>
-              <th>生产商</th>
+              <th>生产企业</th>
               <th>医院 × 药品</th>
               <th>来源</th>
-              <th>月报丢失概率</th>
-              <th>预测窗口消费</th>
-              <th>损失价值</th>
+              <th>丢失概率</th>
+              <th>涉及金额</th>
               <th>动作</th>
             </tr>
           </thead>
@@ -108,10 +214,9 @@ onMounted(async () => {
                 <div class="muted">{{ row.fillSource }}</div>
               </td>
               <td>{{ row.probabilityDisplay }}</td>
-              <td>{{ row.averageConsumptionText }}</td>
-              <td><strong>{{ row.lossValueText || row.businessScoreText }}</strong></td>
+              <td><strong>{{ row.involvedAmountText }}</strong></td>
               <td>
-                <a v-if="row.entityId" class="btn btn-primary btn-sm" :href="`clue-detail.html?id=${row.entityId}`">查看月报风险详情</a>
+                <a v-if="row.entityId" class="btn btn-primary btn-sm" :href="detailHref(row)">查看详情</a>
                 <span v-else class="status-badge status-badge-neutral">{{ row.action }}</span>
               </td>
             </tr>

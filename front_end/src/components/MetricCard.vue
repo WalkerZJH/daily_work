@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 defineProps({
   label: { type: String, required: true },
   value: { type: [String, Number], default: '--' },

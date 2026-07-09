@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { onMounted, ref } from 'vue'
 import MetricCard from '../../components/MetricCard.vue'
 import SectionCard from '../../components/SectionCard.vue'
@@ -16,17 +16,20 @@ onMounted(async () => {
   <div class="page-shell oneshot-monitor">
     <div class="page-header">
       <h1>新进终端监测</h1>
-      <div class="subtitle">oneshot · 本期新进终端 · 首次采购后复购倾向 · 复购促进优先级</div>
+      <div class="subtitle">本期新进终端 · 首采事实 · 后续复购证据</div>
     </div>
 
     <div class="grid-4">
       <MetricCard label="本期新进终端" :value="String(state.oneshotSummary.count)" tone="info" />
-      <MetricCard label="高复购倾向" :value="String(state.oneshotSummary.highPropensityCount)" tone="success" />
-      <MetricCard label="平均复购倾向" :value="state.oneshotSummary.averageRepurchasePropensity" tone="warning" />
-      <MetricCard label="预计复购金额" :value="state.oneshotSummary.expectedRepurchaseAmount" tone="danger" />
+      <MetricCard v-if="state.oneshotSummary.evidenceReady" label="高复购倾向" :value="String(state.oneshotSummary.highPropensityCount)" tone="success" />
+      <MetricCard v-if="state.oneshotSummary.evidenceReady" label="平均复购倾向" :value="state.oneshotSummary.averageRepurchasePropensity" tone="warning" />
+      <MetricCard v-if="state.oneshotSummary.evidenceReady" label="预计复购金额" :value="state.oneshotSummary.expectedRepurchaseAmount" tone="danger" />
     </div>
 
-    <SectionCard title="oneshot 复购倾向清单" subtitle="围绕首采金额、首采后天数、区域同类终端表现和预计复购金额排序">
+    <SectionCard
+      title="新进终端清单"
+      :subtitle="state.oneshotSummary.evidenceReady ? '围绕首采事实和后续复购证据排序' : '当前仅展示首采事实'"
+    >
       <div class="data-table-wrap">
         <table>
           <thead>
@@ -36,9 +39,9 @@ onMounted(async () => {
               <th>首次采购</th>
               <th>首采金额</th>
               <th>首采后天数</th>
-              <th>复购倾向</th>
-              <th>预计复购金额</th>
-              <th>复购促进优先级</th>
+              <th v-if="state.oneshotSummary.evidenceReady">复购倾向</th>
+              <th v-if="state.oneshotSummary.evidenceReady">预计复购金额</th>
+              <th v-if="state.oneshotSummary.evidenceReady">复购促进优先级</th>
             </tr>
           </thead>
           <tbody>
@@ -51,18 +54,19 @@ onMounted(async () => {
               <td>{{ row.firstPurchaseDate }}</td>
               <td>{{ row.firstPurchaseAmountText }}</td>
               <td>{{ row.daysSinceFirstPurchase }} 天</td>
-              <td><span class="risk-chip risk-chip-green">{{ row.repurchasePropensityText }}</span></td>
-              <td>{{ row.expectedRepurchaseAmountText }}</td>
-              <td>{{ row.priority }}</td>
+              <td v-if="state.oneshotSummary.evidenceReady"><span class="risk-chip risk-chip-green">{{ row.repurchasePropensityText }}</span></td>
+              <td v-if="state.oneshotSummary.evidenceReady">{{ row.expectedRepurchaseAmountText }}</td>
+              <td v-if="state.oneshotSummary.evidenceReady">{{ row.priority }}</td>
             </tr>
           </tbody>
         </table>
       </div>
+      <div v-if="!state.oneshotSummary.evidenceReady" class="empty">暂无复购原因或证据，仅展示新进终端首采记录</div>
     </SectionCard>
 
-    <SectionCard title="复购倾向解释">
+    <SectionCard v-if="state.oneshotSummary.evidenceReady" title="复购证据">
       <div class="observation-list">
-        <article v-for="row in state.oneshotTerminals" :key="`${row.id}-reason`" class="observation-card">
+        <article v-for="row in state.oneshotTerminals.filter((item) => item.reason)" :key="`${row.id}-reason`" class="observation-card">
           <div>
             <h3>{{ row.hospital }}</h3>
             <p>{{ row.reason }}</p>

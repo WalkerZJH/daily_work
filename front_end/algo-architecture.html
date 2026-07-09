@@ -28,7 +28,7 @@
               <span class="eyebrow">Algorithm Chain</span>
               <h1>终端不丢算法链路</h1>
               <p>
-                这页说明产品如何把订单行为转成领先指标、风险概率、损失价值排序、detector 证据链、新进终端复购倾向和回测验收。核心目标是让生产商看到某医院采购某药品的风险、原因、金额影响和下一步处置优先级。
+                这页说明产品如何把订单行为转成领先指标、风险概率、涉及金额排序、detector 证据链、新进终端复购倾向和回测验收。核心目标是让生产商看到某医院采购某药品的风险、原因、金额影响和下一步处置优先级。
               </p>
             </div>
             <div class="arch-hero-metrics">
@@ -47,7 +47,7 @@
               <article><strong>L0</strong><span>数据预处理与基线</span></article>
               <article><strong>L0.5</strong><span>需求形态分类闸门</span></article>
               <article><strong>L1</strong><span>主干风险模型</span></article>
-              <article><strong>M1</strong><span>候选池与损失价值排序</span></article>
+              <article><strong>M1</strong><span>候选池与涉及金额排序</span></article>
               <article><strong>M2</strong><span>新进终端监测</span></article>
               <article><strong>M3</strong><span>节奏精查</span></article>
               <article><strong>M4</strong><span>探测器证据链</span></article>
@@ -102,10 +102,10 @@
               <article class="arch-module">
                 <div class="arch-module-code">M1</div>
                 <h3>候选池与业务排序</h3>
-                <p>候选池先接收主干高风险 entity，再按损失价值排序。损失价值把概率和金额影响合并，确保高概率且高消费影响的 entity 出现在更靠前的位置。</p>
-                <div class="math-panel">\[ \text{loss_value}_{e,h}=p_{e,h}\times \overline{\text{consumption}}_{e,h} \]</div>
+                <p>候选池先接收主干高风险 entity，再按涉及金额排序。涉及金额把概率和金额影响合并，确保高概率且高消费影响的 entity 出现在更靠前的位置。</p>
+                <div class="math-panel">\[ \text{involved_amount}_{e,h}=p_{e,h}\times \overline{\text{consumption}}_{e,h} \]</div>
                 <ul>
-                  <li>工作台按 loss_value 降序。</li>
+                  <li>工作台按 involved_amount 降序。</li>
                   <li>每个用户 20-50 条，不是整体全局只给 20-50 条。</li>
                   <li>优先复核、人工复核、新进终端关注、补充算法候选共同构成主工作台。</li>
                   <li>高风险 entity、新进终端复购关注、补充算法候选共同进入主工作台，不足 20 条时展示实际数量。</li>
@@ -169,10 +169,10 @@
               <article class="arch-module">
                 <div class="arch-module-code">M6</div>
                 <h3>结构化证据包</h3>
-                <p>证据包把 entity、窗口概率、损失价值、所有 detector 结果、SHAP、高风险原因、推荐动作和历史趋势统一给到详情页，支撑销售、商务和管理者在同一事实层上协作。</p>
+                <p>证据包把 entity、窗口概率、涉及金额、所有 detector 结果、SHAP、高风险原因、推荐动作和历史趋势统一给到详情页，支撑销售、商务和管理者在同一事实层上协作。</p>
                 <ul>
                   <li>实体粒度：manufacturer_code、hospital_name、drug_name、region。</li>
-                  <li>窗口粒度：3月/6月/12月的 probability、loss_value、detector_results。</li>
+                  <li>窗口粒度：3月/6月/12月的 probability、involved_amount、detector_results。</li>
                   <li>动作粒度：跟进建议、配送核查、复购促进、成功案例沉淀。</li>
                 </ul>
               </article>

@@ -2,10 +2,9 @@
   reportMonth: '2026-07',
   scoreAsOfDate: '2026-07-31',
   dataWatermarkAt: '2026-07-07 13:32',
-  scoreBatchId: '2026-07-monthly-risk-algorithm-fixture',
-  resultBatchId: '2026-07-monthly-risk-algorithm-fixture',
-  primaryHorizon: '6月主视角',
-  scoreFormula: '风险概率 × 预测窗口内平均消费金额'
+  scoreBatchId: '2026-07-monthly-risk-algorithm-demo',
+  resultBatchId: '2026-07-monthly-risk-algorithm-demo',
+  primaryHorizon: '6月'
 }
 
 export const overviewMetrics = [
@@ -25,6 +24,40 @@ export const dailyDetectorStatus = {
   scannedEntityCount: 128,
   statusText: '今日规则巡检结果已更新',
   caveat: '今日巡检结果每天变化，月报批次结论保持稳定。'
+}
+
+export const horizonOptions = [
+  { id: 'H3', label: '3月' },
+  { id: 'H6', label: '6月' },
+  { id: 'H12', label: '12月' }
+]
+
+export const sortOptions = [
+  { id: 'risk_probability', label: '丢失概率' },
+  { id: 'involved_amount', label: '涉及金额' }
+]
+
+export const topNOptions = [10, 20, 30, 50]
+
+export const manufacturerOptions = [
+  { code: 'M001', name: '哈药集团三精制药有限公司' },
+  { code: 'M002', name: '南京海鲸药业股份有限公司' },
+  { code: 'M003', name: '陕西盘龙药业集团股份有限公司' }
+]
+
+export const dailyDetectorDateOptions = [
+  { runDate: '2026-07-09', label: '2026-07-09' },
+  { runDate: '2026-07-08', label: '2026-07-08' },
+  { runDate: '2026-07-07', label: '2026-07-07' }
+]
+
+export const defaultWorkbenchQuery = {
+  manufacturerCode: manufacturerOptions[0].code,
+  reportMonth: batchContext.reportMonth,
+  runDate: dailyDetectorStatus.runDate,
+  horizon: 'H6',
+  topN: 20,
+  sortBy: 'risk_probability'
 }
 
 export const detectorCatalogSummary = [
@@ -67,89 +100,8 @@ export const detectorConfigStatus = {
   latestRunDate: dailyDetectorStatus.runDate,
   pendingConfigExists: false,
   nextRunRequired: false,
-  message: '规则参数调整后，将在下一次 detector 巡检运行后生效。'
+  message: ''
 }
-
-export const modelMetrics = [
-  {
-    id: 'backbone_xgboost_h3',
-    name: '主干风险模型 3月',
-    role: '短窗风险识别',
-    horizon: '3月',
-    window: '2020-2025 滚动回测 · 524,950 条',
-    auc: '0.812',
-    prauc: '0.776',
-    praucLift: '1.610',
-    ece: '0.024',
-    brier: '0.177',
-    topK: '前10%名单：召回17.96%，命中精度86.94%，提升1.80倍'
-  },
-  {
-    id: 'backbone_xgboost_h6',
-    name: '主干风险模型 6月',
-    role: '月报主视角',
-    horizon: '6月',
-    window: '2020-2025 滚动回测 · 524,950 条',
-    auc: '0.814',
-    prauc: '0.686',
-    praucLift: '1.857',
-    ece: '0.022',
-    brier: '0.169',
-    topK: '前10%名单：召回21.12%，命中精度78.35%，提升2.11倍'
-  },
-  {
-    id: 'backbone_xgboost_h12',
-    name: '主干风险模型 12月',
-    role: '长窗经营影响',
-    horizon: '12月',
-    window: '2020-2025 滚动回测 · 369,465 条',
-    auc: '0.814',
-    prauc: '0.598',
-    praucLift: '2.090',
-    ece: '0.023',
-    brier: '0.154',
-    topK: '前10%名单：召回23.95%，命中精度68.99%，提升2.39倍'
-  },
-  {
-    id: 'oneshot_repurchase_h6',
-    name: '新进终端复购倾向 6月',
-    role: '首采人群回测',
-    horizon: '6月',
-    window: '新进终端回测 · 83,824 条',
-    auc: '0.307',
-    prauc: '0.264',
-    praucLift: '0.725',
-    ece: '0.321',
-    brier: '0.352',
-    topK: '复购倾向分层：6月正例率36.36%，用于识别首采后的复购倾向差异'
-  },
-  {
-    id: 'frequency_detector_evidence',
-    name: '采购频次证据模块',
-    role: 'detector 证据识别',
-    horizon: '6月',
-    window: '证据命中回测 · 1,419,365 条',
-    auc: '0.672',
-    prauc: '0.516',
-    praucLift: '1.324',
-    ece: '0.312',
-    brier: '0.312',
-    topK: '命中证据：覆盖38.92%，召回59.93%，命中后风险率59.98%'
-  },
-  {
-    id: 'interval_detector_evidence',
-    name: '采购间隔证据模块',
-    role: 'detector 证据识别',
-    horizon: '6月',
-    window: '证据命中回测 · 1,419,365 条',
-    auc: '0.583',
-    prauc: '0.449',
-    praucLift: '1.152',
-    ece: '0.355',
-    brier: '0.355',
-    topK: '命中证据：覆盖20.31%，召回30.46%，命中后风险率58.41%'
-  }
-]
 
 export const riskEntities = [
   {
@@ -165,8 +117,8 @@ export const riskEntities = [
     probabilityDisplay: '82%',
     averageConsumptionInWindow: 1280000,
     averageConsumptionText: '¥1,280,000',
-    businessScore: 1049600,
-    businessScoreText: '¥1,049,600',
+    involvedAmount: 1280000,
+    involvedAmountText: '¥1,280,000',
     status: '优先跟进',
     monthlyStatus: 'new',
     lastPurchase: '2026-05-02',
@@ -237,8 +189,8 @@ export const riskEntities = [
     probabilityDisplay: '74%',
     averageConsumptionInWindow: 1950000,
     averageConsumptionText: '¥1,950,000',
-    businessScore: 1443000,
-    businessScoreText: '¥1,443,000',
+    involvedAmount: 1950000,
+    involvedAmountText: '¥1,950,000',
     status: '优先跟进',
     monthlyStatus: 'persistent',
     lastPurchase: '2026-04-18',
@@ -251,7 +203,7 @@ export const riskEntities = [
       '配送率连续下行，提示需求节奏和供应稳定性同步走弱',
       '高价值医院，建议优先复核'
     ],
-    detectorNarrative: 'detector 结果自然语言聚合：高消费基线叠加采购间隔和配送履约信号，使该实体在损失价值排序中位列第一。',
+    detectorNarrative: 'detector 结果自然语言聚合：高消费基线叠加采购间隔和配送履约信号，使该实体在涉及金额排序中位列第一。',
     shapHighlights: [
       { feature: 'avg_consumption_h6', contribution: '+0.24', explanation: '预测窗口内平均消费金额高，放大业务优先级' },
       { feature: 'days_since_last_purchase', contribution: '+0.18', explanation: '距离末次采购天数推高风险概率' },
@@ -309,8 +261,8 @@ export const riskEntities = [
     probabilityDisplay: '61%',
     averageConsumptionInWindow: 860000,
     averageConsumptionText: '¥860,000',
-    businessScore: 524600,
-    businessScoreText: '¥524,600',
+    involvedAmount: 860000,
+    involvedAmountText: '¥860,000',
     status: '跟进中',
     monthlyStatus: 'worsening',
     lastPurchase: '2026-05-29',
@@ -389,7 +341,7 @@ function horizonDisplayLabel(horizon) {
 function buildHorizonProfile(entity, horizon, probabilityDelta, consumptionMultiplier, label) {
   const riskProbability = clampProbability(entity.riskProbability + probabilityDelta)
   const averageConsumptionInWindow = Math.round(entity.averageConsumptionInWindow * consumptionMultiplier)
-  const businessScore = Math.round(riskProbability * averageConsumptionInWindow)
+  const involvedAmount = averageConsumptionInWindow
   const detectorFactor = horizon === 'H3' ? 0.86 : horizon === 'H12' ? 1.08 : 1
   const horizonLabel = horizonDisplayLabel(horizon)
 
@@ -401,10 +353,8 @@ function buildHorizonProfile(entity, horizon, probabilityDelta, consumptionMulti
     probabilityDisplay: formatPercent(riskProbability),
     averageConsumptionInWindow,
     averageConsumptionText: formatMoney(averageConsumptionInWindow),
-    businessScore,
-    businessScoreText: formatMoney(businessScore),
-    lossValue: businessScore,
-    lossValueText: formatMoney(businessScore),
+    involvedAmount,
+    involvedAmountText: formatMoney(involvedAmount),
     reason: `${horizonLabel} ${label}：${entity.reason}`,
     detectorNarrative: `${horizonLabel} detector 结果自然语言聚合：${entity.detectorNarrative.replace('detector 结果自然语言聚合：', '')}`,
     shapHighlights: entity.shapHighlights.map((item) => ({
@@ -515,13 +465,13 @@ const fillHospitals = [
   '贵州医科大学附属医院'
 ]
 
-const fillSources = ['oneshot 复购倾向', 'detector 补充排序', '历史节奏回补', '高价值终端覆盖']
+const fillSources = ['新进终端补齐', '规则巡检补充', '历史节奏回补', '高价值终端覆盖']
 const fillDrugs = ['A产品线 · 心血管', 'B产品线 · 抗感染', 'C产品线 · 肿瘤', 'D产品线 · 消化']
 
 export const workbenchFillCandidates = fillHospitals.map((hospital, index) => {
   const riskProbability = Number((0.58 - index * 0.012).toFixed(2))
   const averageConsumptionInWindow = 760000 - index * 18000
-  const businessScore = Math.round(riskProbability * averageConsumptionInWindow)
+  const involvedAmount = averageConsumptionInWindow
   const drug = fillDrugs[index % fillDrugs.length]
 
   return {
@@ -536,10 +486,8 @@ export const workbenchFillCandidates = fillHospitals.map((hospital, index) => {
     probabilityDisplay: formatPercent(riskProbability),
     averageConsumptionInWindow,
     averageConsumptionText: formatMoney(averageConsumptionInWindow),
-    businessScore,
-    businessScoreText: formatMoney(businessScore),
-    lossValue: businessScore,
-    lossValueText: formatMoney(businessScore),
+    involvedAmount,
+    involvedAmountText: formatMoney(involvedAmount),
     fillSource: fillSources[index % fillSources.length],
     sourceType: '补充算法',
     action: '进入主工作台跟进清单'
@@ -559,17 +507,15 @@ export const workbenchDisplayRows = [
     probabilityDisplay: entity.probabilityDisplay,
     averageConsumptionInWindow: entity.averageConsumptionInWindow,
     averageConsumptionText: entity.averageConsumptionText,
-    businessScore: entity.businessScore,
-    businessScoreText: entity.businessScoreText,
-    lossValue: entity.lossValue ?? entity.businessScore,
-    lossValueText: entity.lossValueText ?? entity.businessScoreText,
+    involvedAmount: entity.involvedAmount,
+    involvedAmountText: entity.involvedAmountText,
     fillSource: '主干风险模型',
     sourceType: 'global 当月命中',
     action: '查看风险卡'
   })),
   ...workbenchFillCandidates
 ]
-  .sort((a, b) => b.businessScore - a.businessScore)
+  .sort((a, b) => b.riskProbability - a.riskProbability)
   .slice(0, workbenchFillPolicy.workbenchTargetCount)
 
 export const dailyDetectorClues = [
@@ -595,8 +541,8 @@ export const dailyDetectorClues = [
     detectorRunDate: dailyDetectorStatus.runDate,
     monthlyRiskProbability: 0.82,
     monthlyRiskProbabilityText: '82%',
-    lossValue: 1049600,
-    lossValueText: '¥1,049,600',
+    involvedAmount: 1280000,
+    involvedAmountText: '¥1,280,000',
     actionText: '查看月报风险详情'
   },
   {
@@ -621,8 +567,8 @@ export const dailyDetectorClues = [
     detectorRunDate: dailyDetectorStatus.runDate,
     monthlyRiskProbability: 0.74,
     monthlyRiskProbabilityText: '74%',
-    lossValue: 1443000,
-    lossValueText: '¥1,443,000',
+    involvedAmount: 1950000,
+    involvedAmountText: '¥1,950,000',
     actionText: '查看月报风险详情'
   },
   {
@@ -647,8 +593,8 @@ export const dailyDetectorClues = [
     detectorRunDate: dailyDetectorStatus.runDate,
     monthlyRiskProbability: 0.61,
     monthlyRiskProbabilityText: '61%',
-    lossValue: 524600,
-    lossValueText: '¥524,600',
+    involvedAmount: 860000,
+    involvedAmountText: '¥860,000',
     actionText: '查看月报风险详情'
   },
   {
@@ -673,8 +619,8 @@ export const dailyDetectorClues = [
     detectorRunDate: dailyDetectorStatus.runDate,
     monthlyRiskProbability: null,
     monthlyRiskProbabilityText: '-',
-    lossValue: null,
-    lossValueText: '-',
+    involvedAmount: null,
+    involvedAmountText: '-',
     actionText: '查看规则线索详情'
   },
   {
@@ -699,33 +645,33 @@ export const dailyDetectorClues = [
     detectorRunDate: dailyDetectorStatus.runDate,
     monthlyRiskProbability: null,
     monthlyRiskProbabilityText: '-',
-    lossValue: null,
-    lossValueText: '-',
+    involvedAmount: null,
+    involvedAmountText: '-',
     actionText: '查看规则线索详情'
   }
 ]
 
 export const probabilityTrendByEntityId = {
   re_xiehe_a_h6: [
-    { reportMonth: '2026-03', riskProbability: 0.48, riskProbabilityText: '48%', lossValue: 614400, lossValueText: '¥614,400' },
-    { reportMonth: '2026-04', riskProbability: 0.57, riskProbabilityText: '57%', lossValue: 729600, lossValueText: '¥729,600' },
-    { reportMonth: '2026-05', riskProbability: 0.68, riskProbabilityText: '68%', lossValue: 870400, lossValueText: '¥870,400' },
-    { reportMonth: '2026-06', riskProbability: 0.76, riskProbabilityText: '76%', lossValue: 972800, lossValueText: '¥972,800' },
-    { reportMonth: '2026-07', riskProbability: 0.82, riskProbabilityText: '82%', lossValue: 1049600, lossValueText: '¥1,049,600' }
+    { reportMonth: '2026-03', riskProbability: 0.48, riskProbabilityText: '48%', involvedAmount: 980000, involvedAmountText: '¥980,000' },
+    { reportMonth: '2026-04', riskProbability: 0.57, riskProbabilityText: '57%', involvedAmount: 1080000, involvedAmountText: '¥1,080,000' },
+    { reportMonth: '2026-05', riskProbability: 0.68, riskProbabilityText: '68%', involvedAmount: 1160000, involvedAmountText: '¥1,160,000' },
+    { reportMonth: '2026-06', riskProbability: 0.76, riskProbabilityText: '76%', involvedAmount: 1220000, involvedAmountText: '¥1,220,000' },
+    { reportMonth: '2026-07', riskProbability: 0.82, riskProbabilityText: '82%', involvedAmount: 1280000, involvedAmountText: '¥1,280,000' }
   ],
   re_huaxi_c_h6: [
-    { reportMonth: '2026-03', riskProbability: 0.44, riskProbabilityText: '44%', lossValue: 858000, lossValueText: '¥858,000' },
-    { reportMonth: '2026-04', riskProbability: 0.55, riskProbabilityText: '55%', lossValue: 1072500, lossValueText: '¥1,072,500' },
-    { reportMonth: '2026-05', riskProbability: 0.63, riskProbabilityText: '63%', lossValue: 1228500, lossValueText: '¥1,228,500' },
-    { reportMonth: '2026-06', riskProbability: 0.69, riskProbabilityText: '69%', lossValue: 1345500, lossValueText: '¥1,345,500' },
-    { reportMonth: '2026-07', riskProbability: 0.74, riskProbabilityText: '74%', lossValue: 1443000, lossValueText: '¥1,443,000' }
+    { reportMonth: '2026-03', riskProbability: 0.44, riskProbabilityText: '44%', involvedAmount: 1540000, involvedAmountText: '¥1,540,000' },
+    { reportMonth: '2026-04', riskProbability: 0.55, riskProbabilityText: '55%', involvedAmount: 1680000, involvedAmountText: '¥1,680,000' },
+    { reportMonth: '2026-05', riskProbability: 0.63, riskProbabilityText: '63%', involvedAmount: 1810000, involvedAmountText: '¥1,810,000' },
+    { reportMonth: '2026-06', riskProbability: 0.69, riskProbabilityText: '69%', involvedAmount: 1880000, involvedAmountText: '¥1,880,000' },
+    { reportMonth: '2026-07', riskProbability: 0.74, riskProbabilityText: '74%', involvedAmount: 1950000, involvedAmountText: '¥1,950,000' }
   ],
   re_renji_a_h6: [
-    { reportMonth: '2026-03', riskProbability: 0.39, riskProbabilityText: '39%', lossValue: 335400, lossValueText: '¥335,400' },
-    { reportMonth: '2026-04', riskProbability: 0.46, riskProbabilityText: '46%', lossValue: 395600, lossValueText: '¥395,600' },
-    { reportMonth: '2026-05', riskProbability: 0.52, riskProbabilityText: '52%', lossValue: 447200, lossValueText: '¥447,200' },
-    { reportMonth: '2026-06', riskProbability: 0.58, riskProbabilityText: '58%', lossValue: 498800, lossValueText: '¥498,800' },
-    { reportMonth: '2026-07', riskProbability: 0.61, riskProbabilityText: '61%', lossValue: 524600, lossValueText: '¥524,600' }
+    { reportMonth: '2026-03', riskProbability: 0.39, riskProbabilityText: '39%', involvedAmount: 720000, involvedAmountText: '¥720,000' },
+    { reportMonth: '2026-04', riskProbability: 0.46, riskProbabilityText: '46%', involvedAmount: 760000, involvedAmountText: '¥760,000' },
+    { reportMonth: '2026-05', riskProbability: 0.52, riskProbabilityText: '52%', involvedAmount: 800000, involvedAmountText: '¥800,000' },
+    { reportMonth: '2026-06', riskProbability: 0.58, riskProbabilityText: '58%', involvedAmount: 830000, involvedAmountText: '¥830,000' },
+    { reportMonth: '2026-07', riskProbability: 0.61, riskProbabilityText: '61%', involvedAmount: 860000, involvedAmountText: '¥860,000' }
   ]
 }
 
@@ -741,7 +687,7 @@ export const dailyReportOptions = [
     highRiskEntities: '9',
     oneshotCount: '6',
     detectorAlerts: '24',
-    summary: '当前日报聚焦 6月高风险 entity、oneshot 复购倾向和 detector 证据链。'
+    summary: '当前日报聚焦 6月重点风险对象、新进终端和巡检证据链。'
   },
   {
     id: 'daily_2026_07_06',
@@ -786,7 +732,7 @@ export const monthlyReports = [
     reportMonth: '2026-06',
     scoreBatchId: '2026-06-monthly-risk-algorithm-review',
     dataWatermarkAt: '2026-06-30 23:59',
-    summary: '历史月报入口，用于比较新增、持续、缓解、oneshot 复购倾向与主工作台补齐变化。'
+    summary: '历史月报入口，用于比较新增、持续、缓解、新进终端与主工作台补齐变化。'
   }
 ]
 
@@ -825,7 +771,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "72.0%",
               "riskProbabilityValue": 0.719872,
               "windowConsumption": "¥1,314,461",
-              "businessScore": "¥946,244",
+              "involvedAmount": "¥946,244",
               "lastPurchase": "2024-05-31",
               "daysSinceLastAtReport": "152 天",
               "noPurchaseAfterReport": "92 天",
@@ -836,7 +782,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥5,257,845 的采购规模。",
-                  "2024-10-31 输出风险概率 72.0%，损失价值 ¥946,244。",
+                  "2024-10-31 输出风险概率 72.0%，涉及金额 ¥946,244。",
                   "从月报日到 2025-01-31 连续 92 天未续购；从上次采购到闭合累计 244 天。"
               ]
           },
@@ -857,7 +803,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "62.2%",
               "riskProbabilityValue": 0.622103,
               "windowConsumption": "¥1,424,648",
-              "businessScore": "¥886,278",
+              "involvedAmount": "¥886,278",
               "lastPurchase": "2024-05-20",
               "daysSinceLastAtReport": "163 天",
               "noPurchaseAfterReport": "92 天",
@@ -868,7 +814,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥5,698,592 的采购规模。",
-                  "2024-10-31 输出风险概率 62.2%，损失价值 ¥886,278。",
+                  "2024-10-31 输出风险概率 62.2%，涉及金额 ¥886,278。",
                   "从月报日到 2025-01-31 连续 92 天未续购；从上次采购到闭合累计 255 天。"
               ]
           },
@@ -889,7 +835,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "70.5%",
               "riskProbabilityValue": 0.70453,
               "windowConsumption": "¥748,250",
-              "businessScore": "¥527,164",
+              "involvedAmount": "¥527,164",
               "lastPurchase": "2024-06-24",
               "daysSinceLastAtReport": "129 天",
               "noPurchaseAfterReport": "92 天",
@@ -900,7 +846,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥2,993,000 的采购规模。",
-                  "2024-10-31 输出风险概率 70.5%，损失价值 ¥527,164。",
+                  "2024-10-31 输出风险概率 70.5%，涉及金额 ¥527,164。",
                   "从月报日到 2025-01-31 连续 92 天未续购；从上次采购到闭合累计 221 天。"
               ]
           },
@@ -921,7 +867,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "57.7%",
               "riskProbabilityValue": 0.57713,
               "windowConsumption": "¥750,840",
-              "businessScore": "¥433,332",
+              "involvedAmount": "¥433,332",
               "lastPurchase": "2024-06-14",
               "daysSinceLastAtReport": "138 天",
               "noPurchaseAfterReport": "92 天",
@@ -932,7 +878,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥3,003,360 的采购规模。",
-                  "2024-10-31 输出风险概率 57.7%，损失价值 ¥433,332。",
+                  "2024-10-31 输出风险概率 57.7%，涉及金额 ¥433,332。",
                   "从月报日到 2025-01-31 连续 92 天未续购；从上次采购到闭合累计 230 天。"
               ]
           },
@@ -953,7 +899,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "69.8%",
               "riskProbabilityValue": 0.6977,
               "windowConsumption": "¥563,121",
-              "businessScore": "¥392,889",
+              "involvedAmount": "¥392,889",
               "lastPurchase": "2024-04-29",
               "daysSinceLastAtReport": "184 天",
               "noPurchaseAfterReport": "92 天",
@@ -964,7 +910,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥2,252,484 的采购规模。",
-                  "2024-10-31 输出风险概率 69.8%，损失价值 ¥392,889。",
+                  "2024-10-31 输出风险概率 69.8%，涉及金额 ¥392,889。",
                   "从月报日到 2025-01-31 连续 92 天未续购；从上次采购到闭合累计 276 天。"
               ]
           },
@@ -985,7 +931,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "60.9%",
               "riskProbabilityValue": 0.608818,
               "windowConsumption": "¥628,050",
-              "businessScore": "¥382,368",
+              "involvedAmount": "¥382,368",
               "lastPurchase": "2024-07-29",
               "daysSinceLastAtReport": "93 天",
               "noPurchaseAfterReport": "92 天",
@@ -996,7 +942,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥2,512,200 的采购规模。",
-                  "2024-10-31 输出风险概率 60.9%，损失价值 ¥382,368。",
+                  "2024-10-31 输出风险概率 60.9%，涉及金额 ¥382,368。",
                   "从月报日到 2025-01-31 连续 92 天未续购；从上次采购到闭合累计 185 天。"
               ]
           }
@@ -1030,7 +976,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "65.8%",
               "riskProbabilityValue": 0.657804,
               "windowConsumption": "¥2,628,922",
-              "businessScore": "¥1,729,315",
+              "involvedAmount": "¥1,729,315",
               "lastPurchase": "2024-05-31",
               "daysSinceLastAtReport": "152 天",
               "noPurchaseAfterReport": "181 天",
@@ -1041,7 +987,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥5,257,845 的采购规模。",
-                  "2024-10-31 输出风险概率 65.8%，损失价值 ¥1,729,315。",
+                  "2024-10-31 输出风险概率 65.8%，涉及金额 ¥1,729,315。",
                   "从月报日到 2025-04-30 连续 181 天未续购；从上次采购到闭合累计 333 天。"
               ]
           },
@@ -1062,7 +1008,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "66.8%",
               "riskProbabilityValue": 0.668055,
               "windowConsumption": "¥1,496,500",
-              "businessScore": "¥999,744",
+              "involvedAmount": "¥999,744",
               "lastPurchase": "2024-06-24",
               "daysSinceLastAtReport": "129 天",
               "noPurchaseAfterReport": "181 天",
@@ -1073,7 +1019,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥2,993,000 的采购规模。",
-                  "2024-10-31 输出风险概率 66.8%，损失价值 ¥999,744。",
+                  "2024-10-31 输出风险概率 66.8%，涉及金额 ¥999,744。",
                   "从月报日到 2025-04-30 连续 181 天未续购；从上次采购到闭合累计 310 天。"
               ]
           },
@@ -1094,7 +1040,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "56.6%",
               "riskProbabilityValue": 0.56591,
               "windowConsumption": "¥1,501,680",
-              "businessScore": "¥849,815",
+              "involvedAmount": "¥849,815",
               "lastPurchase": "2024-06-14",
               "daysSinceLastAtReport": "138 天",
               "noPurchaseAfterReport": "181 天",
@@ -1105,7 +1051,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥3,003,360 的采购规模。",
-                  "2024-10-31 输出风险概率 56.6%，损失价值 ¥849,815。",
+                  "2024-10-31 输出风险概率 56.6%，涉及金额 ¥849,815。",
                   "从月报日到 2025-04-30 连续 181 天未续购；从上次采购到闭合累计 319 天。"
               ]
           },
@@ -1126,7 +1072,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "58.6%",
               "riskProbabilityValue": 0.585645,
               "windowConsumption": "¥1,256,100",
-              "businessScore": "¥735,628",
+              "involvedAmount": "¥735,628",
               "lastPurchase": "2024-07-29",
               "daysSinceLastAtReport": "93 天",
               "noPurchaseAfterReport": "181 天",
@@ -1137,7 +1083,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥2,512,200 的采购规模。",
-                  "2024-10-31 输出风险概率 58.6%，损失价值 ¥735,628。",
+                  "2024-10-31 输出风险概率 58.6%，涉及金额 ¥735,628。",
                   "从月报日到 2025-04-30 连续 181 天未续购；从上次采购到闭合累计 274 天。"
               ]
           },
@@ -1158,7 +1104,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "57.2%",
               "riskProbabilityValue": 0.571977,
               "windowConsumption": "¥1,126,242",
-              "businessScore": "¥644,184",
+              "involvedAmount": "¥644,184",
               "lastPurchase": "2024-04-29",
               "daysSinceLastAtReport": "184 天",
               "noPurchaseAfterReport": "181 天",
@@ -1169,7 +1115,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥2,252,484 的采购规模。",
-                  "2024-10-31 输出风险概率 57.2%，损失价值 ¥644,184。",
+                  "2024-10-31 输出风险概率 57.2%，涉及金额 ¥644,184。",
                   "从月报日到 2025-04-30 连续 181 天未续购；从上次采购到闭合累计 365 天。"
               ]
           },
@@ -1190,7 +1136,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "71.0%",
               "riskProbabilityValue": 0.710065,
               "windowConsumption": "¥779,742",
-              "businessScore": "¥553,668",
+              "involvedAmount": "¥553,668",
               "lastPurchase": "2024-02-01",
               "daysSinceLastAtReport": "272 天",
               "noPurchaseAfterReport": "181 天",
@@ -1201,7 +1147,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥1,559,484 的采购规模。",
-                  "2024-10-31 输出风险概率 71.0%，损失价值 ¥553,668。",
+                  "2024-10-31 输出风险概率 71.0%，涉及金额 ¥553,668。",
                   "从月报日到 2025-04-30 连续 181 天未续购；从上次采购到闭合累计 453 天。"
               ]
           }
@@ -1235,7 +1181,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "89.5%",
               "riskProbabilityValue": 0.895022,
               "windowConsumption": "¥7,093,000",
-              "businessScore": "¥6,348,389",
+              "involvedAmount": "¥6,348,389",
               "lastPurchase": "2024-08-13",
               "daysSinceLastAtReport": "170 天",
               "noPurchaseAfterReport": "365 天",
@@ -1246,7 +1192,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥7,093,000 的采购规模。",
-                  "2025-01-31 输出风险概率 89.5%，损失价值 ¥6,348,389。",
+                  "2025-01-31 输出风险概率 89.5%，涉及金额 ¥6,348,389。",
                   "从月报日到 2026-01-31 连续 365 天未续购；从上次采购到闭合累计 535 天。"
               ]
           },
@@ -1267,7 +1213,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "71.1%",
               "riskProbabilityValue": 0.711176,
               "windowConsumption": "¥3,978,045",
-              "businessScore": "¥2,829,090",
+              "involvedAmount": "¥2,829,090",
               "lastPurchase": "2024-05-31",
               "daysSinceLastAtReport": "244 天",
               "noPurchaseAfterReport": "365 天",
@@ -1278,7 +1224,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥3,978,045 的采购规模。",
-                  "2025-01-31 输出风险概率 71.1%，损失价值 ¥2,829,090。",
+                  "2025-01-31 输出风险概率 71.1%，涉及金额 ¥2,829,090。",
                   "从月报日到 2026-01-31 连续 365 天未续购；从上次采购到闭合累计 609 天。"
               ]
           },
@@ -1299,7 +1245,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "80.1%",
               "riskProbabilityValue": 0.801222,
               "windowConsumption": "¥1,927,000",
-              "businessScore": "¥1,543,955",
+              "involvedAmount": "¥1,543,955",
               "lastPurchase": "2024-06-24",
               "daysSinceLastAtReport": "221 天",
               "noPurchaseAfterReport": "365 天",
@@ -1310,7 +1256,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥1,927,000 的采购规模。",
-                  "2025-01-31 输出风险概率 80.1%，损失价值 ¥1,543,955。",
+                  "2025-01-31 输出风险概率 80.1%，涉及金额 ¥1,543,955。",
                   "从月报日到 2026-01-31 连续 365 天未续购；从上次采购到闭合累计 586 天。"
               ]
           },
@@ -1331,7 +1277,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "74.4%",
               "riskProbabilityValue": 0.743722,
               "windowConsumption": "¥1,943,400",
-              "businessScore": "¥1,445,349",
+              "involvedAmount": "¥1,445,349",
               "lastPurchase": "2024-07-29",
               "daysSinceLastAtReport": "185 天",
               "noPurchaseAfterReport": "365 天",
@@ -1342,7 +1288,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥1,943,400 的采购规模。",
-                  "2025-01-31 输出风险概率 74.4%，损失价值 ¥1,445,349。",
+                  "2025-01-31 输出风险概率 74.4%，涉及金额 ¥1,445,349。",
                   "从月报日到 2026-01-31 连续 365 天未续购；从上次采购到闭合累计 550 天。"
               ]
           },
@@ -1363,7 +1309,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "72.0%",
               "riskProbabilityValue": 0.719532,
               "windowConsumption": "¥1,790,436",
-              "businessScore": "¥1,288,275",
+              "involvedAmount": "¥1,288,275",
               "lastPurchase": "2024-06-14",
               "daysSinceLastAtReport": "230 天",
               "noPurchaseAfterReport": "365 天",
@@ -1374,7 +1320,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥1,790,436 的采购规模。",
-                  "2025-01-31 输出风险概率 72.0%，损失价值 ¥1,288,275。",
+                  "2025-01-31 输出风险概率 72.0%，涉及金额 ¥1,288,275。",
                   "从月报日到 2026-01-31 连续 365 天未续购；从上次采购到闭合累计 595 天。"
               ]
           },
@@ -1395,7 +1341,7 @@ export const proofCaseHorizonSets = {
               "riskProbability": "61.7%",
               "riskProbabilityValue": 0.616503,
               "windowConsumption": "¥1,777,500",
-              "businessScore": "¥1,095,834",
+              "involvedAmount": "¥1,095,834",
               "lastPurchase": "2024-09-11",
               "daysSinceLastAtReport": "141 天",
               "noPurchaseAfterReport": "365 天",
@@ -1406,7 +1352,7 @@ export const proofCaseHorizonSets = {
               "caseSummary": "月报日后至验证窗口闭合保持 0 次采购记录，高价值风险提前进入复盘清单。",
               "evidence": [
                   "月报日前 12 个月已形成 ¥1,777,500 的采购规模。",
-                  "2025-01-31 输出风险概率 61.7%，损失价值 ¥1,095,834。",
+                  "2025-01-31 输出风险概率 61.7%，涉及金额 ¥1,095,834。",
                   "从月报日到 2026-01-31 连续 365 天未续购；从上次采购到闭合累计 506 天。"
               ]
           }

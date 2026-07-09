@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 defineProps({
   tone: { type: String, default: 'neutral' }
 })
