@@ -67,40 +67,13 @@ onMounted(async () => {
       />
     </div>
 
-    <SectionCard title="批次模型指标" subtitle="主干模型、新进终端复购倾向与证据模块的回测表现">
-      <div class="data-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>模型</th>
-              <th>评估窗口</th>
-              <th>AUC</th>
-              <th>PRAUC</th>
-              <th>PR-AUC Lift</th>
-              <th>ECE</th>
-              <th>Brier</th>
-              <th>前列名单表现</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="metric in state.modelMetrics" :key="metric.id">
-              <td>
-                <strong>{{ metric.name }}</strong>
-                <div class="muted">{{ metric.role }} · {{ metric.horizon }}</div>
-              </td>
-              <td>{{ metric.window }}</td>
-              <td>{{ metric.auc }}</td>
-              <td>{{ metric.prauc }}</td>
-              <td>{{ metric.praucLift }}</td>
-              <td>{{ metric.ece }}</td>
-              <td>{{ metric.brier }}</td>
-              <td>
-                <strong>{{ metric.topK }}</strong>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <SectionCard title="日报规则巡检状态" subtitle="日报变化来自 detector 规则巡检，月报批次结论保持稳定">
+      <dl class="definition-grid compact">
+        <dt>巡检日期</dt><dd>{{ state.dailyDetectorStatus.runDate }}</dd>
+        <dt>今日规则线索</dt><dd>{{ state.dailyDetectorStatus.clueCount }}</dd>
+        <dt>已附着规则证据</dt><dd>{{ state.dailyDetectorStatus.attachedHighRiskCount }}</dd>
+        <dt>数据状态</dt><dd>{{ state.dailyDetectorStatus.sourceLabel }}</dd>
+      </dl>
     </SectionCard>
 
     <SectionCard title="MonthlyReport 列表" subtitle="生产商主视角 / 高风险实体 / 医院 × 药品补齐结果按月对齐">

@@ -4,7 +4,7 @@
       label: '月报工作台',
       items: [
         { key: 'index', href: 'index.html', icon: '▦', text: '月报工作台', badge: '20' },
-        { key: 'clues', href: 'clues.html', icon: '●', text: '风险实体清单', badge: '9', badgeClass: 'orange' },
+        { key: 'clues', href: 'clues.html', icon: '◈', text: '今日规则线索', badge: '9', badgeClass: 'orange' },
         { key: 'oneshot', href: 'oneshot.html', icon: '+', text: '新进终端监测', badge: '6', badgeClass: 'green' }
       ]
     },
@@ -31,15 +31,15 @@
   ]
 
   const pageDefaults = {
-    'index.html': { active: 'index', tag: '月报工作台 · 6月主视角' },
-    'clues.html': { active: 'clues', tag: '风险实体清单' },
-    'clue-detail.html': { active: 'clues', tag: 'RiskCard 详情' },
+    'index.html': { active: 'index', tag: '月报高风险工作台 · 每日规则巡检' },
+    'clues.html': { active: 'clues', tag: '今日规则线索' },
+    'clue-detail.html': { active: 'clues', tag: '规则线索详情' },
     'order-detail.html': { active: 'clues', tag: '订单详情' },
     'oneshot.html': { active: 'oneshot', tag: '新进终端监测 · oneshot 复购倾向' },
     'verify.html': { active: 'verify', tag: '挽回核验' },
     'distributor.html': { active: 'distributor', tag: '配送商预警' },
-    'dashboard.html': { active: 'dashboard', tag: 'MonthlyReport · 批次总览' },
-    'backtest.html': { active: 'backtest', tag: '月报命中复盘' },
+    'dashboard.html': { active: 'dashboard', tag: '月报与批次' },
+    'backtest.html': { active: 'backtest', tag: '历史命中复盘' },
     'algo-architecture.html': { active: 'algo-architecture', tag: '算法链路说明' }
   }
 
@@ -57,7 +57,7 @@
     const tag = target.dataset.title || pageMeta().tag
     target.outerHTML = `
       <header class="topbar">
-        <button class="sidebar-toggle" title="收起 / 展开侧边栏" type="button">≡</button>
+        <button class="sidebar-toggle" title="收起 / 展开侧边栏" type="button">☰</button>
         <a class="topbar-logo" href="index.html">
           <div class="logo-icon">智</div>
           <div>

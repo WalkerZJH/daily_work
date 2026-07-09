@@ -14,30 +14,30 @@ const spotlight = computed(() => proofCases.value[0] || {})
 const displayLookupStatus = computed(() => state.value.displayLookupStatus || { label: '演示数据', message: '展示名映射未接通' })
 
 const summaryMetrics = computed(() => [
-  { label: '复盘月报', value: activeSet.value.reportMonth || '-', note: activeSet.value.subtitle || '闭合验证', tone: 'info' },
+  { label: '复盘月报', value: activeSet.value.reportMonth || '-', note: '闭合验证', tone: 'info' },
   { label: '命中案例', value: String(proofCases.value.length), note: '高价值对象', tone: 'success' },
   { label: '验证窗口', value: activeSet.value.validationDays || '-', note: '月报日至闭合日', tone: 'warning' },
-  { label: `${activeSet.value.label || ''} ECE`, value: activeSet.value.ece || '-', note: '概率校准表现', tone: 'danger' }
+  { label: '复盘口径', value: activeSet.value.label || '-', note: '按月报批次验证', tone: 'danger' }
 ])
 
 const readingPath = computed(() => [
   {
     label: '月报日',
     date: activeSet.value.reportDate,
-    title: '输出高价值流失风险清单',
-    text: '主干模型给出风险概率，并按风险概率 × 预测窗口消费规模排序。'
+    title: '输出高价值风险清单',
+    text: '主干月报给出丢失概率，并按损失价值排序。'
   },
   {
     label: `${activeSet.value.label || '风险'}跟进窗口`,
     date: `${activeSet.value.reportDate} 至 ${activeSet.value.validationEnd}`,
     title: '持续观察采购恢复情况',
-    text: '入选对象在验证窗口内保持 0 次续购，风险信号持续成立。'
+    text: '入选对象在验证窗口内保持 0 次续购，月报风险信号持续成立。'
   },
   {
     label: '闭合验证',
     date: activeSet.value.validationEnd,
     title: `${activeSet.value.label || ''}结果确认`,
-    text: '验证窗口闭合后，案例进入历史命中复盘，用于呈现产品提前识别价值。'
+    text: '验证窗口闭合后，案例进入历史命中复盘，用于呈现产品提前识别高价值风险的能力。'
   }
 ])
 
@@ -48,6 +48,10 @@ function selectHorizon(horizon) {
 function meterWidth(value) {
   const probability = Number(value || 0)
   return `${Math.round(Math.max(0.05, Math.min(0.98, probability)) * 100)}%`
+}
+
+function lossValue(item) {
+  return item?.lossValue || item?.businessScore || '-'
 }
 
 onMounted(async () => {
@@ -82,8 +86,8 @@ onMounted(async () => {
         <p>{{ activeSet.narrative }}</p>
       </div>
       <div class="proof-hero-card">
-        <span>{{ activeSet.label }}核心样例业务评分</span>
-        <strong>{{ spotlight.businessScore }}</strong>
+        <span>{{ activeSet.label }}核心样例损失价值</span>
+        <strong>{{ lossValue(spotlight) }}</strong>
         <p>{{ spotlight.hospital }} × {{ spotlight.drug }}</p>
       </div>
     </section>
@@ -97,7 +101,7 @@ onMounted(async () => {
     </div>
 
     <div class="proof-spotlight-grid">
-      <SectionCard title="核心命中案例" subtitle="概率 × 预测窗口消费规模排序">
+      <SectionCard title="核心命中案例" subtitle="按损失价值排序">
         <article class="proof-spotlight-card">
           <div class="proof-spotlight-head">
             <span class="status-badge status-badge-ok">{{ spotlight.visible }}</span>
@@ -107,7 +111,7 @@ onMounted(async () => {
           <p>{{ spotlight.caseSummary }}</p>
           <div class="proof-score-grid">
             <div>
-              <span>风险概率</span>
+              <span>月报丢失概率</span>
               <strong>{{ spotlight.riskProbability }}</strong>
             </div>
             <div>
@@ -115,8 +119,8 @@ onMounted(async () => {
               <strong>{{ spotlight.windowConsumption }}</strong>
             </div>
             <div>
-              <span>业务评分</span>
-              <strong>{{ spotlight.businessScore }}</strong>
+              <span>损失价值</span>
+              <strong>{{ lossValue(spotlight) }}</strong>
             </div>
             <div>
               <span>窗口内续购</span>
@@ -158,7 +162,7 @@ onMounted(async () => {
           <p>{{ item.outcome }}</p>
           <dl class="definition-grid compact">
             <dt>生产商</dt><dd>{{ item.manufacturer }}</dd>
-            <dt>业务评分</dt><dd>{{ item.businessScore }}</dd>
+            <dt>损失价值</dt><dd>{{ lossValue(item) }}</dd>
             <dt>窗口消费</dt><dd>{{ item.windowConsumption }}</dd>
             <dt>无续购</dt><dd>月报后 {{ item.noPurchaseAfterReport }} · 自上次采购 {{ item.noPurchaseFromLast }}</dd>
           </dl>
@@ -166,7 +170,7 @@ onMounted(async () => {
       </div>
     </SectionCard>
 
-    <SectionCard title="可核验证据链" subtitle="订单事实、模型概率与闭合结果对应">
+    <SectionCard title="可核验证据链" subtitle="订单事实、月报概率与闭合结果对应">
       <div class="proof-evidence-grid">
         <article v-for="item in proofCases.slice(0, 3)" :key="`${item.id}-evidence`" class="proof-evidence-card">
           <h3>{{ item.hospital }} 证据摘要</h3>

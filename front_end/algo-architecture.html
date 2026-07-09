@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -28,7 +28,7 @@
               <span class="eyebrow">Algorithm Chain</span>
               <h1>终端不丢算法链路</h1>
               <p>
-                这页说明产品如何把订单行为转成领先指标、风险概率、业务排序、detector 证据链、新进终端复购倾向和回测验收。核心目标是让生产商看到某医院采购某药品的风险、原因、金额影响和下一步处置优先级。
+                这页说明产品如何把订单行为转成领先指标、风险概率、损失价值排序、detector 证据链、新进终端复购倾向和回测验收。核心目标是让生产商看到某医院采购某药品的风险、原因、金额影响和下一步处置优先级。
               </p>
             </div>
             <div class="arch-hero-metrics">
@@ -47,7 +47,7 @@
               <article><strong>L0</strong><span>数据预处理与基线</span></article>
               <article><strong>L0.5</strong><span>需求形态分类闸门</span></article>
               <article><strong>L1</strong><span>主干风险模型</span></article>
-              <article><strong>M1</strong><span>候选池与业务排序</span></article>
+              <article><strong>M1</strong><span>候选池与损失价值排序</span></article>
               <article><strong>M2</strong><span>新进终端监测</span></article>
               <article><strong>M3</strong><span>节奏精查</span></article>
               <article><strong>M4</strong><span>探测器证据链</span></article>
@@ -90,7 +90,8 @@
               <article class="arch-module">
                 <div class="arch-module-code">L1</div>
                 <h3>主干风险模型</h3>
-                <p>主干算法对 recurring entity 输出 3月、6月、12月三个预测窗口的具体风险概率。概率服务只回答“该医院 × 药品在窗口内发生风险的概率”，detector 不覆盖主干概率。</p>
+                <p>主干算法对 recurring entity 输出 3月、6月、12月三个预测窗口的具体风险概率。概率服务只回答“该医院 × 药品在窗口内发生风险的概率”。</p>
+                <p>每日规则巡检提供证据，巡检结果不改写主干月报结论。</p>
                 <div class="math-panel">\[ p_{e,m}=P(y_{e,m}=1\mid X_{e,t}),\quad m\in\{3,6,12\}\text{月} \]</div>
                 <ul>
                   <li>输入：as-of 采购节奏、金额、频次、品规、履约、区域同类和需求形态特征。</li>
@@ -101,10 +102,10 @@
               <article class="arch-module">
                 <div class="arch-module-code">M1</div>
                 <h3>候选池与业务排序</h3>
-                <p>候选池先接收主干高风险 entity，再按业务评分排序。业务评分把概率和金额影响合并，确保高概率且高消费影响的 entity 出现在更靠前的位置。</p>
-                <div class="math-panel">\[ \text{business_score}_{e,h}=p_{e,h}\times \overline{\text{consumption}}_{e,h} \]</div>
+                <p>候选池先接收主干高风险 entity，再按损失价值排序。损失价值把概率和金额影响合并，确保高概率且高消费影响的 entity 出现在更靠前的位置。</p>
+                <div class="math-panel">\[ \text{loss_value}_{e,h}=p_{e,h}\times \overline{\text{consumption}}_{e,h} \]</div>
                 <ul>
-                  <li>工作台按 business_score 降序。</li>
+                  <li>工作台按 loss_value 降序。</li>
                   <li>每个用户 20-50 条，不是整体全局只给 20-50 条。</li>
                   <li>优先复核、人工复核、新进终端关注、补充算法候选共同构成主工作台。</li>
                   <li>高风险 entity、新进终端复购关注、补充算法候选共同进入主工作台，不足 20 条时展示实际数量。</li>
@@ -138,7 +139,7 @@
               <article class="arch-module">
                 <div class="arch-module-code">M4</div>
                 <h3>探测器证据链</h3>
-                <p>入选 entity 后，详情页展示所有 detector 的计算结果，包括命中、弱信号和稳定信号。detector 输出解释主干风险概率的具体来源。</p>
+                <p>入选 entity 后，详情页展示所有 detector 的计算结果，包括命中、弱信号和稳定信号。规则巡检结果用于补充解释风险来源。</p>
                 <div class="arch-detector-list">
                   <span>采购间隔 detector</span>
                   <span>频次下降 detector</span>
@@ -168,10 +169,10 @@
               <article class="arch-module">
                 <div class="arch-module-code">M6</div>
                 <h3>结构化证据包</h3>
-                <p>证据包把 entity、窗口概率、业务评分、所有 detector 结果、SHAP、高风险原因、推荐动作和历史趋势统一给到详情页，支撑销售、商务和管理者在同一事实层上协作。</p>
+                <p>证据包把 entity、窗口概率、损失价值、所有 detector 结果、SHAP、高风险原因、推荐动作和历史趋势统一给到详情页，支撑销售、商务和管理者在同一事实层上协作。</p>
                 <ul>
                   <li>实体粒度：manufacturer_code、hospital_name、drug_name、region。</li>
-                  <li>窗口粒度：3月/6月/12月的 probability、business_score、detector_results。</li>
+                  <li>窗口粒度：3月/6月/12月的 probability、loss_value、detector_results。</li>
                   <li>动作粒度：跟进建议、配送核查、复购促进、成功案例沉淀。</li>
                 </ul>
               </article>
@@ -186,7 +187,7 @@
             <div class="arch-metric-matrix">
               <article>
                 <h3>主干风险概率模型</h3>
-                <p>当前主干选择 XGBoost small。6月主视角 AUC 0.814，ECE 0.022，前10%名单召回 21.12%，命中精度 78.35%。</p>
+                <p>当前主干选择 主干模型 small。6月主视角 排序能力 0.814，校准表现 0.022，前10%名单召回 21.12%，命中精度 78.35%。</p>
                 <dl>
                   <dt>对象</dt><dd>复购型医院 × 药品关系</dd>
                   <dt>主窗口</dt><dd>6月月报视角</dd>
@@ -195,7 +196,7 @@
               </article>
               <article>
                 <h3>oneshot 复购倾向模型</h3>
-                <p>当前新进终端复购倾向模型在 6月窗口的 AUC 为 0.307，PRAUC 为 0.264。结合金额和首采后天数，用于形成新进终端的复购优先级。</p>
+                <p>当前新进终端复购倾向模型在 6月窗口的 排序能力 为 0.307，稀有事件识别 为 0.264。结合金额和首采后天数，用于形成新进终端的复购优先级。</p>
                 <dl>
                   <dt>对象</dt><dd>本期首采或短历史终端</dd>
                   <dt>主窗口</dt><dd>6月复购倾向</dd>
@@ -204,7 +205,7 @@
               </article>
               <article>
                 <h3>detector 证据模块</h3>
-                <p>采购频次下降证据 AUC 0.672，命中后风险率 59.98%；采购间隔超期证据 AUC 0.583，命中后风险率 58.41%。</p>
+                <p>采购频次下降证据 排序能力 0.672，命中后风险率 59.98%；采购间隔超期证据 排序能力 0.583，命中后风险率 58.41%。</p>
                 <dl>
                   <dt>对象</dt><dd>候选 entity 的证据信号</dd>
                   <dt>用途</dt><dd>解释风险来源</dd>
@@ -218,11 +219,11 @@
                   <tr>
                     <th>模型 / 模块</th>
                     <th>样本与窗口</th>
-                    <th>AUC</th>
-                    <th>PRAUC</th>
-                    <th>PR-AUC Lift</th>
-                    <th>ECE</th>
-                    <th>Brier</th>
+                    <th>排序能力</th>
+                    <th>稀有事件识别</th>
+                    <th>稀有事件识别提升</th>
+                    <th>校准表现</th>
+                    <th>概率误差</th>
                     <th>前列名单表现</th>
                   </tr>
                 </thead>
@@ -297,33 +298,33 @@
             </div>
             <div class="arch-formula-grid">
               <article class="arch-card">
-                <h3>AUC</h3>
-                <div class="math-panel">\[ \text{AUC}=P(s^+ &gt; s^-) \]</div>
+                <h3>排序能力</h3>
+                <div class="math-panel">\[ \text{排序能力}=P(s^+ &gt; s^-) \]</div>
                 <p>衡量真实风险 entity 是否排在非风险 entity 前面。</p>
               </article>
               <article class="arch-card">
-                <h3>PRAUC</h3>
-                <div class="math-panel">\[ \text{PRAUC}=\int_0^1 \text{Precision}(r)\,d\text{Recall}(r) \]</div>
+                <h3>稀有事件识别</h3>
+                <div class="math-panel">\[ \text{稀有事件识别}=\int_0^1 \text{Precision}(r)\,d\text{Recall}(r) \]</div>
                 <p>衡量正例稀少时，模型在不同召回水平下保持精确识别的能力。</p>
               </article>
               <article class="arch-card">
-                <h3>PR-AUC Lift</h3>
-                <div class="math-panel">\[ \text{PR-AUC Lift}=\frac{\text{PR-AUC}}{\text{Positive Rate}} \]</div>
+                <h3>稀有事件识别提升</h3>
+                <div class="math-panel">\[ \text{稀有事件识别提升}=\frac{\text{稀有事件识别}}{\text{Positive Rate}} \]</div>
                 <p>衡量稀有风险场景下，相比基础正例率的识别增益。</p>
               </article>
               <article class="arch-card">
-                <h3>ECE</h3>
-                <div class="math-panel">\[ \text{ECE}=\sum_m \frac{|B_m|}{n}\left|\text{acc}(B_m)-\text{conf}(B_m)\right| \]</div>
+                <h3>校准表现</h3>
+                <div class="math-panel">\[ \text{校准表现}=\sum_m \frac{|B_m|}{n}\left|\text{acc}(B_m)-\text{conf}(B_m)\right| \]</div>
                 <p>衡量概率校准能力，让 80% 风险概率对应接近 80% 的真实风险发生率。</p>
               </article>
               <article class="arch-card">
-                <h3>Brier</h3>
-                <div class="math-panel">\[ \text{Brier}=\frac{1}{n}\sum_i(p_i-y_i)^2 \]</div>
+                <h3>概率误差</h3>
+                <div class="math-panel">\[ \text{概率误差}=\frac{1}{n}\sum_i(p_i-y_i)^2 \]</div>
                 <p>衡量概率预测和真实标签之间的平方误差。</p>
               </article>
               <article class="arch-card">
-                <h3>LogLoss</h3>
-                <div class="math-panel">\[ \text{LogLoss}=-\frac{1}{n}\sum_i\left[y_i\log(p_i)+(1-y_i)\log(1-p_i)\right] \]</div>
+                <h3>分布误差</h3>
+                <div class="math-panel">\[ \text{分布误差}=-\frac{1}{n}\sum_i\left[y_i\log(p_i)+(1-y_i)\log(1-p_i)\right] \]</div>
                 <p>衡量概率分布质量，对高置信错误给予更高惩罚。</p>
               </article>
               <article class="arch-card">

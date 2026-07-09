@@ -1,0 +1,66 @@
+# Monthly Risk + Daily Detector Frontend Integration
+
+## Backend contract discovery
+
+Current local repository contains backend commit `47d7d99 connect project detector APIs to result batch tables`.
+
+Discovered project API endpoints:
+
+- `GET /api/v1/detectors/catalog`
+- `GET /api/v1/detectors/runs`
+- `GET /api/v1/detectors/clues`
+- `GET /api/v1/daily-detector/status`
+- `GET /api/v1/daily-detector/clues`
+- `GET /api/v1/risk-entities/{risk_entity_id}/detector-evidence`
+- `GET /api/v1/detectors/config-status`
+
+Core monthly page endpoints remain:
+
+- `GET /api/v1/workbench`
+- `GET /api/v1/risk-entities`
+- `GET /api/v1/risk-entities/{entity_id}`
+- `GET /api/v1/oneshot-terminals`
+- `GET /api/v1/monthly-reports`
+- `GET /api/v1/proof-cases`
+
+## Frontend connection status
+
+Implemented in `front_end/src/services/backendApi.js`:
+
+- Detector catalog: connected when the project API is reachable.
+- Detector runs: API client method added; not required for the current visible page state.
+- Detector clues: used as compatibility fallback when the daily endpoint is unavailable.
+- Daily detector status: connected for workbench/report/clues readiness.
+- Daily detector clues: primary data source for the all-clues page when readiness is true.
+- Risk entity detector evidence: connected for monthly high-risk detail pages when available.
+- Detector config status: connected for the workbench status notice when available.
+- Probability trend: method reserved; current page uses demo fallback if the backend endpoint is absent.
+
+Fallback behavior:
+
+- `ready=false`, 404, timeout, or network failure returns demo/mock state.
+- Fallback is normal and not displayed as a system error.
+- Mock data follows the same product semantics as the backend contract.
+
+## Product wording applied
+
+- Main workbench shows monthly high-risk objects.
+- Monthly risk probability is presented as stable monthly probability.
+- Daily page changes come from rule inspection status and rule clues.
+- Detector score is rendered as `规则巡检分`.
+- Value ranking is rendered as `损失价值`.
+- All-clues page distinguishes `月报高风险对象` and `仅规则命中`.
+- Detector-only clues are shown as daily rule clues, not as monthly high-risk objects.
+
+## Page changes
+
+- `index.html`: monthly high-risk workbench plus daily detector summary, catalog status, and config status notice.
+- `clues.html`: all daily rule clues with filters for all / monthly high-risk / rule-only.
+- `clue-detail.html`: dual-mode detail page for monthly risk evidence or detector-only clue detail.
+- `dashboard.html`: removed customer-facing model metric table and added daily inspection status.
+- `backtest.html`: renamed value display to loss value and removed model calibration metric display.
+- `algo-architecture.html`: retained algorithm chain explanation while removing customer-facing model metric wording.
+
+## Source boundary confirmation
+
+The frontend uses project APIs and local demo/mock data only. It does not read local formal result files, algorithm-side static outputs, model packages, or leadership prototype folders. The leadership prototype folder is already ignored at repository level and is not part of frontend build or tests.

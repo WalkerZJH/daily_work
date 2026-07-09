@@ -1,16 +1,38 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
-import { createStaticRiskEntityDetailData, loadRiskEntityDetailData } from '../monthly-demo/pageDataAdapter'
+import { createStaticClueDetailData, loadClueDetailData } from '../monthly-demo/pageDataAdapter'
 
 const params = new URLSearchParams(window.location.search)
-const initialData = createStaticRiskEntityDetailData(params.get('id'))
-const entity = ref(initialData.entity)
+const initialData = createStaticClueDetailData({
+  clueId: params.get('clueId'),
+  riskEntityId: params.get('id') || params.get('riskEntityId')
+})
+
+const state = ref(initialData)
 const riskCardHorizonTabs = ['H3', 'H6', 'H12']
 const requestedHorizon = params.get('horizon') || params.get('h')
-const selectedHorizon = ref(riskCardHorizonTabs.includes(requestedHorizon) ? requestedHorizon : entity.value.horizon)
-const horizonProfiles = ref(initialData.horizonProfiles)
-const activeRiskCard = computed(() => horizonProfiles.value[selectedHorizon.value] || horizonProfiles.value.H6)
+const selectedHorizon = ref(riskCardHorizonTabs.includes(requestedHorizon) ? requestedHorizon : state.value.entity?.horizon || 'H6')
+
+const entity = computed(() => state.value.entity)
+const clue = computed(() => state.value.clue || {})
+const isMonthlyHighRiskEntity = computed(() => Boolean(state.value.isMonthlyHighRiskEntity && entity.value))
+const horizonProfiles = computed(() => state.value.horizonProfiles || {})
+const activeRiskCard = computed(() => horizonProfiles.value[selectedHorizon.value] || horizonProfiles.value.H6 || {})
+const detectorEvidence = computed(() => state.value.detectorEvidence || [])
+const probabilityTrend = computed(() => state.value.probabilityTrend || [])
+
+const trendPolyline = computed(() => {
+  const points = probabilityTrend.value
+  if (points.length < 2) return ''
+  return points
+    .map((item, index) => {
+      const x = 24 + (index / (points.length - 1)) * 252
+      const y = 118 - Math.max(0.05, Math.min(0.95, Number(item.riskProbability || 0))) * 92
+      return `${x.toFixed(1)},${y.toFixed(1)}`
+    })
+    .join(' ')
+})
 
 function horizonLabel(horizon) {
   const labels = { H3: '3月', H6: '6月', H12: '12月' }
@@ -18,39 +40,57 @@ function horizonLabel(horizon) {
 }
 
 onMounted(async () => {
-  const data = await loadRiskEntityDetailData(entity.value.id)
+  const data = await loadClueDetailData({
+    clueId: params.get('clueId'),
+    riskEntityId: params.get('id') || params.get('riskEntityId')
+  })
   if (!data) return
-  entity.value = data.entity
-  horizonProfiles.value = data.horizonProfiles
-  if (!horizonProfiles.value[selectedHorizon.value]) selectedHorizon.value = entity.value.horizon || 'H6'
+  state.value = data
+  if (!horizonProfiles.value[selectedHorizon.value]) selectedHorizon.value = entity.value?.horizon || 'H6'
 })
 </script>
 
 <template>
   <div class="page-shell">
-    <a class="back-link" href="clues.html">返回风险实体清单</a>
+    <a class="back-link" href="clues.html">返回今日规则线索</a>
     <div class="page-header">
-      <h1>风险实体详情 · {{ entity.hospital }}</h1>
-      <div class="subtitle">RiskCard 详情 · RiskEvidence 业务可见证据 · 全量 detector 结果 · XGBoost SHAP · detector 结果自然语言聚合</div>
+      <h1>{{ isMonthlyHighRiskEntity ? '月报风险与规则证据' : '规则线索详情' }} · {{ clue.hospital }}</h1>
+      <div class="subtitle">
+        {{ clue.detectorRunDate }} · {{ clue.detectorName }} · {{ clue.detectorScoreLabel }}
+      </div>
     </div>
 
-    <div class="grid-2">
-      <SectionCard title="RiskEntity 摘要" subtitle="终端风险画像">
+    <section class="panel clue-detail-hero">
+      <div>
+        <span class="eyebrow">{{ isMonthlyHighRiskEntity ? 'Monthly Risk Evidence' : 'Daily Rule Clue' }}</span>
+        <h2>{{ clue.hospital }} × {{ clue.drug }}</h2>
+        <p>{{ clue.evidenceText }}</p>
+      </div>
+      <div class="batch-card">
+        <div class="batch-row"><span>线索类型</span><strong>{{ clue.sourceTypeLabel }}</strong></div>
+        <div class="batch-row"><span>规则巡检分</span><strong>{{ clue.detectorScoreText }}</strong></div>
+        <div class="batch-row"><span>规则等级</span><strong>{{ clue.detectorLevel }}</strong></div>
+        <div class="batch-row"><span>巡检日期</span><strong>{{ clue.detectorRunDate }}</strong></div>
+      </div>
+    </section>
+
+    <div v-if="isMonthlyHighRiskEntity" class="grid-2">
+      <SectionCard title="月报风险摘要" subtitle="月报丢失概率来自稳定批次，不承诺每日变化">
         <dl class="definition-grid">
           <dt>实体 ID</dt><dd class="text-mono">{{ entity.id }}</dd>
           <dt>药品</dt><dd>{{ entity.drug }}</dd>
           <dt>风险等级</dt><dd><span class="risk-chip" :class="`risk-chip-${entity.riskColor}`">{{ entity.riskLevel }}</span></dd>
-          <dt>风险概率</dt><dd>{{ entity.probabilityDisplay }}</dd>
+          <dt>月报丢失概率</dt><dd>{{ entity.probabilityDisplay }}</dd>
           <dt>预测窗口消费</dt><dd>{{ entity.averageConsumptionText }}</dd>
-          <dt>业务评分</dt><dd>{{ entity.businessScoreText }}</dd>
+          <dt>损失价值</dt><dd>{{ entity.lossValueText || entity.businessScoreText }}</dd>
           <dt>跟进状态</dt><dd>{{ entity.status }}</dd>
         </dl>
       </SectionCard>
 
-      <SectionCard title="RiskCard 主卡">
+      <SectionCard title="风险窗口" subtitle="窗口切换只影响月报风险卡视角">
         <div class="riskcard-toolbar">
           <div>
-            <span class="eyebrow">风险窗口切换</span>
+            <span class="eyebrow">窗口切换</span>
             <h3>{{ activeRiskCard.horizonLabel || horizonLabel(activeRiskCard.horizon) }} · {{ activeRiskCard.label }}</h3>
           </div>
           <div class="segmented-control horizon-switcher" aria-label="风险窗口切换">
@@ -67,44 +107,79 @@ onMounted(async () => {
           </div>
         </div>
         <dl class="definition-grid compact riskcard-score-grid">
-          <dt>风险概率</dt><dd>{{ activeRiskCard.probabilityDisplay }}</dd>
+          <dt>月报丢失概率</dt><dd>{{ activeRiskCard.probabilityDisplay }}</dd>
           <dt>预测窗口消费</dt><dd>{{ activeRiskCard.averageConsumptionText }}</dd>
-          <dt>业务评分</dt><dd>{{ activeRiskCard.businessScoreText }}</dd>
+          <dt>损失价值</dt><dd>{{ activeRiskCard.lossValueText || activeRiskCard.businessScoreText }}</dd>
         </dl>
         <p class="body-copy">{{ activeRiskCard.reason }}</p>
-        <div class="notice-strip">建议动作：优先联系采购与配送负责人，确认需求节奏、竞品替代和履约稳定性。</div>
       </SectionCard>
     </div>
 
-    <SectionCard title="Detector 结果明细" :subtitle="`${horizonLabel(selectedHorizon)}视角 · 入选 entity 展示所有 detector 计算结果`">
+    <SectionCard
+      v-else
+      title="仅规则命中对象"
+      subtitle="该线索未进入本期月报高风险对象，只展示规则巡检信息"
+    >
+      <dl class="definition-grid">
+        <dt>生产商</dt><dd>{{ clue.manufacturer }}</dd>
+        <dt>区域</dt><dd>{{ clue.region }}</dd>
+        <dt>规则类型</dt><dd>{{ clue.detectorFamily }}</dd>
+        <dt>规则根因</dt><dd>{{ clue.rootCauseLabel }}</dd>
+        <dt>月报丢失概率</dt><dd>-</dd>
+        <dt>损失价值</dt><dd>-</dd>
+      </dl>
+    </SectionCard>
+
+    <SectionCard title="巡检证据" subtitle="巡检分只解释命中结果，不作为丢失概率使用">
       <div class="detector-result-grid">
-        <article v-for="detector in activeRiskCard.detectorResults" :key="detector.id" class="detector-result-card">
+        <article v-for="detector in detectorEvidence" :key="detector.id" class="detector-result-card">
           <div class="detector-result-head">
-            <h3>{{ detector.name }}</h3>
-            <span class="status-badge status-badge-info">{{ detector.signal }}</span>
+            <h3>{{ detector.detectorName }}</h3>
+            <span class="status-badge status-badge-info">{{ detector.detectorLevel }}</span>
           </div>
           <dl class="definition-grid compact">
-            <dt>score</dt><dd>{{ detector.score }}</dd>
-            <dt>status</dt><dd>{{ detector.status }}</dd>
-            <dt>evidence</dt><dd>{{ detector.evidence }}</dd>
-            <dt>action</dt><dd>{{ detector.action }}</dd>
+            <dt>规则巡检分</dt><dd>{{ detector.detectorScoreText }}</dd>
+            <dt>规则类型</dt><dd>{{ detector.detectorFamily }}</dd>
+            <dt>根因标签</dt><dd>{{ detector.rootCauseLabel }}</dd>
+            <dt>证据说明</dt><dd>{{ detector.evidenceText }}</dd>
           </dl>
         </article>
       </div>
     </SectionCard>
 
-    <div class="grid-2">
-      <SectionCard title="XGBoost SHAP">
+    <div v-if="isMonthlyHighRiskEntity" class="grid-2">
+      <SectionCard title="月报丢失概率趋势" subtitle="X 轴为 report_month，Y 轴为 risk_probability">
+        <div v-if="probabilityTrend.length" class="probability-trend">
+          <svg viewBox="0 0 300 136" role="img" aria-label="月报丢失概率趋势">
+            <polyline class="trend-grid-line" points="24,26 276,26" />
+            <polyline class="trend-grid-line" points="24,72 276,72" />
+            <polyline class="trend-grid-line" points="24,118 276,118" />
+            <polyline class="trend-line" :points="trendPolyline" />
+            <circle
+              v-for="(point, index) in probabilityTrend"
+              :key="point.reportMonth"
+              class="trend-dot"
+              :cx="24 + (index / Math.max(1, probabilityTrend.length - 1)) * 252"
+              :cy="118 - Math.max(0.05, Math.min(0.95, Number(point.riskProbability || 0))) * 92"
+              r="4"
+            />
+          </svg>
+          <div class="trend-legend">
+            <span v-for="point in probabilityTrend" :key="point.reportMonth">
+              {{ point.reportMonth }} · {{ point.riskProbabilityText }} · 损失价值 {{ point.lossValueText }}
+            </span>
+          </div>
+        </div>
+        <div v-else class="empty">暂无月报趋势数据</div>
+      </SectionCard>
+
+      <SectionCard title="特征贡献摘要">
         <div class="evidence-list">
-          <div v-for="item in activeRiskCard.shapHighlights" :key="item.feature" class="evidence-row">
+          <div v-for="item in activeRiskCard.shapHighlights || []" :key="item.feature" class="evidence-row">
             <span class="evidence-dot"></span>
             <p><strong>{{ item.feature }} {{ item.contribution }}</strong><br>{{ item.explanation }}</p>
           </div>
         </div>
-      </SectionCard>
-
-      <SectionCard title="detector 结果自然语言聚合">
-        <p class="body-copy">{{ activeRiskCard.detectorNarrative }}</p>
       </SectionCard>
     </div>
   </div>

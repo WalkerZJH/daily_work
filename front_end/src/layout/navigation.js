@@ -3,7 +3,7 @@ export const navSections = [
     label: '月报工作台',
     items: [
       { key: 'index', href: 'index.html', icon: '▦', text: '月报工作台', badge: '20' },
-      { key: 'clues', href: 'clues.html', icon: '●', text: '风险实体清单', badge: '9', badgeClass: 'orange' },
+      { key: 'clues', href: 'clues.html', icon: '◈', text: '今日规则线索', badge: '9', badgeClass: 'orange' },
       { key: 'oneshot', href: 'oneshot.html', icon: '+', text: '新进终端监测', badge: '6', badgeClass: 'green' }
     ]
   },

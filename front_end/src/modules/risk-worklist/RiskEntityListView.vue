@@ -1,63 +1,124 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
-import { createStaticRiskEntitiesData, loadRiskEntitiesData } from '../monthly-demo/pageDataAdapter'
+import { createStaticRuleCluesData, loadRuleCluesData } from '../monthly-demo/pageDataAdapter'
 
-const state = ref(createStaticRiskEntitiesData())
-const sortedRiskEntities = computed(() => [...state.value.riskEntities].sort((a, b) => b.businessScore - a.businessScore))
+const state = ref(createStaticRuleCluesData())
+const activeFilter = ref('all')
+
+const filterTabs = [
+  { id: 'all', label: '全部规则线索' },
+  { id: 'monthly', label: '月报高风险对象' },
+  { id: 'rule_only', label: '仅规则命中' }
+]
+
+const filteredClues = computed(() => {
+  const items = state.value.dailyDetectorClues || []
+  if (activeFilter.value === 'monthly') return items.filter((item) => item.isMonthlyHighRiskEntity)
+  if (activeFilter.value === 'rule_only') return items.filter((item) => !item.isMonthlyHighRiskEntity)
+  return items
+})
 
 onMounted(async () => {
-  const data = await loadRiskEntitiesData()
+  const data = await loadRuleCluesData()
   if (data) state.value = data
 })
 
-function formatMoney(value) {
-  return `¥${value.toLocaleString('zh-CN')}`
+function detailHref(clue) {
+  const params = new URLSearchParams({ clueId: clue.id })
+  if (clue.riskEntityId) params.set('id', clue.riskEntityId)
+  return `clue-detail.html?${params.toString()}`
 }
 </script>
 
 <template>
   <div class="page-shell">
     <div class="page-header">
-      <h1>风险实体清单</h1>
-      <div class="subtitle">月报候选池 · 风险概率 · 预测窗口内平均消费金额 · 概率 × 预测窗口内平均消费金额排序 · 证据链摘要</div>
+      <h1>今日规则线索</h1>
+      <div class="subtitle">
+        {{ state.dailyDetectorStatus.runDate }} · detector 纯规则巡检 · 非月报对象仅作为今日规则线索展示
+      </div>
     </div>
 
-    <SectionCard title="RiskEntity / RiskCard 工作清单" subtitle="按 businessScore 从高到低排序，优先处理高业务影响的高风险 entity">
+    <section class="panel clue-hero">
+      <div>
+        <span class="eyebrow">Daily Rule Clues</span>
+        <h2>今日巡检结果每天更新，月报批次结论保持稳定</h2>
+        <p>
+          月报高风险对象上的 detector 命中会附着到风险卡；未进入月报高风险清单但被规则命中的对象，进入今日规则线索池并按巡检证据单独观察。
+        </p>
+      </div>
+      <div class="batch-card">
+        <div class="batch-row"><span>巡检日期</span><strong>{{ state.dailyDetectorStatus.runDate }}</strong></div>
+        <div class="batch-row"><span>今日规则线索</span><strong>{{ state.dailyDetectorStatus.clueCount }}</strong></div>
+        <div class="batch-row"><span>已附着规则证据</span><strong>{{ state.dailyDetectorStatus.attachedHighRiskCount }}</strong></div>
+        <div class="batch-row"><span>数据状态</span><strong>{{ state.dailyDetectorStatus.sourceLabel }}</strong></div>
+      </div>
+    </section>
+
+    <SectionCard title="线索筛选" subtitle="巡检分只用于规则筛选，也不代表业务紧迫度">
+      <div class="segmented-control">
+        <button
+          v-for="tab in filterTabs"
+          :key="tab.id"
+          type="button"
+          class="segment-btn"
+          :class="{ active: activeFilter === tab.id }"
+          @click="activeFilter = tab.id"
+        >
+          <strong>{{ tab.label }}</strong>
+        </button>
+      </div>
+    </SectionCard>
+
+    <SectionCard title="全部规则线索" subtitle="包含月报高风险对象和仅规则命中对象">
       <div class="data-table-wrap">
         <table>
           <thead>
             <tr>
-              <th>排序</th>
-              <th>RiskEntity</th>
-              <th>药品/产品线</th>
-              <th>风险概率</th>
-              <th>预测窗口内平均消费金额</th>
-              <th>业务评分</th>
-              <th>最近采购</th>
-              <th>RiskCard</th>
-              <th>人工复核</th>
-              <th>主原因</th>
+              <th>线索类型</th>
+              <th>医院 × 药品</th>
+              <th>规则</th>
+              <th>规则巡检分</th>
+              <th>月报信息</th>
+              <th>证据摘要</th>
+              <th>动作</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(entity, index) in sortedRiskEntities" :key="entity.id">
-              <td><strong>#{{ index + 1 }}</strong></td>
+            <tr v-for="clue in filteredClues" :key="clue.id">
               <td>
-                <strong>{{ entity.hospital }}</strong>
-                <div class="muted text-mono">{{ entity.id }}</div>
+                <span
+                  class="status-badge"
+                  :class="clue.isMonthlyHighRiskEntity ? 'status-badge-error' : 'status-badge-neutral'"
+                >
+                  {{ clue.sourceTypeLabel }}
+                </span>
               </td>
-              <td>{{ entity.drug }}</td>
               <td>
-                <span class="risk-chip" :class="`risk-chip-${entity.riskColor}`">{{ entity.probabilityDisplay }}</span>
-                <div class="muted">{{ entity.riskLevel }}</div>
+                <strong>{{ clue.hospital }} × {{ clue.drug }}</strong>
+                <div class="muted">{{ clue.region }} · {{ clue.manufacturer }}</div>
               </td>
-              <td>{{ formatMoney(entity.averageConsumptionInWindow) }}</td>
-              <td><strong>{{ formatMoney(entity.businessScore) }}</strong></td>
-              <td>{{ entity.lastPurchase }}<div class="muted">{{ entity.daysSinceLast }} 天</div></td>
-              <td>{{ entity.cards }} 张</td>
-              <td>{{ entity.status }}</td>
-              <td>{{ entity.reason }}</td>
+              <td>
+                <strong>{{ clue.detectorName }}</strong>
+                <div class="muted">{{ clue.detectorFamily }} · {{ clue.detectorLevel }}</div>
+              </td>
+              <td>
+                <strong>{{ clue.detectorScoreText }}</strong>
+                <div class="muted">{{ clue.detectorScoreLabel }}</div>
+              </td>
+              <td>
+                <template v-if="clue.isMonthlyHighRiskEntity">
+                  <span>月报丢失概率 {{ clue.monthlyRiskProbabilityText }}</span>
+                  <div class="muted">损失价值 {{ clue.lossValueText }}</div>
+                </template>
+                <span v-else class="muted">今日规则线索，按巡检证据单独观察</span>
+              </td>
+              <td class="narrative-cell">
+                <strong>{{ clue.rootCauseLabel }}</strong>
+                <div class="muted">{{ clue.evidenceText }}</div>
+              </td>
+              <td><a class="btn btn-primary btn-sm" :href="detailHref(clue)">{{ clue.actionText }}</a></td>
             </tr>
           </tbody>
         </table>

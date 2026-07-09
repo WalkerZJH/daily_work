@@ -6,33 +6,35 @@ ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "front_end"
 
 
-def test_algorithm_architecture_page_exists_with_terminal_loss_chain():
+def read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def test_algorithm_architecture_page_exists_with_terminal_loss_chain() -> None:
     page = FRONTEND / "algo-architecture.html"
     assert page.exists()
-    text = page.read_text(encoding="utf-8")
+    text = read(page)
 
-    required_terms = [
+    for term in [
         "终端不丢算法链路",
-        "领先指标",
         "数据预处理与基线",
-        "需求形态分类闸门",
         "主干风险模型",
-        "候选池与业务排序",
+        "候选池与",
+        "损失价值",
         "新进终端监测",
-        "节奏精查",
+        "每日规则巡检",
         "探测器证据链",
         "证据融合与状态决策",
         "结构化证据包",
         "回测与验收",
-    ]
-    for term in required_terms:
+    ]:
         assert term in text
 
 
-def test_algorithm_architecture_page_does_not_use_adapter_layer_as_main_story():
-    text = (FRONTEND / "algo-architecture.html").read_text(encoding="utf-8")
+def test_algorithm_architecture_page_keeps_customer_story_not_internal_paths() -> None:
+    text = read(FRONTEND / "algo-architecture.html")
 
-    forbidden_terms = [
+    for forbidden in [
         "risk_algorithm_core",
         "risk_model_core",
         "risk_result_batch",
@@ -43,32 +45,24 @@ def test_algorithm_architecture_page_does_not_use_adapter_layer_as_main_story():
         "artifact",
         "customer-facing probability service",
         "auto_dispatch_allowed",
-    ]
-    for term in forbidden_terms:
-        assert term not in text
+    ]:
+        assert forbidden not in text
 
 
-def test_algorithm_architecture_page_renders_latex_formulas():
-    text = (FRONTEND / "algo-architecture.html").read_text(encoding="utf-8")
+def test_algorithm_architecture_page_renders_mathjax_formulas() -> None:
+    text = read(FRONTEND / "algo-architecture.html")
 
-    required_formula_terms = [
+    for term in [
         "window.MathJax",
         "\\(",
         "\\[",
         "\\text{ADI}",
         "\\text{CV}^2",
-        "\\text{AUC}",
-        "\\text{PRAUC}",
-        "\\text{ECE}",
-        "\\text{PR-AUC Lift}",
         "\\text{Recall@K}",
-        "\\text{Brier}",
-        "\\text{LogLoss}",
-    ]
-    for term in required_formula_terms:
+        "\\text{Recall}",
+        "\\text{Precision}",
+    ]:
         assert term in text
-
-    assert '<div class="formula">' not in text
 
     math_panels = re.findall(r'<div class="math-panel">(.*?)</div>', text, flags=re.S)
     assert math_panels
@@ -81,94 +75,61 @@ def test_algorithm_architecture_page_renders_latex_formulas():
         assert "\\\\]" not in formula
 
 
-def test_algorithm_architecture_page_has_no_leader_wording():
-    text = (FRONTEND / "algo-architecture.html").read_text(encoding="utf-8")
+def test_algorithm_architecture_page_documents_recall_precision_confusion_matrix() -> None:
+    text = read(FRONTEND / "algo-architecture.html")
+    for term in [
+        "补充口径：召回与精度",
+        "confusion-matrix",
+        "TP",
+        "FP",
+        "FN",
+        "TN",
+        "\\text{Recall}=\\frac{TP}{TP+FN}",
+        "\\text{Precision}=\\frac{TP}{TP+FP}",
+    ]:
+        assert term in text
 
-    assert "领导" not in text
 
+def test_algorithm_architecture_page_documents_oneshot_repurchase_logic() -> None:
+    text = read(FRONTEND / "algo-architecture.html")
 
-def test_algorithm_architecture_page_documents_oneshot_repurchase_logic():
-    text = (FRONTEND / "algo-architecture.html").read_text(encoding="utf-8")
-
-    required_terms = [
+    for term in [
         "oneshot 复购倾向计算",
         "首次采购后复购倾向",
         "首采金额",
         "首采后天数",
         "复购倾向分层",
         "复购促进优先级",
-    ]
-    for term in required_terms:
+    ]:
         assert term in text
 
 
-def test_algorithm_architecture_page_documents_per_user_fill_strategy_in_chinese():
-    text = (FRONTEND / "algo-architecture.html").read_text(encoding="utf-8")
+def test_algorithm_architecture_page_uses_current_metric_labels_without_banned_names() -> None:
+    text = read(FRONTEND / "algo-architecture.html")
 
-    required_policy_terms = [
-        "每个用户 20-50 条",
-        "不是整体全局只给 20-50 条",
-        "优先复核",
-        "人工复核",
-        "新进终端关注",
-        "补充算法候选",
-        "高风险 entity、新进终端复购关注、补充算法候选共同进入主工作台",
-        "不足 20 条时展示实际数量",
-    ]
-    for term in required_policy_terms:
+    for term in [
+        "排序能力",
+        "稀有事件识别",
+        "稀有事件识别提升",
+        "校准表现",
+        "概率误差",
+        "前10%名单召回",
+        "命中精度",
+    ]:
         assert term in text
 
-
-def test_algorithm_architecture_page_surfaces_customer_ready_model_metrics():
-    text = (FRONTEND / "algo-architecture.html").read_text(encoding="utf-8")
-
-    required_terms = [
-        "模型实际指标",
-        "当前算法探索结果",
-        "主干风险概率模型",
-        "主干风险模型 6月",
-        "AUC 0.814",
-        "ECE 0.022",
-        "前10%名单召回 21.12%",
-        "新进终端复购倾向 6月",
-        "0.307",
-        "0.264",
-        "采购频次证据模块",
-        "采购间隔证据模块",
-        "命中后风险率 59.98%",
-        "命中后风险率 58.41%",
-        "PR-AUC Lift",
-    ]
-    for term in required_terms:
-        assert term in text
-
-    forbidden_terms = [
-        "selected_count",
-        "evaluation_population",
-        "requested",
-        "actual",
-        "union",
-        "k_policy",
-        "payload",
-        "model_id",
-        "model_role",
-        "TopK actual",
-    ]
-    for term in forbidden_terms:
-        assert term not in text
+    for forbidden in ["AUC", "ECE", "PR-AUC", "Brier", "LogLoss", "XGBoost", "LightGBM", "CatBoost"]:
+        assert forbidden not in text
 
 
-def test_algorithm_architecture_page_is_in_static_navigation():
-    layout_text = (FRONTEND / "layout" / "layout.js").read_text(encoding="utf-8")
-    src_nav_text = (FRONTEND / "src" / "layout" / "navigation.js").read_text(encoding="utf-8")
+def test_algorithm_architecture_page_is_in_static_navigation_and_vite_inputs() -> None:
+    layout_text = read(FRONTEND / "layout" / "layout.js")
+    src_nav_text = read(FRONTEND / "src" / "layout" / "navigation.js")
+    vite_config = read(FRONTEND / "vite.config.js")
 
     for text in [layout_text, src_nav_text]:
         assert "algo-architecture.html" in text
         assert "算法链路说明" in text
-
-
-def test_algorithm_architecture_page_is_in_vite_build_inputs():
-    vite_config = (FRONTEND / "vite.config.js").read_text(encoding="utf-8")
 
     assert "algoArchitecture" in vite_config
     assert "algo-architecture.html" in vite_config

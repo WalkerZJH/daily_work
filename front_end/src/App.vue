@@ -13,22 +13,22 @@ const pageName = window.location.pathname.split('/').pop() || 'index.html'
 const routeMap = {
   'index.html': {
     active: 'index',
-    tag: '月报工作台 · 6月主视角',
+    tag: '月报高风险工作台 · 每日规则巡检',
     component: MonthlyWorkbenchView
   },
   'dashboard.html': {
     active: 'dashboard',
-    tag: 'MonthlyReport · 批次总览',
+    tag: '月报与批次',
     component: MonthlyReportView
   },
   'clues.html': {
     active: 'clues',
-    tag: 'RiskEntity · 风险实体清单',
+    tag: '今日规则线索',
     component: RiskEntityListView
   },
   'clue-detail.html': {
     active: 'clues',
-    tag: 'RiskCard · 风险卡详情',
+    tag: '规则线索详情',
     component: RiskEntityDetailView
   },
   'oneshot.html': {

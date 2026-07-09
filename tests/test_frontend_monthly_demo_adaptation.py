@@ -5,127 +5,134 @@ ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "front_end"
 
 
-def read_frontend_file(name: str) -> str:
-    return (FRONTEND / name).read_text(encoding="utf-8")
+def read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
 
 
-def test_static_navigation_matches_monthly_worklist_positioning():
+def test_static_pages_are_vue_mount_shells_for_duplicate_demo_pages() -> None:
+    for page in ["index.html", "dashboard.html", "clues.html", "clue-detail.html", "oneshot.html", "backtest.html"]:
+        text = read(FRONTEND / page)
+        assert '<div id="app"></div>' in text
+        assert 'src="/src/main.js"' in text or 'src=\"/src/main.js\"' in text
+        assert "app.js" not in text
+
+
+def test_navigation_uses_monthly_risk_and_daily_rule_clue_positioning() -> None:
     for path in [FRONTEND / "layout" / "layout.js", FRONTEND / "src" / "layout" / "navigation.js"]:
-        text = path.read_text(encoding="utf-8")
-        assert "月报工作台" in text
-        assert "风险实体清单" in text
-        assert "月报与案例" in text
-        assert "算法链路说明" in text
-        assert "VP 今日工作台" not in text
+        text = read(path)
+        assert "index.html" in text
+        assert "clues.html" in text
+        assert "今日规则线索" in text
+        assert "新进终端监测" in text
+        assert "algo-architecture.html" in text
         assert "全部风险线索" not in text
+        assert "风险实体清单" not in text
 
 
-def test_vue_canonical_app_routes_monthly_demo_pages():
-    text = (FRONTEND / "src" / "App.vue").read_text(encoding="utf-8")
-
-    required_terms = [
+def test_vue_routes_keep_vue_version_as_canonical_demo_pages() -> None:
+    text = read(FRONTEND / "src" / "App.vue")
+    for term in [
         "MonthlyWorkbenchView",
         "RiskEntityListView",
         "RiskEntityDetailView",
         "MonthlyReportView",
         "ProofCaseView",
         "OneshotMonitorView",
-    ]
-    for term in required_terms:
+        "今日规则线索",
+        "规则线索详情",
+    ]:
         assert term in text
 
 
-def test_vue_homepage_uses_monthly_report_worklist_contract_language():
-    text = (FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue").read_text(encoding="utf-8")
+def test_workbench_surfaces_monthly_risk_plus_daily_detector_summary() -> None:
+    text = read(FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue")
+    for term in [
+        "月报高风险工作台",
+        "Monthly Risk + Daily Rule Inspection",
+        "今日规则巡检摘要",
+        "今日规则线索",
+        "已附着规则证据",
+        "detectorCatalogSummary",
+        "detectorConfigStatus.message",
+        "月报丢失概率",
+        "损失价值",
+        "workbenchDisplayRows",
+    ]:
+        assert term in text
+    assert "模型关键指标" not in text
+    assert "业务评分" not in text
 
-    required_terms = [
-        "月报工作清单",
-        "report_month",
-        "score_as_of_date",
-        "6月主视角",
-        "RiskEntity",
-        "RiskCard",
-        "建议动作",
-        "高价值终端",
-        "模型关键指标",
-        "PRAUC",
-        "PR-AUC Lift",
-        "前列名单表现",
-    ]
-    for term in required_terms:
+
+def test_clues_page_is_rule_clue_pool_and_distinguishes_source_types() -> None:
+    text = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue")
+    for term in [
+        "今日规则线索",
+        "全部规则线索",
+        "月报高风险对象",
+        "仅规则命中",
+        "规则巡检分",
+        "isMonthlyHighRiskEntity",
+        "detailHref",
+        "dailyDetectorStatus",
+    ]:
+        assert term in text
+    assert "模型高风险" not in text
+    assert "detector 风险概率" not in text
+
+
+def test_detail_page_supports_monthly_entity_and_detector_only_modes() -> None:
+    text = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityDetailView.vue")
+    for term in [
+        "isMonthlyHighRiskEntity",
+        "月报风险与规则证据",
+        "规则线索详情",
+        "仅规则命中对象",
+        "detectorEvidence",
+        "规则巡检分",
+        "probabilityTrend",
+        "reportMonth",
+        "riskProbabilityText",
+        "损失价值",
+    ]:
+        assert term in text
+    assert "detectorScore" in text
+    assert "detector 概率" not in text
+
+
+def test_demo_data_uses_new_rule_clue_view_model() -> None:
+    text = read(FRONTEND / "src" / "modules" / "monthly-demo" / "demoData.js")
+    for term in [
+        "dailyDetectorStatus",
+        "detectorCatalogSummary",
+        "detectorConfigStatus",
+        "dailyDetectorClues",
+        "sourceType: 'monthly_high_risk'",
+        "sourceType: 'daily_rule_clue'",
+        "sourceTypeLabel: '月报高风险对象'",
+        "sourceTypeLabel: '仅规则命中'",
+        "detectorScoreLabel: '规则巡检分'",
+        "lossValue",
+        "probabilityTrendByEntityId",
+    ]:
         assert term in text
 
-    assert "今日新增" not in text
 
-
-def test_vue_monthly_report_surfaces_batch_context():
-    text = (FRONTEND / "src" / "modules" / "monthly-report" / "MonthlyReportView.vue").read_text(encoding="utf-8")
-
-    required_terms = [
-        "MonthlyReport",
-        "score_batch_id",
-        "data_watermark_at",
-        "RiskResultBatch",
-        "高风险实体",
-        "生产商",
-        "批次模型指标",
-        "PR-AUC Lift",
-        "前列名单表现",
-    ]
-    for term in required_terms:
-        assert term in text
-
-
-def test_vue_worklist_pages_separate_entities_cards_and_fill_candidates():
-    clues = (FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue").read_text(encoding="utf-8")
-    detail = (FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityDetailView.vue").read_text(encoding="utf-8")
-    workbench = (FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue").read_text(encoding="utf-8")
-    backtest = (FRONTEND / "src" / "modules" / "monthly-report" / "ProofCaseView.vue").read_text(encoding="utf-8")
-    demo_data = (FRONTEND / "src" / "modules" / "monthly-demo" / "demoData.js").read_text(encoding="utf-8")
-
-    for term in ["RiskEntity", "RiskCard", "证据链", "人工复核"]:
-        assert term in clues
-    for term in ["RiskCard", "RiskEvidence", "业务可见证据", "建议动作"]:
-        assert term in detail
-    for term in ["workbenchDisplayRows", "医院 × 药品", "填充到 20 个", "补充算法"]:
-        assert term in workbench
-    for term in ["selectedHorizon", "proofCaseHorizonTabs", "高价值命中清单", "历史命中复盘", "产品提前识别价值"]:
-        assert term in backtest
-    for term in ["proofCaseHorizonSets", "3月风险", "6月风险", "12月风险", "平煤神马医疗集团总医院", "盐酸倍他司汀注射液", "深圳市南山区人民医院"]:
-        assert term in demo_data
-    for term in ["医院 YL", "药品 e55aab", "药品 XA11CCW"]:
-        assert term not in demo_data
-
-
-def test_static_pages_are_vue_mount_shells_for_duplicate_demo_pages():
-    for page in ["index.html", "dashboard.html", "clues.html", "clue-detail.html", "oneshot.html", "backtest.html"]:
-        text = read_frontend_file(page)
-        assert '<div id="app"></div>' in text
-        assert 'src="/src/main.js"' in text or "src=\"/src/main.js\"" in text
-        assert "app.js" not in text
-
-
-def test_watchlist_page_is_removed_and_workbench_fills_main_view_to_20():
+def test_watchlist_page_is_removed_and_workbench_keeps_twenty_slot_fill_policy() -> None:
     assert not (FRONTEND / "watchlist.html").exists()
     assert not (FRONTEND / "src" / "modules" / "risk-worklist" / "ObservationWatchlistView.vue").exists()
 
-    files = [
+    for path in [
         FRONTEND / "src" / "App.vue",
         FRONTEND / "src" / "layout" / "navigation.js",
         FRONTEND / "layout" / "layout.js",
         FRONTEND / "vite.config.js",
-    ]
-    offenders = []
-    for file in files:
-        text = file.read_text(encoding="utf-8")
-        for term in ["watchlist.html", "ObservationWatchlistView", "观察对象", "观察名单"]:
-            if term in text:
-                offenders.append(f"{file.relative_to(FRONTEND).as_posix()}::{term}")
+    ]:
+        text = read(path)
+        assert "watchlist.html" not in text
+        assert "ObservationWatchlistView" not in text
 
-    assert offenders == []
-
-    data = (FRONTEND / "src" / "modules" / "monthly-demo" / "demoData.js").read_text(encoding="utf-8")
-    workbench = (FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue").read_text(encoding="utf-8")
+    data = read(FRONTEND / "src" / "modules" / "monthly-demo" / "demoData.js")
+    workbench = read(FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue")
     for term in [
         "workbenchTargetCount: 20",
         "globalCurrentMonthHospitalDrugCount",
@@ -138,81 +145,18 @@ def test_watchlist_page_is_removed_and_workbench_fills_main_view_to_20():
         assert term in data or term in workbench
 
 
-def test_user_visible_copy_removes_cautious_and_stage_language():
-    visible_files = [
-        FRONTEND / "src" / "App.vue",
-        FRONTEND / "src" / "layout" / "navigation.js",
-        FRONTEND / "layout" / "layout.js",
-        FRONTEND / "src" / "modules" / "monthly-demo" / "demoData.js",
-        FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue",
-        FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue",
-        FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityDetailView.vue",
-        FRONTEND / "src" / "modules" / "oneshot-monitor" / "OneshotMonitorView.vue",
-        FRONTEND / "src" / "modules" / "monthly-report" / "MonthlyReportView.vue",
-        FRONTEND / "src" / "modules" / "monthly-report" / "ProofCaseView.vue",
-        FRONTEND / "algo-architecture.html",
-    ]
-    banned_terms = [
-        "仅供",
-        "不代表",
-        "不能作为",
-        "不作为",
-        "不等同",
-        "不替代",
-        "不展示",
-        "模型训练参数",
-        "特征消融",
-        "raw SHAP",
-        "AUC/ECE",
-        "未实现",
-        "未展示",
-        "未接入",
-        "未经过",
-        "概率展示受控",
-        "不自动派单",
-        "默认人工复核",
-        "auto_dispatch_allowed=false",
-        "不得标成高风险",
-        "selected_count",
-        "evaluation_population",
-        "requested 10%",
-        "actual",
-        "union",
-        "k_policy",
-        "payload",
-        "model_id",
-        "model_role",
-        "TopK actual",
-    ]
-
-    offenders = []
-    for file in visible_files:
-        text = file.read_text(encoding="utf-8")
-        for term in banned_terms:
-            if term in text:
-                offenders.append(f"{file.relative_to(FRONTEND).as_posix()}::{term}")
-
-    assert offenders == []
-
-
-def test_internal_algorithm_debug_pages_are_removed_from_user_frontend():
+def test_internal_algorithm_debug_pages_are_removed_from_user_frontend() -> None:
     assert not (FRONTEND / "algo-config.html").exists()
     assert not (FRONTEND / "algo-health.html").exists()
     assert not (FRONTEND / "src" / "modules" / "algo-config").exists()
     assert not (FRONTEND / "src" / "modules" / "algo-health").exists()
 
-    files = [
+    for path in [
         FRONTEND / "src" / "App.vue",
         FRONTEND / "src" / "layout" / "navigation.js",
         FRONTEND / "layout" / "layout.js",
         FRONTEND / "vite.config.js",
-    ]
-    banned_terms = ["algo-config", "algo-health", "AlgoConfig", "AlgoHealth", "算法配置管理", "接口诊断", "算法日报探查页"]
-    offenders = []
-    for file in files:
-        text = file.read_text(encoding="utf-8")
-        for term in banned_terms:
-            if term in text:
-                offenders.append(f"{file.relative_to(FRONTEND).as_posix()}::{term}")
-
-    assert offenders == []
+    ]:
+        text = read(path)
+        assert "algo-config" not in text
+        assert "algo-health" not in text

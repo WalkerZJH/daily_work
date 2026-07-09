@@ -153,12 +153,24 @@ export class BackendApi {
     return getJson(this.baseUrl, '/api/v1/workbench')
   }
 
+  async getWorkbench() {
+    return this.frontendWorkbench()
+  }
+
   async frontendRiskEntities() {
     return getJson(this.baseUrl, '/api/v1/risk-entities')
   }
 
+  async getRiskEntities(params) {
+    return getJson(this.baseUrl, '/api/v1/risk-entities', params)
+  }
+
   async frontendRiskEntityDetail(entityId) {
     return getJson(this.baseUrl, `/api/v1/risk-entities/${entityId}`)
+  }
+
+  async getRiskEntityDetail(entityId) {
+    return this.frontendRiskEntityDetail(entityId)
   }
 
   async frontendOneshotTerminals() {
@@ -169,6 +181,10 @@ export class BackendApi {
     return getJson(this.baseUrl, '/api/v1/monthly-reports')
   }
 
+  async getMonthlyReports() {
+    return this.frontendMonthlyReports()
+  }
+
   async frontendProofCases() {
     return getJson(this.baseUrl, '/api/v1/proof-cases')
   }
@@ -177,6 +193,38 @@ export class BackendApi {
     return getJson(this.baseUrl, '/api/v1/display-lookup/status', undefined, {
       timeoutMs: DISPLAY_LOOKUP_STATUS_TIMEOUT_MS
     })
+  }
+
+  async getDetectorCatalog() {
+    return getJson(this.baseUrl, '/api/v1/detectors/catalog')
+  }
+
+  async getDetectorRuns(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/detectors/runs', params)
+  }
+
+  async getDetectorClues(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/detectors/clues', params)
+  }
+
+  async getDailyDetectorStatus() {
+    return getJson(this.baseUrl, '/api/v1/daily-detector/status')
+  }
+
+  async getDailyDetectorClues(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/daily-detector/clues', params)
+  }
+
+  async getRiskEntityDetectorEvidence(riskEntityId, params = {}) {
+    return getJson(this.baseUrl, `/api/v1/risk-entities/${riskEntityId}/detector-evidence`, params)
+  }
+
+  async getDetectorConfigStatus() {
+    return getJson(this.baseUrl, '/api/v1/detectors/config-status')
+  }
+
+  async getRiskEntityProbabilityTrend(riskEntityId) {
+    return getJson(this.baseUrl, `/api/v1/risk-entities/${riskEntityId}/probability-trend`)
   }
 }
 
