@@ -124,6 +124,7 @@ export function createEmptyWorkbenchOptions(query = {}) {
   const normalized = normalizeWorkbenchQuery(query)
   return {
     manufacturerOptions: currentManufacturerOption(normalized),
+    defaultManufacturerCode: normalized.manufacturerCode,
     dailyDetectorDateOptions: [{ runDate: normalized.runDate, label: normalized.runDate }],
     horizonOptions,
     topNOptions,
@@ -135,6 +136,7 @@ export function createEmptyWorkbenchOptions(query = {}) {
 export function createStaticWorkbenchOptions() {
   return {
     manufacturerOptions,
+    defaultManufacturerCode: manufacturerOptions[0]?.code || defaultWorkbenchQuery.manufacturerCode,
     dailyDetectorDateOptions,
     horizonOptions,
     topNOptions,
@@ -364,12 +366,13 @@ export async function loadWorkbenchOptions(query = {}, { allowDemo = false } = {
   const normalizedQuery = normalizeWorkbenchQuery(query)
   if (allowDemo || normalizedQuery.demoMode) return createStaticWorkbenchOptions()
   const [manufacturers, dates] = await Promise.all([
-    tryLoad(() => api(normalizedQuery).getMyManufacturers(), mapManufacturersPayload),
+    tryLoad(() => api(normalizedQuery).getMyManufacturers(queryToApiParams(normalizedQuery)), mapManufacturersPayload),
     tryLoad(() => api(normalizedQuery).getDailyDetectorDates(queryToApiParams(normalizedQuery)), mapDailyDetectorDatesPayload)
   ])
   return {
     ...createEmptyWorkbenchOptions(normalizedQuery),
     manufacturerOptions: manufacturers?.manufacturerOptions?.length ? manufacturers.manufacturerOptions : currentManufacturerOption(normalizedQuery),
+    defaultManufacturerCode: manufacturers?.defaultManufacturerCode || normalizedQuery.manufacturerCode,
     dailyDetectorDateOptions: dates?.dailyDetectorDateOptions?.length
       ? dates.dailyDetectorDateOptions
       : [{ runDate: normalizedQuery.runDate, label: normalizedQuery.runDate }],
@@ -1067,14 +1070,16 @@ function queryToEvidenceParams(query, source = {}) {
 }
 
 function mapManufacturersPayload(payload) {
-  if (payload?.ready === false) return null
   const items = payload.manufacturers || payload.items || []
+  if (!items.length && payload?.ready === false) return null
+  const manufacturerOptions = items.map((item) => ({
+    code: item.manufacturer_code || item.code || item.id,
+    name: item.manufacturer_display_name || item.manufacturer_name || item.name || item.manufacturer_code || item.code
+  }))
   return {
     manufacturerCount: payload.manufacturer_count ?? items.length,
-    manufacturerOptions: items.map((item) => ({
-      code: item.manufacturer_code || item.code || item.id,
-      name: item.manufacturer_display_name || item.manufacturer_name || item.name || item.manufacturer_code || item.code
-    }))
+    defaultManufacturerCode: payload.default_manufacturer_code || manufacturerOptions[0]?.code,
+    manufacturerOptions
   }
 }
 

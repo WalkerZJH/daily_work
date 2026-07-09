@@ -222,8 +222,8 @@ export class BackendApi {
     return getJson(this.baseUrl, '/api/v1/detectors/clues', params)
   }
 
-  async getMyManufacturers() {
-    return getJson(this.baseUrl, '/api/v1/my/manufacturers', undefined, this.userOptions())
+  async getMyManufacturers(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/my/manufacturers', params, this.userOptions())
   }
 
   async getDailyDetectorDates(params = {}) {

@@ -69,6 +69,15 @@ function applyEffectiveQuery(nextQuery) {
   }, 0)
 }
 
+function applyLoadedOptions(loadedOptions, fallbackQuery = query) {
+  options.value = loadedOptions || createEmptyWorkbenchOptions(fallbackQuery)
+  const codes = (options.value.manufacturerOptions || []).map((item) => item.code).filter(Boolean)
+  if (codes.length && !codes.includes(query.manufacturerCode)) {
+    const nextManufacturer = codes.includes(options.value.defaultManufacturerCode) ? options.value.defaultManufacturerCode : codes[0]
+    applyEffectiveQuery({ ...query, manufacturerCode: nextManufacturer })
+  }
+}
+
 async function refreshClues() {
   isLoading.value = true
   try {
@@ -80,10 +89,12 @@ async function refreshClues() {
       return
     }
 
+    const loadedOptions = await loadWorkbenchOptions(query)
+    applyLoadedOptions(loadedOptions, query)
+
     const context = await loadReportContext(query)
     reportContext.value = context
     if (!context.ready) {
-      options.value = createEmptyWorkbenchOptions(query)
       state.value = createEmptyRuleCluesData(query, context)
       updateUrl()
       return
@@ -91,11 +102,11 @@ async function refreshClues() {
 
     const effectiveQuery = applyReportContextToQuery(query, context)
     applyEffectiveQuery(effectiveQuery)
-    const [loadedOptions, loadedData] = await Promise.all([
+    const [refreshedOptions, loadedData] = await Promise.all([
       loadWorkbenchOptions(effectiveQuery),
       loadRuleCluesData(effectiveQuery)
     ])
-    options.value = loadedOptions || createEmptyWorkbenchOptions(effectiveQuery)
+    applyLoadedOptions(refreshedOptions, effectiveQuery)
     state.value = loadedData || createEmptyRuleCluesData(effectiveQuery, context)
     reportContext.value = state.value.reportContext || context
   } finally {
