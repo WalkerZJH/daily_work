@@ -1,0 +1,14 @@
+detector_name,gate_status,required_fields_available,missing_rate_ok,numeric_reliability_ok,mapping_available,semantic_caveat,enable_frontend_display,enable_customer_copy,enable_internal_only,reason_code
+terminal_loss_warning,enabled_rule_v1,True,True,True,True,,True,True,False,enabled
+purchase_interval_overdue_warning,enabled_rule_v1,True,True,True,True,,True,True,False,enabled
+purchase_frequency_fluctuation_warning,enabled_rule_v1,True,True,True,True,,True,True,False,enabled
+purchase_quantity_fluctuation_warning,weak_enabled_review_required,True,True,True,True,quantity evidence is auxiliary and review-required,True,True,False,quantity_reliable
+new_terminal_detection,enabled_rule_v1,True,True,True,True,new_terminal_fact_not_recurring_churn,True,True,False,enabled
+delayed_response_warning,deferred_missing_data,False,False,False,True,delivery time evidence disabled when delivery or arrival time is missing,False,False,True,delivery_time_missing
+rejection_response_warning,deferred_missing_data,False,False,False,False,stable rejection response fields unavailable,False,False,True,missing_rejection_mapping
+low_delivery_rate_warning,interface_only,False,False,False,True,weak fulfillment-side evidence only; no distributor responsibility claim,False,False,True,weak_optional_detector
+low_price_purchase_warning,interface_only,False,False,False,False,price comparability is not validated for customer-facing claims,False,False,True,price_reference_not_enabled
+order_price_spread_warning,interface_only,False,False,False,False,price comparability is not validated for customer-facing claims,False,False,True,price_reference_not_enabled
+sku_narrowing_warning,deferred_missing_mapping,False,False,False,False,product line or portfolio mapping unavailable,False,False,True,missing_portfolio_mapping
+wallet_share_decline_warning,deferred_missing_mapping,False,False,False,False,complete platform share context unavailable,False,False,True,missing_wallet_share_context
+purchase_amount_trend_warning,internal_only,True,True,False,True,amount may be relative or de-identified,False,False,True,amount_semantics_not_customer_safe

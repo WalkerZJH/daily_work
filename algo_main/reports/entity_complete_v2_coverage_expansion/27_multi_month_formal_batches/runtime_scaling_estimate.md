@@ -1,0 +1,10 @@
+# Runtime Scaling Estimate
+
+| stage | current_run_seconds | current_run_raw_rows | current_run_entity_count | current_run_feature_rows | sql_clickhouse_full_row_count | full_dataset_row_multiplier | full_dataset_entity_multiplier | stage_specific_scaling_assumption | estimated_full_dataset_seconds_low | estimated_full_dataset_seconds_mid | estimated_full_dataset_seconds_high | confidence_level | caveat |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| clickhouse_read | 3.536776 | 750042 | 194652 | 194697 | 57357962 | 76.473 | 1.0 | linear_raw_rows | 202.850875 | 270.467833 | 405.70175 | medium | Full dataset row count came from RISK_FULL_DATASET_ROW_COUNT; detector estimate applies selected monthly scope only. |
+| feature_build | 33.307402 | 750042 | 194652 | 194697 | 57357962 | 76.473 | 1.0 | roughly_linear_raw_rows_with_groupby_caveat | 1910.337734 | 2547.116978 | 3820.675467 | medium | Full dataset row count came from RISK_FULL_DATASET_ROW_COUNT; detector estimate applies selected monthly scope only. |
+| monthly_probability | 246.555497 | 750042 | 194652 | 194697 | 57357962 | 76.473 | 1.0 | linear_feature_rows | 184.916623 | 246.555497 | 369.833245 | medium | Full dataset row count came from RISK_FULL_DATASET_ROW_COUNT; detector estimate applies selected monthly scope only. |
+| detector | 14.163714 | 750042 | 194652 | 194697 | 57357962 | 76.473 | 1.0 | selected_scope_not_raw_rows | 10.622786 | 14.163714 | 21.245571 | medium | Full dataset row count came from RISK_FULL_DATASET_ROW_COUNT; detector estimate applies selected monthly scope only. |
+| validation | 4.996222 | 750042 | 194652 | 194697 | 57357962 | 76.473 | 1.0 | result_table_size | 3.747166 | 4.996222 | 7.494333 | medium | Full dataset row count came from RISK_FULL_DATASET_ROW_COUNT; detector estimate applies selected monthly scope only. |
+| end_to_end | 310.178306 | 750042 | 194652 | 194697 | 57357962 | 76.473 | 1.0 | dominant_raw_and_feature_stages | 17790.199238 | 23720.26565 | 35580.398475 | medium | Full dataset row count came from RISK_FULL_DATASET_ROW_COUNT; detector estimate applies selected monthly scope only. |

@@ -1,0 +1,34 @@
+{
+  "batch_id": "2025-09-monthly-risk-algorithm-formal-v2-raw",
+  "batch_dir": "algo_main/data/entity_complete_v2_coverage_expansion/16_multi_month_formal_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw",
+  "report_month": "2025-09",
+  "report_date": "2025-10-01",
+  "run_date": "2025-10-01",
+  "score_as_of_date": "2025-09-30",
+  "cutoff_date": "2025-09-30",
+  "default_observation_date": "2025-10-01",
+  "detector_run_dates": [
+    "2025-10-01"
+  ],
+  "available_horizons": [
+    "H3",
+    "H6",
+    "H12"
+  ],
+  "primary_horizon": "H6",
+  "detector_config_version": "daily_detector_rules_v1",
+  "risk_entity_count": 1325,
+  "daily_detector_clue_count": 92670,
+  "high_risk_detector_evidence_count": 22,
+  "fact_mode_ready": true,
+  "raw_orders_mode_ready": false,
+  "conditional_fact_mode_ready": true,
+  "ready_for_frontend_date_resolution": true,
+  "caveats": [
+    "bounded monthly worklist",
+    "not full SQL universe claim",
+    "business review required",
+    "raw_orders_mode_ready=false; current formal readiness is conditional_fact_mode_ready",
+    "multi_month_context_ready; default_observation_date is not a fabricated detector clue"
+  ]
+}

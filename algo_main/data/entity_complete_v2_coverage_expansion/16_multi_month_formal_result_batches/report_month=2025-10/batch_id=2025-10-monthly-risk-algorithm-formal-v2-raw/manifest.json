@@ -1,0 +1,114 @@
+{
+  "batch_id": "2025-10-monthly-risk-algorithm-formal-v2-raw",
+  "result_batch_id": "2025-10-monthly-risk-algorithm-formal-v2-raw",
+  "report_type": "monthly",
+  "report_month": "2025-10",
+  "report_date": "2025-11-01",
+  "run_date": "2025-11-01",
+  "score_as_of_date": "2025-10-31",
+  "score_cutoff_month": "2025-10",
+  "cutoff_date": "2025-10-31",
+  "primary_horizon": "H6",
+  "available_horizons": [
+    "H3",
+    "H6",
+    "H12"
+  ],
+  "schema_version": "risk_result_batch_monthly_v2",
+  "data_backend": "csv",
+  "raw_batch_id": "current_v2_raw_input_batch",
+  "algorithm_core_version": "risk_algorithm_core_v1",
+  "model_artifact_id": "xgboost_small_without_choice_set_20260707043129",
+  "model_family": "xgboost_small",
+  "feature_group": "all_safe_features_without_choice_set",
+  "calibration": "raw",
+  "excludes_choice_set": true,
+  "risk_result_schema_version": "risk_result_batch_monthly_v2",
+  "horizon_profile_table": {
+    "table_name": "risk_entity_horizon_profiles",
+    "schema_version": "risk_entity_horizon_profile_v1",
+    "path": "risk_entity_horizon_profiles.csv",
+    "row_count": 3981,
+    "involved_amount_definition": "purchase_amount_sum_last_{horizon_months}m_asof_cutoff"
+  },
+  "feature_schema_version": "xgboost_small_without_choice_set_v1",
+  "detector_config_version": "daily_detector_rules_v1",
+  "detector_tables": {
+    "detector_catalog": "detector_catalog.parquet",
+    "daily_detector_runs": "daily_detector_runs.parquet",
+    "daily_detector_clues": "daily_detector_clues.parquet",
+    "high_risk_detector_evidence": "high_risk_detector_evidence.parquet"
+  },
+  "detector_score_probability_interpretation": "detector_score_is_not_probability",
+  "detector_default_scope": "monthly_high_risk_entities",
+  "worklist_config": {
+    "frontend_default_topN_per_manufacturer": 20,
+    "frontend_max_topN_per_manufacturer": 50,
+    "one_shot_topN_per_manufacturer": 20,
+    "observation_topN_per_manufacturer": 20,
+    "index_topN": 8,
+    "global_candidate_cap": 30000
+  },
+  "allowed_usage": [
+    "internal_diagnostic",
+    "analyst_view",
+    "monthly_business_review"
+  ],
+  "forbidden_usage": [
+    "auto_dispatch",
+    "formal_customer_probability_service",
+    "definitive_churn_claim"
+  ],
+  "customer_facing_probability_service_allowed": false,
+  "auto_dispatch_allowed": false,
+  "proof_case_report_allowed": false,
+  "raw_orders_mode_ready": false,
+  "fact_mode_ready": true,
+  "conditional_fact_mode_ready": true,
+  "readiness_level": "conditional_fact_mode_ready",
+  "deprecated_frontend_fields": {
+    "business_score": "not emitted by model-core customer payloads; downstream display must use horizon profile involved_amount and probability fields",
+    "fill_policy": "removed from model-core payloads; user-scope selection is a backend responsibility"
+  },
+  "result_table_row_counts": {
+    "detector_quality_gate": 13,
+    "disabled_detector_notes": 8,
+    "drug_aggregates": 35,
+    "entity_display_lookup": 650,
+    "feature_parity_runtime_report": 49,
+    "feature_quality_report": 9,
+    "hospital_aggregates": 629,
+    "monthly_reports": 1,
+    "normalization_report": 4,
+    "proof_cases": 0,
+    "risk_cards": 4428,
+    "risk_card_evidence": 4428,
+    "risk_entities": 1327,
+    "risk_entity_horizon_profiles": 3981,
+    "risk_entity_timeline": 1327,
+    "selection_report": 8,
+    "work_order_reserved": 1327,
+    "daily_detector_clues": 95688,
+    "daily_detector_runs": 1,
+    "detector_catalog": 7,
+    "high_risk_detector_evidence": 22
+  },
+  "entity_display_lookup": {
+    "table_name": "entity_display_lookup",
+    "schema_version": "entity_display_lookup_v1",
+    "path": "entity_display_lookup.csv",
+    "row_count": 650
+  },
+  "caveats": [
+    "bounded monthly worklist",
+    "not full SQL universe claim",
+    "business review required",
+    "raw_orders_mode_ready=false; current formal readiness is conditional_fact_mode_ready",
+    "multi_month_context_ready; default_observation_date is not a fabricated detector clue"
+  ],
+  "runtime_profile_summary": {
+    "monthly_probability_total_seconds": 240.45307809999213,
+    "detector_total_seconds": 12.9456772999838,
+    "end_to_end_seconds": 298.3872901999857
+  }
+}

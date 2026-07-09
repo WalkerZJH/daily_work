@@ -1,0 +1,9 @@
+horizon,cutoff_month,candidate_policy,full_universe_rows,candidate_count,candidate_rate,manufacturer_coverage,metric,value
+H12,2025-10-31,multi_recall_union_top10,63078.0,14208.0,0.22524493484257585,10.0,,
+H3,2025-10-31,multi_recall_union_top10,63078.0,14395.0,0.22820951837407655,10.0,,
+H6,2025-10-31,multi_recall_union_top10,63078.0,14115.0,0.22377056977076,10.0,,
+,,,,,,,candidate_policy_rows,42718.0
+,,,,,,,selected_candidate_rows,1327.0
+,,,,,,,recurring_rows,20.0
+,,,,,,,one_shot_rows,594.0
+,,,,,,,observation_rows,713.0

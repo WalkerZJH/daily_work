@@ -1,0 +1,15 @@
+{
+  "report_month": "2025-11",
+  "cutoff_date": "2025-11-30",
+  "raw_batch_id": "current_v2_raw_input_batch",
+  "entity_rows": 192018,
+  "feature_rows": 192033,
+  "score_rows": 192033,
+  "selected_candidate_rows": 1346,
+  "detector_output_rows": 4636,
+  "risk_card_rows": 4468,
+  "evidence_rows": 4468,
+  "batch_dir": "algo_main\\data\\entity_complete_v2_coverage_expansion\\16_multi_month_formal_result_batches\\report_month=2025-11\\batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw",
+  "model_artifact_id": "xgboost_small_without_choice_set_20260707043129",
+  "dry_run_rule_baseline": false
+}

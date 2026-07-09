@@ -123,6 +123,29 @@ class RiskResultRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def list_available_observation_contexts(self, batch_root: str | Path | None = None) -> pd.DataFrame:
+        raise NotImplementedError
+
+    @abstractmethod
+    def resolve_observation_context(
+        self,
+        observation_date: str | None = None,
+        requested_report_month: str | None = None,
+        requested_detector_run_date: str | None = None,
+        requested_horizon: str | None = None,
+        batch_root: str | Path | None = None,
+    ) -> dict[str, Any]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def open_probability_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
+        raise NotImplementedError
+
+    @abstractmethod
+    def open_detector_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
+        raise NotImplementedError
+
+    @abstractmethod
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         raise NotImplementedError
 
@@ -273,6 +296,49 @@ class ParquetRiskResultRepository(RiskResultRepository):
             requested_horizon=requested_horizon,
         )
 
+    def list_available_observation_contexts(self, batch_root: str | Path | None = None) -> pd.DataFrame:
+        root = Path(batch_root) if batch_root is not None else infer_batch_root(self.batch_dir)
+        for path in [
+            root / "available_observation_contexts.parquet",
+            root / "available_observation_contexts.csv",
+            root / "available_observation_contexts.json",
+        ]:
+            if not path_exists(path):
+                continue
+            if path.suffix == ".json":
+                with open(long_path(path), encoding="utf-8") as fh:
+                    data = json.load(fh)
+                rows = data.get("contexts", data if isinstance(data, list) else [data])
+                return pd.DataFrame(rows)
+            return pd.read_parquet(path) if path.suffix == ".parquet" else pd.read_csv(path)
+        return pd.DataFrame()
+
+    def resolve_observation_context(
+        self,
+        observation_date: str | None = None,
+        requested_report_month: str | None = None,
+        requested_detector_run_date: str | None = None,
+        requested_horizon: str | None = None,
+        batch_root: str | Path | None = None,
+    ) -> dict[str, Any]:
+        return resolve_observation_context_from_rows(
+            self.list_available_observation_contexts(batch_root=batch_root),
+            observation_date=observation_date,
+            requested_report_month=requested_report_month,
+            requested_detector_run_date=requested_detector_run_date,
+            requested_horizon=requested_horizon,
+        )
+
+    def open_probability_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
+        if not context.get("probability_batch_available"):
+            raise FileNotFoundError("Probability batch is unavailable for this observation context.")
+        return ParquetRiskResultRepository(str(context["probability_batch_dir"]))
+
+    def open_detector_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
+        if not context.get("detector_run_available"):
+            raise FileNotFoundError("Detector run is unavailable for this observation context.")
+        return ParquetRiskResultRepository(str(context["probability_batch_dir"]))
+
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         clean = page_name[:-5] if page_name.endswith(".json") else page_name
         candidates = [
@@ -410,6 +476,44 @@ class InMemoryRiskResultRepository(RiskResultRepository):
             requested_horizon=requested_horizon,
         )
 
+    def list_available_observation_contexts(self, batch_root: str | Path | None = None) -> pd.DataFrame:
+        context = available_context_row(self.manifest_context(), Path("."))
+        context["observation_date"] = context.get("run_date", "")
+        context["probability_report_month"] = context.get("report_month", "")
+        context["probability_batch_id"] = context.get("batch_id", "")
+        context["probability_batch_dir"] = context.get("batch_dir", "")
+        context["probability_batch_available"] = True
+        context["detector_run_date"] = context.get("run_date", "")
+        context["detector_run_id"] = ""
+        context["detector_run_available"] = False
+        context["context_status"] = "detector_run_unavailable"
+        context["manual_selection_required"] = True
+        context["available_report_months"] = context.get("report_month", "")
+        context["available_detector_run_dates"] = ""
+        return pd.DataFrame([context])
+
+    def resolve_observation_context(
+        self,
+        observation_date: str | None = None,
+        requested_report_month: str | None = None,
+        requested_detector_run_date: str | None = None,
+        requested_horizon: str | None = None,
+        batch_root: str | Path | None = None,
+    ) -> dict[str, Any]:
+        return resolve_observation_context_from_rows(
+            self.list_available_observation_contexts(batch_root=batch_root),
+            observation_date=observation_date,
+            requested_report_month=requested_report_month,
+            requested_detector_run_date=requested_detector_run_date,
+            requested_horizon=requested_horizon,
+        )
+
+    def open_probability_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
+        raise NotImplementedError("In-memory contexts cannot open parquet repositories.")
+
+    def open_detector_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
+        raise NotImplementedError("In-memory contexts cannot open parquet repositories.")
+
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         key = page_name[:-5] if page_name.endswith(".json") else page_name
         if key not in self.payloads:
@@ -510,6 +614,25 @@ class ClickHouseRiskResultRepository(RiskResultRepository):
     ) -> dict[str, Any]:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
+    def list_available_observation_contexts(self, batch_root: str | Path | None = None) -> pd.DataFrame:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
+    def resolve_observation_context(
+        self,
+        observation_date: str | None = None,
+        requested_report_month: str | None = None,
+        requested_detector_run_date: str | None = None,
+        requested_horizon: str | None = None,
+        batch_root: str | Path | None = None,
+    ) -> dict[str, Any]:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
+    def open_probability_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
+    def open_detector_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
@@ -592,6 +715,12 @@ def available_context_candidates(batch_dir: Path) -> list[Path]:
             ]
         )
     return paths
+
+
+def infer_batch_root(batch_dir: Path) -> Path:
+    if batch_dir.parent.name.startswith("report_month="):
+        return batch_dir.parent.parent
+    return batch_dir
 
 
 def resolve_report_context_from_rows(
@@ -685,6 +814,130 @@ def split_context_values(value: Any) -> list[str]:
     if not text:
         return []
     return [part.strip() for part in text.split(";") if part.strip()]
+
+
+def resolve_observation_context_from_rows(
+    contexts: pd.DataFrame,
+    *,
+    observation_date: str | None = None,
+    requested_report_month: str | None = None,
+    requested_detector_run_date: str | None = None,
+    requested_horizon: str | None = None,
+) -> dict[str, Any]:
+    obs_date = str(observation_date or pd.Timestamp.today().date().isoformat())
+    probability_month = str(requested_report_month or previous_complete_month(obs_date))
+    detector_run_date = str(requested_detector_run_date or obs_date)
+    requested_horizon = str(requested_horizon) if requested_horizon is not None else None
+    if contexts.empty:
+        return {
+            "ready": False,
+            "observation_date": obs_date,
+            "probability_report_month": probability_month,
+            "probability_batch_id": None,
+            "probability_batch_dir": None,
+            "probability_batch_available": False,
+            "detector_run_date": detector_run_date,
+            "detector_run_id": None,
+            "detector_run_available": False,
+            "context_status": "no_available_context",
+            "manual_selection_required": True,
+            "available_report_months": [],
+            "available_detector_run_dates": [],
+            "requested_horizon": requested_horizon,
+            "effective_horizon": None,
+            "warnings": ["No available observation context registry."],
+            "caveats": [],
+        }
+
+    rows = contexts.copy()
+    for column in [
+        "observation_date",
+        "probability_report_month",
+        "detector_run_date",
+        "available_report_months",
+        "available_detector_run_dates",
+        "available_horizons",
+        "caveat",
+    ]:
+        if column not in rows:
+            rows[column] = ""
+    available_report_months = sorted(
+        {str(value) for value in rows["probability_report_month"].dropna() if str(value)},
+        reverse=True,
+    )
+    available_detector_run_dates = sorted(
+        {
+            str(value)
+            for value in rows["detector_run_date"].dropna()
+            if str(value) and _boolish(rows.loc[rows["detector_run_date"].astype(str).eq(str(value)), "detector_run_available"].iloc[0])
+        },
+        reverse=True,
+    )
+    explicit = rows[rows["observation_date"].astype(str).eq(obs_date)]
+    if not explicit.empty:
+        selected = explicit.iloc[0]
+    else:
+        candidates = rows[rows["probability_report_month"].astype(str).eq(probability_month)]
+        selected = candidates.iloc[0] if not candidates.empty else rows.iloc[0]
+
+    probability_rows = rows[rows["probability_report_month"].astype(str).eq(probability_month)]
+    probability_available = bool(not probability_rows.empty and _boolish(probability_rows.iloc[0].get("probability_batch_available", False)))
+    detector_rows = rows[
+        rows["detector_run_date"].astype(str).eq(detector_run_date)
+        & rows["probability_report_month"].astype(str).eq(probability_month)
+    ]
+    detector_available = bool(not detector_rows.empty and _boolish(detector_rows.iloc[0].get("detector_run_available", False)))
+    if probability_available and detector_available:
+        status = "ready"
+        manual = False
+    elif probability_available:
+        status = "detector_run_unavailable"
+        manual = True
+    else:
+        status = "probability_month_unavailable"
+        manual = True
+
+    source = detector_rows.iloc[0] if not detector_rows.empty else (probability_rows.iloc[0] if not probability_rows.empty else selected)
+    horizons = split_context_values(source.get("available_horizons", ""))
+    primary_horizon = str(source.get("primary_horizon") or (horizons[0] if horizons else ""))
+    effective_horizon = requested_horizon if requested_horizon in horizons else primary_horizon
+    warnings: list[str] = []
+    if not probability_available:
+        warnings.append("Probability report month is unavailable; manual selection is required.")
+    if probability_available and not detector_available:
+        warnings.append("Detector run date is unavailable; do not substitute another run date silently.")
+    if requested_horizon is not None and requested_horizon not in horizons:
+        warnings.append("Requested horizon is unavailable; using primary horizon.")
+
+    return {
+        "ready": status == "ready",
+        "observation_date": obs_date,
+        "probability_report_month": probability_month,
+        "probability_batch_id": str(source.get("probability_batch_id") or ""),
+        "probability_batch_dir": str(source.get("probability_batch_dir") or ""),
+        "probability_batch_available": probability_available,
+        "detector_run_date": detector_run_date,
+        "detector_run_id": str(source.get("detector_run_id") or ""),
+        "detector_run_available": detector_available,
+        "context_status": status,
+        "manual_selection_required": manual,
+        "available_report_months": available_report_months,
+        "available_detector_run_dates": available_detector_run_dates,
+        "requested_horizon": requested_horizon,
+        "effective_horizon": effective_horizon,
+        "warnings": warnings,
+        "caveats": split_context_values(source.get("caveat", "")),
+    }
+
+
+def previous_complete_month(date_text: str) -> str:
+    current = pd.Timestamp(date_text).date().replace(day=1)
+    previous = current - pd.Timedelta(days=1)
+    return previous.strftime("%Y-%m")
+
+
+def _boolish(value: Any) -> bool:
+    return str(value).strip().lower() in {"true", "1", "yes", "y"}
 
 
 DEFAULT_RANKABLE_SORT_FIELDS = [

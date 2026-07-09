@@ -1,0 +1,41 @@
+{
+  "output_root": "algo_main\\data\\entity_complete_v2_coverage_expansion\\16_multi_month_formal_result_batches",
+  "summaries": [
+    {
+      "report_month": "2025-09",
+      "batch_dir": "algo_main\\data\\entity_complete_v2_coverage_expansion\\16_multi_month_formal_result_batches\\report_month=2025-09\\batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw",
+      "risk_entities": 1325,
+      "detector_runs": 1,
+      "detector_clues": 92670,
+      "high_risk_detector_evidence": 22,
+      "end_to_end_seconds": 298.926013
+    },
+    {
+      "report_month": "2025-10",
+      "batch_dir": "algo_main\\data\\entity_complete_v2_coverage_expansion\\16_multi_month_formal_result_batches\\report_month=2025-10\\batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw",
+      "risk_entities": 1327,
+      "detector_runs": 1,
+      "detector_clues": 95688,
+      "high_risk_detector_evidence": 22,
+      "end_to_end_seconds": 304.075626
+    },
+    {
+      "report_month": "2025-11",
+      "batch_dir": "algo_main\\data\\entity_complete_v2_coverage_expansion\\16_multi_month_formal_result_batches\\report_month=2025-11\\batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw",
+      "risk_entities": 1346,
+      "detector_runs": 1,
+      "detector_clues": 92967,
+      "high_risk_detector_evidence": 31,
+      "end_to_end_seconds": 308.281438
+    },
+    {
+      "report_month": "2025-12",
+      "batch_dir": "algo_main\\data\\entity_complete_v2_coverage_expansion\\16_multi_month_formal_result_batches\\report_month=2025-12\\batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw",
+      "risk_entities": 1350,
+      "detector_runs": 1,
+      "detector_clues": 94323,
+      "high_risk_detector_evidence": 27,
+      "end_to_end_seconds": 329.430147
+    }
+  ]
+}

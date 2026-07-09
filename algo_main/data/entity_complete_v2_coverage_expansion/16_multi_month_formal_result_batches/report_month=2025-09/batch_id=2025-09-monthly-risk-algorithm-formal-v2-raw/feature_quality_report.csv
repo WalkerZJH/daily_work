@@ -1,0 +1,10 @@
+metric,value
+runtime_input_mode,normalized_fact_mode
+feature_rows,186975
+source_truth_feature_rows,186975
+fact_purchase_event_rows,0
+fact_entity_month_rows,560071
+entity_purchase_sequence_rows,0
+all_seen_entity_count,34669
+monitorable_entity_count,34669
+excluded_by_monitor_gap_count,0

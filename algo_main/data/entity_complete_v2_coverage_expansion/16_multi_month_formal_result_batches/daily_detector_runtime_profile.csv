@@ -1,0 +1,5 @@
+observation_date,probability_report_month,scanned_entity_count,enabled_detector_count,detector_clue_count,detector_compute_seconds,detector_table_write_seconds,detector_total_seconds
+2025-10-01,2025-09,62325,3,92670,11.777355,1.214723,12.992078
+2025-11-01,2025-10,63078,3,95688,11.587234,1.358444,12.945677
+2025-12-01,2025-11,64011,3,92967,14.641755,0.9248,15.566555
+2026-01-01,2025-12,64899,3,94323,13.972314,1.178234,15.150547
