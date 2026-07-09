@@ -23,14 +23,17 @@ def test_display_lookup_status_endpoint_returns_missing_when_lookup_is_not_avail
         app.dependency_overrides.pop(get_display_lookup_service, None)
 
     assert response.status_code == 200
-    assert response.json() == {
-        "ready": False,
-        "status": "missing",
-        "source": "risk_model_core",
-        "table": "entity_display_lookup",
-        "row_count": 0,
-        "warnings": ["ENTITY_DISPLAY_LOOKUP_NOT_AVAILABLE"],
-    }
+    payload = response.json()
+    assert payload["ready"] is False
+    assert payload["status"] == "missing"
+    assert payload["source"] == "risk_model_core"
+    assert payload["table"] == "entity_display_lookup"
+    assert payload["row_count"] == 0
+    assert payload["hospital_name_ready"] is False
+    assert payload["drug_name_ready"] is False
+    assert payload["manufacturer_name_ready"] is False
+    assert payload["region_ready"] is False
+    assert payload["warnings"] == ["ENTITY_DISPLAY_LOOKUP_NOT_AVAILABLE"]
 
 
 def test_display_lookup_status_endpoint_returns_ready_when_model_repository_returns_lookup() -> (
@@ -48,15 +51,18 @@ def test_display_lookup_status_endpoint_returns_ready_when_model_repository_retu
         app.dependency_overrides.pop(get_display_lookup_service, None)
 
     assert response.status_code == 200
-    assert response.json() == {
-        "ready": True,
-        "status": "ready",
-        "source": "risk_model_core",
-        "table": "entity_display_lookup",
-        "row_count": 1,
-        "schema_version": "v1",
-        "warnings": [],
-    }
+    payload = response.json()
+    assert payload["ready"] is True
+    assert payload["status"] == "ready"
+    assert payload["source"] == "risk_model_core"
+    assert payload["table"] == "entity_display_lookup"
+    assert payload["row_count"] == 1
+    assert payload["schema_version"] == "v1"
+    assert payload["hospital_name_ready"] is True
+    assert payload["drug_name_ready"] is True
+    assert payload["manufacturer_name_ready"] is True
+    assert payload["region_ready"] is True
+    assert payload["warnings"] == []
 
 
 def test_frontend_payloads_continue_when_display_lookup_is_missing() -> None:

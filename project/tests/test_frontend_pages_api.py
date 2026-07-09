@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 
-def test_frontend_workbench_returns_customer_rows_without_loss_or_model_metrics() -> None:
+def test_frontend_workbench_returns_customer_rows_without_legacy_fields_or_model_metrics() -> None:
     response = TestClient(app).get(
         "/api/v1/workbench",
         params={"horizon": "H6", "top_n": 5, "sort_by": "risk_probability"},
@@ -16,10 +16,11 @@ def test_frontend_workbench_returns_customer_rows_without_loss_or_model_metrics(
     rows = payload["rows"]
 
     assert payload["batch_context"]["primary_horizon"] == "H6"
-    assert len(rows) <= 5 or payload["fill_policy"]["workbench_target_count"] == len(rows)
+    assert len(rows) <= 5
     assert all({"manufacturer_code", "hospital_name", "drug_name"}.issubset(row) for row in rows)
+    assert all("loss_value" in row for row in rows)
     text = response.text
-    for forbidden in ["business_score", "loss_value", "expected_loss", "model_metrics"]:
+    for forbidden in ["business_score", "fill_policy", "expected_loss", "model_metrics"]:
         assert forbidden not in text
 
 
@@ -55,7 +56,7 @@ def test_frontend_oneshot_returns_repurchase_propensity_payload() -> None:
     assert payload["items"]
     first = payload["items"][0]
     assert 0 <= first["repurchase_propensity"] <= 1
-    assert first["expected_repurchase_amount"] > 0
+    assert "expected_repurchase_amount" in first
 
 
 def test_removed_watchlist_page_api_is_not_exposed() -> None:

@@ -20,7 +20,8 @@ Daily page changes come from daily rule inspection results, not from daily model
 probability changes.
 
 - Monthly model probability remains stable inside the monthly `risk_result_batch`.
-- Customer-facing pages show `risk_probability` and `involved_amount`; they should not show `loss_value`, `monthly_loss_value`, `business_score`, or `expected_loss`.
+- Customer-facing pages show `risk_probability`, `average_consumption_in_window`, and `loss_value`.
+- Customer-facing pages should not show `monthly_loss_value`, `business_score`, `expected_loss`, or `fill_policy`.
 - `involved_amount` means consumption amount inside the selected H3/H6/H12 horizon window, not full-history amount.
 - `detector_score` is a rule inspection score, not loss probability.
 - Daily detector clues are rule clues. They do not create new model high-risk entities.
@@ -28,6 +29,45 @@ probability changes.
 - Reserved, experimental, and interface-only detectors must stay visually disabled or marked as not fully launched.
 
 ## APIs To Adapt
+
+### Report Context
+
+`GET /api/v1/report-context`
+
+Use this before loading date-sensitive pages, or rely on the same `report_context`
+object embedded in page APIs.
+
+Supported query params:
+
+- `report_month`
+- `run_date`
+- `horizon`
+- `manufacturer_code`
+- `user_id`
+
+Important fields:
+
+- `requested_report_month`
+- `effective_report_month`
+- `requested_run_date`
+- `effective_run_date`
+- `effective_batch_run_date`
+- `requested_horizon`
+- `effective_horizon`
+- `date_resolution_status`
+- `fallback_used`
+- `available_report_months`
+- `available_run_dates`
+- `available_horizons`
+
+Frontend rule:
+
+- If the user requests today and no today run exists, keep the selected UI date
+  visible as requested, but render data from `effective_run_date`.
+- `effective_run_date` is the detector inspection run date for daily APIs.
+- `effective_batch_run_date` is the result-batch/report generation date when it
+  differs from the detector inspection date.
+- Any fallback must be shown as a resolved-data state, not as demo data.
 
 ### Detector Readiness
 
@@ -136,7 +176,7 @@ Display rules:
 
 - Render `detector_score` as "规则巡检分".
 - Do not render `detector_score` as probability or percent risk.
-- Do not display `monthly_loss_value`, `loss_value`, `business_score`, or `expected_loss` on customer pages even if a compatibility payload contains them.
+- Do not display `monthly_loss_value`, `business_score`, `expected_loss`, or `fill_policy` on customer pages even if a compatibility payload contains them.
 - If `is_monthly_high_risk_entity=false`, label the row as "今日规则线索".
 - Do not route non-monthly-high-risk clues into the monthly risk entity list.
 
@@ -210,14 +250,16 @@ Supported query params:
 - `run_date`
 - `horizon=H3|H6|H12`
 - `top_n`
-- `sort_by=risk_probability|involved_amount`
+- `sort_by=loss_value|risk_probability|detector_score|involved_amount`
 
 Behavior:
 
+- Every response includes `report_context` and requested/effective date fields.
 - It should not include every daily detector clue.
 - It returns monthly risk entities using the selected `horizon`.
 - It can show detector summaries such as latest run date and clue counts.
-- It must not display `loss_value`, `monthly_loss_value`, `business_score`, `expected_loss`, or model metrics.
+- It must not display `monthly_loss_value`, `business_score`, `expected_loss`, `fill_policy`, or model metrics.
+- It may display `loss_value`, which is computed from `risk_probability` multiplied by `average_consumption_in_window`; if the amount proxy is missing, the backend returns `loss_value=0` with `loss_value_status=amount_proxy_missing`.
 - `sort_by=involved_amount` sorts by selected horizon window involved amount.
 
 ### Risk Entities List
@@ -226,8 +268,9 @@ Behavior:
 
 Keep this as the monthly risk entity list. It accepts the same customer-facing
 query params as `/api/v1/workbench`: `manufacturer_code`, `report_month`,
-`horizon`, `top_n`, and `sort_by`. Do not mix non-monthly-high-risk daily detector
-clues into this list. Use `/api/v1/detectors/clues` for the all-clues page.
+`run_date`, `horizon`, `top_n`, and `sort_by`. It uses effective dates from
+`report_context`. Do not mix non-monthly-high-risk daily detector clues into this
+list. Use `/api/v1/detectors/clues` for the all-clues page.
 
 ### Risk Entity Detail
 
@@ -254,7 +297,9 @@ Use this for trend charts. It returns one series for the selected horizon with
 `GET /api/v1/my/manufacturers`
 
 Use this to populate manufacturer selectors. The backend resolves current-user
-scope and returns only visible manufacturers.
+scope and returns only visible manufacturers. The endpoint also accepts
+`report_month`, `run_date`, `horizon`, `manufacturer_code`, and `user_id`, and
+returns report-context fields for consistent page state.
 
 ### Daily Detector Date Options
 
@@ -263,9 +308,17 @@ scope and returns only visible manufacturers.
 Use this to populate daily report date selectors. These dates refer to detector
 inspection runs and do not imply monthly model probability recalculation.
 
+`GET /api/v1/daily-detector/status` and
+`GET /api/v1/daily-detector/clues` also accept requested `run_date`. If that date
+is unavailable, they return `200` with `date_resolution_status` and query the
+latest available effective run date. Empty clue tables return `ready=true`,
+`total=0`, and `items=[]`; the frontend should render an empty state, not mock
+rows.
+
 ## Components To Add Or Adjust
 
 - Daily detector status badge: uses `/api/v1/daily-detector/status`.
+- Report/date fallback banner: uses `/api/v1/report-context` or embedded `report_context`.
 - Daily detector date selector: uses `/api/v1/daily-detector/dates`.
 - Manufacturer selector: uses `/api/v1/my/manufacturers`.
 - Detector capability/status panel: uses `/api/v1/detectors/catalog`.
@@ -304,6 +357,6 @@ Forbidden wording:
 - Risk detail detector evidence is fetched only for an existing `risk_entity_id`.
 - Catalog visually distinguishes `implemented`, `interface_only`, `experimental`, and `reserved`.
 - Customer-facing pages no longer show model evaluation metrics by default.
-- Customer-facing pages do not show `loss_value`, `monthly_loss_value`, `business_score`, or `expected_loss`.
+- Customer-facing pages show `loss_value` but do not show `monthly_loss_value`, `business_score`, `expected_loss`, or `fill_policy`.
 - H3/H6/H12 switching uses backend `horizon` query params instead of frontend-local recalculation.
 - `involved_amount` is displayed as the selected horizon window amount.

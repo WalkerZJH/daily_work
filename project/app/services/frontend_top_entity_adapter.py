@@ -43,6 +43,8 @@ def build_risk_entities_payload_from_top_entities(
         },
         "scope": top_entities.get("scope", {}),
         "query": _query(top_entities, sort_by),
+        "current_user_id": top_entities.get("user_id"),
+        "warnings": list(top_entities.get("warnings") or []),
     }
 
 
@@ -56,6 +58,7 @@ def build_workbench_payload_from_top_entities(
     manufacturer_codes: list[str] | None = None,
     sort_by: str = "risk_probability",
     detector_summary: dict[str, Any] | None = None,
+    run_date: str | None = None,
 ) -> dict[str, Any] | None:
     risk_entities_payload = build_risk_entities_payload_from_top_entities(
         service,
@@ -69,25 +72,40 @@ def build_workbench_payload_from_top_entities(
     if not risk_entities_payload:
         return None
     rows = [_workbench_row(item) for item in risk_entities_payload["entities"]]
+    summary = detector_summary or {
+        "detector_clue_count": 0,
+        "highest_detector_score": None,
+        "latest_detector_run_date": run_date,
+        "top_clues": [],
+        "detector_status_summary": "not_requested",
+    }
+    query = risk_entities_payload.get("query", {})
+    scope = risk_entities_payload.get("scope", {})
+    current_manufacturer = _current_manufacturer(scope)
     return {
+        "ready": True,
+        "data_source": "risk_model_core",
+        "demo_mode": False,
         "batch_context": risk_entities_payload["batch_context"],
         "overview_metrics": [
-            {"label": "Workbench rows", "value": str(len(rows)), "tone": "neutral"},
+            {"label": "monthly_risk_entity_count", "value": str(len(rows)), "tone": "neutral"},
         ],
-        "fill_policy": {
-            "manufacturer_code": "backend_resolved_scope",
-            "workbench_target_count": len(rows),
-            "global_current_month_hospital_drug_count": len(rows),
-            "fill_reason": "Backend returns requested top_n within current user scope; no model-core fill is applied.",
-        },
         "rows": rows,
-        "scope": risk_entities_payload.get("scope", {}),
-        "query": risk_entities_payload.get("query", {}),
-        "detector_summary": detector_summary or {
-            "detector_clue_count": 0,
-            "latest_detector_run_date": None,
-            "detector_status_summary": "not_requested",
-        },
+        "scope": scope,
+        "query": query,
+        "detector_summary": summary,
+        "current_user_id": risk_entities_payload.get("current_user_id"),
+        "current_manufacturer_code": current_manufacturer,
+        "current_observation_date": run_date or summary.get("latest_detector_run_date"),
+        "horizon": query.get("horizon", "H6"),
+        "top_n": int(query.get("top_n") or len(rows)),
+        "sort_by": query.get("sort_by", sort_by),
+        "today_clue_count": int(summary.get("detector_clue_count") or 0),
+        "highest_detector_score": summary.get("highest_detector_score"),
+        "priority_risk_entity_count": len(rows),
+        "today_high_score_rule_clues": list(summary.get("top_clues") or [])[:5],
+        "monthly_risk_entities": rows,
+        "warnings": list(risk_entities_payload.get("warnings") or []),
     }
 
 
@@ -117,6 +135,9 @@ def _risk_entity_item(entity: dict[str, Any], top_entities: dict[str, Any]) -> d
         "region": _text(entity.get("region_display_name")),
         "horizon": _text(entity.get("horizon") or top_entities.get("horizon") or "H6"),
         "risk_probability": probability,
+        "loss_value": _int_or_zero(entity.get("loss_value")),
+        "loss_value_status": _text(entity.get("loss_value_status") or "amount_proxy_missing"),
+        "sort_policy": _text(entity.get("sort_policy") or "risk_probability_desc_due_to_missing_amount_proxy"),
         "involved_amount": involved_amount,
         "involved_amount_source": _text(entity.get("involved_amount_source")),
         "average_consumption_in_window": involved_amount,
@@ -148,12 +169,14 @@ def _workbench_row(item: dict[str, Any]) -> dict[str, Any]:
         "region": item["region"],
         "horizon": item["horizon"],
         "risk_probability": item["risk_probability"],
+        "loss_value": item["loss_value"],
+        "loss_value_status": item["loss_value_status"],
+        "sort_policy": item["sort_policy"],
         "involved_amount": item["involved_amount"],
         "involved_amount_source": item["involved_amount_source"],
         "average_consumption_in_window": item["average_consumption_in_window"],
         "risk_band": item["risk_band"],
         "source_type": "risk_result_batch",
-        "fill_source": "backend_scope_query",
         "action": "view_detail",
     }
 
@@ -168,7 +191,18 @@ def _query(top_entities: dict[str, Any], sort_by: str) -> dict[str, Any]:
 
 
 def _ranking_strategy(sort_by: str) -> str:
-    return "involved_amount" if sort_by == "involved_amount" else "probability"
+    if sort_by == "loss_value":
+        return "loss_value"
+    if sort_by == "detector_score":
+        return "detector_score"
+    if sort_by == "involved_amount":
+        return "involved_amount"
+    return "probability"
+
+
+def _current_manufacturer(scope: dict[str, Any]) -> str | None:
+    codes = scope.get("manufacturer_codes") or []
+    return str(codes[0]) if codes else None
 
 
 def _clamped_probability(value: Any) -> float:

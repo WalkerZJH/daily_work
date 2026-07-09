@@ -16,9 +16,11 @@ from risk_model_core.repositories import InMemoryRiskResultRepository
 def override_workbench_repository() -> Iterator[None]:
     from app.api.routes_detector_results import get_detector_result_service
     from app.api.routes_frontend_pages import get_frontend_page_service
+    from app.api.routes_report_context import get_report_context_service
     from app.api.routes_user_top_entities import get_user_top_entity_service
     from app.services.detector_result_service import DetectorResultService
     from app.services.frontend_page_service import FrontendPageService
+    from app.services.report_context_service import ReportContextService
     from app.services.user_top_entity_service import TopEntityService, UserManufacturerScopeService
 
     repo = _repository()
@@ -31,12 +33,14 @@ def override_workbench_repository() -> Iterator[None]:
     app.dependency_overrides[get_frontend_page_service] = lambda: FrontendPageService(
         repository=repo,
     )
+    app.dependency_overrides[get_report_context_service] = lambda: ReportContextService(repo)
     try:
         yield
     finally:
         app.dependency_overrides.pop(get_user_top_entity_service, None)
         app.dependency_overrides.pop(get_detector_result_service, None)
         app.dependency_overrides.pop(get_frontend_page_service, None)
+        app.dependency_overrides.pop(get_report_context_service, None)
 
 
 def test_workbench_intersects_manufacturer_scope_and_sorts_by_involved_amount() -> None:
@@ -65,7 +69,8 @@ def test_workbench_intersects_manufacturer_scope_and_sorts_by_involved_amount() 
     assert payload["detector_summary"]["latest_detector_run_date"] == "2026-07-08"
     assert payload["detector_summary"]["detector_clue_count"] == 1
     text = json.dumps(payload)
-    for forbidden in ["business_score", "loss_value", "expected_loss", "model_metrics"]:
+    assert payload["rows"][0]["loss_value"] == 20
+    for forbidden in ["business_score", "fill_policy", "expected_loss", "model_metrics"]:
         assert forbidden not in text
     assert "M3" not in text
 
@@ -204,7 +209,20 @@ def _manifest() -> RiskResultManifest:
         auto_dispatch_allowed=False,
         proof_case_report_allowed=False,
         caveats=[],
-        raw={},
+        raw={
+            "batch_id": "project-workbench-test",
+            "result_batch_id": "project-workbench-test",
+            "report_type": "monthly",
+            "report_month": "2026-07",
+            "report_date": "2026-07-31",
+            "score_as_of_date": "2026-07-31",
+            "run_date": "2026-07-08",
+            "available_horizons": ["H3", "H6", "H12"],
+            "primary_horizon": "H6",
+            "detector_config_version": "daily_detector_rules_v1",
+            "conditional_fact_mode_ready": True,
+            "caveats": ["detector_score is not probability"],
+        },
     )
 
 

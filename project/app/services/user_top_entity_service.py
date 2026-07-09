@@ -25,13 +25,23 @@ from risk_model_core.manifest import RiskResultManifest  # noqa: E402
 
 USER_MANUFACTURER_SCOPE_PATH = PROJECT_ROOT / "config" / "user_manufacturer_scope.example.csv"
 
-RankingStrategy = Literal["mixed_v2", "probability", "business_priority", "interval", "frequency", "involved_amount"]
+RankingStrategy = Literal[
+    "mixed_v2",
+    "probability",
+    "business_priority",
+    "interval",
+    "frequency",
+    "involved_amount",
+    "loss_value",
+    "detector_score",
+]
 GroupBy = Literal["manufacturer", "user_scope"]
 CandidateType = Literal["recurring", "one_shot", "observation", "all"]
 FillPolicy = Literal["none", "observation_fill", "one_shot_fill"]
 
 PROBABILITY_COLUMNS = ["_profile_risk_probability", "risk_probability", "risk_probability_value", "churn_probability_H"]
 INVOLVED_AMOUNT_COLUMNS = ["_profile_involved_amount", "involved_amount", "average_consumption_in_window"]
+DETECTOR_SCORE_COLUMNS = ["detector_score", "max_detector_score", "latest_detector_score"]
 INTERVAL_COLUMNS = ["interval_rank_score", "overdue_ratio", "current_interval_over_median"]
 FREQUENCY_COLUMNS = ["frequency_rank_score", "frequency_decay_baseline", "frequency_ratio"]
 BUSINESS_COLUMNS = ["business_priority_score_H", "business_priority_score", "value_at_risk_H"]
@@ -188,6 +198,17 @@ class TopEntityService:
             requested_manufacturer_codes=manufacturer_codes,
             available_manufacturer_codes=available_codes,
         )
+        if not scope:
+            requested = _dedupe([str(code) for code in manufacturer_codes or [] if str(code).strip()])
+            fallback_codes = [code for code in (requested or available_codes) if code in set(available_codes)]
+            display_by_code = _manufacturer_display_names(batch)
+            scope = [ManufacturerScope(code, display_by_code.get(code) or code) for code in fallback_codes]
+            scope_warnings = [
+                warning
+                for warning in scope_warnings
+                if warning != "USER_HAS_NO_VISIBLE_MANUFACTURER_SCOPE"
+            ]
+            scope_warnings.append("USER_SCOPE_FALLBACK_TO_BATCH_MANUFACTURERS")
         warnings.extend(scope_warnings)
         scoped = batch[
             batch["manufacturer_code"].astype(str).isin([item.manufacturer_code for item in scope])
@@ -272,6 +293,20 @@ class TopEntityService:
             available_manufacturer_codes=available_codes,
         )
         display_by_code = _manufacturer_display_names(batch)
+        scope_source = "user_manufacturer_scope"
+        ready: bool | str = True
+        if not scope:
+            requested = _dedupe([str(code) for code in manufacturer_codes or [] if str(code).strip()])
+            fallback_codes = [code for code in (requested or available_codes) if code in set(available_codes)]
+            scope = [ManufacturerScope(code, display_by_code.get(code) or code) for code in fallback_codes]
+            scope_source = "batch_manufacturer_fallback"
+            ready = "conditional"
+            warnings = [
+                warning
+                for warning in warnings
+                if warning != "USER_HAS_NO_VISIBLE_MANUFACTURER_SCOPE"
+            ]
+            warnings.append("USER_SCOPE_FALLBACK_TO_BATCH_MANUFACTURERS")
         items = [
             {
                 "manufacturer_code": item.manufacturer_code,
@@ -283,7 +318,11 @@ class TopEntityService:
         ]
         return {
             "user_id": user_id,
+            "current_user_id": user_id,
             "report_month": selected_month,
+            "ready": ready,
+            "scope_source": scope_source,
+            "default_manufacturer_code": items[0]["manufacturer_code"] if items else None,
             "manufacturer_count": len(items),
             "manufacturers": items,
             "items": items,
@@ -386,7 +425,18 @@ class TopEntityService:
             out["_ranking_score_source"] = "mixed_v2"
         else:
             column = _score_column_for_strategy(out, ranking_strategy)
-            if column is None:
+            if ranking_strategy == "loss_value":
+                out["_ranking_score"] = _loss_value_series(out)
+                out["_ranking_score_source"] = "loss_value"
+            elif ranking_strategy == "detector_score" and column is None:
+                probability_column = _first_existing(out, PROBABILITY_COLUMNS)
+                out["_ranking_score"] = (
+                    pd.Series(0.0, index=out.index)
+                    if probability_column is None
+                    else pd.to_numeric(out[probability_column], errors="coerce").fillna(-1)
+                )
+                out["_ranking_score_source"] = "risk_probability_due_to_missing_detector_score"
+            elif column is None:
                 out["_ranking_score"] = 0.0
                 out["_ranking_score_source"] = "missing_score_column"
             else:
@@ -478,8 +528,13 @@ class TopEntityService:
         if candidate_type in {"observation", "one_shot"}:
             risk_probability = None
         involved_amount = _int_or_zero(
-            row.get("_profile_involved_amount", row.get("involved_amount"))
+            row.get(
+                "_profile_involved_amount",
+                row.get("involved_amount", row.get("average_consumption_in_window")),
+            )
         )
+        loss_value = _loss_value(risk_probability, involved_amount)
+        amount_available = involved_amount > 0
         is_high_risk = bool(row.get("is_high_risk")) and candidate_type == "recurring"
         return {
             "risk_entity_id": _none_or_str(row.get("risk_entity_id")),
@@ -497,6 +552,14 @@ class TopEntityService:
             "horizon": _none_or_str(row.get("_selected_horizon") or row.get("primary_horizon")),
             "candidate_type": candidate_type,
             "risk_probability": risk_probability,
+            "average_consumption_in_window": involved_amount,
+            "loss_value": loss_value,
+            "loss_value_status": "ready" if amount_available else "amount_proxy_missing",
+            "sort_policy": (
+                "loss_value_desc"
+                if amount_available
+                else "risk_probability_desc_due_to_missing_amount_proxy"
+            ),
             "involved_amount": involved_amount,
             "involved_amount_source": _none_or_str(row.get("involved_amount_source")),
             "risk_band": _none_or_str(row.get("risk_band")),
@@ -652,6 +715,10 @@ def _score_column_for_strategy(frame: pd.DataFrame, strategy: str) -> str | None
         return _first_existing(frame, PROBABILITY_COLUMNS)
     if strategy == "involved_amount":
         return _first_existing(frame, INVOLVED_AMOUNT_COLUMNS)
+    if strategy == "loss_value":
+        return None
+    if strategy == "detector_score":
+        return _first_existing(frame, DETECTOR_SCORE_COLUMNS)
     if strategy == "business_priority":
         return _first_existing(frame, BUSINESS_COLUMNS)
     if strategy == "interval":
@@ -668,9 +735,35 @@ def _first_existing(frame: pd.DataFrame, columns: list[str]) -> str | None:
 def _sort_by_from_strategy(strategy: str) -> str:
     if strategy == "involved_amount":
         return "involved_amount"
+    if strategy == "loss_value":
+        return "loss_value"
+    if strategy == "detector_score":
+        return "detector_score"
     if strategy == "probability":
         return "risk_probability"
     return strategy
+
+
+def _loss_value_series(frame: pd.DataFrame) -> pd.Series:
+    probability_column = _first_existing(frame, PROBABILITY_COLUMNS)
+    amount_column = _first_existing(frame, INVOLVED_AMOUNT_COLUMNS)
+    probability = (
+        pd.Series(0.0, index=frame.index)
+        if probability_column is None
+        else pd.to_numeric(frame[probability_column], errors="coerce").fillna(0)
+    )
+    amount = (
+        pd.Series(0.0, index=frame.index)
+        if amount_column is None
+        else pd.to_numeric(frame[amount_column], errors="coerce").fillna(0)
+    )
+    return probability * amount
+
+
+def _loss_value(risk_probability: float | None, amount: int) -> int:
+    if risk_probability is None or amount <= 0:
+        return 0
+    return int(round(risk_probability * amount))
 
 
 def _candidate_type(row: pd.Series) -> str:

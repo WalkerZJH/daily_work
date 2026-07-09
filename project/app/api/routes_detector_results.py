@@ -16,6 +16,8 @@ from app.services.detector_result_service import (
     DetectorResultService,
     build_default_detector_result_service,
 )
+from app.api.routes_report_context import get_report_context_service
+from app.services.report_context_service import ReportContextService
 
 router = APIRouter(prefix="/api/v1", tags=["detector-results"])
 
@@ -53,8 +55,27 @@ def daily_detector_dates(
 @router.get("/daily-detector/status", response_model=DailyDetectorStatusResponse)
 def daily_detector_status(
     service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
+    report_context_service: Annotated[ReportContextService, Depends(get_report_context_service)],
+    report_month: str | None = None,
+    run_date: str | None = None,
+    horizon: str | None = None,
+    manufacturer_code: str | None = None,
+    user_id: str | None = None,
 ) -> dict:
-    return service.status()
+    context = report_context_service.resolve(
+        report_month=report_month,
+        run_date=run_date,
+        horizon=horizon,
+        manufacturer_code=manufacturer_code,
+        user_id=user_id,
+    )
+    return _with_report_context(
+        service.status(
+            report_month=context.get("effective_report_month") or report_month,
+            run_date=context.get("effective_run_date") or run_date,
+        ),
+        context,
+    )
 
 
 @router.get("/detectors/clues", response_model=DailyDetectorCluesResponse)
@@ -88,20 +109,38 @@ def detector_clues(
 @router.get("/daily-detector/clues", response_model=DailyDetectorCluesResponse)
 def daily_detector_clues(
     service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
+    report_context_service: Annotated[ReportContextService, Depends(get_report_context_service)],
+    report_month: str | None = None,
     run_date: str | None = None,
+    manufacturer_code: str | None = None,
+    horizon: str | None = None,
+    top_n: int | None = Query(default=None, ge=1, le=200),
+    sort_by: str = Query(default="detector_score"),
     detector_id: str | None = None,
     detector_family: str | None = None,
     only_monthly_high_risk: bool | None = None,
-    limit: int = Query(default=50, ge=1, le=200),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+    limit: int | None = Query(default=None, ge=1, le=200),
 ) -> dict:
-    return service.clues(
+    context = report_context_service.resolve(
+        report_month=report_month,
         run_date=run_date,
+        horizon=horizon,
+        manufacturer_code=manufacturer_code,
+        user_id=None,
+    )
+    return _with_report_context(service.clues(
+        run_date=context.get("effective_run_date") or run_date,
+        manufacturer_code=manufacturer_code,
+        horizon=context.get("effective_horizon") or horizon,
+        sort_by=sort_by,
         detector_id=detector_id,
         detector_family=detector_family,
         only_monthly_high_risk=only_monthly_high_risk,
-        page=1,
-        page_size=limit,
-    )
+        page=page,
+        page_size=top_n or limit or page_size,
+    ), context)
 
 
 @router.get(
@@ -135,3 +174,15 @@ def detector_config_status(
     service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
 ) -> dict:
     return service.config_status()
+
+
+def _with_report_context(payload: dict, report_context: dict) -> dict:
+    return {
+        **payload,
+        "report_context": report_context,
+        "requested_report_month": report_context.get("requested_report_month"),
+        "effective_report_month": report_context.get("effective_report_month"),
+        "requested_run_date": report_context.get("requested_run_date"),
+        "effective_run_date": report_context.get("effective_run_date"),
+        "date_resolution_status": report_context.get("date_resolution_status"),
+    }

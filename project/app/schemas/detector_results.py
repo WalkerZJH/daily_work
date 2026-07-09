@@ -53,21 +53,40 @@ class DailyDetectorRunsResponse(DetectorResultModel):
 class DailyDetectorStatusResponse(DetectorResultModel):
     ready: bool
     run_date: str | None = None
+    detector_run_id: str | None = None
+    detector_config_version: str | None = None
+    clue_count: int = Field(default=0, ge=0)
+    attached_high_risk_count: int = Field(default=0, ge=0)
+    highest_detector_score: float | None = None
+    enabled_detectors: Any = None
+    config_effective_note: str | None = None
     source: str
     warnings: list[str]
+    report_context: dict[str, Any] = Field(default_factory=dict)
+    requested_report_month: str | None = None
+    effective_report_month: str | None = None
+    requested_run_date: str | None = None
+    effective_run_date: str | None = None
+    date_resolution_status: str | None = None
 
 
 class DailyDetectorClueItem(DetectorResultModel):
+    clue_id: str | None = None
     detector_clue_id: str
     detector_run_id: str
     run_date: str
     tenant_id: str | None = None
     manufacturer_code: str | None = None
     hospital_code: str | None = None
+    hospital_name: str | None = None
     drug_group: str | None = None
+    drug_name: str | None = None
     detector_id: str
     detector_family: str
+    detector_family_label: str | None = None
+    detector_name_label: str | None = None
     detector_score: float | None = None
+    detector_score_label: str | None = None
     detector_level: str | None = None
     confidence: float | None = None
     hit_flag: bool
@@ -78,6 +97,7 @@ class DailyDetectorClueItem(DetectorResultModel):
     risk_entity_id: str | None = None
     monthly_risk_probability: float | None = None
     monthly_loss_value: float | None = None
+    action: str | None = None
     display_rank: int | None = None
     caveat: str | None = None
     created_at: str | None = None
@@ -86,10 +106,20 @@ class DailyDetectorClueItem(DetectorResultModel):
 class DailyDetectorCluesResponse(DetectorResultModel):
     ready: bool
     source: str
+    clues: list[DailyDetectorClueItem] = Field(default_factory=list)
     items: list[DailyDetectorClueItem]
+    total: int = Field(default=0, ge=0)
+    run_date: str | None = None
+    detector_run_id: str | None = None
     pagination: dict[str, int]
     semantic_caveats: list[str]
     warnings: list[str]
+    report_context: dict[str, Any] = Field(default_factory=dict)
+    requested_report_month: str | None = None
+    effective_report_month: str | None = None
+    requested_run_date: str | None = None
+    effective_run_date: str | None = None
+    date_resolution_status: str | None = None
 
 
 class HighRiskDetectorEvidenceItem(DetectorResultModel):

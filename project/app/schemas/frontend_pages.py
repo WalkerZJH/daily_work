@@ -71,24 +71,46 @@ class WorkbenchRow(FrontendPageModel):
     region: str
     horizon: str | None = None
     risk_probability: float = Field(ge=0, le=1)
+    loss_value: int = 0
+    loss_value_status: str | None = None
+    sort_policy: str | None = None
     involved_amount: int = 0
     involved_amount_source: str | None = None
     average_consumption_in_window: int
     risk_band: str | None = None
     source_type: str
-    fill_source: str
     action: str
 
 
 class WorkbenchPayload(FrontendPageModel):
+    ready: bool = True
+    data_source: str = "risk_model_core"
+    demo_mode: bool = False
     batch_context: BatchContext
     overview_metrics: list[OverviewMetric]
     display_lookup_status: dict[str, Any] | None = None
-    fill_policy: WorkbenchFillPolicy
     rows: list[WorkbenchRow]
     scope: dict[str, Any] = Field(default_factory=dict)
     query: dict[str, Any] = Field(default_factory=dict)
     detector_summary: dict[str, Any] = Field(default_factory=dict)
+    current_user_id: str | None = None
+    current_manufacturer_code: str | None = None
+    current_observation_date: str | None = None
+    horizon: str = "H6"
+    top_n: int = 20
+    sort_by: str = "risk_probability"
+    today_clue_count: int = 0
+    highest_detector_score: float | None = None
+    priority_risk_entity_count: int = 0
+    today_high_score_rule_clues: list[dict[str, Any]] = Field(default_factory=list)
+    monthly_risk_entities: list[dict[str, Any]] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    report_context: dict[str, Any] = Field(default_factory=dict)
+    requested_report_month: str | None = None
+    effective_report_month: str | None = None
+    requested_run_date: str | None = None
+    effective_run_date: str | None = None
+    date_resolution_status: str | None = None
 
 
 class RiskEntityItem(FrontendPageModel):
@@ -99,6 +121,9 @@ class RiskEntityItem(FrontendPageModel):
     region: str
     horizon: str
     risk_probability: float = Field(ge=0, le=1)
+    loss_value: int = 0
+    loss_value_status: str | None = None
+    sort_policy: str | None = None
     involved_amount: int = 0
     involved_amount_source: str | None = None
     average_consumption_in_window: int
@@ -121,6 +146,14 @@ class RiskEntitiesPayload(FrontendPageModel):
     display_lookup_status: dict[str, Any] | None = None
     scope: dict[str, Any] = Field(default_factory=dict)
     query: dict[str, Any] = Field(default_factory=dict)
+    current_user_id: str | None = None
+    warnings: list[str] = Field(default_factory=list)
+    report_context: dict[str, Any] = Field(default_factory=dict)
+    requested_report_month: str | None = None
+    effective_report_month: str | None = None
+    requested_run_date: str | None = None
+    effective_run_date: str | None = None
+    date_resolution_status: str | None = None
 
 
 class DetectorResultItem(FrontendPageModel):
@@ -162,6 +195,12 @@ class RiskEntityDetailPayload(FrontendPageModel):
     horizon_profiles: dict[str, HorizonProfile]
     selected_horizon: str | None = None
     selected_horizon_profile: HorizonProfile | dict[str, Any] | None = None
+    report_context: dict[str, Any] = Field(default_factory=dict)
+    requested_report_month: str | None = None
+    effective_report_month: str | None = None
+    requested_run_date: str | None = None
+    effective_run_date: str | None = None
+    date_resolution_status: str | None = None
 
 
 class OneshotSummary(FrontendPageModel):

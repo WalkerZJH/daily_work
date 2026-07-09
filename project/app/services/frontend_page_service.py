@@ -184,13 +184,16 @@ class FrontendPageService:
     ):
         self.batch_dir = Path(batch_dir) if batch_dir else None
         self._repository = repository
+        self._mock_allowed = os.getenv("ALLOW_MOCK_PAYLOADS", "").lower() == "true"
         self._default_payloads = build_default_frontend_payloads()
         self._builder = PagePayloadBuilder(repository) if repository is not None else self._build_batch_payload_builder(self.batch_dir)
 
     def workbench(self) -> dict[str, Any]:
         if self._builder:
             return _strip_customer_hidden_fields(self._builder.build_frontend_workbench_payload())
-        return _strip_customer_hidden_fields(self._default_payloads["workbench"])
+        if self._mock_allowed:
+            return _mock_payload(_strip_customer_hidden_fields(self._default_payloads["workbench"]))
+        return _formal_unavailable_workbench()
 
     def risk_entities(self) -> dict[str, Any]:
         if self._builder:
@@ -306,10 +309,11 @@ def get_frontend_page_service() -> FrontendPageService:
 def _strip_customer_hidden_fields(value: Any) -> Any:
     hidden = {
         "business_score",
-        "loss_value",
         "monthly_loss_value",
         "expected_loss",
         "model_metrics",
+        "fill_policy",
+        "fill_source",
         "risk_probability_value",
         "churn_probability_H",
         "risk_score",
@@ -325,6 +329,60 @@ def _strip_customer_hidden_fields(value: Any) -> Any:
     if isinstance(value, list):
         return [_strip_customer_hidden_fields(item) for item in value]
     return value
+
+
+def _mock_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **payload,
+        "ready": False,
+        "data_source": "mock",
+        "demo_mode": True,
+        "monthly_risk_entities": payload.get("rows", []),
+        "today_high_score_rule_clues": [],
+        "today_clue_count": 0,
+        "highest_detector_score": None,
+        "priority_risk_entity_count": len(payload.get("rows", [])),
+        "warnings": ["MOCK_PAYLOADS_EXPLICITLY_ENABLED"],
+    }
+
+
+def _formal_unavailable_workbench() -> dict[str, Any]:
+    return {
+        "ready": False,
+        "data_source": "unavailable",
+        "demo_mode": False,
+        "batch_context": {
+            "report_month": "",
+            "score_as_of_date": "",
+            "data_watermark_at": "",
+            "score_batch_id": "",
+            "result_batch_id": "",
+            "primary_horizon": "H6",
+            "primary_horizon_label": "H6",
+            "involved_amount_definition": "selected horizon window consumption",
+        },
+        "overview_metrics": [],
+        "rows": [],
+        "scope": {"manufacturer_count": 0, "manufacturer_codes": []},
+        "query": {"horizon": "H6", "top_n": 20, "sort_by": "risk_probability"},
+        "detector_summary": {
+            "detector_clue_count": 0,
+            "latest_detector_run_date": None,
+            "detector_status_summary": "missing",
+        },
+        "current_user_id": None,
+        "current_manufacturer_code": None,
+        "current_observation_date": None,
+        "horizon": "H6",
+        "top_n": 20,
+        "sort_by": "risk_probability",
+        "today_clue_count": 0,
+        "highest_detector_score": None,
+        "priority_risk_entity_count": 0,
+        "today_high_score_rule_clues": [],
+        "monthly_risk_entities": [],
+        "warnings": ["RISK_RESULT_BATCH_DIR_NOT_CONFIGURED"],
+    }
 
 
 def _text(value: Any) -> str:

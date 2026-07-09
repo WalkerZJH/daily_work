@@ -35,13 +35,19 @@ class DisplayLookupService:
             return _missing_status()
         if lookup is None or lookup.empty:
             return _missing_status()
+        fallback_policy = _fallback_policy(lookup)
         return {
-            "ready": True,
+            "ready": "conditional" if fallback_policy == "batch_display_name_or_code_fallback" else True,
             "status": "ready",
             "source": LOOKUP_SOURCE,
             "table": LOOKUP_TABLE,
             "row_count": int(len(lookup)),
             "schema_version": LOOKUP_SCHEMA_VERSION,
+            "hospital_name_ready": _column_ready(lookup, "hospital_display_name"),
+            "drug_name_ready": _column_ready(lookup, "drug_display_name"),
+            "manufacturer_name_ready": _column_ready(lookup, "manufacturer_display_name"),
+            "region_ready": _column_ready(lookup, "region_display_name"),
+            "fallback_policy": fallback_policy,
             "warnings": [],
         }
 
@@ -66,8 +72,38 @@ def _missing_status() -> dict[str, Any]:
         "source": LOOKUP_SOURCE,
         "table": LOOKUP_TABLE,
         "row_count": 0,
+        "hospital_name_ready": False,
+        "drug_name_ready": False,
+        "manufacturer_name_ready": False,
+        "region_ready": False,
+        "fallback_policy": "code_fallback_when_lookup_missing",
         "warnings": [MISSING_WARNING],
     }
+
+
+def _column_ready(frame: pd.DataFrame, column: str) -> bool:
+    if column not in frame:
+        return False
+    return bool(frame[column].map(_text_or_empty).str.len().gt(0).any())
+
+
+def _fallback_policy(frame: pd.DataFrame) -> str:
+    quality = frame.get("display_name_quality")
+    if quality is None:
+        return "batch_display_name_or_code_fallback"
+    values = {str(value).lower() for value in quality.dropna().unique()}
+    if values and values.issubset({"master", "verified"}):
+        return "display_lookup"
+    return "batch_display_name_or_code_fallback"
+
+
+def _text_or_empty(value: Any) -> str:
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    return "" if value is None else str(value)
 
 
 def _empty_repository() -> InMemoryRiskResultRepository:

@@ -19,5 +19,5 @@ def test_detector_config_status_explains_next_run_semantics_without_rewriting_ru
     assert payload["pending_config_exists"] is False
     assert payload["pending_config_supported"] is False
     assert payload["next_run_required"] is False
-    assert "下一次 detector 巡检运行后生效" in payload["config_edit_semantics"]
+    assert "下一次巡检运行后生效" in payload["config_edit_semantics"]
     assert payload["history_rewrite_allowed"] is False
