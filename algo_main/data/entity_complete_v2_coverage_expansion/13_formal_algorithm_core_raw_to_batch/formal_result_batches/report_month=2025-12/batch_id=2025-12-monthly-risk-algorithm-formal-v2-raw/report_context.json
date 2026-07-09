@@ -1,0 +1,28 @@
+{
+  "batch_id": "2025-12-monthly-risk-algorithm-formal-v2-raw",
+  "report_type": "monthly",
+  "report_month": "2025-12",
+  "report_date": "2026-07-07",
+  "score_as_of_date": "2025-12-31",
+  "run_date": "2026-07-07",
+  "detector_run_dates": [
+    "2026-07-08"
+  ],
+  "available_horizons": [
+    "H3",
+    "H6",
+    "H12"
+  ],
+  "primary_horizon": "H6",
+  "detector_config_version": "daily_detector_rules_v1",
+  "fact_mode_ready": true,
+  "raw_orders_mode_ready": false,
+  "conditional_fact_mode_ready": true,
+  "ready_for_frontend_date_resolution": true,
+  "caveats": [
+    "bounded monthly worklist",
+    "not full SQL universe claim",
+    "business review required",
+    "raw_orders_mode_ready=false; current formal readiness is conditional_fact_mode_ready"
+  ]
+}

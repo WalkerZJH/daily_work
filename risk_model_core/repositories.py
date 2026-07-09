@@ -106,6 +106,23 @@ class RiskResultRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def manifest_context(self) -> dict[str, Any]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_available_report_contexts(self) -> pd.DataFrame:
+        raise NotImplementedError
+
+    @abstractmethod
+    def resolve_report_context(
+        self,
+        requested_report_month: str | None = None,
+        requested_run_date: str | None = None,
+        requested_horizon: str | None = None,
+    ) -> dict[str, Any]:
+        raise NotImplementedError
+
+    @abstractmethod
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         raise NotImplementedError
 
@@ -225,6 +242,37 @@ class ParquetRiskResultRepository(RiskResultRepository):
             normalized["detector_run_id"] = detector_run_id
         return apply_filters(self.load_table("high_risk_detector_evidence"), normalized)
 
+    def manifest_context(self) -> dict[str, Any]:
+        path = self.batch_dir / "report_context.json"
+        if path_exists(path):
+            with open(long_path(path), encoding="utf-8") as fh:
+                return json.load(fh)
+        return build_manifest_context(self.batch_dir, self._manifest.raw, self.list_daily_detector_runs())
+
+    def list_available_report_contexts(self) -> pd.DataFrame:
+        for path in available_context_candidates(self.batch_dir):
+            if not path_exists(path):
+                continue
+            if path.suffix == ".json":
+                data = json.loads(Path(path).read_text(encoding="utf-8"))
+                rows = data.get("contexts", data if isinstance(data, list) else [data])
+                return pd.DataFrame(rows)
+            return pd.read_parquet(path) if path.suffix == ".parquet" else pd.read_csv(path)
+        return pd.DataFrame([available_context_row(self.manifest_context(), self.batch_dir)])
+
+    def resolve_report_context(
+        self,
+        requested_report_month: str | None = None,
+        requested_run_date: str | None = None,
+        requested_horizon: str | None = None,
+    ) -> dict[str, Any]:
+        return resolve_report_context_from_rows(
+            self.list_available_report_contexts(),
+            requested_report_month=requested_report_month,
+            requested_run_date=requested_run_date,
+            requested_horizon=requested_horizon,
+        )
+
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         clean = page_name[:-5] if page_name.endswith(".json") else page_name
         candidates = [
@@ -343,6 +391,25 @@ class InMemoryRiskResultRepository(RiskResultRepository):
             normalized["detector_run_id"] = detector_run_id
         return apply_filters(self.load_table("high_risk_detector_evidence"), normalized)
 
+    def manifest_context(self) -> dict[str, Any]:
+        return build_manifest_context(Path("."), self._manifest.raw, self.list_daily_detector_runs())
+
+    def list_available_report_contexts(self) -> pd.DataFrame:
+        return pd.DataFrame([available_context_row(self.manifest_context(), Path("."))])
+
+    def resolve_report_context(
+        self,
+        requested_report_month: str | None = None,
+        requested_run_date: str | None = None,
+        requested_horizon: str | None = None,
+    ) -> dict[str, Any]:
+        return resolve_report_context_from_rows(
+            self.list_available_report_contexts(),
+            requested_report_month=requested_report_month,
+            requested_run_date=requested_run_date,
+            requested_horizon=requested_horizon,
+        )
+
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         key = page_name[:-5] if page_name.endswith(".json") else page_name
         if key not in self.payloads:
@@ -429,6 +496,20 @@ class ClickHouseRiskResultRepository(RiskResultRepository):
     def list_high_risk_detector_evidence(self, risk_entity_id: str | None = None, detector_run_id: str | None = None, **filters: Any) -> pd.DataFrame:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
+    def manifest_context(self) -> dict[str, Any]:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
+    def list_available_report_contexts(self) -> pd.DataFrame:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
+    def resolve_report_context(
+        self,
+        requested_report_month: str | None = None,
+        requested_run_date: str | None = None,
+        requested_horizon: str | None = None,
+    ) -> dict[str, Any]:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
@@ -452,6 +533,158 @@ def normalize_entity_display_lookup_filters(filters: dict[str, Any]) -> dict[str
     if manufacturer_codes is not None:
         normalized["manufacturer_code"] = manufacturer_codes
     return normalized
+
+
+def build_manifest_context(batch_dir: Path, manifest: dict[str, Any], detector_runs: pd.DataFrame | None = None) -> dict[str, Any]:
+    detector_run_dates: list[str] = []
+    if detector_runs is not None and not detector_runs.empty and "run_date" in detector_runs:
+        detector_run_dates = sorted({str(value) for value in detector_runs["run_date"].dropna()})
+    run_date = str(manifest.get("run_date") or manifest.get("report_date") or "")
+    return {
+        "batch_id": str(manifest.get("result_batch_id") or manifest.get("batch_id") or ""),
+        "batch_dir": str(batch_dir),
+        "report_type": str(manifest.get("report_type") or ""),
+        "report_month": str(manifest.get("report_month") or ""),
+        "report_date": str(manifest.get("report_date") or ""),
+        "score_as_of_date": str(manifest.get("score_as_of_date") or manifest.get("cutoff_date") or ""),
+        "run_date": run_date,
+        "detector_run_dates": detector_run_dates,
+        "available_horizons": [str(item) for item in manifest.get("available_horizons", [])],
+        "primary_horizon": str(manifest.get("primary_horizon") or ""),
+        "detector_config_version": str(manifest.get("detector_config_version") or ""),
+        "fact_mode_ready": bool(manifest.get("fact_mode_ready", False)),
+        "raw_orders_mode_ready": bool(manifest.get("raw_orders_mode_ready", False)),
+        "conditional_fact_mode_ready": bool(manifest.get("conditional_fact_mode_ready", False)),
+        "ready_for_frontend_date_resolution": True,
+        "caveats": list(manifest.get("caveats") or []),
+    }
+
+
+def available_context_row(context: dict[str, Any], batch_dir: Path) -> dict[str, Any]:
+    return {
+        "batch_id": context.get("batch_id", ""),
+        "batch_dir": str(context.get("batch_dir") or batch_dir),
+        "report_month": context.get("report_month", ""),
+        "report_date": context.get("report_date", ""),
+        "score_as_of_date": context.get("score_as_of_date", ""),
+        "run_date": context.get("run_date", ""),
+        "detector_run_date": ";".join(str(item) for item in context.get("detector_run_dates", [])),
+        "primary_horizon": context.get("primary_horizon", ""),
+        "available_horizons": ";".join(str(item) for item in context.get("available_horizons", [])),
+        "detector_config_version": context.get("detector_config_version", ""),
+        "risk_entity_count": "",
+        "daily_detector_clue_count": "",
+        "source_type": "formal_result_batch",
+        "ready_status": "conditional_fact_mode_ready" if context.get("conditional_fact_mode_ready") else "unknown",
+        "caveat": "; ".join(str(item) for item in context.get("caveats", [])),
+    }
+
+
+def available_context_candidates(batch_dir: Path) -> list[Path]:
+    roots = [batch_dir.parent.parent, batch_dir.parent, batch_dir]
+    paths: list[Path] = []
+    for root in roots:
+        paths.extend(
+            [
+                root / "available_report_contexts.parquet",
+                root / "available_report_contexts.csv",
+                root / "available_report_contexts.json",
+            ]
+        )
+    return paths
+
+
+def resolve_report_context_from_rows(
+    contexts: pd.DataFrame,
+    *,
+    requested_report_month: str | None = None,
+    requested_run_date: str | None = None,
+    requested_horizon: str | None = None,
+) -> dict[str, Any]:
+    if contexts.empty:
+        return {
+            "ready": False,
+            "requested_report_month": requested_report_month,
+            "effective_report_month": None,
+            "requested_run_date": requested_run_date,
+            "effective_run_date": None,
+            "requested_horizon": requested_horizon,
+            "effective_horizon": None,
+            "date_resolution_status": "no_available_batch",
+            "batch_id": None,
+            "batch_dir": None,
+            "available_report_months": [],
+            "available_run_dates": [],
+            "available_horizons": [],
+            "is_exact_match": False,
+            "fallback_used": False,
+            "warnings": ["No available result batch."],
+            "caveats": [],
+        }
+
+    rows = contexts.copy()
+    rows["_report_month"] = rows.get("report_month", "").astype(str)
+    rows["_run_date"] = rows.get("run_date", "").astype(str)
+    rows = rows.sort_values(["_report_month", "_run_date"], ascending=[False, False], kind="mergesort").reset_index(drop=True)
+    available_report_months = sorted({str(value) for value in rows["_report_month"] if str(value)}, reverse=True)
+    available_run_dates = sorted({str(value) for value in rows["_run_date"] if str(value)}, reverse=True)
+
+    matches = rows
+    if requested_report_month is not None:
+        matches = matches[matches["_report_month"].eq(str(requested_report_month))]
+    if requested_run_date is not None:
+        matches = matches[matches["_run_date"].eq(str(requested_run_date))]
+
+    exact = not matches.empty
+    selected = matches.iloc[0] if exact else rows.iloc[0]
+    available_horizons = split_context_values(selected.get("available_horizons", ""))
+    primary_horizon = str(selected.get("primary_horizon") or (available_horizons[0] if available_horizons else ""))
+    if requested_horizon is not None and str(requested_horizon) in available_horizons:
+        effective_horizon = str(requested_horizon)
+    else:
+        effective_horizon = primary_horizon
+
+    status = "exact_match" if exact else "fallback_to_latest_available"
+    warnings: list[str] = []
+    if requested_report_month is not None and str(requested_report_month) not in available_report_months:
+        status = "fallback_to_latest_report_month" if requested_run_date is None else "fallback_to_latest_available"
+        warnings.append("Requested report_month is unavailable; using latest available report_month.")
+    if requested_run_date is not None and str(requested_run_date) not in available_run_dates:
+        status = "fallback_to_latest_available"
+        warnings.append("Requested run_date is unavailable; using latest available run_date.")
+    if requested_horizon is not None and str(requested_horizon) not in available_horizons:
+        warnings.append("Requested horizon is unavailable; using primary horizon.")
+
+    return {
+        "ready": True,
+        "requested_report_month": requested_report_month,
+        "effective_report_month": str(selected.get("report_month") or ""),
+        "requested_run_date": requested_run_date,
+        "effective_run_date": str(selected.get("run_date") or ""),
+        "requested_horizon": requested_horizon,
+        "effective_horizon": effective_horizon,
+        "date_resolution_status": status,
+        "batch_id": str(selected.get("batch_id") or ""),
+        "batch_dir": str(selected.get("batch_dir") or ""),
+        "available_report_months": available_report_months,
+        "available_run_dates": available_run_dates,
+        "available_horizons": available_horizons,
+        "is_exact_match": exact,
+        "fallback_used": not exact,
+        "warnings": warnings,
+        "caveats": split_context_values(selected.get("caveat", "")),
+    }
+
+
+def split_context_values(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item)]
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return []
+    text = str(value)
+    if not text:
+        return []
+    return [part.strip() for part in text.split(";") if part.strip()]
 
 
 DEFAULT_RANKABLE_SORT_FIELDS = [
