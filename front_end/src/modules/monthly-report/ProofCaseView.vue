@@ -1,9 +1,15 @@
 ﻿<script setup>
 import { computed, onMounted, ref } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
-import { createStaticProofCasesData, loadProofCasesData } from '../monthly-demo/pageDataAdapter'
+import {
+  createEmptyProofCasesData,
+  createStaticProofCasesData,
+  loadProofCasesData,
+  normalizeWorkbenchQuery
+} from '../monthly-demo/pageDataAdapter'
 
-const state = ref(createStaticProofCasesData())
+const query = normalizeWorkbenchQuery(Object.fromEntries(new URLSearchParams(window.location.search).entries()))
+const state = ref(query.demoMode ? createStaticProofCasesData() : createEmptyProofCasesData())
 const selectedHorizon = ref('H6')
 
 const horizonTabs = computed(() => state.value.proofCaseHorizonTabs || [])
@@ -55,13 +61,19 @@ function involvedAmount(item) {
 }
 
 onMounted(async () => {
-  const data = await loadProofCasesData()
+  const data = await loadProofCasesData(query, { allowDemo: query.demoMode })
   if (data?.proofCaseHorizonSets && data?.proofCaseHorizonTabs) state.value = data
 })
 </script>
 
 <template>
   <div class="page-shell proof-page">
+    <div v-if="!state.ready" class="empty-state panel">
+      <h2>{{ state.emptyTitle }}</h2>
+      <p>{{ state.emptyMessage }}</p>
+    </div>
+
+    <template v-else>
     <section class="panel proof-hero">
       <div class="proof-hero-copy">
         <div class="proof-hero-topline">
@@ -180,5 +192,6 @@ onMounted(async () => {
         </article>
       </div>
     </SectionCard>
+    </template>
   </div>
 </template>

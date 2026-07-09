@@ -1,14 +1,34 @@
-﻿<script setup>
-import { onMounted, ref } from 'vue'
+<script setup>
+import { onMounted, reactive, ref } from 'vue'
 import MetricCard from '../../components/MetricCard.vue'
 import SectionCard from '../../components/SectionCard.vue'
-import { createStaticOneshotData, loadOneshotData } from '../monthly-demo/pageDataAdapter'
+import { createEmptyOneshotData, createStaticOneshotData, loadOneshotData, normalizeWorkbenchQuery } from '../monthly-demo/pageDataAdapter'
 
-const state = ref(createStaticOneshotData())
+const params = new URLSearchParams(window.location.search)
+const query = reactive(
+  normalizeWorkbenchQuery({
+    backendBaseUrl: params.get('backendBaseUrl'),
+    userId: params.get('user_id') || params.get('userId'),
+    demoMode: params.get('demoMode'),
+    manufacturerCode: params.get('manufacturer_code'),
+    reportMonth: params.get('report_month'),
+    runDate: params.get('run_date'),
+    horizon: params.get('horizon') || params.get('h'),
+    topN: Number(params.get('top_n')),
+    sortBy: params.get('sort_by')
+  })
+)
+
+const state = ref(query.demoMode ? createStaticOneshotData() : createEmptyOneshotData())
+const isLoading = ref(false)
 
 onMounted(async () => {
-  const data = await loadOneshotData()
-  if (data) state.value = data
+  isLoading.value = true
+  try {
+    state.value = await loadOneshotData(query, { allowDemo: query.demoMode })
+  } finally {
+    isLoading.value = false
+  }
 })
 </script>
 
@@ -30,7 +50,12 @@ onMounted(async () => {
       title="新进终端清单"
       :subtitle="state.oneshotSummary.evidenceReady ? '围绕首采事实和后续复购证据排序' : '当前仅展示首采事实'"
     >
-      <div class="data-table-wrap">
+      <div v-if="isLoading" class="empty">刷新中</div>
+      <div v-else-if="!state.oneshotTerminals.length" class="empty">
+        <strong>{{ state.emptyTitle }}</strong>
+        <p>{{ state.emptyMessage }}</p>
+      </div>
+      <div v-else class="data-table-wrap">
         <table>
           <thead>
             <tr>
@@ -61,7 +86,9 @@ onMounted(async () => {
           </tbody>
         </table>
       </div>
-      <div v-if="!state.oneshotSummary.evidenceReady" class="empty">暂无复购原因或证据，仅展示新进终端首采记录</div>
+      <div v-if="!state.oneshotSummary.evidenceReady && state.oneshotTerminals.length" class="empty">
+        暂无复购原因或证据，仅展示新进终端首采记录
+      </div>
     </SectionCard>
 
     <SectionCard v-if="state.oneshotSummary.evidenceReady" title="复购证据">

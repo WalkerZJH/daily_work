@@ -6,11 +6,5 @@
       { key: 'clues', href: 'clues.html', icon: '◈', text: '今日巡检线索', badge: '9', badgeClass: 'orange' },
       { key: 'oneshot', href: 'oneshot.html', icon: '+', text: '新进终端监测', badge: '6', badgeClass: 'green' }
     ]
-  },
-  {
-    label: '案例',
-    items: [
-      { key: 'backtest', href: 'backtest.html', icon: '↗', text: '历史命中复盘' }
-    ]
   }
 ]

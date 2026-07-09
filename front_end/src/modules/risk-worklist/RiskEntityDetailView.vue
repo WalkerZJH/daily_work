@@ -2,9 +2,14 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
 import {
+  applyReportContextToQuery,
+  buildPersistentParams,
+  createEmptyClueDetailData,
+  createEmptyWorkbenchOptions,
   createStaticClueDetailData,
   createStaticWorkbenchOptions,
   loadClueDetailData,
+  loadReportContext,
   loadWorkbenchOptions,
   normalizeWorkbenchQuery
 } from '../monthly-demo/pageDataAdapter'
@@ -14,41 +19,50 @@ const clueId = params.get('clueId')
 const riskEntityId = params.get('id') || params.get('riskEntityId')
 const query = reactive(
   normalizeWorkbenchQuery({
+    backendBaseUrl: params.get('backendBaseUrl'),
+    userId: params.get('user_id') || params.get('userId'),
+    demoMode: params.get('demoMode'),
     manufacturerCode: params.get('manufacturer_code'),
     reportMonth: params.get('report_month'),
     runDate: params.get('run_date'),
-    horizon: params.get('horizon') || params.get('h')
+    horizon: params.get('horizon') || params.get('h'),
+    topN: Number(params.get('top_n')),
+    sortBy: params.get('sort_by')
   })
 )
 
-const state = ref(createStaticClueDetailData({ clueId, riskEntityId, query }))
-const options = ref(createStaticWorkbenchOptions())
-const selectedDetectorFamily = ref('all')
-const selectedDetectorId = ref('all')
+const state = ref(query.demoMode ? createStaticClueDetailData({ clueId, riskEntityId, query }) : createEmptyClueDetailData({ clueId, riskEntityId, query }))
+const options = ref(query.demoMode ? createStaticWorkbenchOptions() : createEmptyWorkbenchOptions(query))
+const reportContext = ref(state.value.reportContext)
+const selectedRuleFamily = ref('all')
+const selectedRuleId = ref('all')
+const isLoading = ref(false)
+let suppressWatcher = false
 
 const entity = computed(() => state.value.entity)
 const clue = computed(() => state.value.clue || {})
 const isMonthlyHighRiskEntity = computed(() => Boolean(state.value.isMonthlyHighRiskEntity && entity.value))
-const detectorEvidence = computed(() => state.value.detectorEvidence || [])
+const ruleEvidence = computed(() => state.value.detectorEvidence || [])
 const probabilityTrend = computed(() => state.value.probabilityTrend || [])
+const selectedHorizonLabel = computed(() => options.value.horizonOptions.find((item) => item.id === query.horizon)?.label || query.horizon)
 
-const detectorFamilyOptions = computed(() => {
-  const families = [...new Set(detectorEvidence.value.map((item) => item.detectorFamily).filter(Boolean))]
+const ruleFamilyOptions = computed(() => {
+  const families = [...new Set(ruleEvidence.value.map((item) => item.detectorFamily).filter(Boolean))]
   return [{ id: 'all', label: '全部大类' }, ...families.map((family) => ({ id: family, label: family }))]
 })
 
-const detectorIdOptions = computed(() => {
-  const filtered = selectedDetectorFamily.value === 'all'
-    ? detectorEvidence.value
-    : detectorEvidence.value.filter((item) => item.detectorFamily === selectedDetectorFamily.value)
+const ruleIdOptions = computed(() => {
+  const filtered = selectedRuleFamily.value === 'all'
+    ? ruleEvidence.value
+    : ruleEvidence.value.filter((item) => item.detectorFamily === selectedRuleFamily.value)
   const ids = filtered.map((item) => ({ id: item.detectorId || item.id, label: item.detectorName })).filter((item) => item.id)
   return [{ id: 'all', label: '全部小类' }, ...ids]
 })
 
-const filteredDetectorEvidence = computed(() => {
-  return detectorEvidence.value.filter((item) => {
-    const familyMatched = selectedDetectorFamily.value === 'all' || item.detectorFamily === selectedDetectorFamily.value
-    const idMatched = selectedDetectorId.value === 'all' || item.detectorId === selectedDetectorId.value || item.id === selectedDetectorId.value
+const filteredRuleEvidence = computed(() => {
+  return ruleEvidence.value.filter((item) => {
+    const familyMatched = selectedRuleFamily.value === 'all' || item.detectorFamily === selectedRuleFamily.value
+    const idMatched = selectedRuleId.value === 'all' || item.detectorId === selectedRuleId.value || item.id === selectedRuleId.value
     return familyMatched && idMatched
   })
 })
@@ -57,73 +71,91 @@ const trendPolyline = computed(() => {
   const points = probabilityTrend.value
   if (points.length < 2) return ''
   return points
-    .map((item, index) => {
+    .map((point, index) => {
       const x = 24 + (index / (points.length - 1)) * 252
-      const y = 118 - Math.max(0.05, Math.min(0.95, Number(item.riskProbability || 0))) * 92
+      const y = 118 - Math.max(0.05, Math.min(0.95, Number(point.riskProbability || 0))) * 92
       return `${x.toFixed(1)},${y.toFixed(1)}`
     })
     .join(' ')
 })
 
 function backHref() {
-  const next = new URLSearchParams({
-    manufacturer_code: query.manufacturerCode,
-    report_month: query.reportMonth,
-    run_date: query.runDate,
-    horizon: query.horizon
-  })
-  return `clues.html?${next.toString()}`
+  return `clues.html?${buildPersistentParams(query).toString()}`
 }
 
 function updateUrl() {
-  const next = new URLSearchParams({
-    manufacturer_code: query.manufacturerCode,
-    report_month: query.reportMonth,
-    run_date: query.runDate,
-    horizon: query.horizon
-  })
+  const next = buildPersistentParams(query, {})
   if (clueId) next.set('clueId', clueId)
   if (riskEntityId) next.set('id', riskEntityId)
   window.history.replaceState({}, '', `${window.location.pathname}?${next.toString()}`)
 }
 
-async function refreshDetail() {
+function applyEffectiveQuery(nextQuery) {
+  suppressWatcher = true
+  Object.assign(query, nextQuery)
   updateUrl()
-  selectedDetectorId.value = 'all'
-  const fallback = createStaticClueDetailData({ clueId, riskEntityId, query })
-  const data = await loadClueDetailData({
-    clueId,
-    riskEntityId,
-    query: {
-      ...query,
-      detectorFamily: selectedDetectorFamily.value === 'all' ? undefined : selectedDetectorFamily.value,
-      detectorId: selectedDetectorId.value === 'all' ? undefined : selectedDetectorId.value
-    }
-  })
-  state.value = data || fallback
+  window.setTimeout(() => {
+    suppressWatcher = false
+  }, 0)
 }
 
-onMounted(async () => {
-  const loadedOptions = await loadWorkbenchOptions(query)
-  if (loadedOptions) options.value = loadedOptions
-  await refreshDetail()
-})
+async function refreshDetail() {
+  isLoading.value = true
+  try {
+    selectedRuleId.value = 'all'
+    if (query.demoMode) {
+      options.value = createStaticWorkbenchOptions()
+      state.value = createStaticClueDetailData({ clueId, riskEntityId, query })
+      reportContext.value = state.value.reportContext
+      updateUrl()
+      return
+    }
 
-watch(() => [query.horizon, query.runDate, query.manufacturerCode], refreshDetail)
-watch(selectedDetectorFamily, () => {
-  selectedDetectorId.value = 'all'
+    const context = await loadReportContext(query)
+    reportContext.value = context
+    if (!context.ready) {
+      options.value = createEmptyWorkbenchOptions(query)
+      state.value = createEmptyClueDetailData({ clueId, riskEntityId, query, reportContext: context })
+      updateUrl()
+      return
+    }
+
+    const effectiveQuery = applyReportContextToQuery(query, context)
+    applyEffectiveQuery(effectiveQuery)
+    const [loadedOptions, loadedData] = await Promise.all([
+      loadWorkbenchOptions(effectiveQuery),
+      loadClueDetailData({ clueId, riskEntityId, query: effectiveQuery })
+    ])
+    options.value = loadedOptions || createEmptyWorkbenchOptions(effectiveQuery)
+    state.value = loadedData || createEmptyClueDetailData({ clueId, riskEntityId, query: effectiveQuery, reportContext: context })
+    reportContext.value = state.value.reportContext || context
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(refreshDetail)
+
+watch(
+  () => [query.horizon, query.runDate, query.manufacturerCode, query.backendBaseUrl, query.userId, query.demoMode],
+  () => {
+    if (!suppressWatcher) refreshDetail()
+  }
+)
+
+watch(selectedRuleFamily, () => {
+  selectedRuleId.value = 'all'
 })
 </script>
 
 <template>
   <div class="page-shell">
-    <a class="back-link" :href="backHref()">返回今日巡检线索</a>
+    <a class="back-link" :href="backHref()">返回今日规则线索</a>
     <div class="page-header control-header">
       <div>
-        <h1>{{ isMonthlyHighRiskEntity ? '风险对象详情' : '规则线索详情' }} · {{ clue.hospital }}</h1>
+        <h1>{{ isMonthlyHighRiskEntity ? '风险对象详情' : '规则线索详情' }} · {{ clue.hospital || '-' }}</h1>
         <div class="subtitle">
-          {{ query.runDate }} · {{ entity?.manufacturer || clue.manufacturer || query.manufacturerCode }} ·
-          {{ options.horizonOptions.find((item) => item.id === query.horizon)?.label }}
+          {{ query.runDate }} · {{ entity?.manufacturer || clue.manufacturer || query.manufacturerCode }} · {{ selectedHorizonLabel }}
         </div>
       </div>
       <div class="workbench-controls">
@@ -134,7 +166,7 @@ watch(selectedDetectorFamily, () => {
           </select>
         </label>
         <label class="control-field">
-          <span>日报日期</span>
+          <span>观察日期</span>
           <select v-model="query.runDate">
             <option v-for="item in options.dailyDetectorDateOptions" :key="item.runDate" :value="item.runDate">{{ item.label }}</option>
           </select>
@@ -142,16 +174,27 @@ watch(selectedDetectorFamily, () => {
       </div>
     </div>
 
-    <section class="panel clue-detail-hero">
+    <section v-if="reportContext?.displayTitle" class="notice-strip context-notice">
+      <strong>{{ reportContext.displayTitle }}</strong>
+      <span v-for="line in reportContext.displayLines" :key="line">{{ line }}</span>
+    </section>
+
+    <div v-if="isLoading" class="empty">刷新中</div>
+    <div v-else-if="state.emptyTitle && !clue.id && !entity" class="empty">
+      <strong>{{ state.emptyTitle }}</strong>
+      <p>{{ state.emptyMessage }}</p>
+    </div>
+
+    <section v-else class="panel clue-detail-hero">
       <div>
-        <span class="eyebrow">{{ isMonthlyHighRiskEntity ? '月报风险证据' : '今日巡检线索' }}</span>
-        <h2>{{ clue.hospital }} × {{ clue.drug }}</h2>
-        <p>{{ clue.evidenceText }}</p>
+        <span class="eyebrow">{{ isMonthlyHighRiskEntity ? '月报风险证据' : '今日规则线索' }}</span>
+        <h2>{{ clue.hospital || entity?.hospital || '-' }} × {{ clue.drug || entity?.drug || '-' }}</h2>
+        <p>{{ clue.evidenceText || entity?.reason || '-' }}</p>
       </div>
       <div class="batch-card">
-        <div class="batch-row"><span>线索类型</span><strong>{{ clue.sourceTypeLabel }}</strong></div>
-        <div class="batch-row"><span>规则巡检分</span><strong>{{ clue.detectorScoreText }}</strong></div>
-        <div class="batch-row"><span>规则等级</span><strong>{{ clue.detectorLevel }}</strong></div>
+        <div class="batch-row"><span>线索类型</span><strong>{{ clue.sourceTypeLabel || (isMonthlyHighRiskEntity ? '月报高风险' : '仅规则命中') }}</strong></div>
+        <div class="batch-row"><span>规则巡检分</span><strong>{{ clue.detectorScoreText || '-' }}</strong></div>
+        <div class="batch-row"><span>规则等级</span><strong>{{ clue.detectorLevel || '-' }}</strong></div>
       </div>
     </section>
 
@@ -160,10 +203,10 @@ watch(selectedDetectorFamily, () => {
       title="风险摘要"
       subtitle="窗口切换后，丢失概率、涉及金额、趋势和证据一起刷新"
     >
-      <div class="riskcard-toolbar">
+      <div class="riskcard-header compact">
         <div>
           <span class="eyebrow">预测窗口</span>
-          <h3>{{ options.horizonOptions.find((item) => item.id === query.horizon)?.label }}</h3>
+          <h3>{{ selectedHorizonLabel }}</h3>
         </div>
         <div class="segmented-control horizon-switcher" aria-label="风险窗口切换">
           <button
@@ -189,7 +232,7 @@ watch(selectedDetectorFamily, () => {
     </SectionCard>
 
     <SectionCard
-      v-else
+      v-else-if="clue.id"
       title="仅规则命中对象"
       subtitle="该线索未进入本期月报高风险对象，只展示规则巡检信息"
     >
@@ -205,32 +248,32 @@ watch(selectedDetectorFamily, () => {
       <div class="control-grid">
         <label class="control-field">
           <span>规则大类</span>
-          <select v-model="selectedDetectorFamily">
-            <option v-for="item in detectorFamilyOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
+          <select v-model="selectedRuleFamily">
+            <option v-for="item in ruleFamilyOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
           </select>
         </label>
         <label class="control-field">
           <span>规则小类</span>
-          <select v-model="selectedDetectorId">
-            <option v-for="item in detectorIdOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
+          <select v-model="selectedRuleId">
+            <option v-for="item in ruleIdOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
           </select>
         </label>
       </div>
-      <div class="detector-result-grid">
-        <article v-for="detector in filteredDetectorEvidence" :key="detector.id" class="detector-result-card">
+      <div v-if="!filteredRuleEvidence.length" class="empty">当前筛选下暂无巡检证据</div>
+      <div v-else class="detector-result-grid">
+        <article v-for="rule in filteredRuleEvidence" :key="rule.id" class="detector-result-card">
           <div class="detector-result-head">
-            <h3>{{ detector.detectorName }}</h3>
-            <span class="status-badge status-badge-info">{{ detector.detectorLevel }}</span>
+            <h3>{{ rule.detectorName }}</h3>
+            <span class="status-badge status-badge-info">{{ rule.detectorLevel }}</span>
           </div>
           <dl class="definition-grid compact">
-            <dt>规则巡检分</dt><dd>{{ detector.detectorScoreText }}</dd>
-            <dt>规则类型</dt><dd>{{ detector.detectorFamily }}</dd>
-            <dt>根因标签</dt><dd>{{ detector.rootCauseLabel }}</dd>
-            <dt>证据说明</dt><dd>{{ detector.evidenceText }}</dd>
+            <dt>规则巡检分</dt><dd>{{ rule.detectorScoreText }}</dd>
+            <dt>规则类型</dt><dd>{{ rule.detectorFamily }}</dd>
+            <dt>根因标签</dt><dd>{{ rule.rootCauseLabel }}</dd>
+            <dt>证据说明</dt><dd>{{ rule.evidenceText }}</dd>
           </dl>
         </article>
       </div>
-      <div v-if="!filteredDetectorEvidence.length" class="empty">当前筛选下暂无巡检证据</div>
     </SectionCard>
 
     <SectionCard

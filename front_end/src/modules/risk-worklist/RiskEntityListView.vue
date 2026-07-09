@@ -2,8 +2,13 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
 import {
+  applyReportContextToQuery,
+  buildPersistentParams,
+  createEmptyRuleCluesData,
+  createEmptyWorkbenchOptions,
   createStaticRuleCluesData,
   createStaticWorkbenchOptions,
+  loadReportContext,
   loadRuleCluesData,
   loadWorkbenchOptions,
   normalizeWorkbenchQuery
@@ -12,23 +17,32 @@ import {
 const params = new URLSearchParams(window.location.search)
 const query = reactive(
   normalizeWorkbenchQuery({
+    backendBaseUrl: params.get('backendBaseUrl'),
+    userId: params.get('user_id') || params.get('userId'),
+    demoMode: params.get('demoMode'),
     manufacturerCode: params.get('manufacturer_code'),
     reportMonth: params.get('report_month'),
     runDate: params.get('run_date'),
-    horizon: params.get('horizon') || params.get('h')
+    horizon: params.get('horizon') || params.get('h'),
+    topN: Number(params.get('top_n')),
+    sortBy: params.get('sort_by')
   })
 )
 
-const options = ref(createStaticWorkbenchOptions())
-const state = ref(createStaticRuleCluesData(query))
+const options = ref(query.demoMode ? createStaticWorkbenchOptions() : createEmptyWorkbenchOptions(query))
+const state = ref(query.demoMode ? createStaticRuleCluesData(query) : createEmptyRuleCluesData(query))
+const reportContext = ref(state.value.reportContext)
 const activeFilter = ref('all')
+const isLoading = ref(false)
+let suppressWatcher = false
 
 const filterTabs = [
   { id: 'all', label: '全部规则线索' },
-  { id: 'monthly', label: '月报高风险对象' },
+  { id: 'monthly', label: '月报高风险' },
   { id: 'rule_only', label: '仅规则命中' }
 ]
 
+const selectedHorizonLabel = computed(() => options.value.horizonOptions.find((item) => item.id === query.horizon)?.label || query.horizon)
 const filteredClues = computed(() => {
   const items = state.value.dailyDetectorClues || []
   if (activeFilter.value === 'monthly') return items.filter((item) => item.isMonthlyHighRiskEntity)
@@ -37,38 +51,74 @@ const filteredClues = computed(() => {
 })
 
 function detailHref(clue) {
-  const next = new URLSearchParams({
-    clueId: clue.id,
-    manufacturer_code: query.manufacturerCode,
-    report_month: query.reportMonth,
-    run_date: query.runDate,
-    horizon: query.horizon
-  })
+  const next = buildPersistentParams(query, { clueId: clue.id })
   if (clue.riskEntityId) next.set('id', clue.riskEntityId)
   return `clue-detail.html?${next.toString()}`
 }
 
-async function refreshClues() {
-  const fallback = createStaticRuleCluesData(query)
-  const data = await loadRuleCluesData(query)
-  state.value = data || fallback
+function updateUrl() {
+  window.history.replaceState({}, '', `${window.location.pathname}?${buildPersistentParams(query).toString()}`)
 }
 
-onMounted(async () => {
-  const loadedOptions = await loadWorkbenchOptions(query)
-  if (loadedOptions) options.value = loadedOptions
-  await refreshClues()
-})
+function applyEffectiveQuery(nextQuery) {
+  suppressWatcher = true
+  Object.assign(query, nextQuery)
+  updateUrl()
+  window.setTimeout(() => {
+    suppressWatcher = false
+  }, 0)
+}
 
-watch(() => [query.runDate, query.horizon, query.manufacturerCode], refreshClues)
+async function refreshClues() {
+  isLoading.value = true
+  try {
+    if (query.demoMode) {
+      options.value = createStaticWorkbenchOptions()
+      state.value = createStaticRuleCluesData(query)
+      reportContext.value = state.value.reportContext
+      updateUrl()
+      return
+    }
+
+    const context = await loadReportContext(query)
+    reportContext.value = context
+    if (!context.ready) {
+      options.value = createEmptyWorkbenchOptions(query)
+      state.value = createEmptyRuleCluesData(query, context)
+      updateUrl()
+      return
+    }
+
+    const effectiveQuery = applyReportContextToQuery(query, context)
+    applyEffectiveQuery(effectiveQuery)
+    const [loadedOptions, loadedData] = await Promise.all([
+      loadWorkbenchOptions(effectiveQuery),
+      loadRuleCluesData(effectiveQuery)
+    ])
+    options.value = loadedOptions || createEmptyWorkbenchOptions(effectiveQuery)
+    state.value = loadedData || createEmptyRuleCluesData(effectiveQuery, context)
+    reportContext.value = state.value.reportContext || context
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(refreshClues)
+
+watch(
+  () => [query.runDate, query.horizon, query.manufacturerCode, query.backendBaseUrl, query.userId, query.demoMode],
+  () => {
+    if (!suppressWatcher) refreshClues()
+  }
+)
 </script>
 
 <template>
   <div class="page-shell">
     <div class="page-header control-header">
       <div>
-        <h1>今日巡检线索</h1>
-        <div class="subtitle">{{ query.runDate }} · 规则巡检 · {{ options.horizonOptions.find((item) => item.id === query.horizon)?.label }}</div>
+        <h1>今日规则线索</h1>
+        <div class="subtitle">{{ query.runDate }} · 规则巡检 · {{ selectedHorizonLabel }}</div>
       </div>
       <div class="workbench-controls">
         <label class="control-field">
@@ -78,7 +128,7 @@ watch(() => [query.runDate, query.horizon, query.manufacturerCode], refreshClues
           </select>
         </label>
         <label class="control-field">
-          <span>日报日期</span>
+          <span>观察日期</span>
           <select v-model="query.runDate">
             <option v-for="item in options.dailyDetectorDateOptions" :key="item.runDate" :value="item.runDate">{{ item.label }}</option>
           </select>
@@ -86,19 +136,24 @@ watch(() => [query.runDate, query.horizon, query.manufacturerCode], refreshClues
       </div>
     </div>
 
+    <section v-if="reportContext?.displayTitle" class="notice-strip context-notice">
+      <strong>{{ reportContext.displayTitle }}</strong>
+      <span v-for="line in reportContext.displayLines" :key="line">{{ line }}</span>
+    </section>
+
     <section class="panel clue-hero">
       <div>
-        <span class="eyebrow">今日巡检线索</span>
-        <h2>今日巡检线索</h2>
+        <span class="eyebrow">今日规则线索</span>
+        <h2>全部规则线索</h2>
         <p>
-          月报高风险对象上的规则命中会附着到风险卡；未进入月报高风险清单但被规则命中的对象，仅作为今日巡检线索展示。
+          月报高风险对象上的规则命中会附着到风险卡；未进入月报高风险清单但被规则命中的对象，仅作为今日规则线索展示。
         </p>
       </div>
       <div class="batch-card">
-        <div class="batch-row"><span>日报日期</span><strong>{{ state.dailyDetectorStatus.runDate }}</strong></div>
-        <div class="batch-row"><span>今日巡检线索</span><strong>{{ state.dailyDetectorStatus.clueCount }}</strong></div>
+        <div class="batch-row"><span>观察日期</span><strong>{{ query.runDate }}</strong></div>
+        <div class="batch-row"><span>今日线索</span><strong>{{ state.dailyDetectorStatus.clueCount }}</strong></div>
         <div class="batch-row"><span>已附着证据</span><strong>{{ state.dailyDetectorStatus.attachedHighRiskCount }}</strong></div>
-        <div class="batch-row"><span>数据来源</span><strong>{{ state.dailyDetectorStatus.sourceLabel }}</strong></div>
+        <div class="batch-row"><span>数据状态</span><strong>{{ state.dailyDetectorStatus.sourceLabel }}</strong></div>
       </div>
     </section>
 
@@ -134,8 +189,13 @@ watch(() => [query.runDate, query.horizon, query.manufacturerCode], refreshClues
       </div>
     </SectionCard>
 
-    <SectionCard title="全部规则线索" subtitle="包含月报高风险对象和仅规则命中对象">
-      <div class="data-table-wrap">
+    <SectionCard title="全部规则线索" subtitle="区分月报高风险与仅规则命中对象">
+      <div v-if="isLoading" class="empty">刷新中</div>
+      <div v-else-if="!filteredClues.length" class="empty">
+        <strong>{{ state.emptyTitle }}</strong>
+        <p>{{ state.emptyMessage }}</p>
+      </div>
+      <div v-else class="data-table-wrap">
         <table>
           <thead>
             <tr>
@@ -172,7 +232,7 @@ watch(() => [query.runDate, query.horizon, query.manufacturerCode], refreshClues
                   <span>丢失概率 {{ clue.monthlyRiskProbabilityText }}</span>
                   <div class="muted">涉及金额 {{ clue.involvedAmountText }}</div>
                 </template>
-                <span v-else class="muted">今日巡检线索，按规则证据单独观察</span>
+                <span v-else class="muted">今日规则线索，按规则证据单独观察</span>
               </td>
               <td class="narrative-cell">
                 <strong>{{ clue.rootCauseLabel }}</strong>

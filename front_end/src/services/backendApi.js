@@ -168,6 +168,10 @@ export class BackendApi {
     return this.frontendWorkbench(params)
   }
 
+  async getReportContext(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/report-context', params, this.userOptions())
+  }
+
   async frontendRiskEntities(params = {}) {
     return getJson(this.baseUrl, '/api/v1/risk-entities', params, this.userOptions())
   }
@@ -200,10 +204,10 @@ export class BackendApi {
     return getJson(this.baseUrl, '/api/v1/proof-cases')
   }
 
-  async displayLookupStatus() {
-    return getJson(this.baseUrl, '/api/v1/display-lookup/status', undefined, {
+  async displayLookupStatus(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/display-lookup/status', params, this.userOptions({
       timeoutMs: DISPLAY_LOOKUP_STATUS_TIMEOUT_MS
-    })
+    }))
   }
 
   async getDetectorCatalog() {

@@ -74,13 +74,6 @@ export const oneshotTerminals = []
 
 export const globalCurrentMonthHospitalDrugCount = 0
 
-export const workbenchFillPolicy = {
-  manufacturer: '',
-  workbenchTargetCount: 20,
-  globalCurrentMonthHospitalDrugCount,
-  fillReason: ''
-}
-
 export const workbenchFillCandidates = []
 
 export const workbenchDisplayRows = []

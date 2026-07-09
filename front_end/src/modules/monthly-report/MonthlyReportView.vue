@@ -2,20 +2,26 @@
 import { computed, onMounted, ref } from 'vue'
 import MetricCard from '../../components/MetricCard.vue'
 import SectionCard from '../../components/SectionCard.vue'
-import { createStaticMonthlyReportsData, loadMonthlyReportsData } from '../monthly-demo/pageDataAdapter'
+import {
+  createEmptyMonthlyReportsData,
+  createStaticMonthlyReportsData,
+  loadMonthlyReportsData,
+  normalizeWorkbenchQuery
+} from '../monthly-demo/pageDataAdapter'
 
-const state = ref(createStaticMonthlyReportsData())
-const selectedReportId = ref(state.value.dailyReportOptions[0].id)
+const query = normalizeWorkbenchQuery(Object.fromEntries(new URLSearchParams(window.location.search).entries()))
+const state = ref(query.demoMode ? createStaticMonthlyReportsData() : createEmptyMonthlyReportsData(query))
+const selectedReportId = ref(state.value.dailyReportOptions[0]?.id || '')
 const activeDailyReport = computed(
-  () => state.value.dailyReportOptions.find((item) => item.id === selectedReportId.value) || state.value.dailyReportOptions[0]
+  () => state.value.dailyReportOptions.find((item) => item.id === selectedReportId.value) || state.value.dailyReportOptions[0] || {}
 )
 
 onMounted(async () => {
-  const data = await loadMonthlyReportsData()
+  const data = await loadMonthlyReportsData(query, { allowDemo: query.demoMode })
   if (!data) return
   state.value = data
   if (!state.value.dailyReportOptions.some((item) => item.id === selectedReportId.value)) {
-    selectedReportId.value = state.value.dailyReportOptions[0].id
+    selectedReportId.value = state.value.dailyReportOptions[0]?.id || ''
   }
 })
 </script>
@@ -29,7 +35,12 @@ onMounted(async () => {
       </div>
     </div>
 
-    <section class="report-switch-panel panel">
+    <div v-if="!state.ready" class="empty-state panel">
+      <h2>{{ state.emptyTitle }}</h2>
+      <p>{{ state.emptyMessage }}</p>
+    </div>
+
+    <section v-else class="report-switch-panel panel">
       <div class="report-switch-copy">
         <span class="eyebrow">往期日报切换</span>
         <h2>{{ activeDailyReport.title }}</h2>
@@ -57,7 +68,7 @@ onMounted(async () => {
       </dl>
     </section>
 
-    <div class="grid-4">
+    <div v-if="state.ready" class="grid-4">
       <MetricCard
         v-for="item in state.overviewMetrics"
         :key="item.label"
@@ -67,7 +78,7 @@ onMounted(async () => {
       />
     </div>
 
-    <SectionCard title="日报规则巡检状态" subtitle="日报变化来自规则巡检">
+    <SectionCard v-if="state.ready" title="日报规则巡检状态" subtitle="日报变化来自规则巡检">
       <dl class="definition-grid compact">
         <dt>巡检日期</dt><dd>{{ state.dailyDetectorStatus.runDate }}</dd>
         <dt>今日规则线索</dt><dd>{{ state.dailyDetectorStatus.clueCount }}</dd>
@@ -76,7 +87,7 @@ onMounted(async () => {
       </dl>
     </SectionCard>
 
-    <SectionCard title="月报列表" subtitle="生产商主视角下的风险对象与巡检概览">
+    <SectionCard v-if="state.ready" title="月报列表" subtitle="生产商主视角下的风险对象与巡检概览">
       <div class="report-list">
         <article v-for="report in state.monthlyReports" :key="report.id" class="report-card">
           <h3>{{ report.title }}</h3>
