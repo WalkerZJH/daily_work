@@ -8,22 +8,9 @@
     ]
   },
   {
-    label: '人工复核',
-    items: [
-      { key: 'verify', href: 'verify.html', icon: '✓', text: '挽回核验', badge: '4', badgeClass: 'orange' },
-      { key: 'distributor', href: 'distributor.html', icon: '!', text: '配送商预警', badge: '1' }
-    ]
-  },
-  {
     label: '案例',
     items: [
       { key: 'backtest', href: 'backtest.html', icon: '↗', text: '历史命中复盘' }
-    ]
-  },
-  {
-    label: '算法说明',
-    items: [
-      { key: 'algo-architecture', href: 'algo-architecture.html', icon: '▥', text: '算法链路说明' }
     ]
   }
 ]

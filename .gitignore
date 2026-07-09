@@ -91,6 +91,7 @@ algo_main/data/entity_complete_v2_coverage_expansion/15_clickhouse_raw_input_int
 
 # User/local prototype workspace.
 daily_work/prototype/
+daily_work/notes/
 
 # Compressed packages (remove a rule when the archive is source material)
 *.zip

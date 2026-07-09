@@ -290,12 +290,12 @@ export function normalizeBaseUrl(baseUrl) {
 }
 
 function resolveDefaultUserId() {
-  if (typeof window === 'undefined') return 'demo-user'
+  if (typeof window === 'undefined') return 'local-user'
   const params = new URLSearchParams(window.location.search)
   try {
-    return window.__USER_ID__ || params.get('user_id') || params.get('userId') || window.localStorage.getItem('userId') || 'demo-user'
+    return window.__USER_ID__ || params.get('user_id') || params.get('userId') || window.localStorage.getItem('userId') || 'local-user'
   } catch (error) {
-    return window.__USER_ID__ || params.get('user_id') || params.get('userId') || 'demo-user'
+    return window.__USER_ID__ || params.get('user_id') || params.get('userId') || 'local-user'
   }
 }
 

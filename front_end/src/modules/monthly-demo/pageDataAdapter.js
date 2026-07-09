@@ -1,4 +1,4 @@
-import { BackendApi } from '../../services/backendApi'
+﻿import { BackendApi } from '../../services/backendApi'
 import {
   batchContext,
   dailyDetectorClues,
@@ -29,7 +29,7 @@ import {
 
 const DISPLAY_LOOKUP_DEMO_STATUS = {
   ready: false,
-  label: '演示数据',
+  label: '接口未接通',
   message: '展示名映射未接通'
 }
 
@@ -54,7 +54,7 @@ export function createStaticWorkbenchOptions() {
     horizonOptions,
     topNOptions,
     sortOptions,
-    sourceLabel: '演示数据'
+    sourceLabel: '接口未接通'
   }
 }
 
@@ -109,8 +109,21 @@ export function createStaticRiskEntitiesData(query = {}) {
 export function createStaticRiskEntityDetailData(entityId, query = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
   const entity = riskEntities.find((item) => item.id === entityId) || riskEntities[0]
+  if (!entity) {
+    return {
+      displayLookupStatus: DISPLAY_LOOKUP_DEMO_STATUS,
+      query: normalizedQuery,
+      dailyDetectorStatus: { ...dailyDetectorStatus, runDate: normalizedQuery.runDate },
+      entity: null,
+      clue: {},
+      isMonthlyHighRiskEntity: false,
+      detectorEvidence: [],
+      probabilityTrend: [],
+      horizonProfiles: {}
+    }
+  }
   const selectedProfile = riskCardHorizonProfiles[entity.id]?.[normalizedQuery.horizon]
-  const clue = dailyDetectorClues.find((item) => item.riskEntityId === entity.id) || dailyDetectorClues[0]
+  const clue = dailyDetectorClues.find((item) => item.riskEntityId === entity.id) || {}
   return {
     displayLookupStatus: DISPLAY_LOOKUP_DEMO_STATUS,
     query: normalizedQuery,
@@ -142,6 +155,18 @@ export function createStaticClueDetailData({ clueId, riskEntityId, query } = {})
   const normalizedQuery = normalizeWorkbenchQuery(query)
   const clues = buildStaticRuleClues(normalizedQuery)
   const clue = clues.find((item) => item.id === clueId) || clues.find((item) => item.riskEntityId === riskEntityId) || clues[0]
+  if (!clue) {
+    return {
+      query: normalizedQuery,
+      dailyDetectorStatus: { ...dailyDetectorStatus, runDate: normalizedQuery.runDate },
+      clue: {},
+      entity: null,
+      isMonthlyHighRiskEntity: false,
+      detectorEvidence: [],
+      probabilityTrend: [],
+      horizonProfiles: {}
+    }
+  }
   const entity = clue.riskEntityId ? riskEntities.find((item) => item.id === clue.riskEntityId) : null
   const selectedProfile = entity ? riskCardHorizonProfiles[entity.id]?.[normalizedQuery.horizon] : null
   return {
@@ -193,7 +218,7 @@ export async function loadWorkbenchOptions(query = {}) {
     ...createStaticWorkbenchOptions(),
     manufacturerOptions: manufacturers?.manufacturerOptions || manufacturerOptions,
     dailyDetectorDateOptions: dates?.dailyDetectorDateOptions || dailyDetectorDateOptions,
-    sourceLabel: manufacturers || dates ? '后端数据' : '演示数据'
+    sourceLabel: manufacturers || dates ? '后端数据' : '接口未接通'
   }
 }
 
@@ -370,7 +395,7 @@ function mapWorkbenchPayload(payload, fallbackQuery) {
     dailyDetectorStatus: {
       ...dailyDetectorStatus,
       ready: true,
-      sourceLabel: '后端数据',
+      sourceLabel: '鍚庣鏁版嵁',
       runDate: detectorSummary.runDate || query.runDate,
       clueCount: detectorSummary.clueCount,
       attachedHighRiskCount: detectorSummary.attachedHighRiskCount,
@@ -418,7 +443,7 @@ function normalizeDailyDetectorStatus(payload) {
     attachedHighRiskCount: payload.attached_high_risk_count,
     scannedEntityCount: payload.scanned_entity_count,
     statusText: '今日规则巡检结果已更新',
-    caveat: '日报日期对应当天巡检批次。'
+    caveat: '日报日期对应当天巡检批次'
   }
 }
 

@@ -11,7 +11,7 @@ const horizonSets = computed(() => state.value.proofCaseHorizonSets || {})
 const activeSet = computed(() => horizonSets.value[selectedHorizon.value] || horizonSets.value.H6 || { cases: [] })
 const proofCases = computed(() => activeSet.value.cases || [])
 const spotlight = computed(() => proofCases.value[0] || {})
-const displayLookupStatus = computed(() => state.value.displayLookupStatus || { label: '演示数据', message: '展示名映射未接通' })
+const displayLookupStatus = computed(() => state.value.displayLookupStatus || { label: '接口未接通', message: '展示名映射未接通' })
 
 const summaryMetrics = computed(() => [
   { label: '复盘月报', value: activeSet.value.reportMonth || '-', note: '闭合验证', tone: 'info' },
