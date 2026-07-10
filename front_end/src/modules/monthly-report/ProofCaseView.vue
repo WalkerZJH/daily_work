@@ -3,13 +3,12 @@ import { computed, onMounted, ref } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
 import {
   createEmptyProofCasesData,
-  createStaticProofCasesData,
   loadProofCasesData,
   normalizeWorkbenchQuery
 } from '../monthly-demo/pageDataAdapter'
 
 const query = normalizeWorkbenchQuery(Object.fromEntries(new URLSearchParams(window.location.search).entries()))
-const state = ref(query.demoMode ? createStaticProofCasesData() : createEmptyProofCasesData())
+const state = ref(createEmptyProofCasesData())
 const selectedHorizon = ref('H6')
 
 const horizonTabs = computed(() => state.value.proofCaseHorizonTabs || [])

@@ -35,18 +35,20 @@ class DisplayLookupService:
             return _missing_status()
         if lookup is None or lookup.empty:
             return _missing_status()
-        fallback_policy = _fallback_policy(lookup)
+        readiness = _readiness_by_column(lookup)
+        fallback_policy = _fallback_policy(lookup, readiness)
+        ready = True if fallback_policy == "display_lookup" else "conditional"
         return {
-            "ready": "conditional" if fallback_policy == "batch_display_name_or_code_fallback" else True,
+            "ready": ready,
             "status": "ready",
             "source": LOOKUP_SOURCE,
             "table": LOOKUP_TABLE,
             "row_count": int(len(lookup)),
             "schema_version": LOOKUP_SCHEMA_VERSION,
-            "hospital_name_ready": _column_ready(lookup, "hospital_display_name"),
-            "drug_name_ready": _column_ready(lookup, "drug_display_name"),
-            "manufacturer_name_ready": _column_ready(lookup, "manufacturer_display_name"),
-            "region_ready": _column_ready(lookup, "region_display_name"),
+            "hospital_name_ready": readiness["hospital_name_ready"],
+            "drug_name_ready": readiness["drug_name_ready"],
+            "manufacturer_name_ready": readiness["manufacturer_name_ready"],
+            "region_ready": readiness["region_ready"],
             "fallback_policy": fallback_policy,
             "warnings": [],
         }
@@ -91,13 +93,31 @@ def _missing_status() -> dict[str, Any]:
     }
 
 
-def _column_ready(frame: pd.DataFrame, column: str) -> bool:
+def _column_ready(frame: pd.DataFrame, column: str, code_column: str | None = None) -> bool:
     if column not in frame:
         return False
-    return bool(frame[column].map(_text_or_empty).str.len().gt(0).any())
+    values = frame[column].map(_text_or_empty)
+    non_empty = values.str.len().gt(0)
+    if code_column and code_column in frame:
+        codes = frame[code_column].map(_text_or_empty)
+        non_empty = non_empty & values.ne(codes)
+    return bool(non_empty.any())
 
 
-def _fallback_policy(frame: pd.DataFrame) -> str:
+def _readiness_by_column(frame: pd.DataFrame) -> dict[str, bool]:
+    return {
+        "hospital_name_ready": _column_ready(frame, "hospital_display_name", "hospital_code"),
+        "drug_name_ready": _column_ready(frame, "drug_display_name", "drug_group"),
+        "manufacturer_name_ready": _column_ready(
+            frame, "manufacturer_display_name", "manufacturer_code"
+        ),
+        "region_ready": _column_ready(frame, "region_display_name", "region_code"),
+    }
+
+
+def _fallback_policy(frame: pd.DataFrame, readiness: dict[str, bool]) -> str:
+    if not any(readiness.values()):
+        return "code_fallback_when_display_equals_code"
     quality = frame.get("display_name_quality")
     if quality is None:
         return "batch_display_name_or_code_fallback"

@@ -243,7 +243,12 @@ class OneshotSummary(FrontendPageModel):
 
 class OneshotTerminalItem(FrontendPageModel):
     oneshot_id: str
+    manufacturer_code: str | None = None
+    manufacturer_display_name: str | None = None
+    manufacturer_name: str | None = None
+    hospital_code: str | None = None
     hospital_name: str
+    drug_group: str | None = None
     drug_name: str
     region: str
     first_purchase_date: str
@@ -256,9 +261,11 @@ class OneshotTerminalItem(FrontendPageModel):
 
 
 class OneshotPayload(FrontendPageModel):
+    ready: bool = True
     report_month: str
     summary: OneshotSummary
     items: list[OneshotTerminalItem]
+    total: int
 
 
 class DailyReportOption(FrontendPageModel):

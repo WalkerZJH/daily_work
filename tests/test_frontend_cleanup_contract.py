@@ -9,72 +9,140 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_removed_static_frontend_pages_are_not_built_or_linked() -> None:
-    removed_pages = [
+def test_vite_pages_exist_without_legacy_static_assets() -> None:
+    vite_pages = [
+        "index.html",
+        "dashboard.html",
+        "clues.html",
+        "clue-detail.html",
+        "oneshot.html",
+        "backtest.html",
         "algo-architecture.html",
+        "algo-config.html",
         "verify.html",
         "distributor.html",
         "order-detail.html",
     ]
     removed_assets = ["app.js", "styles.css", "layout/layout.js"]
 
-    for relative_path in removed_pages + removed_assets:
+    for relative_path in removed_assets:
         assert not (FRONTEND / relative_path).exists()
 
-    vite_config = read(FRONTEND / "vite.config.js")
-    navigation = read(FRONTEND / "src" / "layout" / "navigation.js")
-    combined = vite_config + "\n" + navigation
-
-    for forbidden in removed_pages + removed_assets:
-        assert forbidden not in combined
-
-
-def test_current_static_html_entries_mount_vue_app_only() -> None:
-    for page in ["index.html", "dashboard.html", "clues.html", "clue-detail.html", "oneshot.html", "backtest.html"]:
+    for page in vite_pages:
         html = read(FRONTEND / page)
         assert '<div id="app"></div>' in html
         assert 'src="/src/main.js"' in html or 'src=\"/src/main.js\"' in html
         assert "app.js" not in html
         assert "styles.css" not in html
 
+    vite_config = read(FRONTEND / "vite.config.js")
+    for page in vite_pages:
+        assert page in vite_config
 
-def test_empty_frontend_fallback_does_not_fabricate_business_data() -> None:
-    demo_data = read(FRONTEND / "src" / "modules" / "monthly-demo" / "demoData.js")
-    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
-    combined = demo_data + "\n" + adapter
 
-    for forbidden in [
-        "A产品线",
-        "B产品线",
-        "C产品线",
-        "D产品线",
-        "西南",
-        "补齐",
-        "回补",
-        "高价值待跟进",
-        "P(alive)",
-        "business_score: 620",
+def test_navigation_separates_customer_pages_from_internal_pages() -> None:
+    navigation = read(FRONTEND / "src" / "layout" / "navigation.js")
+
+    for customer_page in ["index.html", "clues.html", "oneshot.html"]:
+        assert customer_page in navigation
+
+    for internal_page in [
+        "dashboard.html",
+        "backtest.html",
+        "algo-architecture.html",
+        "algo-config.html",
+        "verify.html",
+        "distributor.html",
+        "order-detail.html",
     ]:
-        assert forbidden not in combined
+        assert internal_page in navigation
 
-    assert "export const riskEntities = []" in demo_data
-    assert "export const dailyDetectorClues = []" in demo_data
-    assert "export const workbenchDisplayRows = []" in demo_data
-    assert "接口未接通" in combined
+    assert "internalMode" in navigation
 
 
-def test_frontend_adapter_uses_project_api_not_local_files() -> None:
+def test_formal_adapter_does_not_import_demo_data_or_static_business_rows() -> None:
     adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+
+    assert "from './demoData'" not in adapter
+    assert "from \"./demoData\"" not in adapter
+    assert "createStaticWorkbenchData" not in adapter
+    assert "createStaticRuleCluesData" not in adapter
 
     for required in [
-        "loadWorkbenchData",
-        "loadRuleCluesData",
-        "loadClueDetailData",
+        "getReportContext",
+        "getMyManufacturers",
         "getWorkbench",
         "getDailyDetectorStatus",
         "getDailyDetectorClues",
+        "getDisplayLookupStatus",
+        "getRuntimeProfile",
+    ]:
+        assert required in adapter or required in read(FRONTEND / "src" / "services" / "backendApi.js")
+
+
+def test_url_context_parameters_are_preserved_by_adapter() -> None:
+    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+
+    for required in [
+        "backendBaseUrl",
+        "user_id",
+        "observation_date",
+        "report_month",
+        "run_date",
+        "probability_report_month",
+        "detector_run_date",
+        "manufacturer_code",
+        "horizon",
+        "top_n",
+        "sort_by",
+        "demoMode",
     ]:
         assert required in adapter
 
-    for forbidden in ["readFile", "parquet", "algo_main", "daily_work/prototype"]:
-        assert forbidden not in adapter
+
+def test_frontend_default_backend_points_to_project_api_port() -> None:
+    backend_api = read(FRONTEND / "src" / "services" / "backendApi.js")
+    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+
+    assert "http://127.0.0.1:18080" in backend_api
+    assert "baseUrl || 'http://127.0.0.1:8000'" not in backend_api
+    assert "localStorage.getItem('backendBaseUrl')" not in adapter
+
+
+def test_frontend_observation_date_uses_date_input_and_no_probability_month_metric() -> None:
+    workbench = read(FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue")
+    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+
+    assert 'type="date"' in workbench
+    assert 'v-model="query.observationDate"' in workbench
+    assert "query.observationDate" in workbench
+    assert "概率基准月" not in workbench
+
+    assert "if (!items.length && payload?.ready === false) return null" not in adapter
+    assert "payload?.ready !== true && payload?.ready !== 'conditional'" in adapter
+
+
+def test_frontend_rule_clues_exposes_detector_filters() -> None:
+    clues_page = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue")
+    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+
+    assert "selectedDetectorFamily" in clues_page
+    assert "selectedDetectorId" in clues_page
+    assert "detectorFamilyOptions" in clues_page
+    assert "detectorIdOptions" in clues_page
+    assert "getDetectorCatalog" in adapter
+    assert "detector_family" in adapter
+    assert "detector_id" in adapter
+
+
+def test_frontend_does_not_depend_on_local_model_or_prototype_paths() -> None:
+    scanned_files = [
+        *FRONTEND.glob("*.html"),
+        *FRONTEND.glob("src/**/*.js"),
+        *FRONTEND.glob("src/**/*.vue"),
+        *FRONTEND.glob("src/**/*.scss"),
+    ]
+    combined = "\n".join(read(path) for path in scanned_files)
+
+    for forbidden in ["algo_main", "daily_work/prototype", "risk_model_core", "RiskResultBatch"]:
+        assert forbidden not in combined

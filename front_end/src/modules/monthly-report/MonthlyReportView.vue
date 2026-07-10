@@ -4,13 +4,12 @@ import MetricCard from '../../components/MetricCard.vue'
 import SectionCard from '../../components/SectionCard.vue'
 import {
   createEmptyMonthlyReportsData,
-  createStaticMonthlyReportsData,
   loadMonthlyReportsData,
   normalizeWorkbenchQuery
 } from '../monthly-demo/pageDataAdapter'
 
 const query = normalizeWorkbenchQuery(Object.fromEntries(new URLSearchParams(window.location.search).entries()))
-const state = ref(query.demoMode ? createStaticMonthlyReportsData() : createEmptyMonthlyReportsData(query))
+const state = ref(createEmptyMonthlyReportsData(query))
 const selectedReportId = ref(state.value.dailyReportOptions[0]?.id || '')
 const activeDailyReport = computed(
   () => state.value.dailyReportOptions.find((item) => item.id === selectedReportId.value) || state.value.dailyReportOptions[0] || {}

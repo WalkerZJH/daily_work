@@ -78,6 +78,12 @@ outputs/
 tmp/
 temp/
 .cache/
+
+# Generated tabular data and large batch outputs
+*.csv
+*.parquet
+data/project_result_batches/
+
 project/artifacts/models/**
 !project/artifacts/models/
 !project/artifacts/models/README.md

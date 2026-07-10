@@ -1,9 +1,18 @@
-﻿<script setup>
-import { navSections } from './navigation'
+<script setup>
+import { computed } from 'vue'
+import { getNavSections } from './navigation'
 
 defineProps({
   active: { type: String, required: true }
 })
+
+const navSections = computed(() => getNavSections())
+
+function withCurrentContext(href) {
+  const params = new URLSearchParams(window.location.search)
+  const query = params.toString()
+  return query ? `${href}?${query}` : href
+}
 </script>
 
 <template>
@@ -13,7 +22,7 @@ defineProps({
       <a
         v-for="item in section.items"
         :key="item.key"
-        :href="item.href"
+        :href="withCurrentContext(item.href)"
         class="sidebar-item"
         :class="{ active: item.key === active }"
       >

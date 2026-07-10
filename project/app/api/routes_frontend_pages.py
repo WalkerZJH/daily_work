@@ -11,7 +11,6 @@ from app.api.routes_report_context import get_report_context_service
 from app.api.routes_user_top_entities import get_user_top_entity_service
 from app.schemas.frontend_pages import (
     MonthlyReportsPayload,
-    OneshotPayload,
     ProofCasesPayload,
     RiskEntitiesPayload,
     RiskEntityDetailPayload,
@@ -285,11 +284,34 @@ def my_manufacturers(
     return _with_report_context(payload, context)
 
 
-@router.get("/oneshot-terminals", response_model=OneshotPayload)
+@router.get("/oneshot-terminals")
 def frontend_oneshot_terminals(
     service: FrontendPageService = Depends(get_frontend_page_service),
+    report_context_service: ReportContextService = Depends(get_report_context_service),
+    observation_date: str | None = Query(default=None),
+    report_month: str | None = Query(default=None),
+    run_date: str | None = Query(default=None),
+    manufacturer_code: Annotated[list[str] | None, Query()] = None,
+    user_id: str | None = Query(default=None),
+    horizon: str = Query(default="H6"),
+    top_n: int = Query(default=20, ge=1, le=100),
 ) -> dict:
-    return service.oneshot_terminals()
+    context = report_context_service.resolve(
+        observation_date=observation_date,
+        report_month=report_month,
+        run_date=run_date,
+        horizon=horizon,
+        manufacturer_code=_first_query_value(manufacturer_code),
+        user_id=user_id,
+    )
+    contextual_page_service = _frontend_page_service_for_context(service, report_context_service, context)
+    payload = contextual_page_service.oneshot_terminals(
+        manufacturer_codes=manufacturer_code,
+        report_month=context.get("effective_report_month") or report_month,
+        horizon=context.get("effective_horizon") or horizon,
+        top_n=top_n,
+    )
+    return _with_report_context(payload, context)
 
 
 @router.get("/monthly-reports", response_model=MonthlyReportsPayload)

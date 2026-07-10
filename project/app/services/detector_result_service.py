@@ -178,6 +178,7 @@ class DetectorResultService:
                 "is_monthly_high_risk_entity", pd.Series(False, index=clues.index)
             ).map(_bool)
             clues = clues[mask.eq(bool(only_monthly_high_risk))]
+        clues = _merge_entity_display_lookup(clues, self.repository)
         clues = _sort_clues(clues, sort_by)
         total = int(len(clues))
         current_page = max(int(page), 1)
@@ -239,7 +240,7 @@ class DetectorResultService:
                 entity,
                 ["monthly_loss_value", "loss_value", "value_at_risk_H", "value_at_risk_proxy"],
             ),
-            "items": [_evidence_item(row) for _, row in evidence.iterrows()],
+            "items": [_evidence_item(row, catalog) for _, row in evidence.iterrows()],
             "catalog_by_detector_id": catalog,
             "semantic_caveats": SEMANTIC_CAVEATS,
             "warnings": [] if not evidence.empty else ["NO_HIGH_RISK_DETECTOR_EVIDENCE"],
@@ -335,22 +336,32 @@ def _clue_item(row: pd.Series, catalog: dict[str, dict[str, Any]] | None = None)
     detector_id = _text(row.get("detector_id"))
     catalog_item = (catalog or {}).get(detector_id, {})
     monthly_high = _bool(row.get("is_monthly_high_risk_entity"))
+    manufacturer_code = _text(row.get("manufacturer_code")) or None
+    manufacturer_display_name = _text(row.get("manufacturer_display_name")) or None
     hospital_code = _text(row.get("hospital_code")) or None
+    hospital_display_name = _text(row.get("hospital_display_name")) or None
     drug_group = _text(row.get("drug_group")) or None
+    drug_display_name = _text(row.get("drug_display_name")) or None
     return {
         "clue_id": _text(row.get("detector_clue_id")),
         "detector_clue_id": _text(row.get("detector_clue_id")),
         "detector_run_id": _text(row.get("detector_run_id")),
         "run_date": _text(row.get("run_date")),
         "tenant_id": _text(row.get("tenant_id")) or None,
-        "manufacturer_code": _text(row.get("manufacturer_code")) or None,
+        "manufacturer_code": manufacturer_code,
+        "manufacturer_display_name": manufacturer_display_name,
+        "manufacturer_name": manufacturer_display_name or manufacturer_code,
         "hospital_code": hospital_code,
-        "hospital_name": hospital_code,
+        "hospital_display_name": hospital_display_name,
+        "hospital_name": hospital_display_name or hospital_code,
         "drug_group": drug_group,
-        "drug_name": drug_group,
+        "drug_display_name": drug_display_name,
+        "drug_name": drug_display_name or drug_group,
+        "region_display_name": _text(row.get("region_display_name")) or None,
+        "product_line_name": _text(row.get("product_line_name")) or None,
         "detector_id": detector_id,
         "detector_family": _text(row.get("detector_family")),
-        "detector_family_label": _text(row.get("detector_family")),
+        "detector_family_label": _detector_family_label(_text(row.get("detector_family"))),
         "detector_name_label": _text(catalog_item.get("detector_name") or detector_id),
         "detector_score": _number_or_none(row.get("detector_score")),
         "detector_score_label": "规则巡检分",
@@ -371,13 +382,18 @@ def _clue_item(row: pd.Series, catalog: dict[str, dict[str, Any]] | None = None)
     }
 
 
-def _evidence_item(row: pd.Series) -> dict[str, Any]:
+def _evidence_item(row: pd.Series, catalog: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
+    detector_id = _text(row.get("detector_id"))
+    catalog_item = (catalog or {}).get(detector_id, {})
+    detector_family = _text(row.get("detector_family"))
     return {
         "risk_entity_id": _text(row.get("risk_entity_id")),
         "detector_run_id": _text(row.get("detector_run_id")),
         "run_date": _text(row.get("run_date")),
-        "detector_id": _text(row.get("detector_id")),
-        "detector_family": _text(row.get("detector_family")),
+        "detector_id": detector_id,
+        "detector_family": detector_family,
+        "detector_family_label": _detector_family_label(detector_family),
+        "detector_name_label": _text(catalog_item.get("detector_name") or detector_id),
         "detector_score": _number_or_none(row.get("detector_score")),
         "confidence": _number_or_none(row.get("confidence")),
         "root_cause_label": _text(row.get("root_cause_label")) or None,
@@ -386,6 +402,62 @@ def _evidence_item(row: pd.Series) -> dict[str, Any]:
         "caveat": _text(row.get("caveat")) or None,
         "created_at": _text(row.get("created_at")) or None,
     }
+
+
+def _detector_family_label(family: str | None) -> str | None:
+    labels = {
+        "interval": "采购间隔",
+        "purchase_interval": "采购间隔",
+        "quantity": "采购数量",
+        "purchase_quantity": "采购数量",
+        "frequency": "采购频次",
+        "purchase_frequency": "采购频次",
+        "assortment": "SKU 结构",
+        "fulfillment": "履约交付",
+        "price": "价格",
+        "peer": "同群对比",
+    }
+    if not family:
+        return None
+    return labels.get(str(family), str(family))
+
+
+def _merge_entity_display_lookup(frame: pd.DataFrame, repository: RiskResultRepository) -> pd.DataFrame:
+    if frame.empty:
+        return frame
+    try:
+        report_month = repository.manifest().report_month
+        lookup = repository.load_entity_display_lookup(report_month=report_month)
+    except (FileNotFoundError, NotImplementedError, ValueError, AttributeError, KeyError):
+        return frame
+    join_cols = ["tenant_id", "report_month", "manufacturer_code", "hospital_code", "drug_group"]
+    out = frame.copy()
+    if "report_month" not in out.columns:
+        out["report_month"] = report_month
+    if lookup.empty or not set(join_cols).issubset(out.columns) or not set(join_cols).issubset(lookup.columns):
+        return frame
+    display_cols = [
+        "manufacturer_display_name",
+        "hospital_display_name",
+        "drug_display_name",
+        "region_code",
+        "region_display_name",
+        "product_line_code",
+        "product_line_name",
+    ]
+    available = [col for col in display_cols if col in lookup.columns]
+    if not available:
+        return frame
+    lookup_slice = lookup[join_cols + available].drop_duplicates(join_cols, keep="first")
+    lookup_slice = lookup_slice.rename(columns={col: f"{col}__lookup" for col in available})
+    joined = out.merge(lookup_slice, on=join_cols, how="left")
+    for col in available:
+        lookup_col = f"{col}__lookup"
+        lookup_values = joined[lookup_col].map(_text)
+        current_values = joined[col].map(_text) if col in joined else pd.Series("", index=joined.index)
+        joined[col] = lookup_values.where(lookup_values.str.len().gt(0), current_values)
+        joined = joined.drop(columns=[lookup_col])
+    return joined
 
 
 def _latest_run(runs: pd.DataFrame) -> dict[str, Any]:

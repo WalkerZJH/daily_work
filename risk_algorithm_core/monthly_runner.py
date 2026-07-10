@@ -110,6 +110,7 @@ class MonthlyRiskRunner:
             score_frame=score_frame,
             normalized_tables=normalized,
             artifact_metadata=artifact_metadata,
+            detector_run_dates=_detector_run_dates(cfg),
             write_parquet=write_parquet,
         )
         validate_result_batch(batch_dir)
@@ -185,3 +186,12 @@ class MonthlyRiskRunner:
         selection_report.to_csv(batch_dir / "selection_report.csv", index=False)
         gate_decisions.to_csv(batch_dir / "detector_quality_gate.csv", index=False)
         disabled_notes.to_csv(batch_dir / "disabled_detector_notes.csv", index=False)
+
+
+def _detector_run_dates(cfg: MonthlyRiskRunConfig) -> list[str]:
+    configured = cfg.detectors.get("run_dates") or cfg.detectors.get("detector_run_dates")
+    if isinstance(configured, str):
+        return [configured]
+    if configured:
+        return [str(item) for item in configured]
+    return [cfg.run_date]

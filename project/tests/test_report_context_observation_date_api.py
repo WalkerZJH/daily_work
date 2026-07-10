@@ -22,12 +22,12 @@ def test_report_context_accepts_observation_date_and_returns_observation_semanti
     assert payload["probability_report_month"] == "2025-11"
     assert payload["probability_batch_available"] is True
     assert payload["detector_run_date"] == "2025-12-05"
-    assert payload["detector_run_available"] is False
-    assert payload["context_status"] == "detector_run_unavailable"
-    assert payload["manual_selection_required"] is True
+    assert payload["detector_run_available"] is True
+    assert payload["context_status"] == "ready"
+    assert payload["manual_selection_required"] is False
     assert payload["effective_horizon"] == "H6"
     assert "2025-11" in payload["available_report_months"]
-    assert "2025-12-01" in payload["available_detector_run_dates"]
+    assert "2025-12-05" in payload["available_detector_run_dates"]
     assert "fallback_to_latest" not in json.dumps(payload, ensure_ascii=False)
 
 

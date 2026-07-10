@@ -188,20 +188,24 @@ export class BackendApi {
     return this.frontendRiskEntityDetail(entityId, params)
   }
 
-  async frontendOneshotTerminals() {
-    return getJson(this.baseUrl, '/api/v1/oneshot-terminals')
+  async frontendOneshotTerminals(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/oneshot-terminals', params, this.userOptions())
   }
 
-  async frontendMonthlyReports() {
-    return getJson(this.baseUrl, '/api/v1/monthly-reports')
+  async frontendMonthlyReports(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/monthly-reports', params, this.userOptions())
   }
 
-  async getMonthlyReports() {
-    return this.frontendMonthlyReports()
+  async getMonthlyReports(params = {}) {
+    return this.frontendMonthlyReports(params)
   }
 
-  async frontendProofCases() {
-    return getJson(this.baseUrl, '/api/v1/proof-cases')
+  async frontendProofCases(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/proof-cases', params, this.userOptions())
+  }
+
+  async getProofCases(params = {}) {
+    return this.frontendProofCases(params)
   }
 
   async displayLookupStatus(params = {}) {
@@ -210,12 +214,16 @@ export class BackendApi {
     }))
   }
 
-  async getDetectorCatalog() {
-    return getJson(this.baseUrl, '/api/v1/detectors/catalog')
+  async getDisplayLookupStatus(params = {}) {
+    return this.displayLookupStatus(params)
+  }
+
+  async getDetectorCatalog(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/detectors/catalog', params, this.userOptions())
   }
 
   async getDetectorRuns(params = {}) {
-    return getJson(this.baseUrl, '/api/v1/detectors/runs', params)
+    return getJson(this.baseUrl, '/api/v1/detectors/runs', params, this.userOptions())
   }
 
   async getDetectorClues(params = {}) {
@@ -242,12 +250,16 @@ export class BackendApi {
     return getJson(this.baseUrl, `/api/v1/risk-entities/${riskEntityId}/detector-evidence`, params, this.userOptions())
   }
 
-  async getDetectorConfigStatus() {
-    return getJson(this.baseUrl, '/api/v1/detectors/config-status')
+  async getDetectorConfigStatus(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/detectors/config-status', params, this.userOptions())
   }
 
   async getRiskEntityProbabilityTrend(riskEntityId, params = {}) {
     return getJson(this.baseUrl, `/api/v1/risk-entities/${riskEntityId}/probability-trend`, params, this.userOptions())
+  }
+
+  async getRuntimeProfile(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/runtime-profile', params, this.userOptions())
   }
 }
 
@@ -290,7 +302,7 @@ export function postJson(baseUrl, path, body, query, options = {}) {
 }
 
 export function normalizeBaseUrl(baseUrl) {
-  return (baseUrl || 'http://127.0.0.1:8000').replace(/\/+$/, '')
+  return (baseUrl || 'http://127.0.0.1:18080').replace(/\/+$/, '')
 }
 
 function resolveDefaultUserId() {

@@ -65,6 +65,49 @@ def test_display_lookup_status_endpoint_returns_ready_when_model_repository_retu
     assert payload["warnings"] == []
 
 
+def test_display_lookup_status_endpoint_returns_conditional_when_display_values_echo_codes() -> None:
+    from app.api.routes_display_lookup import get_display_lookup_service
+    from app.services.display_lookup_service import DisplayLookupService
+
+    app.dependency_overrides[get_display_lookup_service] = lambda: DisplayLookupService(
+        InMemoryRiskResultRepository(
+            _manifest(),
+            {
+                "entity_display_lookup": pd.DataFrame(
+                    [
+                        {
+                            "tenant_id": "tenant",
+                            "report_month": "2025-12",
+                            "manufacturer_code": "M1",
+                            "manufacturer_display_name": "M1",
+                            "hospital_code": "H1",
+                            "hospital_display_name": "H1",
+                            "drug_code": "D1",
+                            "drug_group": "D1",
+                            "drug_display_name": "D1",
+                            "region_code": "R1",
+                            "region_display_name": "R1",
+                            "display_name_quality": "master",
+                        }
+                    ]
+                )
+            },
+        )
+    )
+    try:
+        response = TestClient(app).get("/api/v1/display-lookup/status")
+    finally:
+        app.dependency_overrides.pop(get_display_lookup_service, None)
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ready"] == "conditional"
+    assert payload["manufacturer_name_ready"] is False
+    assert payload["hospital_name_ready"] is False
+    assert payload["drug_name_ready"] is False
+    assert payload["fallback_policy"] == "code_fallback_when_display_equals_code"
+
+
 def test_frontend_payloads_continue_when_display_lookup_is_missing() -> None:
     from app.api.routes_display_lookup import get_display_lookup_service
     from app.services.display_lookup_service import DisplayLookupService

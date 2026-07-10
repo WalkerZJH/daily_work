@@ -2,7 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import MetricCard from '../../components/MetricCard.vue'
 import SectionCard from '../../components/SectionCard.vue'
-import { createEmptyOneshotData, createStaticOneshotData, loadOneshotData, normalizeWorkbenchQuery } from '../monthly-demo/pageDataAdapter'
+import { createEmptyOneshotData, loadOneshotData, normalizeWorkbenchQuery } from '../monthly-demo/pageDataAdapter'
 
 const params = new URLSearchParams(window.location.search)
 const query = reactive(
@@ -10,16 +10,19 @@ const query = reactive(
     backendBaseUrl: params.get('backendBaseUrl'),
     userId: params.get('user_id') || params.get('userId'),
     demoMode: params.get('demoMode'),
+    observationDate: params.get('observation_date'),
     manufacturerCode: params.get('manufacturer_code'),
     reportMonth: params.get('report_month'),
     runDate: params.get('run_date'),
+    probabilityReportMonth: params.get('probability_report_month'),
+    detectorRunDate: params.get('detector_run_date'),
     horizon: params.get('horizon') || params.get('h'),
     topN: Number(params.get('top_n')),
     sortBy: params.get('sort_by')
   })
 )
 
-const state = ref(query.demoMode ? createStaticOneshotData() : createEmptyOneshotData())
+const state = ref(createEmptyOneshotData())
 const isLoading = ref(false)
 
 onMounted(async () => {

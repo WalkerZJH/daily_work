@@ -7,8 +7,6 @@ import {
   buildPersistentParams,
   createEmptyWorkbenchData,
   createEmptyWorkbenchOptions,
-  createStaticWorkbenchData,
-  createStaticWorkbenchOptions,
   loadReportContext,
   loadWorkbenchData,
   loadWorkbenchOptions,
@@ -21,17 +19,20 @@ const query = reactive(
     backendBaseUrl: urlParams.get('backendBaseUrl'),
     userId: urlParams.get('user_id') || urlParams.get('userId'),
     demoMode: urlParams.get('demoMode'),
+    observationDate: urlParams.get('observation_date'),
     manufacturerCode: urlParams.get('manufacturer_code'),
     reportMonth: urlParams.get('report_month'),
     runDate: urlParams.get('run_date'),
+    probabilityReportMonth: urlParams.get('probability_report_month'),
+    detectorRunDate: urlParams.get('detector_run_date'),
     horizon: urlParams.get('horizon') || urlParams.get('h'),
     topN: Number(urlParams.get('top_n')),
     sortBy: urlParams.get('sort_by')
   })
 )
 
-const options = ref(query.demoMode ? createStaticWorkbenchOptions() : createEmptyWorkbenchOptions(query))
-const state = ref(query.demoMode ? createStaticWorkbenchData(query) : createEmptyWorkbenchData(query))
+const options = ref(createEmptyWorkbenchOptions(query))
+const state = ref(createEmptyWorkbenchData(query))
 const reportContext = ref(state.value.reportContext)
 const isLoading = ref(false)
 let suppressWatcher = false
@@ -73,8 +74,8 @@ async function refreshWorkbench() {
   isLoading.value = true
   try {
     if (query.demoMode) {
-      options.value = createStaticWorkbenchOptions()
-      state.value = createStaticWorkbenchData(query)
+      options.value = await loadWorkbenchOptions(query, { allowDemo: true })
+      state.value = await loadWorkbenchData(query, { allowDemo: true })
       reportContext.value = state.value.reportContext
       updateUrl()
       return
@@ -108,7 +109,7 @@ async function refreshWorkbench() {
 onMounted(refreshWorkbench)
 
 watch(
-  () => [query.manufacturerCode, query.runDate, query.horizon, query.topN, query.sortBy, query.backendBaseUrl, query.userId, query.demoMode],
+  () => [query.manufacturerCode, query.observationDate, query.horizon, query.topN, query.sortBy, query.backendBaseUrl, query.userId, query.demoMode],
   () => {
     if (!suppressWatcher) refreshWorkbench()
   }
@@ -134,11 +135,7 @@ watch(
         </label>
         <label class="control-field">
           <span>观察日期</span>
-          <select v-model="query.runDate">
-            <option v-for="item in options.dailyDetectorDateOptions" :key="item.runDate" :value="item.runDate">
-              {{ item.label }}
-            </option>
-          </select>
+          <input v-model="query.observationDate" type="date" />
         </label>
       </div>
     </div>
@@ -158,8 +155,7 @@ watch(
       </div>
       <div class="batch-card">
         <div class="batch-row"><span>生产企业</span><strong>{{ state.scope.manufacturerName || state.scope.manufacturerCode }}</strong></div>
-        <div class="batch-row"><span>观察日期</span><strong>{{ query.runDate }}</strong></div>
-        <div class="batch-row"><span>月报月份</span><strong>{{ query.reportMonth }}</strong></div>
+        <div class="batch-row"><span>观察日期</span><strong>{{ query.observationDate }}</strong></div>
         <div class="batch-row"><span>预测窗口</span><strong>{{ selectedHorizonLabel }}</strong></div>
       </div>
     </section>

@@ -28,3 +28,22 @@ def test_my_manufacturers_returns_batch_fallback_scope_without_404() -> None:
     assert payload["date_resolution_status"] == "exact_match"
     assert payload["default_manufacturer_code"] == "M1"
     assert [item["manufacturer_code"] for item in payload["manufacturers"]] == ["M1", "M2"]
+
+
+def test_my_manufacturers_prefers_result_batch_display_lookup_for_admin() -> None:
+    with override_frontend_result_repository():
+        response = TestClient(app).get(
+            "/api/v1/my/manufacturers",
+            params={
+                "user_id": "admin",
+                "report_month": "2025-12",
+                "run_date": "2025-12-31",
+                "horizon": "H6",
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["manufacturers"][0]["manufacturer_code"] == "M1"
+    assert payload["manufacturers"][0]["manufacturer_display_name"] == "Manufacturer One"
+    assert payload["manufacturers"][0]["manufacturer_name"] == "Manufacturer One"

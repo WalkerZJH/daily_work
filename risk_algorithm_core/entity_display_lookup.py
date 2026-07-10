@@ -47,15 +47,17 @@ def build_entity_display_lookup(
     source_raw_batch_id: str | None = None,
     updated_at: str | None = None,
     raw_batch_id: str | None = None,
+    additional_entities: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    """Build display names for entities present in the monthly result batch."""
+    """Build display names for monthly entities plus related detector entities."""
     normalized_tables = normalized_tables or {}
     source_raw_batch_id = source_raw_batch_id or raw_batch_id or ""
     updated_at = updated_at or dt.datetime.now(dt.UTC).replace(microsecond=0).isoformat()
-    if risk_entities.empty:
+    entity_source = _combine_entity_sources(risk_entities, additional_entities)
+    if entity_source.empty:
         return pd.DataFrame(columns=ENTITY_DISPLAY_LOOKUP_COLUMNS)
 
-    base = _base_entity_keys(risk_entities, report_month)
+    base = _base_entity_keys(entity_source, report_month)
     manufacturer_map = _lookup_map(normalized_tables.get("manufacturer_master"), "manufacturer_code", ["manufacturer_display_name", "manufacturer_name"])
     hospital_map = _lookup_map(normalized_tables.get("hospital_master"), "hospital_code", ["hospital_display_name", "hospital_name"])
     hospital_region_code = _lookup_map(normalized_tables.get("hospital_master"), "hospital_code", ["region_code"])
@@ -151,6 +153,18 @@ def build_entity_display_lookup(
     out = pd.DataFrame(rows, columns=ENTITY_DISPLAY_LOOKUP_COLUMNS)
     out = out.drop_duplicates(ENTITY_DISPLAY_LOOKUP_UNIQUE_KEY, keep="first").reset_index(drop=True)
     return out[ENTITY_DISPLAY_LOOKUP_COLUMNS]
+
+
+def _combine_entity_sources(
+    risk_entities: pd.DataFrame,
+    additional_entities: pd.DataFrame | None,
+) -> pd.DataFrame:
+    frames = [frame.copy() for frame in [risk_entities, additional_entities] if frame is not None and not frame.empty]
+    if not frames:
+        return pd.DataFrame()
+    columns = sorted({column for frame in frames for column in frame.columns})
+    aligned = [frame.reindex(columns=columns) for frame in frames]
+    return pd.concat(aligned, ignore_index=True)
 
 
 def _base_entity_keys(risk_entities: pd.DataFrame, report_month: str) -> pd.DataFrame:

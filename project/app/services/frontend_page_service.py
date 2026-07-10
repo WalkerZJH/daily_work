@@ -257,9 +257,21 @@ class FrontendPageService:
             "warnings": ["DEFAULT_PAYLOAD_TREND_SINGLE_POINT"],
         }
 
-    def oneshot_terminals(self) -> dict[str, Any]:
+    def oneshot_terminals(
+        self,
+        *,
+        manufacturer_codes: list[str] | None = None,
+        report_month: str | None = None,
+        horizon: str | None = None,
+        top_n: int | None = None,
+    ) -> dict[str, Any]:
         if self._builder:
-            return self._builder.build_frontend_oneshot_payload()
+            return self._builder.build_frontend_oneshot_payload(
+                manufacturer_codes=manufacturer_codes,
+                report_month=report_month,
+                horizon=horizon,
+                top_n=top_n,
+            )
         return self._default_payloads["oneshot_terminals"]
 
     def monthly_reports(self) -> dict[str, Any]:

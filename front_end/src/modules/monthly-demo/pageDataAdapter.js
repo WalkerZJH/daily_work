@@ -1,27 +1,33 @@
 import { BackendApi } from '../../services/backendApi'
-import {
-  batchContext,
-  dailyDetectorClues,
-  dailyDetectorDateOptions,
-  dailyDetectorStatus,
-  dailyReportOptions,
-  defaultWorkbenchQuery,
-  horizonOptions,
-  manufacturerOptions,
-  monthlyReports,
-  oneshotSummary,
-  oneshotTerminals,
-  overviewMetrics,
-  probabilityTrendByEntityId,
-  proofCaseHorizonSets,
-  proofCaseHorizonTabs,
-  proofCases,
-  riskCardHorizonProfiles,
-  riskEntities,
-  sortOptions,
-  topNOptions,
-  workbenchDisplayRows
-} from './demoData'
+
+export const horizonOptions = [
+  { id: 'H3', label: '3月' },
+  { id: 'H6', label: '6月' },
+  { id: 'H12', label: '12月' }
+]
+
+export const topNOptions = [10, 20, 50, 100]
+
+export const sortOptions = [
+  { id: 'risk_probability', label: '丢失概率' },
+  { id: 'involved_amount', label: '涉及金额' },
+  { id: 'loss_value', label: '损失价值' },
+  { id: 'detector_score', label: '规则巡检分' }
+]
+
+export const defaultWorkbenchQuery = {
+  manufacturerCode: '',
+  observationDate: defaultRunDate(),
+  reportMonth: '',
+  runDate: defaultRunDate(),
+  probabilityReportMonth: '',
+  detectorRunDate: '',
+  detectorFamily: '',
+  detectorId: '',
+  horizon: 'H6',
+  topN: 20,
+  sortBy: 'risk_probability'
+}
 
 const FORMAL_EMPTY_STATUS = {
   ready: false,
@@ -41,20 +47,29 @@ const DISPLAY_LOOKUP_EMPTY_STATUS = {
 }
 
 export function normalizeWorkbenchQuery(query = {}) {
-  const reportMonth = query.reportMonth || query.report_month || defaultReportMonth()
-  const runDate = query.runDate || query.run_date || defaultRunDate()
+  const observationDate = firstText(query.observationDate, query.observation_date, query.runDate, query.run_date, defaultWorkbenchQuery.observationDate)
+  const reportMonth = firstText(query.reportMonth, query.report_month, query.probabilityReportMonth, query.probability_report_month, '')
+  const probabilityReportMonth = firstText(query.probabilityReportMonth, query.probability_report_month, reportMonth)
+  const detectorRunDate = firstText(query.detectorRunDate, query.detector_run_date, observationDate)
   const horizon = horizonOptions.some((item) => item.id === query.horizon) ? query.horizon : defaultWorkbenchQuery.horizon
-  const topN = topNOptions.includes(Number(query.topN)) ? Number(query.topN) : defaultWorkbenchQuery.topN
-  const sortBy = sortOptions.some((item) => item.id === query.sortBy) ? query.sortBy : defaultWorkbenchQuery.sortBy
+  const topN = topNOptions.includes(Number(query.topN ?? query.top_n)) ? Number(query.topN ?? query.top_n) : defaultWorkbenchQuery.topN
+  const sortByCandidate = query.sortBy || query.sort_by
+  const sortBy = sortOptions.some((item) => item.id === sortByCandidate) ? sortByCandidate : defaultWorkbenchQuery.sortBy
   const demoModeParam = query.demoMode ?? query.demo_mode
+
   return {
     backendBaseUrl: query.backendBaseUrl || query.backend_base_url || undefined,
     userId: query.userId || query.user_id || query.userID || undefined,
     demoMode: parseBoolean(demoModeParam),
     demoModeParam: demoModeParam === undefined || demoModeParam === null ? undefined : String(demoModeParam),
-    manufacturerCode: query.manufacturerCode || query.manufacturer_code || defaultWorkbenchQuery.manufacturerCode,
+    manufacturerCode: firstText(query.manufacturerCode, query.manufacturer_code, ''),
+    observationDate,
     reportMonth,
-    runDate,
+    runDate: observationDate,
+    probabilityReportMonth,
+    detectorRunDate,
+    detectorFamily: firstText(query.detectorFamily, query.detector_family, ''),
+    detectorId: firstText(query.detectorId, query.detector_id, ''),
     horizon,
     topN,
     sortBy
@@ -66,9 +81,14 @@ export function buildPersistentParams(query = {}, extra = {}) {
   const params = new URLSearchParams()
   setParam(params, 'backendBaseUrl', normalized.backendBaseUrl)
   setParam(params, 'user_id', normalized.userId)
+  setParam(params, 'observation_date', normalized.observationDate)
+  setParam(params, 'report_month', normalized.reportMonth || normalized.probabilityReportMonth)
+  setParam(params, 'run_date', normalized.runDate || normalized.observationDate)
+  setParam(params, 'probability_report_month', normalized.probabilityReportMonth || normalized.reportMonth)
+  setParam(params, 'detector_run_date', normalized.detectorRunDate || normalized.observationDate)
   setParam(params, 'manufacturer_code', normalized.manufacturerCode)
-  setParam(params, 'report_month', normalized.reportMonth)
-  setParam(params, 'run_date', normalized.runDate)
+  setParam(params, 'detector_family', normalized.detectorFamily)
+  setParam(params, 'detector_id', normalized.detectorId)
   setParam(params, 'horizon', normalized.horizon)
   setParam(params, 'top_n', normalized.topN)
   setParam(params, 'sort_by', normalized.sortBy)
@@ -85,12 +105,21 @@ export function createEmptyReportContext(query = {}) {
   const normalized = normalizeWorkbenchQuery(query)
   return {
     ready: false,
+    observationDate: normalized.observationDate,
+    probabilityReportMonth: normalized.probabilityReportMonth || normalized.reportMonth,
+    detectorRunDate: normalized.detectorRunDate || normalized.observationDate,
+    probabilityBatchAvailable: false,
+    detectorRunAvailable: false,
+    contextStatus: 'interface_unavailable',
+    manualSelectionRequired: false,
+    availableReportMonths: [],
+    availableDetectorRunDates: [],
+    effectiveHorizon: normalized.horizon,
     requestedReportMonth: normalized.reportMonth,
     requestedRunDate: normalized.runDate,
     requestedHorizon: normalized.horizon,
     effectiveReportMonth: null,
     effectiveRunDate: null,
-    effectiveHorizon: null,
     fallbackUsed: false,
     title: '接口未就绪',
     message: '当前数据接口未返回可用月报结果',
@@ -101,7 +130,7 @@ export function createEmptyReportContext(query = {}) {
 
 export async function loadReportContext(query = {}) {
   const normalized = normalizeWorkbenchQuery(query)
-  if (normalized.demoMode) return createDemoReportContext(normalized)
+  if (normalized.demoMode) return loadDemo('reportContext', normalized)
   const reportContext = await tryLoad(
     () => api(normalized).getReportContext(queryToApiParams(normalized)),
     (payload) => mapReportContextPayload(payload, normalized)
@@ -111,11 +140,14 @@ export async function loadReportContext(query = {}) {
 
 export function applyReportContextToQuery(query = {}, reportContext = {}) {
   const normalized = normalizeWorkbenchQuery(query)
-  if (!reportContext.ready) return normalized
+  if (!reportContext.ready && !reportContext.probabilityReportMonth) return normalized
   return normalizeWorkbenchQuery({
     ...normalized,
-    reportMonth: reportContext.effectiveReportMonth || normalized.reportMonth,
-    runDate: reportContext.effectiveRunDate || normalized.runDate,
+    observationDate: reportContext.observationDate || normalized.observationDate,
+    runDate: reportContext.observationDate || reportContext.effectiveRunDate || normalized.runDate,
+    reportMonth: reportContext.probabilityReportMonth || reportContext.effectiveReportMonth || normalized.reportMonth,
+    probabilityReportMonth: reportContext.probabilityReportMonth || normalized.probabilityReportMonth,
+    detectorRunDate: reportContext.detectorRunDate || normalized.detectorRunDate,
     horizon: reportContext.effectiveHorizon || normalized.horizon
   })
 }
@@ -125,7 +157,9 @@ export function createEmptyWorkbenchOptions(query = {}) {
   return {
     manufacturerOptions: currentManufacturerOption(normalized),
     defaultManufacturerCode: normalized.manufacturerCode,
-    dailyDetectorDateOptions: [{ runDate: normalized.runDate, label: normalized.runDate }],
+    dailyDetectorDateOptions: [{ runDate: normalized.observationDate, label: normalized.observationDate }],
+    detectorCatalog: [],
+    reportMonthOptions: normalized.probabilityReportMonth ? [normalized.probabilityReportMonth] : [],
     horizonOptions,
     topNOptions,
     sortOptions,
@@ -133,20 +167,17 @@ export function createEmptyWorkbenchOptions(query = {}) {
   }
 }
 
-export function createStaticWorkbenchOptions() {
-  return {
-    manufacturerOptions,
-    defaultManufacturerCode: manufacturerOptions[0]?.code || defaultWorkbenchQuery.manufacturerCode,
-    dailyDetectorDateOptions,
-    horizonOptions,
-    topNOptions,
-    sortOptions,
-    sourceLabel: '演示模式'
-  }
-}
-
 export function createEmptyWorkbenchData(query = {}, reportContext = createEmptyReportContext(query)) {
   const normalized = normalizeWorkbenchQuery(query)
+  const detectorSummary = {
+    runDate: reportContext.detectorRunDate || normalized.detectorRunDate || normalized.observationDate,
+    clueCount: 0,
+    attachedHighRiskCount: 0,
+    scannedEntityCount: 0,
+    highestRuleScore: null,
+    priorityRiskEntityCount: 0,
+    ready: reportContext.detectorRunAvailable === true
+  }
   return {
     ready: false,
     reportContext,
@@ -154,66 +185,16 @@ export function createEmptyWorkbenchData(query = {}, reportContext = createEmpty
     query: normalized,
     scope: {
       manufacturerCode: normalized.manufacturerCode,
-      manufacturerName: manufacturerName(normalized.manufacturerCode),
-      reportMonth: normalized.reportMonth
+      manufacturerName: normalized.manufacturerCode || '未选择生产企业',
+      reportMonth: normalized.probabilityReportMonth || normalized.reportMonth
     },
-    batchContext: {
-      ...batchContext,
-      reportMonth: normalized.reportMonth,
-      primaryHorizon: formatHorizonLabel(normalized.horizon)
-    },
-    overviewMetrics: buildTodayMetrics([], { clueCount: 0 }, normalized),
-    dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, runDate: normalized.runDate },
-    detectorSummary: {
-      runDate: normalized.runDate,
-      clueCount: 0,
-      attachedHighRiskCount: 0,
-      scannedEntityCount: 0,
-      highestRuleScore: null,
-      priorityRiskEntityCount: 0
-    },
+    overviewMetrics: buildTodayMetrics([], detectorSummary, normalized, reportContext),
+    dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, runDate: detectorSummary.runDate },
+    detectorSummary,
     workbenchDisplayRows: [],
+    topRuleClues: [],
     emptyTitle: reportContext.displayTitle || '接口未就绪',
     emptyMessage: reportContext.message || '当前没有可展示的风险对象'
-  }
-}
-
-export function createStaticWorkbenchData(query = {}) {
-  const normalizedQuery = normalizeWorkbenchQuery({ ...query, demoMode: true })
-  const rows = buildStaticWorkbenchRows(normalizedQuery)
-  const detectorSummary = {
-    runDate: normalizedQuery.runDate,
-    clueCount: dailyDetectorStatus.clueCount,
-    attachedHighRiskCount: dailyDetectorStatus.attachedHighRiskCount,
-    scannedEntityCount: dailyDetectorStatus.scannedEntityCount,
-    highestRuleScore: highestRuleScore(dailyDetectorClues),
-    priorityRiskEntityCount: rows.length
-  }
-  return {
-    ready: true,
-    reportContext: createDemoReportContext(normalizedQuery),
-    displayLookupStatus: { ready: false, label: '演示模式', message: '' },
-    query: normalizedQuery,
-    scope: {
-      manufacturerCode: normalizedQuery.manufacturerCode,
-      manufacturerName: manufacturerName(normalizedQuery.manufacturerCode),
-      reportMonth: normalizedQuery.reportMonth
-    },
-    batchContext: {
-      ...batchContext,
-      reportMonth: normalizedQuery.reportMonth,
-      primaryHorizon: formatHorizonLabel(normalizedQuery.horizon)
-    },
-    overviewMetrics: buildTodayMetrics(rows, detectorSummary, normalizedQuery),
-    dailyDetectorStatus: {
-      ...dailyDetectorStatus,
-      sourceLabel: '演示模式',
-      runDate: normalizedQuery.runDate
-    },
-    detectorSummary,
-    workbenchDisplayRows: rows,
-    emptyTitle: '',
-    emptyMessage: ''
   }
 }
 
@@ -223,23 +204,11 @@ export function createEmptyRuleCluesData(query = {}, reportContext = createEmpty
     ready: false,
     reportContext,
     query: normalized,
-    dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, runDate: normalized.runDate },
+    dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, runDate: reportContext.detectorRunDate || normalized.detectorRunDate },
     dailyDetectorClues: [],
-    emptyTitle: reportContext.displayTitle || '接口未就绪',
+    total: 0,
+    emptyTitle: reportContext.detectorRunAvailable === false ? '该观察日期暂无规则巡检结果' : reportContext.displayTitle || '接口未就绪',
     emptyMessage: reportContext.message || '当前没有可展示的规则线索'
-  }
-}
-
-export function createStaticRuleCluesData(query = {}) {
-  const normalizedQuery = normalizeWorkbenchQuery({ ...query, demoMode: true })
-  return {
-    ready: true,
-    reportContext: createDemoReportContext(normalizedQuery),
-    query: normalizedQuery,
-    dailyDetectorStatus: { ...dailyDetectorStatus, sourceLabel: '演示模式', runDate: normalizedQuery.runDate },
-    dailyDetectorClues: buildStaticRuleClues(normalizedQuery),
-    emptyTitle: '',
-    emptyMessage: ''
   }
 }
 
@@ -251,7 +220,7 @@ export function createEmptyClueDetailData({ clueId, riskEntityId, query, reportC
     query: normalized,
     clueId,
     riskEntityId,
-    dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, runDate: normalized.runDate },
+    dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, runDate: normalized.detectorRunDate },
     clue: {},
     entity: null,
     isMonthlyHighRiskEntity: Boolean(riskEntityId),
@@ -260,41 +229,6 @@ export function createEmptyClueDetailData({ clueId, riskEntityId, query, reportC
     horizonProfiles: {},
     emptyTitle: '接口未就绪',
     emptyMessage: '当前没有可展示的详情'
-  }
-}
-
-export function createStaticClueDetailData({ clueId, riskEntityId, query } = {}) {
-  const normalizedQuery = normalizeWorkbenchQuery({ ...query, demoMode: true })
-  const clues = buildStaticRuleClues(normalizedQuery)
-  const clue = clues.find((item) => item.id === clueId) || clues.find((item) => item.riskEntityId === riskEntityId) || clues[0]
-  const entity = clue?.riskEntityId ? riskEntities.find((item) => item.id === clue.riskEntityId) : null
-  const selectedProfile = entity ? riskCardHorizonProfiles[entity.id]?.[normalizedQuery.horizon] : null
-  return {
-    ready: true,
-    reportContext: createDemoReportContext(normalizedQuery),
-    query: normalizedQuery,
-    clue: clue || {},
-    entity: entity && selectedProfile ? mergeEntityProfile(entity, selectedProfile) : entity || null,
-    isMonthlyHighRiskEntity: Boolean(entity),
-    detectorEvidence: entity ? mapStaticRuleEvidence(entity, normalizedQuery) : clue ? [clue] : [],
-    probabilityTrend: entity ? probabilityTrendByEntityId[entity.id] || [] : [],
-    horizonProfiles: entity ? riskCardHorizonProfiles[entity.id] || {} : {},
-    emptyTitle: '',
-    emptyMessage: ''
-  }
-}
-
-export function createStaticOneshotData() {
-  return {
-    ready: true,
-    displayLookupStatus: { ready: false, label: '演示模式', message: '' },
-    oneshotSummary: {
-      ...oneshotSummary,
-      evidenceReady: false
-    },
-    oneshotTerminals: oneshotTerminals.map(({ reason, ...item }) => item),
-    emptyTitle: '',
-    emptyMessage: ''
   }
 }
 
@@ -315,39 +249,20 @@ export function createEmptyOneshotData() {
   }
 }
 
-export function createStaticMonthlyReportsData() {
-  return {
-    ready: true,
-    displayLookupStatus: { ready: false, label: '演示模式', message: '' },
-    batchContext,
-    overviewMetrics,
-    dailyDetectorStatus,
-    dailyReportOptions,
-    monthlyReports
-  }
-}
-
 export function createEmptyMonthlyReportsData(query = {}) {
   const normalized = normalizeWorkbenchQuery(query)
   return {
     ready: false,
     displayLookupStatus: DISPLAY_LOOKUP_EMPTY_STATUS,
-    batchContext: {
-      ...batchContext,
-      reportMonth: normalized.reportMonth,
-      primaryHorizon: formatHorizonLabel(normalized.horizon)
-    },
+    reportContext: createEmptyReportContext(normalized),
+    runtimeProfile: null,
     overviewMetrics: [],
-    dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, runDate: normalized.runDate },
+    dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, runDate: normalized.detectorRunDate },
     dailyReportOptions: [],
     monthlyReports: [],
     emptyTitle: '接口未就绪',
-    emptyMessage: '当前没有可展示的月报记录'
+    emptyMessage: '当前没有可展示的月报与批次记录'
   }
-}
-
-export function createStaticProofCasesData() {
-  return { ready: true, displayLookupStatus: { ready: false, label: '演示模式', message: '' }, proofCaseHorizonTabs, proofCaseHorizonSets, proofCases }
 }
 
 export function createEmptyProofCasesData() {
@@ -357,62 +272,76 @@ export function createEmptyProofCasesData() {
     proofCaseHorizonTabs: [],
     proofCaseHorizonSets: {},
     proofCases: [],
-    emptyTitle: '页面暂不展示',
-    emptyMessage: '请从 VP 工作台查看当前风险对象和规则线索'
+    emptyTitle: '暂无正式复盘数据',
+    emptyMessage: '当前接口未返回可核验的历史命中复盘'
   }
 }
 
 export async function loadWorkbenchOptions(query = {}, { allowDemo = false } = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
-  if (allowDemo || normalizedQuery.demoMode) return createStaticWorkbenchOptions()
-  const [manufacturers, dates] = await Promise.all([
+  if (allowDemo || normalizedQuery.demoMode) return loadDemo('workbenchOptions', normalizedQuery)
+  const [manufacturers, context, catalog] = await Promise.all([
     tryLoad(() => api(normalizedQuery).getMyManufacturers(queryToApiParams(normalizedQuery)), mapManufacturersPayload),
-    tryLoad(() => api(normalizedQuery).getDailyDetectorDates(queryToApiParams(normalizedQuery)), mapDailyDetectorDatesPayload)
+    tryLoad(() => api(normalizedQuery).getReportContext(queryToApiParams(normalizedQuery)), (payload) => mapReportContextPayload(payload, normalizedQuery)),
+    tryLoad(() => api(normalizedQuery).getDetectorCatalog(), mapDetectorCatalogPayload)
   ])
+  const fallback = createEmptyWorkbenchOptions(normalizedQuery)
   return {
-    ...createEmptyWorkbenchOptions(normalizedQuery),
-    manufacturerOptions: manufacturers?.manufacturerOptions?.length ? manufacturers.manufacturerOptions : currentManufacturerOption(normalizedQuery),
-    defaultManufacturerCode: manufacturers?.defaultManufacturerCode || normalizedQuery.manufacturerCode,
-    dailyDetectorDateOptions: dates?.dailyDetectorDateOptions?.length
-      ? dates.dailyDetectorDateOptions
-      : [{ runDate: normalizedQuery.runDate, label: normalizedQuery.runDate }],
-    sourceLabel: manufacturers || dates ? '后端数据' : '接口未就绪'
+    ...fallback,
+    manufacturerOptions: manufacturers?.manufacturerOptions?.length ? manufacturers.manufacturerOptions : fallback.manufacturerOptions,
+    defaultManufacturerCode: manufacturers?.defaultManufacturerCode || fallback.defaultManufacturerCode,
+    dailyDetectorDateOptions: context?.availableDetectorRunDates?.length
+      ? context.availableDetectorRunDates.map((date) => ({ runDate: date, label: date }))
+      : fallback.dailyDetectorDateOptions,
+    detectorCatalog: catalog?.detectorCatalog || fallback.detectorCatalog,
+    reportMonthOptions: context?.availableReportMonths || fallback.reportMonthOptions,
+    sourceLabel: manufacturers || context ? '后端数据' : '接口未就绪'
   }
 }
 
 export async function loadWorkbenchData(query = {}, { allowDemo = false } = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
-  if (allowDemo || normalizedQuery.demoMode) return createStaticWorkbenchData(normalizedQuery)
-  const payload = await tryLoad(
-    () => api(normalizedQuery).getWorkbench(queryToApiParams(normalizedQuery)),
-    (data) => data
-  )
-  if (!payload || payload.ready === false) {
-    return createEmptyWorkbenchData(normalizedQuery, mapReportContextPayload(payload?.report_context || payload, normalizedQuery))
+  if (allowDemo || normalizedQuery.demoMode) return loadDemo('workbenchData', normalizedQuery)
+  const params = queryToApiParams(normalizedQuery)
+  const [workbenchPayload, statusPayload, cluesPayload, lookupPayload] = await Promise.all([
+    tryLoad(() => api(normalizedQuery).getWorkbench(params), (payload) => payload),
+    tryLoad(() => api(normalizedQuery).getDailyDetectorStatus(params), normalizeDailyRuleStatus),
+    tryLoad(() => api(normalizedQuery).getDailyDetectorClues({ ...params, sort_by: 'detector_score', page_size: Math.min(normalizedQuery.topN, 20) }), mapDailyRuleCluesPayload),
+    tryLoad(() => api(normalizedQuery).getDisplayLookupStatus(params), normalizeDisplayLookupStatus)
+  ])
+  if (!workbenchPayload || workbenchPayload.ready === false) {
+    const context = mapReportContextPayload(workbenchPayload?.report_context || workbenchPayload, normalizedQuery)
+    return {
+      ...createEmptyWorkbenchData(normalizedQuery, context),
+      displayLookupStatus: lookupPayload || DISPLAY_LOOKUP_EMPTY_STATUS,
+      dailyDetectorStatus: statusPayload || { ...FORMAL_EMPTY_STATUS, runDate: context.detectorRunDate || normalizedQuery.detectorRunDate },
+      topRuleClues: cluesPayload?.dailyDetectorClues || []
+    }
   }
-  return mapWorkbenchPayload(payload, normalizedQuery)
+  return mapWorkbenchPayload(workbenchPayload, normalizedQuery, {
+    status: statusPayload,
+    clues: cluesPayload,
+    displayLookupStatus: lookupPayload
+  })
 }
 
 export async function loadRuleCluesData(query = {}, { allowDemo = false } = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
-  if (allowDemo || normalizedQuery.demoMode) return createStaticRuleCluesData(normalizedQuery)
-  const status = await tryLoad(
-    () => api(normalizedQuery).getDailyDetectorStatus(queryToApiParams(normalizedQuery)),
-    normalizeDailyRuleStatus
-  )
-  if (!status?.ready) return createEmptyRuleCluesData(normalizedQuery)
-  const clues = await tryLoadDailyRuleClues(normalizedQuery)
+  if (allowDemo || normalizedQuery.demoMode) return loadDemo('ruleCluesData', normalizedQuery)
+  const params = queryToApiParams(normalizedQuery)
+  const [context, status, clues] = await Promise.all([
+    loadReportContext(normalizedQuery),
+    tryLoad(() => api(normalizedQuery).getDailyDetectorStatus(params), normalizeDailyRuleStatus),
+    tryLoad(() => api(normalizedQuery).getDailyDetectorClues({ ...params, sort_by: 'detector_score', page_size: normalizedQuery.topN }), mapDailyRuleCluesPayload)
+  ])
+  if (!status?.ready && !clues?.dailyDetectorClues?.length) return createEmptyRuleCluesData(normalizedQuery, context)
   return {
     ready: true,
-    reportContext: createReadyReportContextFromQuery(normalizedQuery),
+    reportContext: context,
     query: normalizedQuery,
-    dailyDetectorStatus: {
-      ...status,
-      clueCount: clues?.dailyDetectorClues?.length ?? status.clueCount,
-      attachedHighRiskCount:
-        clues?.dailyDetectorClues?.filter((item) => item.isMonthlyHighRiskEntity).length ?? status.attachedHighRiskCount
-    },
+    dailyDetectorStatus: status || { ...FORMAL_EMPTY_STATUS, runDate: context.detectorRunDate },
     dailyDetectorClues: clues?.dailyDetectorClues || [],
+    total: clues?.total || clues?.dailyDetectorClues?.length || 0,
     emptyTitle: '',
     emptyMessage: ''
   }
@@ -420,24 +349,22 @@ export async function loadRuleCluesData(query = {}, { allowDemo = false } = {}) 
 
 export async function loadClueDetailData({ clueId, riskEntityId, query } = {}, { allowDemo = false } = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
-  if (allowDemo || normalizedQuery.demoMode) return createStaticClueDetailData({ clueId, riskEntityId, query: normalizedQuery })
-
+  if (allowDemo || normalizedQuery.demoMode) return loadDemo('clueDetailData', { clueId, riskEntityId, query: normalizedQuery })
+  const context = await loadReportContext(normalizedQuery)
   if (riskEntityId) {
     const detail = await loadRiskEntityDetailData(riskEntityId, normalizedQuery)
-    if (!detail?.entity) return createEmptyClueDetailData({ clueId, riskEntityId, query: normalizedQuery })
-    const clue = detail.detectorEvidence[0] || {}
+    if (!detail?.entity) return createEmptyClueDetailData({ clueId, riskEntityId, query: normalizedQuery, reportContext: context })
     return {
       ...detail,
-      clue,
+      clue: detail.detectorEvidence[0] || {},
       isMonthlyHighRiskEntity: true,
       emptyTitle: '',
       emptyMessage: ''
     }
   }
-
   const cluesData = await loadRuleCluesData(normalizedQuery)
   const clue = cluesData.dailyDetectorClues?.find((item) => item.id === clueId)
-  if (!clue) return createEmptyClueDetailData({ clueId, query: normalizedQuery })
+  if (!clue) return createEmptyClueDetailData({ clueId, query: normalizedQuery, reportContext: context })
   return {
     ...cluesData,
     clue,
@@ -453,8 +380,9 @@ export async function loadClueDetailData({ clueId, riskEntityId, query } = {}, {
 
 export async function loadRiskEntityDetailData(entityId, query = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
+  const params = queryToApiParams(normalizedQuery)
   const detailPayload = await tryLoad(
-    () => api(normalizedQuery).getRiskEntityDetail(entityId, { horizon: normalizedQuery.horizon }),
+    () => api(normalizedQuery).getRiskEntityDetail(entityId, params),
     (payload) => payload
   )
   if (!detailPayload || detailPayload.ready === false) return createEmptyClueDetailData({ riskEntityId: entityId, query: normalizedQuery })
@@ -464,7 +392,7 @@ export async function loadRiskEntityDetailData(entityId, query = {}) {
       mapRiskEntityRuleEvidence
     ),
     tryLoad(
-      () => api(normalizedQuery).getRiskEntityProbabilityTrend(entityId, { horizon: normalizedQuery.horizon }),
+      () => api(normalizedQuery).getRiskEntityProbabilityTrend(entityId, params),
       mapProbabilityTrendPayload
     )
   ])
@@ -473,7 +401,7 @@ export async function loadRiskEntityDetailData(entityId, query = {}) {
     reportContext: mapReportContextPayload(detailPayload.report_context, normalizedQuery),
     query: normalizedQuery,
     entity: mapRiskEntity(detailPayload.entity || detailPayload, normalizedQuery),
-    dailyDetectorStatus: { ...dailyDetectorStatus, sourceLabel: '后端数据', runDate: normalizedQuery.runDate },
+    dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, ready: true, sourceLabel: '后端数据', runDate: normalizedQuery.detectorRunDate },
     detectorEvidence: evidenceData?.detectorEvidence || [],
     probabilityTrend: trendData?.probabilityTrend || [],
     horizonProfiles: mapHorizonProfiles(detailPayload.horizon_profiles || detailPayload.horizonProfiles || {}),
@@ -484,22 +412,27 @@ export async function loadRiskEntityDetailData(entityId, query = {}) {
 
 export async function loadOneshotData(query = {}, { allowDemo = false } = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
-  if (allowDemo || normalizedQuery.demoMode) return createStaticOneshotData()
-  const data = await tryLoad(() => api(normalizedQuery).frontendOneshotTerminals(), mapOneshotPayload)
+  if (allowDemo || normalizedQuery.demoMode) return loadDemo('oneshotData', normalizedQuery)
+  const data = await tryLoad(() => api(normalizedQuery).frontendOneshotTerminals(queryToApiParams(normalizedQuery)), mapOneshotPayload)
   return data || createEmptyOneshotData()
 }
 
 export async function loadMonthlyReportsData(query = {}, { allowDemo = false } = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
-  if (allowDemo || normalizedQuery.demoMode) return createStaticMonthlyReportsData()
-  const data = await tryLoad(() => api(normalizedQuery).getMonthlyReports(), mapMonthlyReportsPayload)
-  return data || createEmptyMonthlyReportsData(normalizedQuery)
+  if (allowDemo || normalizedQuery.demoMode) return loadDemo('monthlyReportsData', normalizedQuery)
+  const [context, reports, runtime] = await Promise.all([
+    loadReportContext(normalizedQuery),
+    tryLoad(() => api(normalizedQuery).getMonthlyReports(queryToApiParams(normalizedQuery)), mapMonthlyReportsPayload),
+    tryLoad(() => api(normalizedQuery).getRuntimeProfile({ report_month: normalizedQuery.probabilityReportMonth || normalizedQuery.reportMonth }), (payload) => payload)
+  ])
+  return reports || { ...createEmptyMonthlyReportsData(normalizedQuery), reportContext: context, runtimeProfile: runtime || null }
 }
 
 export async function loadProofCasesData(query = {}, { allowDemo = false } = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
-  if (allowDemo || normalizedQuery.demoMode) return createStaticProofCasesData()
-  return createEmptyProofCasesData()
+  if (allowDemo || normalizedQuery.demoMode) return loadDemo('proofCasesData', normalizedQuery)
+  const data = await tryLoad(() => api(normalizedQuery).getProofCases(queryToApiParams(normalizedQuery)), mapProofCasesPayload)
+  return data || createEmptyProofCasesData()
 }
 
 function api(query = {}) {
@@ -512,7 +445,7 @@ function resolveBackendBaseUrl(query = {}) {
   if (typeof window === 'undefined') return undefined
   const params = new URLSearchParams(window.location.search)
   try {
-    return window.__BACKEND_BASE_URL__ || params.get('backendBaseUrl') || window.localStorage.getItem('backendBaseUrl') || undefined
+    return window.__BACKEND_BASE_URL__ || params.get('backendBaseUrl') || undefined
   } catch (error) {
     return window.__BACKEND_BASE_URL__ || params.get('backendBaseUrl') || undefined
   }
@@ -537,114 +470,99 @@ async function tryLoad(loader, mapper) {
   }
 }
 
-async function tryLoadDailyRuleClues(query) {
-  const params = queryToApiParams(query)
-  const dailyClues = await tryLoad(() => api(query).getDailyDetectorClues({ ...params, page_size: 100 }), mapDailyRuleCluesPayload)
-  if (dailyClues) return dailyClues
-  return tryLoad(() => api(query).getDetectorClues({ ...params, page_size: 100 }), mapDailyRuleCluesPayload)
+async function loadDemo(loaderName, argument) {
+  const demo = await import('./demoPageDataAdapter')
+  return demo.demoPageLoaders[loaderName](argument)
 }
 
 function mapReportContextPayload(payload, fallbackQuery) {
   const query = normalizeWorkbenchQuery(fallbackQuery)
   if (!payload) return createEmptyReportContext(query)
-  const ready = payload.ready === true
+  const observationDate = firstText(payload.observation_date, payload.effective_run_date, payload.requested_run_date, query.observationDate)
+  const probabilityReportMonth = firstText(payload.probability_report_month, payload.effective_report_month, query.probabilityReportMonth, query.reportMonth)
+  const detectorRunDate = firstText(payload.detector_run_date, payload.effective_run_date, observationDate)
+  const probabilityBatchAvailable = payload.probability_batch_available !== false && Boolean(probabilityReportMonth || payload.ready === true)
+  const detectorRunAvailable = payload.detector_run_available === true || payload.ready === true
+  const contextStatus = payload.context_status || payload.date_resolution_status || (probabilityBatchAvailable ? 'ready' : 'probability_month_unavailable')
+  const ready = payload.ready === true || probabilityBatchAvailable
   const context = {
     ready,
+    observationDate,
+    probabilityReportMonth,
+    detectorRunDate,
+    probabilityBatchAvailable,
+    detectorRunAvailable,
+    contextStatus,
+    manualSelectionRequired: payload.manual_selection_required === true,
+    availableReportMonths: payload.available_report_months || [],
+    availableDetectorRunDates: payload.available_detector_run_dates || payload.available_run_dates || [],
+    effectiveHorizon: payload.effective_horizon || payload.requested_horizon || query.horizon,
     requestedReportMonth: payload.requested_report_month || query.reportMonth,
     requestedRunDate: payload.requested_run_date || query.runDate,
     requestedHorizon: payload.requested_horizon || query.horizon,
-    effectiveReportMonth: payload.effective_report_month || null,
-    effectiveRunDate: payload.effective_run_date || null,
-    effectiveHorizon: payload.effective_horizon || null,
-    fallbackUsed: payload.fallback_used === true,
-    title: ready ? '数据已就绪' : '接口未就绪',
-    message: ready ? '' : '当前数据接口未返回可用月报结果',
-    displayTitle: ready && payload.fallback_used === true ? '当前展示最近可用数据' : ready ? '' : '接口未就绪',
+    effectiveReportMonth: probabilityReportMonth || null,
+    effectiveRunDate: observationDate || null,
+    fallbackUsed: false,
+    title: ready ? '' : '接口未就绪',
+    message: contextMessage({ probabilityBatchAvailable, detectorRunAvailable, manualSelectionRequired: payload.manual_selection_required === true }),
+    displayTitle: '',
     displayLines: []
   }
-  if (ready && context.fallbackUsed) {
-    context.displayLines = [
-      `观察日期：${context.effectiveRunDate}`,
-      `月报月份：${context.effectiveReportMonth}`
-    ]
+  if (!probabilityBatchAvailable || context.manualSelectionRequired) {
+    context.displayTitle = context.message
+  } else if (!detectorRunAvailable) {
+    context.displayTitle = '该观察日期暂无规则巡检结果'
   }
+  context.displayLines = [
+    `观察日期：${context.observationDate || '-'}`,
+    `规则巡检日期：${context.detectorRunDate || '-'}`
+  ]
   return context
 }
 
-function createDemoReportContext(query = {}) {
-  const normalized = normalizeWorkbenchQuery(query)
-  return {
-    ready: true,
-    requestedReportMonth: normalized.reportMonth,
-    requestedRunDate: normalized.runDate,
-    requestedHorizon: normalized.horizon,
-    effectiveReportMonth: normalized.reportMonth,
-    effectiveRunDate: normalized.runDate,
-    effectiveHorizon: normalized.horizon,
-    fallbackUsed: false,
-    title: '演示模式',
-    message: '',
-    displayTitle: '',
-    displayLines: []
-  }
+function contextMessage({ probabilityBatchAvailable, detectorRunAvailable, manualSelectionRequired }) {
+  if (manualSelectionRequired) return '请选择可用月份或规则巡检日期'
+  if (!probabilityBatchAvailable) return '该观察日期对应的月报基准尚未生成，请选择可用日期或月份'
+  if (!detectorRunAvailable) return '该观察日期暂无规则巡检结果'
+  return ''
 }
 
-function createReadyReportContextFromQuery(query = {}) {
-  const normalized = normalizeWorkbenchQuery(query)
-  return {
-    ready: true,
-    requestedReportMonth: normalized.reportMonth,
-    requestedRunDate: normalized.runDate,
-    requestedHorizon: normalized.horizon,
-    effectiveReportMonth: normalized.reportMonth,
-    effectiveRunDate: normalized.runDate,
-    effectiveHorizon: normalized.horizon,
-    fallbackUsed: false,
-    title: '',
-    message: '',
-    displayTitle: '',
-    displayLines: []
-  }
-}
-
-function mapWorkbenchPayload(payload, fallbackQuery) {
+function mapWorkbenchPayload(payload, fallbackQuery, related = {}) {
   const reportContext = mapReportContextPayload(payload.report_context, fallbackQuery)
   const query = normalizeWorkbenchQuery({
     ...fallbackQuery,
     manufacturer_code: payload.query?.manufacturer_code || payload.current_manufacturer_code,
-    report_month: reportContext.effectiveReportMonth || payload.query?.report_month || payload.effective_report_month,
-    run_date: reportContext.effectiveRunDate || payload.query?.run_date || payload.effective_run_date,
+    observation_date: reportContext.observationDate || payload.query?.observation_date,
+    report_month: reportContext.probabilityReportMonth || payload.query?.report_month,
+    probability_report_month: reportContext.probabilityReportMonth,
+    detector_run_date: reportContext.detectorRunDate,
     horizon: reportContext.effectiveHorizon || payload.query?.horizon || payload.horizon,
     topN: payload.query?.top_n || payload.top_n,
     sortBy: payload.query?.sort_by || payload.sort_by
   })
-  const rows = (payload.rows || payload.monthly_risk_entities || []).map((row) => mapWorkbenchRow(row, query))
-  const detectorSummary = normalizeDetectorSummary(payload.detector_summary, payload, rows, query)
+  const rows = (payload.risk_entities || payload.rows || payload.today_focus?.risk_entities || []).map((row) => mapWorkbenchRow(row, query))
+  const topRuleClues = (payload.top_rule_clues || related.clues?.dailyDetectorClues || []).map(mapDailyRuleClue)
+  const detectorSummary = normalizeDetectorSummary(payload.daily_detector_summary || payload.detector_summary, related.status, topRuleClues, rows, query, reportContext)
   return {
     ready: true,
     reportContext,
-    displayLookupStatus: normalizeDisplayLookupStatus(payload.display_lookup_status),
+    displayLookupStatus: related.displayLookupStatus || normalizeDisplayLookupStatus(payload.display_lookup_status),
     query,
     scope: mapScope(payload.scope, query),
-    batchContext: {
-      ...batchContext,
-      reportMonth: query.reportMonth,
-      primaryHorizon: formatHorizonLabel(query.horizon)
-    },
-    overviewMetrics: buildTodayMetrics(rows, detectorSummary, query),
-    dailyDetectorStatus: {
-      ...dailyDetectorStatus,
-      ready: true,
+    overviewMetrics: buildTodayMetrics(rows, detectorSummary, query, reportContext),
+    dailyDetectorStatus: related.status || {
+      ...FORMAL_EMPTY_STATUS,
+      ready: detectorSummary.ready,
       sourceLabel: '后端数据',
-      runDate: detectorSummary.runDate || query.runDate,
+      runDate: detectorSummary.runDate,
       clueCount: detectorSummary.clueCount,
       attachedHighRiskCount: detectorSummary.attachedHighRiskCount,
       scannedEntityCount: detectorSummary.scannedEntityCount,
-      statusText: '规则巡检结果已更新',
-      caveat: ''
+      statusText: detectorSummary.ready ? '规则巡检结果已更新' : '该观察日期暂无规则巡检结果'
     },
     detectorSummary,
     workbenchDisplayRows: rows,
+    topRuleClues,
     emptyTitle: '',
     emptyMessage: ''
   }
@@ -653,8 +571,8 @@ function mapWorkbenchPayload(payload, fallbackQuery) {
 function mapScope(scope = {}, query) {
   return {
     manufacturerCode: scope.manufacturer_code || query.manufacturerCode,
-    manufacturerName: scope.manufacturer_display_name || scope.manufacturer_name || manufacturerName(query.manufacturerCode),
-    reportMonth: scope.report_month || query.reportMonth
+    manufacturerName: firstDisplayText(scope.manufacturer_display_name, scope.manufacturer_name, query.manufacturerCode, '未选择生产企业'),
+    reportMonth: scope.report_month || query.probabilityReportMonth || query.reportMonth
   }
 }
 
@@ -668,12 +586,19 @@ function normalizeDisplayLookupStatus(payload) {
 }
 
 function normalizeDailyRuleStatus(payload) {
-  if (payload?.ready !== true) return { ...FORMAL_EMPTY_STATUS, ready: false }
+  if (payload?.ready !== true) {
+    return {
+      ...FORMAL_EMPTY_STATUS,
+      ready: false,
+      runDate: payload?.detector_run_date || payload?.run_date || '-',
+      statusText: payload?.context_status === 'detector_run_unavailable' ? '该观察日期暂无规则巡检结果' : '接口未就绪'
+    }
+  }
   return {
     ready: true,
     sourceLabel: '后端数据',
-    runDate: payload.run_date || payload.effective_run_date || dailyDetectorStatus.runDate,
-    reportMonth: payload.report_month || payload.effective_report_month || batchContext.reportMonth,
+    runDate: payload.detector_run_date || payload.run_date || payload.effective_run_date,
+    reportMonth: payload.probability_report_month || payload.report_month || payload.effective_report_month,
     clueCount: payload.clue_count ?? payload.total ?? 0,
     attachedHighRiskCount: payload.attached_high_risk_count ?? 0,
     scannedEntityCount: payload.scanned_entity_count ?? 0,
@@ -682,15 +607,16 @@ function normalizeDailyRuleStatus(payload) {
   }
 }
 
-function normalizeDetectorSummary(summary = {}, payload = {}, rows = [], query) {
-  const clueCount = summary.clue_count ?? summary.detector_clue_count ?? payload.today_clue_count ?? 0
+function normalizeDetectorSummary(summary = {}, status = {}, clues = [], rows = [], query, context) {
+  const clueCount = summary?.clue_count ?? summary?.detector_clue_count ?? status?.clueCount ?? clues.length ?? 0
   return {
-    runDate: summary.run_date || summary.latest_detector_run_date || payload.current_observation_date || query.runDate,
+    ready: summary?.ready !== false && status?.ready !== false && context.detectorRunAvailable !== false,
+    runDate: summary?.detector_run_date || summary?.run_date || status?.runDate || context.detectorRunDate || query.detectorRunDate,
     clueCount,
-    attachedHighRiskCount: summary.attached_high_risk_count ?? summary.attached_evidence_count ?? 0,
-    scannedEntityCount: summary.scanned_entity_count ?? 0,
-    highestRuleScore: payload.highest_detector_score ?? highestRuleScore(payload.today_high_score_rule_clues || []),
-    priorityRiskEntityCount: payload.priority_risk_entity_count ?? rows.length
+    attachedHighRiskCount: summary?.attached_high_risk_count ?? status?.attachedHighRiskCount ?? clues.filter((item) => item.isMonthlyHighRiskEntity).length,
+    scannedEntityCount: summary?.scanned_entity_count ?? status?.scannedEntityCount ?? 0,
+    highestRuleScore: summary?.highest_detector_score ?? highestRuleScore(clues),
+    priorityRiskEntityCount: summary?.priority_risk_entity_count ?? rows.length
   }
 }
 
@@ -699,6 +625,7 @@ function mapWorkbenchRow(row, query) {
   const hospital = firstDisplayText(row.hospital_display_name, row.hospital_name, row.hospital_code)
   const drug = firstDisplayText(row.drug_display_name, row.drug_name, row.drug_code, row.drug_group)
   const involvedAmount = firstNumber(row.involved_amount, row.average_consumption_in_window, row.window_consumption)
+  const lossValue = firstNullableNumber(row.loss_value, row.monthly_loss_value)
   return {
     id: row.row_id || row.entity_id || `${hospital}-${drug}`,
     entityId: row.entity_id || row.risk_entity_id || '',
@@ -713,10 +640,12 @@ function mapWorkbenchRow(row, query) {
     probabilityDisplay: formatPercent(firstNumber(row.risk_probability)),
     involvedAmount,
     involvedAmountText: formatMoney(involvedAmount),
+    lossValue,
+    lossValueText: lossValue === null || lossValue === undefined ? formatMoney(involvedAmount) : formatMoney(lossValue),
     riskBand: row.risk_band || row.riskLevel || '',
     reason: replaceHorizonCodes(row.reason || row.primary_reason || ''),
-    fillSource: row.source_type || '月报高风险',
-    sourceType: row.source_type || '月报高风险',
+    fillSource: '月报高风险',
+    sourceType: '月报高风险',
     action: row.action || '查看详情'
   }
 }
@@ -724,6 +653,7 @@ function mapWorkbenchRow(row, query) {
 function mapRiskEntity(item, query = defaultWorkbenchQuery) {
   const profile = item.selected_horizon_profile || item
   const involvedAmount = firstNumber(profile.involved_amount, item.involved_amount, profile.average_consumption_in_window, item.average_consumption_in_window)
+  const lossValue = firstNullableNumber(profile.loss_value, item.loss_value)
   return {
     id: item.entity_id || item.risk_entity_id || item.id,
     hospital: firstDisplayText(item.hospital_display_name, item.hospital_name, item.hospital_code, item.hospital),
@@ -738,9 +668,10 @@ function mapRiskEntity(item, query = defaultWorkbenchQuery) {
     probabilityDisplay: formatPercent(firstNumber(profile.risk_probability, item.risk_probability)),
     involvedAmount,
     involvedAmountText: formatMoney(involvedAmount),
+    lossValue,
+    lossValueText: lossValue === null || lossValue === undefined ? formatMoney(involvedAmount) : formatMoney(lossValue),
     status: item.status || item.monthly_status || '',
-    reason: replaceHorizonCodes(profile.reason || item.primary_reason || item.reason || ''),
-    detectorResults: (profile.detector_results || item.detectorResults || []).map(mapRuleResult)
+    reason: replaceHorizonCodes(profile.reason || item.primary_reason || item.reason || '')
   }
 }
 
@@ -750,6 +681,7 @@ function mapHorizonProfiles(profiles) {
 
 function mapHorizonProfile(profile) {
   const involvedAmount = firstNumber(profile.involved_amount, profile.average_consumption_in_window, profile.window_consumption)
+  const lossValue = firstNullableNumber(profile.loss_value)
   return {
     horizon: profile.horizon,
     horizonLabel: formatHorizonLabel(profile.horizon),
@@ -757,39 +689,27 @@ function mapHorizonProfile(profile) {
     probabilityDisplay: formatPercent(firstNumber(profile.risk_probability)),
     involvedAmount,
     involvedAmountText: formatMoney(involvedAmount),
-    reason: replaceHorizonCodes(profile.reason),
-    detectorResults: (profile.detector_results || []).map(mapRuleResult)
-  }
-}
-
-function mapRuleResult(item) {
-  return {
-    id: item.detector_id || item.id,
-    name: item.detector_name || item.name,
-    detectorScore: item.detector_score ?? item.score,
-    detectorScoreText: formatRuleScore(item.detector_score ?? item.score),
-    detectorScoreLabel: '规则巡检分',
-    signal: item.signal,
-    status: item.status,
-    evidence: replaceHorizonCodes(item.evidence),
-    action: item.action
+    lossValue,
+    lossValueText: lossValue === null || lossValue === undefined ? formatMoney(involvedAmount) : formatMoney(lossValue),
+    reason: replaceHorizonCodes(profile.reason)
   }
 }
 
 function mapOneshotPayload(payload) {
   if (payload?.ready === false) return createEmptyOneshotData()
-  const hasEvidence = (payload.items || []).some((item) => item.reason || item.evidence_text)
+  const items = payload.items || payload.rows || []
+  const hasEvidence = items.some((item) => item.reason || item.evidence_text || item.ranking_basis)
   return {
     ready: true,
     oneshotSummary: {
-      reportMonth: payload.report_month,
-      count: payload.summary?.oneshot_count ?? payload.items?.length ?? 0,
+      reportMonth: payload.report_month || payload.probability_report_month || '',
+      count: payload.summary?.oneshot_count ?? items.length ?? 0,
       highPropensityCount: payload.summary?.high_repurchase_propensity_count ?? 0,
       averageRepurchasePropensity: formatPercent(payload.summary?.average_repurchase_propensity),
       expectedRepurchaseAmount: formatMoney(payload.summary?.expected_repurchase_amount),
       evidenceReady: hasEvidence
     },
-    oneshotTerminals: (payload.items || []).map((item) => ({
+    oneshotTerminals: items.map((item) => ({
       id: item.oneshot_id || item.id,
       hospital: firstDisplayText(item.hospital_display_name, item.hospital_name, item.hospital_code),
       drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_code, item.drug_group),
@@ -802,7 +722,7 @@ function mapOneshotPayload(payload) {
       repurchasePropensityText: formatPercent(item.repurchase_propensity),
       expectedRepurchaseAmountText: formatMoney(item.expected_repurchase_amount),
       priority: item.priority,
-      reason: hasEvidence ? replaceHorizonCodes(item.reason || item.evidence_text) : ''
+      reason: hasEvidence ? replaceHorizonCodes(item.ranking_basis || item.reason || item.evidence_text) : ''
     })),
     emptyTitle: '',
     emptyMessage: ''
@@ -810,50 +730,64 @@ function mapOneshotPayload(payload) {
 }
 
 function mapMonthlyReportsPayload(payload) {
-  if (!payload || payload.ready === false) return createEmptyMonthlyReportsData()
+  if (!payload || payload.ready === false) return null
   return {
     ready: true,
     displayLookupStatus: normalizeDisplayLookupStatus(payload.display_lookup_status),
-    batchContext: {
-      ...batchContext,
-      reportMonth: payload.batch_context?.report_month || payload.report_month || '',
-      primaryHorizon: payload.batch_context?.primary_horizon || ''
-    },
+    reportContext: mapReportContextPayload(payload.report_context, {}),
+    runtimeProfile: null,
     overviewMetrics: payload.overview_metrics || [],
     dailyDetectorStatus: normalizeDailyRuleStatus(payload.daily_detector_status || payload.detector_status || {}),
     dailyReportOptions: (payload.daily_report_options || []).map((item) => ({
-      id: item.daily_report_id,
-      date: item.date,
+      id: item.daily_report_id || item.id,
+      date: item.date || item.observation_date,
       label: item.label,
       title: item.title,
-      reportMonth: item.report_month,
-      scoreBatchId: item.score_batch_id,
-      dataWatermarkAt: item.data_watermark_at,
-      highRiskEntities: String(item.high_risk_entities),
-      oneshotCount: String(item.oneshot_count),
-      detectorAlerts: String(item.detector_alerts),
+      reportMonth: item.report_month || item.probability_report_month,
+      scoreBatchId: item.score_batch_id || item.batch_id,
+      dataWatermarkAt: item.data_watermark_at || item.observation_date,
+      highRiskEntities: String(item.high_risk_entities ?? '-'),
+      oneshotCount: String(item.oneshot_count ?? '-'),
+      detectorAlerts: String(item.detector_alerts ?? item.rule_clue_count ?? '-'),
       summary: replaceHorizonCodes(item.summary)
     })),
-    monthlyReports: (payload.monthly_reports || []).map((item) => ({
-      id: item.monthly_report_id,
+    monthlyReports: (payload.monthly_reports || payload.items || []).map((item) => ({
+      id: item.monthly_report_id || item.id,
       title: item.title,
-      reportMonth: item.report_month,
-      scoreBatchId: item.score_batch_id,
-      dataWatermarkAt: item.data_watermark_at,
+      reportMonth: item.report_month || item.probability_report_month,
+      scoreBatchId: item.score_batch_id || item.batch_id,
+      dataWatermarkAt: item.data_watermark_at || item.observation_date,
       summary: replaceHorizonCodes(item.summary)
-    }))
+    })),
+    emptyTitle: '',
+    emptyMessage: ''
+  }
+}
+
+function mapProofCasesPayload(payload) {
+  if (!payload || payload.ready === false) return null
+  return {
+    ready: true,
+    displayLookupStatus: normalizeDisplayLookupStatus(payload.display_lookup_status),
+    proofCaseHorizonTabs: payload.horizon_tabs || [],
+    proofCaseHorizonSets: payload.horizon_sets || {},
+    proofCases: payload.items || payload.proof_cases || [],
+    emptyTitle: '',
+    emptyMessage: ''
   }
 }
 
 function mapDailyRuleCluesPayload(payload) {
-  if (payload?.ready === false) return null
+  if (payload?.ready === false) return { dailyDetectorClues: [], total: 0 }
   const items = payload.items || payload.rows || payload.clues || []
   return {
-    dailyDetectorClues: items.map(mapDailyRuleClue)
+    dailyDetectorClues: items.map(mapDailyRuleClue),
+    total: payload.total ?? items.length
   }
 }
 
 function mapDailyRuleClue(item, index = 0) {
+  if (item.detectorScoreLabel === '规则巡检分') return item
   const isMonthly = item.is_monthly_high_risk_entity === true || Boolean(item.risk_entity_id)
   const involvedAmount = firstNullableNumber(item.involved_amount, item.monthly_involved_amount)
   const title = item.display_name || item.title || `规则线索 #${item.display_rank || index + 1}`
@@ -867,8 +801,9 @@ function mapDailyRuleClue(item, index = 0) {
     drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_group, '规则线索'),
     manufacturer: firstDisplayText(item.manufacturer_display_name, item.manufacturer_code),
     region: firstDisplayText(item.region_display_name, item.region_code),
-    detectorName: item.detector_name || item.detector_id || '规则',
-    detectorFamily: item.detector_family || '规则',
+    detectorName: item.detector_name_label || item.detector_name || item.detector_id || '规则',
+    detectorFamily: item.detector_family || '',
+    detectorFamilyLabel: item.detector_family_label || detectorFamilyLabel(item.detector_family),
     detectorId: item.detector_id || '',
     detectorRunId: item.detector_run_id || '',
     detectorScore: item.detector_score,
@@ -877,7 +812,7 @@ function mapDailyRuleClue(item, index = 0) {
     detectorLevel: item.detector_level || item.confidence || '-',
     rootCauseLabel: item.root_cause_label || '规则命中',
     evidenceText: item.evidence_text || item.caveat || '',
-    detectorRunDate: item.run_date,
+    detectorRunDate: item.detector_run_date || item.run_date,
     monthlyRiskProbability: item.monthly_risk_probability ?? item.risk_probability,
     monthlyRiskProbabilityText:
       item.monthly_risk_probability === null || item.monthly_risk_probability === undefined
@@ -887,6 +822,8 @@ function mapDailyRuleClue(item, index = 0) {
         : formatPercent(item.monthly_risk_probability),
     involvedAmount,
     involvedAmountText: involvedAmount === null || involvedAmount === undefined ? '-' : formatMoney(involvedAmount),
+    lossValue: firstNullableNumber(item.loss_value),
+    lossValueText: formatMoney(firstNullableNumber(item.loss_value, involvedAmount)),
     actionText: isMonthly ? '查看风险详情' : '查看线索详情'
   }
 }
@@ -900,8 +837,10 @@ function mapRiskEntityRuleEvidence(payload) {
           detector_run_id: item.detector_run_id,
           run_date: item.run_date,
           detector_id: item.detector_id,
+          detector_name_label: item.detector_name_label,
           detector_name: item.detector_name,
           detector_family: item.detector_family,
+          detector_family_label: item.detector_family_label,
           detector_score: item.detector_score,
           detector_level: item.confidence,
           root_cause_label: item.root_cause_label,
@@ -914,7 +853,8 @@ function mapRiskEntityRuleEvidence(payload) {
         },
         index
       ),
-      detectorName: payload.catalog_by_detector_id?.[item.detector_id]?.detector_name || item.detector_name || item.detector_id
+      detectorName: item.detector_name_label || payload.catalog_by_detector_id?.[item.detector_id]?.detector_name || item.detector_name || item.detector_id,
+      detectorFamilyLabel: item.detector_family_label || detectorFamilyLabel(item.detector_family)
     }))
   }
 }
@@ -928,141 +868,34 @@ function mapProbabilityTrendPayload(payload) {
         riskProbability: firstNumber(item.risk_probability),
         riskProbabilityText: formatPercent(firstNumber(item.risk_probability)),
         involvedAmount,
-        involvedAmountText: involvedAmount === null || involvedAmount === undefined ? '-' : formatMoney(involvedAmount)
+        involvedAmountText: involvedAmount === null || involvedAmount === undefined ? '-' : formatMoney(involvedAmount),
+        lossValue: firstNullableNumber(item.loss_value),
+        lossValueText: formatMoney(firstNullableNumber(item.loss_value, involvedAmount))
       }
     })
   }
 }
 
-function mapStaticRuleEvidence(entity, query) {
-  return (entity.detectorResults || []).map((item) => ({
-    id: `${entity.id}-${item.id}`,
-    riskEntityId: entity.id,
-    sourceType: 'monthly_high_risk',
-    sourceTypeLabel: '月报高风险',
-    isMonthlyHighRiskEntity: true,
-    hospital: entity.hospital,
-    drug: entity.drug,
-    manufacturer: entity.manufacturer,
-    region: entity.region,
-    detectorName: item.name,
-    detectorFamily: item.family || '规则',
-    detectorId: item.id,
-    detectorRunId: `${query.runDate}-${item.id}`,
-    detectorScore: item.detectorScore ?? item.score,
-    detectorScoreText: formatRuleScore(item.detectorScore ?? item.score),
-    detectorScoreLabel: '规则巡检分',
-    detectorLevel: item.signal,
-    rootCauseLabel: item.status,
-    evidenceText: item.evidence,
-    detectorRunDate: query.runDate,
-    monthlyRiskProbability: entity.riskProbability,
-    monthlyRiskProbabilityText: entity.probabilityDisplay,
-    involvedAmount: entity.involvedAmount,
-    involvedAmountText: entity.involvedAmountText,
-    actionText: item.action
-  }))
-}
-
-function buildStaticWorkbenchRows(query) {
-  const rows = workbenchDisplayRows
-    .filter((row) => !query.manufacturerCode || row.manufacturer === query.manufacturerCode || row.manufacturerCode === query.manufacturerCode)
-    .map((row) => {
-      if (!row.entityId) return applyStaticFallbackHorizon(row, query.horizon)
-      const entity = riskEntities.find((item) => item.id === row.entityId)
-      const profile = entity ? riskCardHorizonProfiles[entity.id]?.[query.horizon] : null
-      return profile && entity ? mapStaticEntityRow(entity, profile) : row
-    })
-
-  const sorted = rows.sort((a, b) => {
-    if (query.sortBy === 'involved_amount') return b.involvedAmount - a.involvedAmount
-    return b.riskProbability - a.riskProbability
-  })
-  return sorted.slice(0, query.topN)
-}
-
-function buildStaticRuleClues(query) {
-  return dailyDetectorClues.map((item) => {
-    if (!item.riskEntityId) return { ...item, detectorRunDate: query.runDate }
-    const entity = riskEntities.find((riskEntity) => riskEntity.id === item.riskEntityId)
-    const profile = entity ? riskCardHorizonProfiles[entity.id]?.[query.horizon] : null
-    return {
-      ...item,
-      sourceTypeLabel: item.sourceTypeLabel === '月报高风险对象' ? '月报高风险' : item.sourceTypeLabel,
-      detectorRunDate: query.runDate,
-      monthlyRiskProbability: profile?.riskProbability ?? item.monthlyRiskProbability,
-      monthlyRiskProbabilityText: profile?.probabilityDisplay ?? item.monthlyRiskProbabilityText,
-      involvedAmount: profile?.involvedAmount ?? item.involvedAmount,
-      involvedAmountText: profile?.involvedAmountText ?? item.involvedAmountText
-    }
-  })
-}
-
-function mapStaticEntityRow(entity, profile) {
-  return {
-    id: entity.id,
-    entityId: entity.id,
-    manufacturer: entity.manufacturer,
-    manufacturerCode: entity.manufacturer,
-    hospital: entity.hospital,
-    drug: entity.drug,
-    hospitalDrugKey: `${entity.hospital} × ${entity.drug}`,
-    region: entity.region,
-    horizon: profile.horizon,
-    riskProbability: profile.riskProbability,
-    probabilityDisplay: profile.probabilityDisplay,
-    involvedAmount: profile.involvedAmount,
-    involvedAmountText: profile.involvedAmountText,
-    fillSource: '月报高风险',
-    sourceType: '月报高风险',
-    action: '查看详情'
-  }
-}
-
-function applyStaticFallbackHorizon(row, horizon) {
-  const factors = { H3: { p: -0.08, a: 0.5 }, H6: { p: 0, a: 1 }, H12: { p: 0.06, a: 1.65 } }
-  const factor = factors[horizon] || factors.H6
-  const riskProbability = Math.max(0.05, Math.min(0.95, Number((row.riskProbability + factor.p).toFixed(2))))
-  const involvedAmount = Math.round(row.involvedAmount * factor.a)
-  return {
-    ...row,
-    sourceType: row.sourceType || '规则线索',
-    fillSource: row.fillSource || '规则线索',
-    horizon,
-    riskProbability,
-    probabilityDisplay: formatPercent(riskProbability),
-    involvedAmount,
-    involvedAmountText: formatMoney(involvedAmount)
-  }
-}
-
-function mergeEntityProfile(entity, profile) {
-  return {
-    ...entity,
-    horizon: profile.horizon,
-    riskProbability: profile.riskProbability,
-    probabilityDisplay: profile.probabilityDisplay,
-    involvedAmount: profile.involvedAmount,
-    involvedAmountText: profile.involvedAmountText,
-    reason: profile.reason,
-    detectorResults: profile.detectorResults
-  }
-}
-
 function queryToApiParams(query) {
   return {
+    observation_date: query.observationDate,
+    report_month: query.probabilityReportMonth || query.reportMonth,
+    run_date: query.runDate || query.observationDate,
+    probability_report_month: query.probabilityReportMonth || query.reportMonth,
+    detector_run_date: query.detectorRunDate || query.observationDate,
     manufacturer_code: query.manufacturerCode,
-    report_month: query.reportMonth,
-    run_date: query.runDate,
+    detector_family: query.detectorFamily,
+    detector_id: query.detectorId,
     horizon: query.horizon,
     top_n: query.topN,
-    sort_by: query.sortBy
+    sort_by: query.sortBy,
+    user_id: query.userId
   }
 }
 
 function queryToEvidenceParams(query, source = {}) {
   return {
-    run_date: query.runDate,
+    ...queryToApiParams(query),
     detector_family: source.detectorFamily || source.detector_family,
     detector_id: source.detectorId || source.detector_id,
     detector_run_id: source.detectorRunId || source.detector_run_id
@@ -1070,34 +903,37 @@ function queryToEvidenceParams(query, source = {}) {
 }
 
 function mapManufacturersPayload(payload) {
-  const items = payload.manufacturers || payload.items || []
-  if (!items.length && payload?.ready === false) return null
-  const manufacturerOptions = items.map((item) => ({
+  const items = payload?.manufacturers || payload?.items || []
+  if (!items.length && payload?.ready !== true && payload?.ready !== 'conditional') return null
+  const manufacturerOptions = items.map((item, index) => ({
     code: item.manufacturer_code || item.code || item.id,
-    name: item.manufacturer_display_name || item.manufacturer_name || item.name || item.manufacturer_code || item.code
+    name: manufacturerDisplayName(item, index)
   }))
   return {
-    manufacturerCount: payload.manufacturer_count ?? items.length,
-    defaultManufacturerCode: payload.default_manufacturer_code || manufacturerOptions[0]?.code,
+    manufacturerCount: payload?.manufacturer_count ?? items.length,
+    defaultManufacturerCode: payload?.default_manufacturer_code || manufacturerOptions[0]?.code,
     manufacturerOptions
   }
 }
 
-function mapDailyDetectorDatesPayload(payload) {
-  if (payload?.ready === false) return null
-  const items = payload.items || payload.dates || []
+function mapDetectorCatalogPayload(payload) {
+  const items = payload?.items || []
   return {
-    dailyDetectorDateOptions: items.map((item) => ({
-      runDate: item.run_date || item.date || item,
-      label: item.label || item.run_date || item.date || item
+    detectorCatalog: items.map((item) => ({
+      detectorId: item.detector_id,
+      detectorFamily: item.detector_family,
+      detectorFamilyLabel: detectorFamilyLabel(item.detector_family),
+      detectorName: item.detector_name || item.detector_id,
+      status: item.status
     }))
   }
 }
 
-function buildTodayMetrics(rows, detectorSummary, query) {
+function buildTodayMetrics(rows, detectorSummary, query, context = {}) {
   return [
-    { label: '当前生产企业', value: manufacturerName(query.manufacturerCode), tone: 'info' },
-    { label: '当前观察日期', value: query.runDate || '-', tone: 'neutral' },
+    { label: '当前生产企业', value: query.manufacturerCode || '未选择', tone: 'info' },
+    { label: '观察日期', value: context.observationDate || query.observationDate || '-', tone: 'neutral' },
+    { label: '规则巡检日期', value: context.detectorRunDate || query.detectorRunDate || '-', tone: 'success' },
     { label: '当前预测窗口', value: formatHorizonLabel(query.horizon), tone: 'warning' },
     { label: '今日线索总数', value: String(detectorSummary.clueCount ?? 0), tone: 'success' },
     { label: '最高规则巡检分', value: detectorSummary.highestRuleScore === null || detectorSummary.highestRuleScore === undefined ? '-' : String(detectorSummary.highestRuleScore), tone: 'danger' },
@@ -1105,12 +941,31 @@ function buildTodayMetrics(rows, detectorSummary, query) {
   ]
 }
 
-function currentManufacturerOption(query) {
-  return [{ code: query.manufacturerCode, name: manufacturerName(query.manufacturerCode) }]
+function manufacturerDisplayName(item, index) {
+  const code = item.manufacturer_code || item.code || item.id || ''
+  const name = item.manufacturer_display_name || item.manufacturer_name || item.name || ''
+  if (name && name !== code) return name
+  return `生产企业 ${index + 1}（名称未接入）`
 }
 
-function manufacturerName(code) {
-  return manufacturerOptions.find((item) => item.code === code)?.name || code || '-'
+function detectorFamilyLabel(family) {
+  const labels = {
+    interval: '采购间隔',
+    purchase_interval: '采购间隔',
+    quantity: '采购数量',
+    purchase_quantity: '采购数量',
+    frequency: '采购频次',
+    purchase_frequency: '采购频次',
+    assortment: 'SKU 结构',
+    fulfillment: '履约交付',
+    price: '价格',
+    peer: '同群对比'
+  }
+  return labels[family] || family || '未分类'
+}
+
+function currentManufacturerOption(query) {
+  return query.manufacturerCode ? [{ code: query.manufacturerCode, name: query.manufacturerCode }] : []
 }
 
 function highestRuleScore(items = []) {
@@ -1121,6 +976,10 @@ function highestRuleScore(items = []) {
 }
 
 function firstDisplayText(...values) {
+  return values.find((value) => value !== undefined && value !== null && String(value).trim() !== '') || ''
+}
+
+function firstText(...values) {
   return values.find((value) => value !== undefined && value !== null && String(value).trim() !== '') || ''
 }
 
@@ -1156,10 +1015,6 @@ function defaultRunDate() {
   const now = new Date()
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
   return local.toISOString().slice(0, 10)
-}
-
-function defaultReportMonth() {
-  return defaultRunDate().slice(0, 7)
 }
 
 function formatRuleScore(value) {

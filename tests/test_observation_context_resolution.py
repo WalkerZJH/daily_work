@@ -6,7 +6,7 @@ from pathlib import Path
 from risk_model_core.repositories import ParquetRiskResultRepository
 
 
-ROOT = Path("algo_main/data/entity_complete_v2_coverage_expansion/16_multi_month_formal_result_batches")
+ROOT = Path("data/project_result_batches")
 BATCH_DIR = ROOT / "report_month=2025-12" / "batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw"
 
 
@@ -19,14 +19,14 @@ def test_observation_date_maps_to_previous_complete_month() -> None:
     assert context["detector_run_date"] == "2025-12-05"
 
 
-def test_missing_detector_run_is_not_silent_fallback() -> None:
+def test_generated_daily_detector_run_is_ready() -> None:
     repo = ParquetRiskResultRepository(BATCH_DIR)
     context = repo.resolve_observation_context(observation_date="2025-12-05", batch_root=ROOT)
 
     assert context["probability_batch_available"] is True
-    assert context["detector_run_available"] is False
-    assert context["context_status"] == "detector_run_unavailable"
-    assert context["manual_selection_required"] is True
+    assert context["detector_run_available"] is True
+    assert context["context_status"] == "ready"
+    assert context["manual_selection_required"] is False
 
 
 def test_today_observation_does_not_claim_today_report() -> None:
@@ -45,4 +45,3 @@ def test_open_probability_repository_uses_context_batch() -> None:
     probability_repo = repo.open_probability_repository(context)
 
     assert probability_repo.manifest().report_month == "2025-11"
-

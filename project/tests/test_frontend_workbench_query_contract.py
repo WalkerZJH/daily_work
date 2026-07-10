@@ -90,6 +90,28 @@ def test_workbench_sorts_by_horizon_risk_probability_across_visible_scope() -> N
     assert all(row["horizon"] == "H3" for row in rows)
 
 
+def test_workbench_horizon_profiles_override_base_probability_and_amount_columns() -> None:
+    with override_workbench_repository():
+        response = TestClient(app).get(
+            "/api/v1/workbench",
+            params={
+                "manufacturer_code": "M1",
+                "horizon": "H6",
+                "top_n": 1,
+                "sort_by": "loss_value",
+            },
+            headers={"X-User-Id": "user_a"},
+        )
+
+    assert response.status_code == 200
+    row = response.json()["rows"][0]
+    assert row["entity_id"] == "m1_entity"
+    assert row["horizon"] == "H6"
+    assert row["risk_probability"] == 0.7
+    assert row["involved_amount"] == 200
+    assert row["loss_value"] == 140
+
+
 def test_current_user_manufacturer_options_are_backend_scoped() -> None:
     with override_workbench_repository():
         response = TestClient(app).get(
@@ -249,7 +271,9 @@ def _entity(entity_id: str, manufacturer_code: str, horizon: str) -> dict[str, o
         "region_display_name": "region",
         "report_month": "2026-07",
         "primary_horizon": horizon,
+        "risk_probability": 0.01,
         "risk_probability_value": 0.5,
+        "involved_amount": 1,
         "risk_level": "orange",
         "risk_color": "orange",
         "review_status": "recurring",

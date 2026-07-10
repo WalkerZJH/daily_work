@@ -6,10 +6,8 @@ from pathlib import Path
 def formal_observation_batch_root() -> Path:
     return (
         Path(__file__).resolve().parents[2]
-        / "algo_main"
         / "data"
-        / "entity_complete_v2_coverage_expansion"
-        / "16_multi_month_formal_result_batches"
+        / "project_result_batches"
     )
 
 

@@ -23,4 +23,4 @@ def test_complete_probability_month_mapping_does_not_use_latest_fallback_wording
     text = json.dumps(payload, ensure_ascii=False)
     assert "fallback_to_latest" not in text
     assert "latest_available" not in text
-    assert payload["context_status"] == "detector_run_unavailable"
+    assert payload["context_status"] == "ready"

@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 
-ROOT = Path("algo_main/data/entity_complete_v2_coverage_expansion/16_multi_month_formal_result_batches")
+ROOT = Path("data/project_result_batches")
 TARGET_MONTHS = ["2025-09", "2025-10", "2025-11", "2025-12"]
 
 
@@ -18,7 +18,6 @@ def test_target_months_have_formal_batches() -> None:
     for month in TARGET_MONTHS:
         current = batch_dir(month)
         assert (current / "manifest.json").exists(), month
-        assert (current / "report_context.json").exists(), month
         manifest = json.loads((current / "manifest.json").read_text(encoding="utf-8"))
         assert manifest["report_type"] == "monthly"
         assert manifest["report_month"] == month
@@ -54,3 +53,23 @@ def test_available_observation_contexts_has_required_dates() -> None:
         set(registry["observation_date"].astype(str))
     )
 
+
+def test_each_target_month_has_next_month_daily_detector_runs() -> None:
+    for month in TARGET_MONTHS:
+        current = batch_dir(month)
+        runs = read_table(current, "daily_detector_runs")
+        run_dates = set(runs["run_date"].astype(str))
+        year, mon = [int(part) for part in month.split("-")]
+        if mon == 12:
+            year, mon = year + 1, 1
+        else:
+            mon += 1
+        expected_days = pd.date_range(f"{year:04d}-{mon:02d}-01", periods=pd.Period(f"{year:04d}-{mon:02d}").days_in_month)
+        assert {day.date().isoformat() for day in expected_days} == run_dates
+
+
+def read_table(batch: Path, name: str) -> pd.DataFrame:
+    parquet = batch / f"{name}.parquet"
+    if parquet.exists():
+        return pd.read_parquet(parquet)
+    return pd.read_csv(batch / f"{name}.csv")

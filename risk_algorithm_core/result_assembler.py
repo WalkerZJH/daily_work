@@ -30,6 +30,7 @@ def assemble_result_batch(
     score_frame: pd.DataFrame | None = None,
     normalized_tables: dict[str, pd.DataFrame] | None = None,
     artifact_metadata: dict[str, Any] | None = None,
+    detector_run_dates: list[str] | None = None,
     write_parquet: bool = True,
 ) -> Path:
     batch_id = f"{report_month}-monthly-risk-algorithm-{run_id}"
@@ -48,12 +49,13 @@ def assemble_result_batch(
         normalized_tables or {},
         report_month,
         raw_batch_id,
+        additional_entities=feature_frame,
     )
-    detector_tables = build_daily_detector_tables(
+    detector_tables = _build_detector_tables_for_dates(
         risk_entities=risk_entities,
         scan_features=feature_frame,
         report_month=report_month,
-        run_date=dt.date.today().isoformat(),
+        run_dates=detector_run_dates or [dt.date.today().isoformat()],
         source_raw_batch_id=raw_batch_id,
         source_result_batch_id=batch_id,
     )
@@ -88,8 +90,8 @@ def assemble_result_batch(
         "result_batch_id": batch_id,
         "report_type": "monthly",
         "report_month": report_month,
-        "report_date": dt.date.today().isoformat(),
-        "run_date": dt.date.today().isoformat(),
+        "report_date": _first_run_date(detector_run_dates) or dt.date.today().isoformat(),
+        "run_date": _first_run_date(detector_run_dates) or dt.date.today().isoformat(),
         "score_as_of_date": cutoff_date,
         "score_cutoff_month": report_month,
         "cutoff_date": cutoff_date,
@@ -122,6 +124,15 @@ def assemble_result_batch(
         },
         "detector_score_probability_interpretation": "detector_score_is_not_probability",
         "detector_default_scope": "monthly_high_risk_entities",
+        "runtime_profile_summary": artifact_metadata.get(
+            "runtime_profile_summary",
+            {
+                "monthly_probability_total_seconds": None,
+                "detector_total_seconds": None,
+                "end_to_end_seconds": None,
+                "runtime_source": "not_profiled",
+            },
+        ),
         "worklist_config": worklist_config,
         "allowed_usage": ["internal_diagnostic", "analyst_view", "monthly_business_review"],
         "forbidden_usage": ["auto_dispatch", "formal_customer_probability_service", "definitive_churn_claim"],
@@ -148,11 +159,54 @@ def assemble_result_batch(
             "not full SQL universe claim",
             "business review required",
             "raw_orders_mode_ready=false; current formal readiness is conditional_fact_mode_ready",
+            "daily detector tables are materialized for configured observation dates from the monthly scan feature frame",
         ],
     }
     write_manifest(batch_dir, manifest)
     validate_result_batch(batch_dir)
     return batch_dir
+
+
+def _build_detector_tables_for_dates(
+    *,
+    risk_entities: pd.DataFrame,
+    scan_features: pd.DataFrame,
+    report_month: str,
+    run_dates: list[str],
+    source_raw_batch_id: str,
+    source_result_batch_id: str,
+) -> dict[str, pd.DataFrame]:
+    normalized_dates = list(dict.fromkeys(str(item) for item in run_dates if str(item).strip()))
+    if not normalized_dates:
+        normalized_dates = [dt.date.today().isoformat()]
+    tables_by_date = [
+        build_daily_detector_tables(
+            risk_entities=risk_entities,
+            scan_features=scan_features,
+            report_month=report_month,
+            run_date=run_date,
+            source_raw_batch_id=source_raw_batch_id,
+            source_result_batch_id=source_result_batch_id,
+        )
+        for run_date in normalized_dates
+    ]
+    first = tables_by_date[0]
+    return {
+        "detector_catalog": first["detector_catalog"],
+        "daily_detector_runs": pd.concat([tables["daily_detector_runs"] for tables in tables_by_date], ignore_index=True),
+        "daily_detector_clues": pd.concat([tables["daily_detector_clues"] for tables in tables_by_date], ignore_index=True),
+        "high_risk_detector_evidence": pd.concat([tables["high_risk_detector_evidence"] for tables in tables_by_date], ignore_index=True),
+    }
+
+
+def _first_run_date(run_dates: list[str] | None) -> str | None:
+    if not run_dates:
+        return None
+    for item in run_dates:
+        text = str(item).strip()
+        if text:
+            return text
+    return None
 
 
 def _build_risk_entities(status: pd.DataFrame, report_month: str) -> pd.DataFrame:

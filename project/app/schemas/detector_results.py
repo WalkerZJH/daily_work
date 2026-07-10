@@ -86,10 +86,16 @@ class DailyDetectorClueItem(DetectorResultModel):
     run_date: str
     tenant_id: str | None = None
     manufacturer_code: str | None = None
+    manufacturer_display_name: str | None = None
+    manufacturer_name: str | None = None
     hospital_code: str | None = None
+    hospital_display_name: str | None = None
     hospital_name: str | None = None
     drug_group: str | None = None
+    drug_display_name: str | None = None
     drug_name: str | None = None
+    region_display_name: str | None = None
+    product_line_name: str | None = None
     detector_id: str
     detector_family: str
     detector_family_label: str | None = None
@@ -146,6 +152,8 @@ class HighRiskDetectorEvidenceItem(DetectorResultModel):
     run_date: str
     detector_id: str
     detector_family: str
+    detector_family_label: str | None = None
+    detector_name_label: str | None = None
     detector_score: float | None = None
     confidence: float | None = None
     root_cause_label: str | None = None

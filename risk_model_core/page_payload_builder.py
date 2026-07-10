@@ -278,13 +278,23 @@ class PagePayloadBuilder:
             sort_by=["risk_score_display", "risk_score"],
             limit=top_n,
         )
+        rows = _merge_entity_display_lookup(rows, self.repository, report_month or self.repository.manifest().report_month)
         items = []
         for _, row in rows.iterrows():
             propensity = _probability(row.get("risk_score_display", row.get("risk_score", 0)))
             items.append(
                 {
                     "oneshot_id": str(row["risk_entity_id"]),
+                    "manufacturer_code": _text(row.get("manufacturer_code")),
+                    "manufacturer_display_name": _display_name(
+                        row, "manufacturer_display_name", "manufacturer_code", "Manufacturer"
+                    ),
+                    "manufacturer_name": _display_name(
+                        row, "manufacturer_display_name", "manufacturer_code", "Manufacturer"
+                    ),
+                    "hospital_code": _text(row.get("hospital_code")),
                     "hospital_name": _display_name(row, "hospital_display_name", "hospital_code", "Hospital"),
+                    "drug_group": _text(row.get("drug_group")),
                     "drug_name": _display_name(row, "drug_display_name", "drug_group", "Drug"),
                     "region": _text(row.get("region_display_name")) or _text(row.get("region_code")) or "Unknown region",
                     "first_purchase_date": str(self.repository.manifest().score_cutoff_month),
@@ -298,6 +308,7 @@ class PagePayloadBuilder:
             )
         avg = round(sum(item["repurchase_propensity"] for item in items) / len(items), 4) if items else 0.0
         return {
+            "ready": True,
             "report_month": self.repository.manifest().report_month,
             "summary": {
                 "oneshot_count": len(items),
@@ -306,6 +317,7 @@ class PagePayloadBuilder:
                 "expected_repurchase_amount": 0,
             },
             "items": items,
+            "total": len(items),
         }
 
     def _build_frontend_monthly_reports_payload(self) -> dict[str, Any]:
@@ -572,6 +584,43 @@ def _workbench_row(item: dict[str, Any]) -> dict[str, Any]:
         "fill_source": "backend_scope_query",
         "action": "view_detail",
     }
+
+
+def _merge_entity_display_lookup(rows: pd.DataFrame, repository: RiskResultRepository, report_month: str) -> pd.DataFrame:
+    if rows.empty:
+        return rows
+    try:
+        lookup = repository.load_entity_display_lookup(report_month=report_month)
+    except (FileNotFoundError, NotImplementedError, ValueError, AttributeError):
+        return rows
+    join_cols = ["tenant_id", "report_month", "manufacturer_code", "hospital_code", "drug_group"]
+    if lookup.empty or not set(join_cols).issubset(rows.columns) or not set(join_cols).issubset(lookup.columns):
+        return rows
+    display_cols = [
+        "manufacturer_display_name",
+        "hospital_display_name",
+        "drug_display_name",
+        "region_code",
+        "region_display_name",
+        "product_line_code",
+        "product_line_name",
+    ]
+    available = [col for col in display_cols if col in lookup.columns]
+    joined = rows.merge(
+        lookup[join_cols + available].drop_duplicates(join_cols, keep="first"),
+        on=join_cols,
+        how="left",
+        suffixes=("", "_lookup"),
+    )
+    for col in available:
+        lookup_col = f"{col}_lookup"
+        if lookup_col not in joined.columns:
+            continue
+        lookup_values = joined[lookup_col].map(_text)
+        current_values = joined[col].map(_text) if col in joined else pd.Series("", index=joined.index)
+        joined[col] = lookup_values.where(lookup_values.str.len().gt(0), current_values)
+        joined = joined.drop(columns=[lookup_col])
+    return joined
 
 
 def _matching_primary_profile(row: pd.Series, profiles: pd.DataFrame) -> dict[str, Any] | None:

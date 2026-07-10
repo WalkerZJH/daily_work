@@ -6,8 +6,6 @@ import {
   buildPersistentParams,
   createEmptyRuleCluesData,
   createEmptyWorkbenchOptions,
-  createStaticRuleCluesData,
-  createStaticWorkbenchOptions,
   loadReportContext,
   loadRuleCluesData,
   loadWorkbenchOptions,
@@ -20,19 +18,24 @@ const query = reactive(
     backendBaseUrl: params.get('backendBaseUrl'),
     userId: params.get('user_id') || params.get('userId'),
     demoMode: params.get('demoMode'),
+    observationDate: params.get('observation_date'),
     manufacturerCode: params.get('manufacturer_code'),
     reportMonth: params.get('report_month'),
     runDate: params.get('run_date'),
+    probabilityReportMonth: params.get('probability_report_month'),
+    detectorRunDate: params.get('detector_run_date'),
     horizon: params.get('horizon') || params.get('h'),
     topN: Number(params.get('top_n')),
     sortBy: params.get('sort_by')
   })
 )
 
-const options = ref(query.demoMode ? createStaticWorkbenchOptions() : createEmptyWorkbenchOptions(query))
-const state = ref(query.demoMode ? createStaticRuleCluesData(query) : createEmptyRuleCluesData(query))
+const options = ref(createEmptyWorkbenchOptions(query))
+const state = ref(createEmptyRuleCluesData(query))
 const reportContext = ref(state.value.reportContext)
 const activeFilter = ref('all')
+const selectedDetectorFamily = ref(query.detectorFamily || 'all')
+const selectedDetectorId = ref(query.detectorId || 'all')
 const isLoading = ref(false)
 let suppressWatcher = false
 
@@ -43,6 +46,19 @@ const filterTabs = [
 ]
 
 const selectedHorizonLabel = computed(() => options.value.horizonOptions.find((item) => item.id === query.horizon)?.label || query.horizon)
+const detectorFamilyOptions = computed(() => {
+  const families = [...new Map((options.value.detectorCatalog || []).map((item) => [
+    item.detectorFamily,
+    { id: item.detectorFamily, label: item.detectorFamilyLabel || item.detectorFamily }
+  ])).values()].filter((item) => item.id)
+  return [{ id: 'all', label: '全部大类' }, ...families]
+})
+const detectorIdOptions = computed(() => {
+  const catalog = selectedDetectorFamily.value === 'all'
+    ? options.value.detectorCatalog || []
+    : (options.value.detectorCatalog || []).filter((item) => item.detectorFamily === selectedDetectorFamily.value)
+  return [{ id: 'all', label: '全部小类' }, ...catalog.map((item) => ({ id: item.detectorId, label: item.detectorName || item.detectorId }))]
+})
 const filteredClues = computed(() => {
   const items = state.value.dailyDetectorClues || []
   if (activeFilter.value === 'monthly') return items.filter((item) => item.isMonthlyHighRiskEntity)
@@ -81,9 +97,11 @@ function applyLoadedOptions(loadedOptions, fallbackQuery = query) {
 async function refreshClues() {
   isLoading.value = true
   try {
+    query.detectorFamily = selectedDetectorFamily.value === 'all' ? '' : selectedDetectorFamily.value
+    query.detectorId = selectedDetectorId.value === 'all' ? '' : selectedDetectorId.value
     if (query.demoMode) {
-      options.value = createStaticWorkbenchOptions()
-      state.value = createStaticRuleCluesData(query)
+      options.value = await loadWorkbenchOptions(query, { allowDemo: true })
+      state.value = await loadRuleCluesData(query, { allowDemo: true })
       reportContext.value = state.value.reportContext
       updateUrl()
       return
@@ -117,11 +135,20 @@ async function refreshClues() {
 onMounted(refreshClues)
 
 watch(
-  () => [query.runDate, query.horizon, query.manufacturerCode, query.backendBaseUrl, query.userId, query.demoMode],
+  () => [query.observationDate, query.horizon, query.manufacturerCode, query.backendBaseUrl, query.userId, query.demoMode],
   () => {
     if (!suppressWatcher) refreshClues()
   }
 )
+
+watch(selectedDetectorFamily, () => {
+  selectedDetectorId.value = 'all'
+  if (!suppressWatcher) refreshClues()
+})
+
+watch(selectedDetectorId, () => {
+  if (!suppressWatcher) refreshClues()
+})
 </script>
 
 <template>
@@ -129,7 +156,7 @@ watch(
     <div class="page-header control-header">
       <div>
         <h1>今日规则线索</h1>
-        <div class="subtitle">{{ query.runDate }} · 规则巡检 · {{ selectedHorizonLabel }}</div>
+        <div class="subtitle">{{ query.observationDate }} · 规则巡检 · {{ selectedHorizonLabel }}</div>
       </div>
       <div class="workbench-controls">
         <label class="control-field">
@@ -140,9 +167,7 @@ watch(
         </label>
         <label class="control-field">
           <span>观察日期</span>
-          <select v-model="query.runDate">
-            <option v-for="item in options.dailyDetectorDateOptions" :key="item.runDate" :value="item.runDate">{{ item.label }}</option>
-          </select>
+          <input v-model="query.observationDate" type="date" />
         </label>
       </div>
     </div>
@@ -160,8 +185,8 @@ watch(
           月报高风险对象上的规则命中会附着到风险卡；未进入月报高风险清单但被规则命中的对象，仅作为今日规则线索展示。
         </p>
       </div>
-      <div class="batch-card">
-        <div class="batch-row"><span>观察日期</span><strong>{{ query.runDate }}</strong></div>
+        <div class="batch-card">
+        <div class="batch-row"><span>观察日期</span><strong>{{ query.observationDate }}</strong></div>
         <div class="batch-row"><span>今日线索</span><strong>{{ state.dailyDetectorStatus.clueCount }}</strong></div>
         <div class="batch-row"><span>已附着证据</span><strong>{{ state.dailyDetectorStatus.attachedHighRiskCount }}</strong></div>
         <div class="batch-row"><span>数据状态</span><strong>{{ state.dailyDetectorStatus.sourceLabel }}</strong></div>
@@ -185,6 +210,18 @@ watch(
             </button>
           </div>
         </div>
+        <label class="control-field">
+          <span>规则大类</span>
+          <select v-model="selectedDetectorFamily">
+            <option v-for="item in detectorFamilyOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
+          </select>
+        </label>
+        <label class="control-field">
+          <span>规则小类</span>
+          <select v-model="selectedDetectorId">
+            <option v-for="item in detectorIdOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
+          </select>
+        </label>
         <div class="segmented-control">
           <button
             v-for="tab in filterTabs"
@@ -232,7 +269,7 @@ watch(
               </td>
               <td>
                 <strong>{{ clue.detectorName }}</strong>
-                <div class="muted">{{ clue.detectorFamily }} · {{ clue.detectorLevel }}</div>
+                <div class="muted">{{ clue.detectorFamilyLabel }} · {{ clue.detectorLevel }}</div>
               </td>
               <td>
                 <strong>{{ clue.detectorScoreText }}</strong>

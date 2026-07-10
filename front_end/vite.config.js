@@ -18,7 +18,12 @@ export default defineConfig({
         clues: resolve(__dirname, 'clues.html'),
         clueDetail: resolve(__dirname, 'clue-detail.html'),
         oneshot: resolve(__dirname, 'oneshot.html'),
-        backtest: resolve(__dirname, 'backtest.html')
+        backtest: resolve(__dirname, 'backtest.html'),
+        algoArchitecture: resolve(__dirname, 'algo-architecture.html'),
+        algoConfig: resolve(__dirname, 'algo-config.html'),
+        verify: resolve(__dirname, 'verify.html'),
+        distributor: resolve(__dirname, 'distributor.html'),
+        orderDetail: resolve(__dirname, 'order-detail.html')
       }
     }
   },

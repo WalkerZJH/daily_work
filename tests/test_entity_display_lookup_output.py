@@ -71,3 +71,46 @@ def test_entity_display_lookup_prefers_master_names_and_marks_code_fallback() ->
     assert fallback["drug_display_name"] == "d_missing"
     assert fallback["display_name_quality"] == "code_fallback"
     assert fallback["source_raw_batch_id"] == "raw-001"
+
+
+def test_entity_display_lookup_includes_detector_only_entities() -> None:
+    risk_entities = pd.DataFrame(
+        [
+            {
+                "tenant_id": "tenant",
+                "manufacturer_code": "m1",
+                "hospital_code": "h1",
+                "drug_code": "d1",
+                "drug_group": "d1",
+                "report_month": "2025-12",
+            }
+        ]
+    )
+    detector_entities = pd.DataFrame(
+        [
+            {
+                "tenant_id": "tenant",
+                "manufacturer_code": "m1",
+                "hospital_code": "h_detector",
+                "drug_code": "d_detector",
+                "drug_group": "d_detector",
+                "hospital_display_name": "Detector Hospital",
+                "drug_display_name": "Detector Drug",
+                "report_month": "2025-12",
+            }
+        ]
+    )
+
+    lookup = build_entity_display_lookup(
+        risk_entities,
+        {"manufacturer_master": pd.DataFrame([{"manufacturer_code": "m1", "manufacturer_name": "Manufacturer One"}])},
+        report_month="2025-12",
+        raw_batch_id="raw-001",
+        additional_entities=detector_entities,
+        updated_at="2026-07-08T00:00:00+00:00",
+    )
+
+    detector_row = lookup[lookup["hospital_code"].eq("h_detector")].iloc[0]
+    assert detector_row["manufacturer_display_name"] == "Manufacturer One"
+    assert detector_row["hospital_display_name"] == "Detector Hospital"
+    assert detector_row["drug_display_name"] == "Detector Drug"

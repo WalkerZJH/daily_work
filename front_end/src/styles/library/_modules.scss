@@ -975,7 +975,8 @@
   font-weight: 800;
 }
 
-.control-field select {
+.control-field select,
+.control-field input {
   min-width: 150px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);

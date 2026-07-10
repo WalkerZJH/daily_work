@@ -13,7 +13,7 @@ def test_missing_detector_run_returns_partial_status_not_mock(monkeypatch) -> No
 
     response = TestClient(app).get(
         "/api/v1/daily-detector/status",
-        params={"observation_date": "2025-12-05"},
+        params={"observation_date": "2025-12-05", "report_month": "2025-12"},
     )
 
     assert response.status_code == 200
@@ -31,7 +31,7 @@ def test_missing_detector_run_clues_are_empty_not_mock(monkeypatch) -> None:
 
     response = TestClient(app).get(
         "/api/v1/daily-detector/clues",
-        params={"observation_date": "2025-12-05"},
+        params={"observation_date": "2025-12-05", "report_month": "2025-12"},
     )
 
     assert response.status_code == 200

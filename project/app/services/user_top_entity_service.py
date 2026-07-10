@@ -234,7 +234,7 @@ class TopEntityService:
             groups = [
                 self._build_group(
                     item.manufacturer_code,
-                    item.manufacturer_display_name or item.manufacturer_code,
+                    _scope_display_name(item, _manufacturer_display_names(scoped)),
                     scoped[
                         scoped["manufacturer_code"].astype(str).eq(item.manufacturer_code)
                     ].copy(),
@@ -310,9 +310,8 @@ class TopEntityService:
         items = [
             {
                 "manufacturer_code": item.manufacturer_code,
-                "manufacturer_display_name": item.manufacturer_display_name
-                or display_by_code.get(item.manufacturer_code)
-                or item.manufacturer_code,
+                "manufacturer_display_name": _scope_display_name(item, display_by_code),
+                "manufacturer_name": _scope_display_name(item, display_by_code),
             }
             for item in scope
         ]
@@ -622,10 +621,16 @@ class TopEntityService:
         if joined.empty:
             return joined, ["HORIZON_PROFILE_EMPTY_FOR_SELECTED_SCOPE"]
         joined["_selected_horizon"] = joined.get("horizon_profile", joined.get("horizon", horizon))
-        if "risk_probability" in joined:
-            joined["_profile_risk_probability"] = pd.to_numeric(joined["risk_probability"], errors="coerce")
-        if "involved_amount" in joined:
-            joined["_profile_involved_amount"] = pd.to_numeric(joined["involved_amount"], errors="coerce").fillna(0)
+        probability_column = "risk_probability_profile" if "risk_probability_profile" in joined else "risk_probability"
+        amount_column = "involved_amount_profile" if "involved_amount_profile" in joined else "involved_amount"
+        if probability_column in joined:
+            joined["_profile_risk_probability"] = pd.to_numeric(joined[probability_column], errors="coerce")
+        if amount_column in joined:
+            joined["_profile_involved_amount"] = pd.to_numeric(joined[amount_column], errors="coerce").fillna(0)
+        if "involved_amount_source_profile" in joined:
+            profile_source = joined["involved_amount_source_profile"].map(_none_or_str)
+            existing_source = joined["involved_amount_source"].map(_none_or_str) if "involved_amount_source" in joined else pd.Series(None, index=joined.index)
+            joined["involved_amount_source"] = profile_source.where(profile_source.notna(), existing_source)
         for column in ["risk_level", "risk_band", "main_reason_summary", "reason"]:
             profile_column = f"{column}_profile"
             if profile_column in joined:
@@ -815,6 +820,14 @@ def _manufacturer_display_names(frame: pd.DataFrame) -> dict[str, str]:
         if code and name and code not in display:
             display[code] = name
     return display
+
+
+def _scope_display_name(item: ManufacturerScope, display_by_code: dict[str, str]) -> str:
+    code = item.manufacturer_code
+    lookup_name = display_by_code.get(code)
+    if lookup_name and lookup_name != code:
+        return lookup_name
+    return item.manufacturer_display_name or code
 
 
 def _none_or_str(value: Any) -> str | None:

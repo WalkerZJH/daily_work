@@ -23,6 +23,6 @@ def test_workbench_uses_probability_month_and_detector_date(monkeypatch) -> None
     assert payload["report_context"]["probability_report_month"] == "2025-11"
     assert payload["report_context"]["detector_run_date"] == "2025-12-05"
     assert payload["batch_context"]["report_month"] == "2025-11"
-    assert payload["daily_detector_summary"]["ready"] is False
-    assert payload["top_rule_clues"] == []
+    assert payload["daily_detector_summary"]["ready"] is True
+    assert payload["top_rule_clues"]
     assert len(payload["risk_entities"]) <= 3

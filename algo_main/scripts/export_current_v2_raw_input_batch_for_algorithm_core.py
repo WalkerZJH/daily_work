@@ -198,14 +198,15 @@ def render_inventory(inventory: pd.DataFrame) -> str:
 def export_raw_batch(source_path: Path) -> dict[str, Any]:
     RAW_BATCH_DIR.mkdir(parents=True, exist_ok=True)
     source = pd.read_parquet(source_path)
+    display_reference = load_display_name_reference(source if source_path.name == "combined_raw_orders.parquet" else None)
     if source_path.name == "fact_purchase_event.parquet":
-        orders, drug_master, hospital_master = from_fact_purchase_event(source)
-        caveats = ["source is cleaned fact_purchase_event, not feature/score/M table", "order_id uses order_detail_id where available", "drug/hospital display names fall back to code"]
+        orders, drug_master, hospital_master, manufacturer_master = from_fact_purchase_event(source, display_reference)
+        caveats = ["source is cleaned fact_purchase_event, not feature/score/M table", "order_id uses order_detail_id where available", "display names are joined from current v2 raw SQL extract when available"]
     elif "combined_raw_orders" in source_path.name:
-        orders, drug_master, hospital_master = from_raw_sql_orders(source)
+        orders, drug_master, hospital_master, manufacturer_master = from_raw_sql_orders(source)
         caveats = ["source is SQL raw order extract", "drug/hospital display names fall back to source fields where available"]
     else:
-        orders, drug_master, hospital_master = from_model_base(source)
+        orders, drug_master, hospital_master, manufacturer_master = from_model_base(source, display_reference)
         caveats = ["source is cleaned model_base order table", "order_id uses order_detail_id where available"]
     product_line_mapping = pd.DataFrame(columns=["drug_code", "product_line_code", "product_line_name"])
     delivery_events = pd.DataFrame(columns=["order_id", "delivery_date", "arrival_date"])
@@ -213,6 +214,7 @@ def export_raw_batch(source_path: Path) -> dict[str, Any]:
     fact_entity_month = pd.read_parquet(FACT_ENTITY_MONTH) if FACT_ENTITY_MONTH.exists() else pd.DataFrame()
     entity_purchase_sequence = pd.read_parquet(ENTITY_PURCHASE_SEQUENCE) if ENTITY_PURCHASE_SEQUENCE.exists() else pd.DataFrame()
     orders.to_parquet(RAW_BATCH_DIR / "orders.parquet", index=False)
+    manufacturer_master.to_parquet(RAW_BATCH_DIR / "manufacturer_master.parquet", index=False)
     drug_master.to_parquet(RAW_BATCH_DIR / "drug_master.parquet", index=False)
     hospital_master.to_parquet(RAW_BATCH_DIR / "hospital_master.parquet", index=False)
     product_line_mapping.to_parquet(RAW_BATCH_DIR / "product_line_mapping.parquet", index=False)
@@ -230,6 +232,7 @@ def export_raw_batch(source_path: Path) -> dict[str, Any]:
         "table_format": "parquet",
         "table_paths": {
             "orders": "orders.parquet",
+            "manufacturer_master": "manufacturer_master.parquet",
             "drug_master": "drug_master.parquet",
             "hospital_master": "hospital_master.parquet",
             "product_line_mapping": "product_line_mapping.parquet",
@@ -262,6 +265,7 @@ def export_raw_batch(source_path: Path) -> dict[str, Any]:
         "max_order_date": str(dates.max().date()),
         "drug_master_rows": len(drug_master),
         "hospital_master_rows": len(hospital_master),
+        "manufacturer_master_rows": len(manufacturer_master),
         "fact_entity_month_rows": len(fact_entity_month),
         "entity_purchase_sequence_rows": len(entity_purchase_sequence),
     }
@@ -269,7 +273,37 @@ def export_raw_batch(source_path: Path) -> dict[str, Any]:
     return summary
 
 
-def from_fact_purchase_event(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def load_display_name_reference(source: pd.DataFrame | None = None) -> dict[str, dict[str, str]]:
+    raw = source
+    if raw is None:
+        raw_path = SOURCE_ROOT / "02_sql_extract" / "combined_raw_orders.parquet"
+        raw = pd.read_parquet(raw_path) if raw_path.exists() else pd.DataFrame()
+    return {
+        "manufacturer": _name_map(raw, "生产企业编码", "生产企业"),
+        "hospital": _name_map(raw, "医疗机构编码", "医疗机构"),
+        "drug": _name_map(raw, "药品编码", "通用名"),
+        "region": _name_map(raw, "医疗机构编码", "省"),
+        "region_code": _name_map(raw, "医疗机构编码", "省编码"),
+    }
+
+
+def _name_map(df: pd.DataFrame, key_col: str, value_col: str) -> dict[str, str]:
+    if df.empty or key_col not in df or value_col not in df:
+        return {}
+    work = df[[key_col, value_col]].dropna(subset=[key_col]).copy()
+    work[key_col] = work[key_col].astype(str).str.strip()
+    work[value_col] = work[value_col].astype(str).str.strip()
+    work = work[(work[key_col] != "") & (work[value_col] != "") & work[value_col].str.lower().ne("nan")]
+    if work.empty:
+        return {}
+    work = work.drop_duplicates(key_col, keep="last")
+    return dict(zip(work[key_col], work[value_col]))
+
+
+def from_fact_purchase_event(
+    df: pd.DataFrame,
+    display_reference: dict[str, dict[str, str]] | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     orders = pd.DataFrame(
         {
             "row_uid": df.get("row_uid", df["order_detail_id"]).astype(str),
@@ -301,21 +335,35 @@ def from_fact_purchase_event(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFra
             "ownership_type_code": df.get("ownership_type_code", "").astype(str),
         }
     )
+    display_reference = display_reference or {}
+    manufacturer_names = display_reference.get("manufacturer", {})
+    hospital_names = display_reference.get("hospital", {})
+    drug_names = display_reference.get("drug", {})
+    region_names = display_reference.get("region", {})
+    region_codes = display_reference.get("region_code", {})
+    manufacturer_master = df[["manufacturer_code"]].drop_duplicates("manufacturer_code").copy()
+    manufacturer_master["manufacturer_name"] = manufacturer_master["manufacturer_code"].astype(str).map(manufacturer_names).fillna(manufacturer_master["manufacturer_code"].astype(str))
+    manufacturer_master["manufacturer_display_name"] = manufacturer_master["manufacturer_name"]
     drug_master = df[["drug_code", "drug_category_code"]].drop_duplicates("drug_code").copy()
-    drug_master["drug_name"] = drug_master["drug_code"].astype(str)
+    drug_master["drug_name"] = drug_master["drug_code"].astype(str).map(drug_names).fillna(drug_master["drug_code"].astype(str))
     drug_master["drug_category"] = drug_master["drug_category_code"].astype(str)
     drug_master["product_line_code"] = ""
     drug_master["product_line_name"] = ""
     hospital_cols = ["hospital_code", "province_code", "city_code", "county_code", "hospital_level_code", "ownership_type_code"]
     hospital_master = df[hospital_cols].drop_duplicates("hospital_code").copy()
-    hospital_master["hospital_name"] = hospital_master["hospital_code"].astype(str)
-    hospital_master["region_code"] = hospital_master["province_code"].astype(str)
-    hospital_master["region_name"] = hospital_master["province_code"].astype(str)
+    hospital_master["hospital_name"] = hospital_master["hospital_code"].astype(str).map(hospital_names).fillna(hospital_master["hospital_code"].astype(str))
+    hospital_master["region_code"] = hospital_master["hospital_code"].astype(str).map(region_codes).fillna(hospital_master["province_code"].astype(str))
+    hospital_master["region_name"] = hospital_master["hospital_code"].astype(str).map(region_names).fillna(hospital_master["province_code"].astype(str))
     hospital_master["hospital_level"] = hospital_master["hospital_level_code"].astype(str)
-    return orders, drug_master[["drug_code", "drug_name", "drug_category", "product_line_code", "product_line_name"]], hospital_master[["hospital_code", "hospital_name", "region_code", "region_name", "hospital_level", "province_code", "city_code", "county_code", "ownership_type_code"]]
+    return (
+        orders,
+        drug_master[["drug_code", "drug_name", "drug_category", "product_line_code", "product_line_name"]],
+        hospital_master[["hospital_code", "hospital_name", "region_code", "region_name", "hospital_level", "province_code", "city_code", "county_code", "ownership_type_code"]],
+        manufacturer_master[["manufacturer_code", "manufacturer_name", "manufacturer_display_name"]],
+    )
 
 
-def from_raw_sql_orders(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def from_raw_sql_orders(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     orders = pd.DataFrame(
         {
             "order_id": df["订单明细ID"].fillna(df["数据唯一标识符"]).astype(str),
@@ -335,14 +383,24 @@ def from_raw_sql_orders(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, p
     drug_master = df[["药品编码", "通用名", "药品类别"]].drop_duplicates("药品编码").rename(columns={"药品编码": "drug_code", "通用名": "drug_name", "药品类别": "drug_category"})
     drug_master["product_line_code"] = ""
     drug_master["product_line_name"] = ""
+    manufacturer_master = df[["生产企业编码", "生产企业"]].drop_duplicates("生产企业编码").rename(columns={"生产企业编码": "manufacturer_code", "生产企业": "manufacturer_name"})
+    manufacturer_master["manufacturer_display_name"] = manufacturer_master["manufacturer_name"].astype(str)
     hospital_master = df[["医疗机构编码", "医疗机构", "省编码", "省", "医疗机构等级", "市编码", "县区编码", "所有制形式"]].drop_duplicates("医疗机构编码").rename(
         columns={"医疗机构编码": "hospital_code", "医疗机构": "hospital_name", "省编码": "region_code", "省": "region_name", "医疗机构等级": "hospital_level", "市编码": "city_code", "县区编码": "county_code", "所有制形式": "ownership_type_code"}
     )
     hospital_master["province_code"] = hospital_master["region_code"].astype(str)
-    return orders, drug_master[["drug_code", "drug_name", "drug_category", "product_line_code", "product_line_name"]], hospital_master[["hospital_code", "hospital_name", "region_code", "region_name", "hospital_level", "province_code", "city_code", "county_code", "ownership_type_code"]]
+    return (
+        orders,
+        drug_master[["drug_code", "drug_name", "drug_category", "product_line_code", "product_line_name"]],
+        hospital_master[["hospital_code", "hospital_name", "region_code", "region_name", "hospital_level", "province_code", "city_code", "county_code", "ownership_type_code"]],
+        manufacturer_master[["manufacturer_code", "manufacturer_name", "manufacturer_display_name"]],
+    )
 
 
-def from_model_base(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def from_model_base(
+    df: pd.DataFrame,
+    display_reference: dict[str, dict[str, str]] | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     orders = pd.DataFrame(
         {
             "order_id": df["order_detail_id"].fillna(df["row_uid"]).astype(str),
@@ -359,17 +417,31 @@ def from_model_base(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Da
             "arrival_date": pd.NaT,
         }
     )
+    display_reference = display_reference or {}
+    manufacturer_names = display_reference.get("manufacturer", {})
+    hospital_names = display_reference.get("hospital", {})
+    drug_names = display_reference.get("drug", {})
+    region_names = display_reference.get("region", {})
+    region_codes = display_reference.get("region_code", {})
+    manufacturer_master = df[["manufacturer_code"]].drop_duplicates("manufacturer_code").copy()
+    manufacturer_master["manufacturer_name"] = manufacturer_master["manufacturer_code"].astype(str).map(manufacturer_names).fillna(manufacturer_master["manufacturer_code"].astype(str))
+    manufacturer_master["manufacturer_display_name"] = manufacturer_master["manufacturer_name"]
     drug_master = df[["drug_code", "drug_category_code"]].drop_duplicates("drug_code").copy()
-    drug_master["drug_name"] = drug_master["drug_code"].astype(str)
+    drug_master["drug_name"] = drug_master["drug_code"].astype(str).map(drug_names).fillna(drug_master["drug_code"].astype(str))
     drug_master["drug_category"] = drug_master["drug_category_code"].astype(str)
     drug_master["product_line_code"] = ""
     drug_master["product_line_name"] = ""
     hospital_master = df[["hospital_code", "province_code", "city_code", "county_code", "hospital_level_code", "ownership_type_code"]].drop_duplicates("hospital_code").copy()
-    hospital_master["hospital_name"] = hospital_master["hospital_code"].astype(str)
-    hospital_master["region_code"] = hospital_master["province_code"].astype(str)
-    hospital_master["region_name"] = hospital_master["province_code"].astype(str)
+    hospital_master["hospital_name"] = hospital_master["hospital_code"].astype(str).map(hospital_names).fillna(hospital_master["hospital_code"].astype(str))
+    hospital_master["region_code"] = hospital_master["hospital_code"].astype(str).map(region_codes).fillna(hospital_master["province_code"].astype(str))
+    hospital_master["region_name"] = hospital_master["hospital_code"].astype(str).map(region_names).fillna(hospital_master["province_code"].astype(str))
     hospital_master["hospital_level"] = hospital_master["hospital_level_code"].astype(str)
-    return orders, drug_master[["drug_code", "drug_name", "drug_category", "product_line_code", "product_line_name"]], hospital_master[["hospital_code", "hospital_name", "region_code", "region_name", "hospital_level", "province_code", "city_code", "county_code", "ownership_type_code"]]
+    return (
+        orders,
+        drug_master[["drug_code", "drug_name", "drug_category", "product_line_code", "product_line_name"]],
+        hospital_master[["hospital_code", "hospital_name", "region_code", "region_name", "hospital_level", "province_code", "city_code", "county_code", "ownership_type_code"]],
+        manufacturer_master[["manufacturer_code", "manufacturer_name", "manufacturer_display_name"]],
+    )
 
 
 def render_adapter_report(summary: dict[str, Any], caveats: list[str]) -> str:
@@ -379,6 +451,7 @@ def render_adapter_report(summary: dict[str, Any], caveats: list[str]) -> str:
 - orders_rows: {summary["orders_rows"]}
 - min_order_date: {summary["min_order_date"]}
 - max_order_date: {summary["max_order_date"]}
+- manufacturer_master_rows: {summary["manufacturer_master_rows"]}
 - drug_master_rows: {summary["drug_master_rows"]}
 - hospital_master_rows: {summary["hospital_master_rows"]}
 - fact_entity_month_rows: {summary.get("fact_entity_month_rows", 0)}

@@ -19,4 +19,4 @@ def test_observation_date_maps_to_probability_report_month(monkeypatch) -> None:
     assert payload["observation_date"] == "2025-12-05"
     assert payload["probability_report_month"] == "2025-11"
     assert payload["effective_report_month"] == "2025-11"
-    assert payload["context_status"] == "detector_run_unavailable"
+    assert payload["context_status"] == "ready"

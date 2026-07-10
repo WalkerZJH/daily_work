@@ -12,11 +12,11 @@ def test_daily_detector_missing_run_does_not_mock(monkeypatch) -> None:
 
     status = client.get(
         "/api/v1/daily-detector/status",
-        params={"observation_date": "2025-12-05"},
+        params={"observation_date": "2025-12-05", "report_month": "2025-12"},
     ).json()
     clues = client.get(
         "/api/v1/daily-detector/clues",
-        params={"observation_date": "2025-12-05"},
+        params={"observation_date": "2025-12-05", "report_month": "2025-12"},
     ).json()
 
     assert status["ready"] is False

@@ -60,6 +60,19 @@ def normalize_hospital_master(df: pd.DataFrame) -> pd.DataFrame:
     return out.drop_duplicates("hospital_code")
 
 
+def normalize_manufacturer_master(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    if out.empty:
+        return pd.DataFrame(columns=["manufacturer_code", "manufacturer_name", "manufacturer_display_name"])
+    for col in ["manufacturer_code", "manufacturer_name", "manufacturer_display_name"]:
+        if col not in out:
+            out[col] = ""
+        out[col] = out[col].fillna("").astype(str)
+    missing_display = out["manufacturer_display_name"].str.strip().eq("")
+    out.loc[missing_display, "manufacturer_display_name"] = out.loc[missing_display, "manufacturer_name"]
+    return out.drop_duplicates("manufacturer_code")
+
+
 def normalize_product_line_mapping(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     if out.empty:
@@ -89,6 +102,7 @@ def normalize_price_reference(df: pd.DataFrame) -> pd.DataFrame:
 def normalize_raw_tables(tables: dict[str, pd.DataFrame], cutoff_date: str) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
     normalized: dict[str, pd.DataFrame] = {}
     normalized["orders"], order_profile = normalize_orders(tables["orders"], cutoff_date)
+    normalized["manufacturer_master"] = normalize_manufacturer_master(tables.get("manufacturer_master", pd.DataFrame()))
     normalized["drug_master"] = normalize_drug_master(tables.get("drug_master", pd.DataFrame()))
     normalized["hospital_master"] = normalize_hospital_master(tables.get("hospital_master", pd.DataFrame()))
     normalized["product_line_mapping"] = normalize_product_line_mapping(tables.get("product_line_mapping", pd.DataFrame()))

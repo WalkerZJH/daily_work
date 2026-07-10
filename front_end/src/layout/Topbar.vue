@@ -3,6 +3,11 @@ defineProps({
   tag: { type: String, required: true }
 })
 
+function hrefWithCurrentContext(href) {
+  const query = new URLSearchParams(window.location.search).toString()
+  return query ? `${href}?${query}` : href
+}
+
 function toggleSidebar() {
   const isCollapsed = document.body.classList.toggle('sidebar-collapsed')
   try {
@@ -27,7 +32,7 @@ try {
     <button class="sidebar-toggle" title="收起 / 展开侧边栏" type="button" @click="toggleSidebar">
       ≡
     </button>
-    <a class="topbar-logo" href="index.html">
+    <a class="topbar-logo" :href="hrefWithCurrentContext('index.html')">
       <div class="logo-icon">智</div>
       <div>
         <div class="logo-text">终端不丢智能体</div>

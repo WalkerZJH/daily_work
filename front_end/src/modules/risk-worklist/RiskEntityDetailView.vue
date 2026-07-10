@@ -6,8 +6,6 @@ import {
   buildPersistentParams,
   createEmptyClueDetailData,
   createEmptyWorkbenchOptions,
-  createStaticClueDetailData,
-  createStaticWorkbenchOptions,
   loadClueDetailData,
   loadReportContext,
   loadWorkbenchOptions,
@@ -22,17 +20,20 @@ const query = reactive(
     backendBaseUrl: params.get('backendBaseUrl'),
     userId: params.get('user_id') || params.get('userId'),
     demoMode: params.get('demoMode'),
+    observationDate: params.get('observation_date'),
     manufacturerCode: params.get('manufacturer_code'),
     reportMonth: params.get('report_month'),
     runDate: params.get('run_date'),
+    probabilityReportMonth: params.get('probability_report_month'),
+    detectorRunDate: params.get('detector_run_date'),
     horizon: params.get('horizon') || params.get('h'),
     topN: Number(params.get('top_n')),
     sortBy: params.get('sort_by')
   })
 )
 
-const state = ref(query.demoMode ? createStaticClueDetailData({ clueId, riskEntityId, query }) : createEmptyClueDetailData({ clueId, riskEntityId, query }))
-const options = ref(query.demoMode ? createStaticWorkbenchOptions() : createEmptyWorkbenchOptions(query))
+const state = ref(createEmptyClueDetailData({ clueId, riskEntityId, query }))
+const options = ref(createEmptyWorkbenchOptions(query))
 const reportContext = ref(state.value.reportContext)
 const selectedRuleFamily = ref('all')
 const selectedRuleId = ref('all')
@@ -47,8 +48,11 @@ const probabilityTrend = computed(() => state.value.probabilityTrend || [])
 const selectedHorizonLabel = computed(() => options.value.horizonOptions.find((item) => item.id === query.horizon)?.label || query.horizon)
 
 const ruleFamilyOptions = computed(() => {
-  const families = [...new Set(ruleEvidence.value.map((item) => item.detectorFamily).filter(Boolean))]
-  return [{ id: 'all', label: '全部大类' }, ...families.map((family) => ({ id: family, label: family }))]
+  const families = [...new Map(ruleEvidence.value.map((item) => [
+    item.detectorFamily,
+    { id: item.detectorFamily, label: item.detectorFamilyLabel || item.detectorFamily }
+  ])).values()].filter((item) => item.id)
+  return [{ id: 'all', label: '全部大类' }, ...families]
 })
 
 const ruleIdOptions = computed(() => {
@@ -104,8 +108,8 @@ async function refreshDetail() {
   try {
     selectedRuleId.value = 'all'
     if (query.demoMode) {
-      options.value = createStaticWorkbenchOptions()
-      state.value = createStaticClueDetailData({ clueId, riskEntityId, query })
+      options.value = await loadWorkbenchOptions(query, { allowDemo: true })
+      state.value = await loadClueDetailData({ clueId, riskEntityId, query }, { allowDemo: true })
       reportContext.value = state.value.reportContext
       updateUrl()
       return
@@ -137,7 +141,7 @@ async function refreshDetail() {
 onMounted(refreshDetail)
 
 watch(
-  () => [query.horizon, query.runDate, query.manufacturerCode, query.backendBaseUrl, query.userId, query.demoMode],
+  () => [query.horizon, query.observationDate, query.manufacturerCode, query.backendBaseUrl, query.userId, query.demoMode],
   () => {
     if (!suppressWatcher) refreshDetail()
   }
@@ -155,7 +159,7 @@ watch(selectedRuleFamily, () => {
       <div>
         <h1>{{ isMonthlyHighRiskEntity ? '风险对象详情' : '规则线索详情' }} · {{ clue.hospital || '-' }}</h1>
         <div class="subtitle">
-          {{ query.runDate }} · {{ entity?.manufacturer || clue.manufacturer || query.manufacturerCode }} · {{ selectedHorizonLabel }}
+          {{ query.observationDate }} · {{ entity?.manufacturer || clue.manufacturer || query.manufacturerCode }} · {{ selectedHorizonLabel }}
         </div>
       </div>
       <div class="workbench-controls">
@@ -167,9 +171,7 @@ watch(selectedRuleFamily, () => {
         </label>
         <label class="control-field">
           <span>观察日期</span>
-          <select v-model="query.runDate">
-            <option v-for="item in options.dailyDetectorDateOptions" :key="item.runDate" :value="item.runDate">{{ item.label }}</option>
-          </select>
+          <input v-model="query.observationDate" type="date" />
         </label>
       </div>
     </div>
@@ -239,7 +241,7 @@ watch(selectedRuleFamily, () => {
       <dl class="definition-grid">
         <dt>生产企业</dt><dd>{{ clue.manufacturer }}</dd>
         <dt>区域</dt><dd>{{ clue.region }}</dd>
-        <dt>规则类型</dt><dd>{{ clue.detectorFamily }}</dd>
+        <dt>规则类型</dt><dd>{{ clue.detectorFamilyLabel }}</dd>
         <dt>规则根因</dt><dd>{{ clue.rootCauseLabel }}</dd>
       </dl>
     </SectionCard>
@@ -268,7 +270,7 @@ watch(selectedRuleFamily, () => {
           </div>
           <dl class="definition-grid compact">
             <dt>规则巡检分</dt><dd>{{ rule.detectorScoreText }}</dd>
-            <dt>规则类型</dt><dd>{{ rule.detectorFamily }}</dd>
+            <dt>规则类型</dt><dd>{{ rule.detectorFamilyLabel }}</dd>
             <dt>根因标签</dt><dd>{{ rule.rootCauseLabel }}</dd>
             <dt>证据说明</dt><dd>{{ rule.evidenceText }}</dd>
           </dl>
