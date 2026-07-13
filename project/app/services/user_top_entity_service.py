@@ -61,6 +61,19 @@ class ManufacturerScope:
     enterprise_id: str | None = None
 
 
+class SortMetricUnavailable(ValueError):
+    def __init__(self, requested_sort_by: str) -> None:
+        self.requested_sort_by = requested_sort_by
+        super().__init__(f"SORT_METRIC_NOT_AVAILABLE:{requested_sort_by}")
+
+
+class HorizonNotAvailable(ValueError):
+    def __init__(self, requested_horizon: str, available_horizons: list[str]) -> None:
+        self.requested_horizon = requested_horizon
+        self.available_horizons = available_horizons
+        super().__init__(f"HORIZON_NOT_AVAILABLE:{requested_horizon}")
+
+
 class UserManufacturerScopeService:
     def __init__(
         self,
@@ -188,8 +201,6 @@ class TopEntityService:
         batch = _filter_value(entities, "report_month", selected_month)
         batch, lookup_warnings = self._apply_display_lookup(batch, selected_month)
         warnings.extend(lookup_warnings)
-        batch, horizon_warnings = self._apply_horizon_profile(batch, selected_month, horizon)
-        warnings.extend(horizon_warnings)
         available_codes = _dedupe(
             batch.get("manufacturer_code", pd.Series(dtype=object)).dropna().astype(str).tolist()
         )
@@ -200,6 +211,8 @@ class TopEntityService:
         )
         if not scope:
             requested = _dedupe([str(code) for code in manufacturer_codes or [] if str(code).strip()])
+            if requested:
+                raise PermissionError("MANUFACTURER_SCOPE_FORBIDDEN")
             fallback_codes = [code for code in (requested or available_codes) if code in set(available_codes)]
             display_by_code = _manufacturer_display_names(batch)
             scope = [ManufacturerScope(code, display_by_code.get(code) or code) for code in fallback_codes]
@@ -213,6 +226,9 @@ class TopEntityService:
         scoped = batch[
             batch["manufacturer_code"].astype(str).isin([item.manufacturer_code for item in scope])
         ].copy()
+        scope_display_by_code = _manufacturer_display_names(scoped)
+        scoped, horizon_warnings = self._apply_horizon_profile(scoped, selected_month, horizon)
+        warnings.extend(horizon_warnings)
         effective_strategy, strategy_warnings = self._effective_strategy(scoped, ranking_strategy)
         warnings.extend(strategy_warnings)
 
@@ -266,8 +282,14 @@ class TopEntityService:
             "include_threshold_overflow": include_threshold_overflow,
             "fill_policy": fill_policy,
             "scope": {
+                "scope_applied": True,
                 "manufacturer_count": len(scope),
                 "manufacturer_codes": [item.manufacturer_code for item in scope],
+                "requested_manufacturer_code": manufacturer_codes[0] if manufacturer_codes and len(manufacturer_codes) == 1 else None,
+                "effective_manufacturer_code": scope[0].manufacturer_code if len(scope) == 1 else None,
+                "manufacturer_display_name": _scope_display_name(scope[0], scope_display_by_code) if len(scope) == 1 else None,
+                "manufacturer_name": _scope_display_name(scope[0], scope_display_by_code) if len(scope) == 1 else None,
+                "row_count": int(len(scoped)),
             },
             "groups": groups,
             "warnings": _dedupe(warnings),
@@ -289,7 +311,7 @@ class TopEntityService:
         )
         scope, warnings = self.scope_service.resolve_scope(
             user_id=user_id,
-            requested_manufacturer_codes=manufacturer_codes,
+            requested_manufacturer_codes=None,
             available_manufacturer_codes=available_codes,
         )
         display_by_code = _manufacturer_display_names(batch)
@@ -426,22 +448,29 @@ class TopEntityService:
             column = _score_column_for_strategy(out, ranking_strategy)
             if ranking_strategy == "loss_value":
                 out["_ranking_score"] = _loss_value_series(out)
+                if out["_ranking_score"].notna().sum() == 0:
+                    raise SortMetricUnavailable("loss_value")
                 out["_ranking_score_source"] = "loss_value"
-            elif ranking_strategy == "detector_score" and column is None:
-                probability_column = _first_existing(out, PROBABILITY_COLUMNS)
-                out["_ranking_score"] = (
-                    pd.Series(0.0, index=out.index)
-                    if probability_column is None
-                    else pd.to_numeric(out[probability_column], errors="coerce").fillna(-1)
+                out["_risk_probability_sort"] = _numeric_series(out, _first_existing(out, PROBABILITY_COLUMNS))
+                out["_involved_amount_sort"] = _numeric_series(out, _first_existing(out, INVOLVED_AMOUNT_COLUMNS))
+                out["_loss_sort_bucket"] = out["_ranking_score"].map(
+                    lambda value: 2 if pd.isna(value) else (1 if float(value) == 0 else 0)
                 )
-                out["_ranking_score_source"] = "risk_probability_due_to_missing_detector_score"
+                return out.sort_values(
+                    ["_loss_sort_bucket", "_ranking_score", "_risk_probability_sort", "_involved_amount_sort", "risk_entity_id"],
+                    ascending=[True, False, False, False, True],
+                    na_position="last",
+                    kind="mergesort",
+                )
+            elif ranking_strategy == "detector_score" and column is None:
+                raise SortMetricUnavailable("detector_score")
             elif column is None:
                 out["_ranking_score"] = 0.0
                 out["_ranking_score_source"] = "missing_score_column"
             else:
                 out["_ranking_score"] = pd.to_numeric(out[column], errors="coerce").fillna(-1)
                 out["_ranking_score_source"] = column
-        return out.sort_values("_ranking_score", ascending=False)
+        return out.sort_values("_ranking_score", ascending=False, kind="mergesort")
 
     def _apply_display_lookup(self, frame: pd.DataFrame, report_month: str) -> tuple[pd.DataFrame, list[str]]:
         if frame.empty:
@@ -526,14 +555,14 @@ class TopEntityService:
         )
         if candidate_type in {"observation", "one_shot"}:
             risk_probability = None
-        involved_amount = _int_or_zero(
+        involved_amount = _int_or_none(
             row.get(
                 "_profile_involved_amount",
                 row.get("involved_amount", row.get("average_consumption_in_window")),
             )
         )
         loss_value = _loss_value(risk_probability, involved_amount)
-        amount_available = involved_amount > 0
+        amount_available = involved_amount is not None
         is_high_risk = bool(row.get("is_high_risk")) and candidate_type == "recurring"
         return {
             "risk_entity_id": _none_or_str(row.get("risk_entity_id")),
@@ -553,7 +582,7 @@ class TopEntityService:
             "risk_probability": risk_probability,
             "average_consumption_in_window": involved_amount,
             "loss_value": loss_value,
-            "loss_value_status": "ready" if amount_available else "amount_proxy_missing",
+            "loss_value_status": "ready" if amount_available else "amount_missing",
             "sort_policy": (
                 "loss_value_desc"
                 if amount_available
@@ -588,14 +617,24 @@ class TopEntityService:
     ) -> tuple[pd.DataFrame, list[str]]:
         if frame.empty:
             return frame.copy(), []
+        if "primary_horizon" in frame:
+            primary_values = set(frame["primary_horizon"].dropna().astype(str))
+            if horizon in primary_values:
+                frame = _filter_value(frame, "primary_horizon", horizon)
         try:
             profiles = self.repository.list_risk_entity_horizon_profiles(
                 report_month=report_month,
                 horizon=horizon,
             )
         except (FileNotFoundError, NotImplementedError, ValueError, AttributeError):
+            available_horizons = _available_horizons(self.repository)
+            if available_horizons and horizon not in available_horizons:
+                raise HorizonNotAvailable(horizon, available_horizons)
             return _filter_value(frame, "primary_horizon", horizon), ["HORIZON_PROFILE_NOT_AVAILABLE"]
         if profiles.empty:
+            available_horizons = _available_horizons(self.repository)
+            if available_horizons and horizon not in available_horizons:
+                raise HorizonNotAvailable(horizon, available_horizons)
             return _filter_value(frame, "primary_horizon", horizon), ["HORIZON_PROFILE_NOT_AVAILABLE"]
         profile_cols = [
             "risk_entity_id",
@@ -626,7 +665,7 @@ class TopEntityService:
         if probability_column in joined:
             joined["_profile_risk_probability"] = pd.to_numeric(joined[probability_column], errors="coerce")
         if amount_column in joined:
-            joined["_profile_involved_amount"] = pd.to_numeric(joined[amount_column], errors="coerce").fillna(0)
+            joined["_profile_involved_amount"] = pd.to_numeric(joined[amount_column], errors="coerce")
         if "involved_amount_source_profile" in joined:
             profile_source = joined["involved_amount_source_profile"].map(_none_or_str)
             existing_source = joined["involved_amount_source"].map(_none_or_str) if "involved_amount_source" in joined else pd.Series(None, index=joined.index)
@@ -759,25 +798,33 @@ def _sort_by_from_strategy(strategy: str) -> str:
     return strategy
 
 
+def _available_horizons(repository: RiskResultRepository) -> list[str]:
+    try:
+        horizons = getattr(repository.manifest(), "available_horizons", None)
+    except (FileNotFoundError, NotImplementedError, ValueError, AttributeError):
+        horizons = None
+    if horizons:
+        return [str(horizon) for horizon in horizons]
+    return []
+
+
 def _loss_value_series(frame: pd.DataFrame) -> pd.Series:
     probability_column = _first_existing(frame, PROBABILITY_COLUMNS)
     amount_column = _first_existing(frame, INVOLVED_AMOUNT_COLUMNS)
-    probability = (
-        pd.Series(0.0, index=frame.index)
-        if probability_column is None
-        else pd.to_numeric(frame[probability_column], errors="coerce").fillna(0)
-    )
-    amount = (
-        pd.Series(0.0, index=frame.index)
-        if amount_column is None
-        else pd.to_numeric(frame[amount_column], errors="coerce").fillna(0)
-    )
+    probability = _numeric_series(frame, probability_column)
+    amount = _numeric_series(frame, amount_column)
     return probability * amount
 
 
-def _loss_value(risk_probability: float | None, amount: int) -> int:
-    if risk_probability is None or amount <= 0:
-        return 0
+def _numeric_series(frame: pd.DataFrame, column: str | None) -> pd.Series:
+    if column is None:
+        return pd.Series(pd.NA, index=frame.index, dtype="Float64")
+    return pd.to_numeric(frame[column], errors="coerce")
+
+
+def _loss_value(risk_probability: float | None, amount: int | None) -> int | None:
+    if risk_probability is None or amount is None:
+        return None
     return int(round(risk_probability * amount))
 
 
@@ -860,6 +907,15 @@ def _int_or_zero(value: Any) -> int:
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+def _int_or_none(value: Any) -> int | None:
+    try:
+        if value is None or pd.isna(value):
+            return None
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _clean_value(value: Any) -> Any:

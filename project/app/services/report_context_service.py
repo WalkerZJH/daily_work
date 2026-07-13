@@ -33,6 +33,7 @@ class ReportContextService:
         horizon: str | None = None,
         manufacturer_code: str | None = None,
         user_id: str | None = None,
+        manual_report_month: bool = False,
     ) -> dict[str, Any]:
         requested_observation_date = observation_date or run_date
         if self.repository is None:
@@ -50,6 +51,7 @@ class ReportContextService:
                 horizon=horizon,
                 manufacturer_code=manufacturer_code,
                 user_id=user_id,
+                manual_report_month=manual_report_month,
             )
         return self._resolve_legacy_single_batch_context(
             observation_date=requested_observation_date,
@@ -87,6 +89,7 @@ class ReportContextService:
         horizon: str | None,
         manufacturer_code: str | None,
         user_id: str | None,
+        manual_report_month: bool,
     ) -> dict[str, Any]:
         try:
             resolved = self.repository.resolve_observation_context(
@@ -95,6 +98,7 @@ class ReportContextService:
                 requested_detector_run_date=None,
                 requested_horizon=horizon,
                 batch_root=self.batch_root,
+                manual_report_month=manual_report_month,
             )
         except (FileNotFoundError, ValueError, KeyError, NotImplementedError, AttributeError):
             return _unavailable_context(
@@ -112,6 +116,7 @@ class ReportContextService:
             manufacturer_code=manufacturer_code,
             user_id=user_id,
             context_mode="observation_root",
+            manual_report_month=manual_report_month,
         )
         return context
 
@@ -274,10 +279,18 @@ def _normalize_observation_context(
     manufacturer_code: str | None,
     user_id: str | None,
     context_mode: str,
+    manual_report_month: bool = False,
 ) -> dict[str, Any]:
     probability_report_month = _none_if_blank(context.get("probability_report_month"))
+    expected_probability_report_month = _none_if_blank(
+        context.get("expected_probability_report_month")
+    ) or probability_report_month
+    effective_probability_report_month = _none_if_blank(
+        context.get("effective_probability_report_month")
+    ) or (probability_report_month if context.get("probability_batch_available") else None)
     detector_run_date = _none_if_blank(context.get("detector_run_date"))
     observation_date = _none_if_blank(context.get("observation_date")) or requested_observation_date
+    effective_observation_date = _none_if_blank(context.get("effective_observation_date")) or observation_date
     status = _none_if_blank(context.get("context_status")) or (
         "ready" if context.get("ready") else "manual_selection_required"
     )
@@ -286,15 +299,19 @@ def _normalize_observation_context(
             "ready": bool(context.get("ready")),
             "partial_ready": bool(context.get("probability_batch_available")) and not bool(context.get("detector_run_available")),
             "observation_date": observation_date,
+            "effective_observation_date": effective_observation_date,
             "probability_report_month": probability_report_month,
+            "expected_probability_report_month": expected_probability_report_month,
+            "effective_probability_report_month": effective_probability_report_month,
             "detector_run_date": detector_run_date,
             "context_status": status,
             "context_mode": context_mode,
+            "manual_report_month": bool(context.get("manual_report_month", manual_report_month)),
             "requested_observation_date": requested_observation_date,
             "requested_report_month": requested_report_month,
             "requested_run_date": requested_run_date,
             "requested_horizon": requested_horizon,
-            "effective_report_month": probability_report_month,
+            "effective_report_month": effective_probability_report_month,
             "effective_run_date": detector_run_date,
             "date_resolution_status": status,
             "fallback_used": False,

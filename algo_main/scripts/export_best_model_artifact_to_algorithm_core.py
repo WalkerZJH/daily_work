@@ -63,6 +63,10 @@ def main() -> None:
     progress("stage=load_v2_feature_label_frame")
     frame = load_v2_frame()
     closed = frame[frame["label_window_closed"].astype(bool)].copy()
+    closed = add_strict_sample_class(closed)
+    sample_report = build_sample_class_report(closed)
+    sample_report.to_csv(ALIGN_REPORT_DIR / "strict_three_class_training_sample_report.csv", index=False, encoding="utf-8")
+    closed = closed[closed["sample_class"].eq("recurring")].copy()
     closed["split"] = consolidation.assign_strict_split(closed)
     feature_cols = consolidation.build_feature_sets(closed)["all_safe_features_without_choice_set"]
     selected_config = selected_xgb_config()
@@ -239,6 +243,34 @@ def prepare_input_frame(df: pd.DataFrame, feature_cols: list[str]) -> pd.DataFra
     return out
 
 
+def add_strict_sample_class(frame: pd.DataFrame, *, max_monitor_gap_months: int = 12) -> pd.DataFrame:
+    out = frame.copy()
+    active = pd.to_numeric(out["active_month_count_asof_cutoff"], errors="coerce")
+    gap = pd.to_numeric(out["months_since_last_purchase_asof_cutoff"], errors="coerce")
+    if active.lt(1).any():
+        raise ValueError("active_month_count_asof_cutoff must be >= 1 for all seen purchase relationships.")
+    out["sample_class"] = np.select(
+        [
+            gap.gt(max_monitor_gap_months),
+            active.eq(1),
+            active.ge(2),
+        ],
+        ["unmonitorable", "one_shot", "recurring"],
+        default="data_integrity_error",
+    )
+    return out
+
+
+def build_sample_class_report(frame: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    grouped = frame.groupby(["cutoff_month", "horizon", "sample_class"], dropna=False).size().reset_index(name="row_count")
+    rows.extend(grouped.to_dict("records"))
+    totals = frame.groupby(["horizon", "sample_class"], dropna=False).size().reset_index(name="row_count")
+    totals.insert(0, "cutoff_month", "ALL")
+    rows.extend(totals.to_dict("records"))
+    return pd.DataFrame(rows)
+
+
 def write_artifact_files(feature_cols: list[str], closed: pd.DataFrame, params: dict[str, Any]) -> None:
     now = dt.datetime.now(dt.UTC).isoformat()
     schema = build_feature_schema(closed, feature_cols)
@@ -255,6 +287,8 @@ def write_artifact_files(feature_cols: list[str], closed: pd.DataFrame, params: 
         "reconstructed_at": now,
         "training_data_version": VERSION,
         "training_config_frozen": True,
+        "training_sample_scope": "recurring_only",
+        "sample_classification_rule": "unmonitorable if months_since_last_purchase_asof_cutoff > max_monitor_gap_months; one_shot if monitorable and active_month_count_asof_cutoff == 1; recurring if monitorable and active_month_count_asof_cutoff >= 2",
         "hyperparameter_search_allowed": False,
         "selected_config": params,
         "required_features": feature_cols,
@@ -267,6 +301,7 @@ def write_artifact_files(feature_cols: list[str], closed: pd.DataFrame, params: 
         "caveats": [
             "Reconstructed from frozen v2 best configuration; no hyperparameter search was run in this export.",
             "Choice-set features are excluded from the main backbone.",
+            "Monthly backbone artifact is trained on strict recurring samples only.",
             "Raw-to-feature exact parity is reported separately and remains blocked until a matched raw input batch is available.",
         ],
     }
@@ -274,10 +309,10 @@ def write_artifact_files(feature_cols: list[str], closed: pd.DataFrame, params: 
     write_json(ARTIFACT_DIR / "feature_schema.json", schema)
     write_json(ARTIFACT_DIR / "preprocessing.json", {"type": "sklearn_column_transformer", "numeric_imputer": "median", "categorical_imputer": "most_frequent", "onehot_handle_unknown": "ignore", "onehot_min_frequency": 50})
     write_json(ARTIFACT_DIR / "calibration.json", {"calibration": "raw", "fit_on_validation": False, "platt_enabled": False, "isotonic_enabled": False})
-    write_json(ARTIFACT_DIR / "candidate_policy.json", {"policy_name": "bounded_monthly_worklist", "default_topN_per_manufacturer": 20, "max_topN_per_manufacturer": 50, "global_candidate_cap": 30000, "one_shot_bounded": True, "observation_bounded": True})
+    write_json(ARTIFACT_DIR / "candidate_policy.json", {"policy_name": "bounded_monthly_worklist", "default_topN_per_manufacturer": 20, "max_topN_per_manufacturer": 50, "global_candidate_cap": 30000, "monthly_backbone_scope": "recurring_only", "one_shot_in_monthly_backbone": False, "observation_category_removed": True})
     write_json(ARTIFACT_DIR / "detector_config.json", {"terminal_loss_warning": "enabled_rule_v1", "purchase_interval_overdue_warning": "enabled_rule_v1", "purchase_frequency_fluctuation_warning": "enabled_rule_v1", "purchase_quantity_fluctuation_warning": "weak_enabled_review_required", "new_terminal_detection": "enabled_rule_v1", "delivery_time_detectors": "disabled", "price_detectors": "interface_only", "sku_wallet_detectors": "deferred"})
-    write_json(ARTIFACT_DIR / "status_policy.json", {"auto_dispatch_allowed": False, "customer_facing_probability_service_allowed": False, "proof_case_report_allowed": False, "one_shot_recurring_probability_display": "forbidden", "observation_high_risk": "forbidden"})
-    write_json(ARTIFACT_DIR / "display_policy.json", {"probability_levels": ["probability_allowed", "risk_band_only", "hidden_data_insufficient"], "business_priority_is_probability": False})
+    write_json(ARTIFACT_DIR / "status_policy.json", {"auto_dispatch_allowed": False, "customer_facing_probability_service_allowed": False, "proof_case_report_allowed": False, "one_shot_recurring_probability_display": "forbidden", "observation_category_removed": True})
+    write_json(ARTIFACT_DIR / "display_policy.json", {"probability_levels": ["probability_allowed", "hidden_one_shot"], "business_priority_is_probability": False})
     write_text(ARTIFACT_DIR / "artifact_export_report.md", render_artifact_export_report(manifest, params))
 
 
@@ -445,8 +480,8 @@ def write_runtime_alignment_reports(feature_cols: list[str], params: dict[str, A
             }
         )
     pd.DataFrame(rows).to_csv(ALIGN_REPORT_DIR / "feature_parity_matrix.csv", index=False, encoding="utf-8")
-    write_text(ALIGN_REPORT_DIR / "candidate_policy_runtime_alignment.md", "# Candidate Policy Runtime Alignment\n\n- runtime policy name: bounded_monthly_worklist\n- misleading multi_recall_union naming is not used in production runtime.\n- recurring, one-shot, and observation candidates are bounded per manufacturer and by global cap.\n- business_priority_score is not treated as probability.\n")
-    write_text(ALIGN_REPORT_DIR / "probability_gate_runtime_alignment.md", "# Probability Gate Runtime Alignment\n\n- display levels: probability_allowed, risk_band_only, hidden_data_insufficient.\n- one-shot does not display recurring churn probability.\n- observation candidates are not marked high risk.\n- customer-facing probability service remains false.\n")
+    write_text(ALIGN_REPORT_DIR / "candidate_policy_runtime_alignment.md", "# Candidate Policy Runtime Alignment\n\n- runtime policy name: bounded_monthly_worklist\n- monthly backbone candidates are recurring only.\n- one-shot candidates are handled by the separate one-shot flow.\n- unmonitorable relationships are counted but not scored by the monthly backbone.\n- business_priority_score is not treated as probability.\n")
+    write_text(ALIGN_REPORT_DIR / "probability_gate_runtime_alignment.md", "# Probability Gate Runtime Alignment\n\n- display levels: probability_allowed, hidden_one_shot.\n- one-shot does not display recurring churn probability.\n- the old observation category is removed from the monthly backbone.\n- customer-facing probability service remains false.\n")
     write_text(ALIGN_REPORT_DIR / "model_artifact_contract.md", "# Model Artifact Contract\n\nThe current artifact directory contains artifact_manifest.json, model.joblib, feature_schema.json, preprocessing.json, calibration.json, candidate_policy.json, detector_config.json, status_policy.json, and display_policy.json.\n")
     write_text(ALIGN_REPORT_DIR / "production_feature_contract.md", "# Production Feature Contract\n\nProduction runtime derives features from raw orders/master tables, then aligns the model frame to feature_schema.json. Missing columns are only filled when feature_schema declares a default; otherwise formal run fails.\n")
     write_text(ALIGN_REPORT_DIR / "runtime_scoring_contract.md", "# Runtime Scoring Contract\n\nFormal monthly runs use ArtifactRiskScorer with model_artifact_id from artifact_manifest.json. RuleBaselineScorer remains dry-run only.\n")

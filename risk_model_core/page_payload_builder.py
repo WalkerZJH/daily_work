@@ -149,7 +149,7 @@ class PagePayloadBuilder:
         *,
         manufacturer_codes: list[str] | None = None,
         report_month: str | None = None,
-        horizon: str | None = None,
+        observation_date: str | None = None,
         top_n: int | None = None,
     ) -> dict[str, Any]:
         return self._payload_or_build(
@@ -157,7 +157,7 @@ class PagePayloadBuilder:
             lambda: self._build_frontend_oneshot_payload(
                 manufacturer_codes=manufacturer_codes,
                 report_month=report_month,
-                horizon=horizon,
+                observation_date=observation_date,
                 top_n=top_n,
             ),
         )
@@ -258,7 +258,13 @@ class PagePayloadBuilder:
         row = self.repository.get_risk_entity(risk_entity_id)
         if row is None:
             raise KeyError(risk_entity_id)
-        item = _entity_item(pd.Series(row), self._card_counts(), self._primary_profile(row))
+        row_frame = _merge_entity_display_lookup(
+            pd.DataFrame([row]),
+            self.repository,
+            str(row.get("report_month") or self.repository.manifest().report_month),
+        )
+        display_row = row_frame.iloc[0].to_dict() if not row_frame.empty else row
+        item = _entity_item(pd.Series(display_row), self._card_counts(), self._primary_profile(row))
         profiles = self._horizon_profiles(risk_entity_id)
         return {"entity": item, "horizon_profiles": profiles}
 
@@ -267,24 +273,23 @@ class PagePayloadBuilder:
         *,
         manufacturer_codes: list[str] | None,
         report_month: str | None,
-        horizon: str | None,
+        observation_date: str | None,
         top_n: int | None,
     ) -> dict[str, Any]:
-        rows = self.repository.list_rankable_entities(
-            manufacturer_codes=manufacturer_codes,
-            report_month=report_month,
-            horizon=horizon,
-            candidate_type="one_shot",
-            sort_by=["risk_score_display", "risk_score"],
-            limit=top_n,
-        )
+        rows = self._oneshot_terminal_rows(manufacturer_codes=manufacturer_codes, report_month=report_month)
         rows = _merge_entity_display_lookup(rows, self.repository, report_month or self.repository.manifest().report_month)
+        total_rows = len(rows)
+        summary = _oneshot_summary(rows, observation_date, self.repository.manifest().score_cutoff_month)
+        if top_n is not None:
+            rows = rows.head(max(int(top_n), 0))
         items = []
         for _, row in rows.iterrows():
-            propensity = _probability(row.get("risk_score_display", row.get("risk_score", 0)))
+            propensity = _probability(row.get("repurchase_propensity", row.get("risk_score_display", row.get("risk_score", 0))))
+            first_purchase_date = _first_purchase_date(row)
+            observation_day = _parse_date(observation_date) or _parse_date(self.repository.manifest().score_cutoff_month)
             items.append(
                 {
-                    "oneshot_id": str(row["risk_entity_id"]),
+                    "oneshot_id": _text(row.get("oneshot_id")) or _text(row.get("risk_entity_id")) or _text(row.get("entity_id")),
                     "manufacturer_code": _text(row.get("manufacturer_code")),
                     "manufacturer_display_name": _display_name(
                         row, "manufacturer_display_name", "manufacturer_code", "Manufacturer"
@@ -297,28 +302,50 @@ class PagePayloadBuilder:
                     "drug_group": _text(row.get("drug_group")),
                     "drug_name": _display_name(row, "drug_display_name", "drug_group", "Drug"),
                     "region": _text(row.get("region_display_name")) or _text(row.get("region_code")) or "Unknown region",
-                    "first_purchase_date": str(self.repository.manifest().score_cutoff_month),
-                    "first_purchase_amount": 0,
-                    "days_since_first_purchase": 0,
+                    "first_purchase_date": first_purchase_date or str(self.repository.manifest().score_cutoff_month),
+                    "first_purchase_amount": int(_number(row.get("first_purchase_amount"), 0)),
+                    "days_since_first_purchase": _days_between(first_purchase_date, observation_day),
                     "repurchase_propensity": propensity,
-                    "expected_repurchase_amount": 0,
+                    "expected_repurchase_amount": int(_number(row.get("expected_repurchase_amount"), 0)),
                     "priority": "high" if propensity >= 0.75 else "medium",
-                    "reason": "New terminal attention score indicates a follow-up opportunity for a second purchase.",
+                    "reason": _text(row.get("ranking_basis")) or "New terminal attention score indicates a follow-up opportunity for a second purchase.",
                 }
             )
-        avg = round(sum(item["repurchase_propensity"] for item in items) / len(items), 4) if items else 0.0
         return {
             "ready": True,
             "report_month": self.repository.manifest().report_month,
             "summary": {
-                "oneshot_count": len(items),
+                "oneshot_count": total_rows,
+                "daily_new_terminal_count": summary["daily_new_terminal_count"],
+                "monthly_new_terminal_count": summary["monthly_new_terminal_count"],
                 "high_repurchase_propensity_count": sum(1 for item in items if item["repurchase_propensity"] >= 0.75),
-                "average_repurchase_propensity": avg,
+                "average_repurchase_propensity": round(sum(item["repurchase_propensity"] for item in items) / len(items), 4) if items else 0.0,
                 "expected_repurchase_amount": 0,
             },
             "items": items,
-            "total": len(items),
+            "total": total_rows,
         }
+
+    def _oneshot_terminal_rows(self, *, manufacturer_codes: list[str] | None, report_month: str | None) -> pd.DataFrame:
+        try:
+            rows = self.repository.load_table("oneshot_terminals")
+        except (FileNotFoundError, NotImplementedError, ValueError, AttributeError):
+            rows = pd.DataFrame()
+        if not rows.empty:
+            if manufacturer_codes is not None:
+                rows = rows[rows["manufacturer_code"].astype(str).isin({str(code) for code in manufacturer_codes})]
+            if report_month is not None and "report_month" in rows:
+                rows = rows[rows["report_month"].astype(str).eq(str(report_month))]
+            sort_fields = [field for field in ["repurchase_propensity", "first_purchase_date"] if field in rows]
+            if sort_fields:
+                rows = rows.sort_values(sort_fields, ascending=[False] * len(sort_fields), na_position="last", kind="mergesort")
+            return rows.reset_index(drop=True)
+        return self.repository.list_rankable_entities(
+            manufacturer_codes=manufacturer_codes,
+            report_month=report_month,
+            candidate_type="one_shot",
+            sort_by=["risk_score_display", "risk_score"],
+        )
 
     def _build_frontend_monthly_reports_payload(self) -> dict[str, Any]:
         reports = self.repository.list_monthly_reports()
@@ -545,6 +572,8 @@ def _entity_item(row: pd.Series, card_counts: dict[str, int], horizon_profile: d
         "hospital_name": _display_name(row, "hospital_display_name", "hospital_code", "Hospital"),
         "drug_name": _display_name(row, "drug_display_name", "drug_group", "Drug"),
         "manufacturer_code": str(row.get("manufacturer_code", "unknown")),
+        "manufacturer_display_name": _display_name(row, "manufacturer_display_name", "manufacturer_code", "Manufacturer"),
+        "manufacturer_name": _display_name(row, "manufacturer_display_name", "manufacturer_code", "Manufacturer"),
         "region": _text(row.get("region_display_name")) or _text(row.get("region_code")) or "Unknown region",
         "horizon": _text(profile.get("horizon")) or str(row.get("primary_horizon", row.get("horizon", "H6"))),
         "risk_probability": probability,
@@ -636,6 +665,52 @@ def _matching_primary_profile(row: pd.Series, profiles: pd.DataFrame) -> dict[st
     if not matches.empty:
         return matches.iloc[0].to_dict()
     return None
+
+
+def _oneshot_summary(rows: pd.DataFrame, observation_date: str | None, fallback_date: str | None) -> dict[str, int]:
+    observation_day = _parse_date(observation_date) or _parse_date(fallback_date)
+    if observation_day is None or rows.empty:
+        return {"daily_new_terminal_count": 0, "monthly_new_terminal_count": 0}
+    month_start = observation_day.replace(day=1)
+    dates = [_parse_date(_first_purchase_date(row)) for _, row in rows.iterrows()]
+    valid_dates = [date for date in dates if date is not None]
+    return {
+        "daily_new_terminal_count": sum(1 for date in valid_dates if date == observation_day),
+        "monthly_new_terminal_count": sum(1 for date in valid_dates if month_start <= date <= observation_day),
+    }
+
+
+def _first_purchase_date(row: pd.Series | dict[str, Any]) -> str | None:
+    for field in [
+        "first_purchase_date",
+        "first_purchase_time",
+        "first_order_date",
+        "first_seen_date",
+        "purchase_time_min",
+        "first_purchase_month_asof_cutoff",
+        "first_purchase_month",
+    ]:
+        text = _text(row.get(field))
+        parsed = _parse_date(text)
+        if parsed is not None:
+            return parsed.isoformat()
+    return None
+
+
+def _parse_date(value: Any) -> Any | None:
+    if _is_missing(value):
+        return None
+    parsed = pd.to_datetime(value, errors="coerce")
+    if pd.isna(parsed):
+        return None
+    return parsed.date()
+
+
+def _days_between(first_purchase_date: str | None, observation_day: Any | None) -> int:
+    first_day = _parse_date(first_purchase_date)
+    if first_day is None or observation_day is None:
+        return 0
+    return max((observation_day - first_day).days, 0)
 
 
 def _entity_probability(row: pd.Series) -> float:

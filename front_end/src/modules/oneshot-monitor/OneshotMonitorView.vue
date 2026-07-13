@@ -39,19 +39,19 @@ onMounted(async () => {
   <div class="page-shell oneshot-monitor">
     <div class="page-header">
       <h1>新进终端监测</h1>
-      <div class="subtitle">本期新进终端 · 首采事实 · 后续复购证据</div>
+      <div class="subtitle">首采事实 · 新增统计 · 排序依据</div>
     </div>
 
     <div class="grid-4">
-      <MetricCard label="本期新进终端" :value="String(state.oneshotSummary.count)" tone="info" />
+      <MetricCard label="当日新增终端" :value="String(state.oneshotSummary.dailyNewTerminalCount)" tone="success" />
+      <MetricCard label="本月新增终端" :value="String(state.oneshotSummary.monthlyNewTerminalCount)" tone="info" />
+      <MetricCard label="当前清单" :value="String(state.oneshotSummary.count)" tone="info" />
       <MetricCard v-if="state.oneshotSummary.evidenceReady" label="高复购倾向" :value="String(state.oneshotSummary.highPropensityCount)" tone="success" />
-      <MetricCard v-if="state.oneshotSummary.evidenceReady" label="平均复购倾向" :value="state.oneshotSummary.averageRepurchasePropensity" tone="warning" />
-      <MetricCard v-if="state.oneshotSummary.evidenceReady" label="预计复购金额" :value="state.oneshotSummary.expectedRepurchaseAmount" tone="danger" />
     </div>
 
     <SectionCard
       title="新进终端清单"
-      :subtitle="state.oneshotSummary.evidenceReady ? '围绕首采事实和后续复购证据排序' : '当前仅展示首采事实'"
+      :subtitle="state.oneshotSummary.evidenceReady ? '围绕首采事实和排序依据展示' : '当前仅展示首采事实'"
     >
       <div v-if="isLoading" class="empty">刷新中</div>
       <div v-else-if="!state.oneshotTerminals.length" class="empty">
@@ -76,6 +76,7 @@ onMounted(async () => {
             <tr v-for="row in state.oneshotTerminals" :key="row.id">
               <td>
                 <strong>{{ row.hospital }}</strong>
+                <div class="muted">{{ row.manufacturer }}</div>
                 <div class="muted text-mono">{{ row.id }}</div>
               </td>
               <td>{{ row.drug }}<div class="muted">{{ row.region }}</div></td>
@@ -90,11 +91,11 @@ onMounted(async () => {
         </table>
       </div>
       <div v-if="!state.oneshotSummary.evidenceReady && state.oneshotTerminals.length" class="empty">
-        暂无复购原因或证据，仅展示新进终端首采记录
+        暂无独立复购证据，仅展示新进终端首采记录
       </div>
     </SectionCard>
 
-    <SectionCard v-if="state.oneshotSummary.evidenceReady" title="复购证据">
+    <SectionCard v-if="state.oneshotSummary.evidenceReady" title="排序依据">
       <div class="observation-list">
         <article v-for="row in state.oneshotTerminals.filter((item) => item.reason)" :key="`${row.id}-reason`" class="observation-card">
           <div>

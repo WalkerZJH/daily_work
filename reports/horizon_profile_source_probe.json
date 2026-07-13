@@ -1,0 +1,186 @@
+{
+  "43B3F24E6895475BA3EA1CD00FA74CE0": [
+    {
+      "risk_entity_id": "43B3F24E6895475BA3EA1CD00FA74CE0|YLNS00448038|ZA04CBH0205010303704|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 1250.0
+    },
+    {
+      "risk_entity_id": "43B3F24E6895475BA3EA1CD00FA74CE0|YLNS00032146|ZA04CBH0205010303704|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 125.0
+    },
+    {
+      "risk_entity_id": "43B3F24E6895475BA3EA1CD00FA74CE0|YL6574037|ZA04CBH0205010303704|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 0.0
+    },
+    {
+      "risk_entity_id": "43B3F24E6895475BA3EA1CD00FA74CE0|YL6807633|ZA04CBH0205010303704|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 1250.0
+    },
+    {
+      "risk_entity_id": "43B3F24E6895475BA3EA1CD00FA74CE0|YLNS00448446|ZA12HAZ0399010303704|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 3360.0
+    },
+    {
+      "risk_entity_id": "43B3F24E6895475BA3EA1CD00FA74CE0|YL137144|ZA04CBH0205010303704|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 0.0
+    },
+    {
+      "risk_entity_id": "43B3F24E6895475BA3EA1CD00FA74CE0|YL6802123|ZA04CBH0205010503704|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 0.0
+    },
+    {
+      "risk_entity_id": "43B3F24E6895475BA3EA1CD00FA74CE0|YLNS00014327|ZA04CBH0205010303704|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 1250.0
+    },
+    {
+      "risk_entity_id": "43B3F24E6895475BA3EA1CD00FA74CE0|YL652102|ZA04CBH0205010503704|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 1250.0
+    },
+    {
+      "risk_entity_id": "43B3F24E6895475BA3EA1CD00FA74CE0|YL6574037|ZA04CBH0205010303704|H6",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 0.0
+    }
+  ],
+  "9701EFF559DF4862AF18CF0DC1B6962D": [
+    {
+      "risk_entity_id": "9701EFF559DF4862AF18CF0DC1B6962D|YL6563724|ZA01BAS0839020103705|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 2340.0
+    },
+    {
+      "risk_entity_id": "9701EFF559DF4862AF18CF0DC1B6962D|YLNS00006477|ZA01BAS0839020103705|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 2550.0
+    },
+    {
+      "risk_entity_id": "9701EFF559DF4862AF18CF0DC1B6962D|YL6563724|XA12AAF426X001010203705|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 0.0
+    },
+    {
+      "risk_entity_id": "9701EFF559DF4862AF18CF0DC1B6962D|YL6801886|XA12CBP084X001010403705|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 0.0
+    },
+    {
+      "risk_entity_id": "9701EFF559DF4862AF18CF0DC1B6962D|YL411400|e55aab9b3ee754a3580eded051caa1c2|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 0.0
+    },
+    {
+      "risk_entity_id": "9701EFF559DF4862AF18CF0DC1B6962D|YL445618|XA12CBP084X001010403705|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 3850.0
+    },
+    {
+      "risk_entity_id": "9701EFF559DF4862AF18CF0DC1B6962D|YL360705|e55aab9b3ee754a3580eded051caa1c2|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 5850.0
+    },
+    {
+      "risk_entity_id": "9701EFF559DF4862AF18CF0DC1B6962D|YL6577038|e55aab9b3ee754a3580eded051caa1c2|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 5850.0
+    },
+    {
+      "risk_entity_id": "9701EFF559DF4862AF18CF0DC1B6962D|YL651964|XA12AAF426X001010203705|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 3316.0
+    },
+    {
+      "risk_entity_id": "9701EFF559DF4862AF18CF0DC1B6962D|YL650836|XA12AAF426X001010203705|H3",
+      "H3_risk_probability": null,
+      "H3_involved_amount": 0.0,
+      "H6_risk_probability": null,
+      "H6_involved_amount": 0.0,
+      "H12_risk_probability": null,
+      "H12_involved_amount": 0.0
+    }
+  ]
+}

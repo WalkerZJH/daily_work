@@ -262,14 +262,14 @@ class FrontendPageService:
         *,
         manufacturer_codes: list[str] | None = None,
         report_month: str | None = None,
-        horizon: str | None = None,
+        observation_date: str | None = None,
         top_n: int | None = None,
     ) -> dict[str, Any]:
         if self._builder:
             return self._builder.build_frontend_oneshot_payload(
                 manufacturer_codes=manufacturer_codes,
                 report_month=report_month,
-                horizon=horizon,
+                observation_date=observation_date,
                 top_n=top_n,
             )
         return self._default_payloads["oneshot_terminals"]

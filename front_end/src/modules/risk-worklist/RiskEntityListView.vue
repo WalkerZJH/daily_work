@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
+import SquareDatePicker from '../../components/ui/SquareDatePicker.vue'
 import {
   applyReportContextToQuery,
   buildPersistentParams,
@@ -31,6 +32,7 @@ const query = reactive(
 )
 
 const options = ref(createEmptyWorkbenchOptions(query))
+const manufacturerCatalog = ref([])
 const state = ref(createEmptyRuleCluesData(query))
 const reportContext = ref(state.value.reportContext)
 const activeFilter = ref('all')
@@ -38,6 +40,8 @@ const selectedDetectorFamily = ref(query.detectorFamily || 'all')
 const selectedDetectorId = ref(query.detectorId || 'all')
 const isLoading = ref(false)
 let suppressWatcher = false
+let requestSequence = 0
+let initializedManufacturer = Boolean(query.manufacturerCode)
 
 const filterTabs = [
   { id: 'all', label: '全部规则线索' },
@@ -46,6 +50,7 @@ const filterTabs = [
 ]
 
 const selectedHorizonLabel = computed(() => options.value.horizonOptions.find((item) => item.id === query.horizon)?.label || query.horizon)
+const availableObservationDates = computed(() => options.value.dailyDetectorDateOptions?.map((item) => item.id).filter(Boolean) || [])
 const detectorFamilyOptions = computed(() => {
   const families = [...new Map((options.value.detectorCatalog || []).map((item) => [
     item.detectorFamily,
@@ -86,15 +91,24 @@ function applyEffectiveQuery(nextQuery) {
 }
 
 function applyLoadedOptions(loadedOptions, fallbackQuery = query) {
-  options.value = loadedOptions || createEmptyWorkbenchOptions(fallbackQuery)
+  const nextOptions = loadedOptions || createEmptyWorkbenchOptions(fallbackQuery)
+  if (nextOptions.manufacturerOptions?.length) {
+    manufacturerCatalog.value = nextOptions.manufacturerOptions
+  }
+  options.value = {
+    ...nextOptions,
+    manufacturerOptions: manufacturerCatalog.value.length ? manufacturerCatalog.value : nextOptions.manufacturerOptions
+  }
   const codes = (options.value.manufacturerOptions || []).map((item) => item.code).filter(Boolean)
-  if (codes.length && !codes.includes(query.manufacturerCode)) {
+  if (!initializedManufacturer && !query.manufacturerCode && codes.length) {
     const nextManufacturer = codes.includes(options.value.defaultManufacturerCode) ? options.value.defaultManufacturerCode : codes[0]
+    initializedManufacturer = true
     applyEffectiveQuery({ ...query, manufacturerCode: nextManufacturer })
   }
 }
 
 async function refreshClues() {
+  const sequence = ++requestSequence
   isLoading.value = true
   try {
     query.detectorFamily = selectedDetectorFamily.value === 'all' ? '' : selectedDetectorFamily.value
@@ -108,9 +122,11 @@ async function refreshClues() {
     }
 
     const loadedOptions = await loadWorkbenchOptions(query)
+    if (sequence !== requestSequence) return
     applyLoadedOptions(loadedOptions, query)
 
     const context = await loadReportContext(query)
+    if (sequence !== requestSequence) return
     reportContext.value = context
     if (!context.ready) {
       state.value = createEmptyRuleCluesData(query, context)
@@ -124,11 +140,14 @@ async function refreshClues() {
       loadWorkbenchOptions(effectiveQuery),
       loadRuleCluesData(effectiveQuery)
     ])
+    if (sequence !== requestSequence) return
     applyLoadedOptions(refreshedOptions, effectiveQuery)
     state.value = loadedData || createEmptyRuleCluesData(effectiveQuery, context)
     reportContext.value = state.value.reportContext || context
   } finally {
-    isLoading.value = false
+    if (sequence === requestSequence) {
+      isLoading.value = false
+    }
   }
 }
 
@@ -167,7 +186,7 @@ watch(selectedDetectorId, () => {
         </label>
         <label class="control-field">
           <span>观察日期</span>
-          <input v-model="query.observationDate" type="date" />
+          <SquareDatePicker v-model="query.observationDate" label="观察日期" :available-dates="availableObservationDates" />
         </label>
       </div>
     </div>

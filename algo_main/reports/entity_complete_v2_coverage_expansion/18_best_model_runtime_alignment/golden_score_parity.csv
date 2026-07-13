@@ -1,2 +1,2 @@
 status,row_count_runtime,row_count_reference,row_count_matched,row_count_match,feature_order_match,score_max_abs_diff,score_mean_abs_diff,score_corr,probability_range_ok
-pass,1764664,1413997,1413997,False,True,0.0,0.0,1.0,True
+warn,1364039,1413997,1081902,False,True,0.28641141951084137,0.019723753592301115,0.994040111643014,True

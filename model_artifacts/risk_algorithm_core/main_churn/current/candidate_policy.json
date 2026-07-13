@@ -3,6 +3,7 @@
   "default_topN_per_manufacturer": 20,
   "max_topN_per_manufacturer": 50,
   "global_candidate_cap": 30000,
-  "one_shot_bounded": true,
-  "observation_bounded": true
+  "monthly_backbone_scope": "recurring_only",
+  "one_shot_in_monthly_backbone": false,
+  "observation_category_removed": true
 }

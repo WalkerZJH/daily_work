@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import MetricCard from '../../components/MetricCard.vue'
 import SectionCard from '../../components/SectionCard.vue'
+import SquareDatePicker from '../../components/ui/SquareDatePicker.vue'
 import {
   applyReportContextToQuery,
   buildPersistentParams,
@@ -32,15 +33,19 @@ const query = reactive(
 )
 
 const options = ref(createEmptyWorkbenchOptions(query))
+const manufacturerCatalog = ref([])
 const state = ref(createEmptyWorkbenchData(query))
 const reportContext = ref(state.value.reportContext)
 const isLoading = ref(false)
 let suppressWatcher = false
+let requestSequence = 0
+let initializedManufacturer = Boolean(query.manufacturerCode)
 
 const todayMetrics = computed(() => state.value.overviewMetrics || [])
 const selectedHorizonLabel = computed(() => options.value.horizonOptions.find((item) => item.id === query.horizon)?.label || query.horizon)
 const selectedSortLabel = computed(() => options.value.sortOptions.find((item) => item.id === query.sortBy)?.label || '当前条件')
 const hasRows = computed(() => (state.value.workbenchDisplayRows || []).length > 0)
+const availableObservationDates = computed(() => (options.value.dailyDetectorDateOptions || []).map((item) => item.runDate).filter(Boolean))
 
 function detailHref(row) {
   const params = buildPersistentParams(query, { id: row.entityId })
@@ -62,29 +67,43 @@ function applyEffectiveQuery(nextQuery) {
 }
 
 function applyLoadedOptions(loadedOptions, fallbackQuery = query) {
-  options.value = loadedOptions || createEmptyWorkbenchOptions(fallbackQuery)
+  const nextOptions = loadedOptions || createEmptyWorkbenchOptions(fallbackQuery)
+  if (nextOptions.manufacturerOptions?.length) {
+    manufacturerCatalog.value = nextOptions.manufacturerOptions
+  }
+  options.value = {
+    ...nextOptions,
+    manufacturerOptions: manufacturerCatalog.value.length ? manufacturerCatalog.value : nextOptions.manufacturerOptions
+  }
   const codes = (options.value.manufacturerOptions || []).map((item) => item.code).filter(Boolean)
-  if (codes.length && !codes.includes(query.manufacturerCode)) {
+  if (!initializedManufacturer && !query.manufacturerCode && codes.length) {
     const nextManufacturer = codes.includes(options.value.defaultManufacturerCode) ? options.value.defaultManufacturerCode : codes[0]
+    initializedManufacturer = true
     applyEffectiveQuery({ ...query, manufacturerCode: nextManufacturer })
   }
 }
 
 async function refreshWorkbench() {
+  const sequence = ++requestSequence
   isLoading.value = true
   try {
     if (query.demoMode) {
-      options.value = await loadWorkbenchOptions(query, { allowDemo: true })
-      state.value = await loadWorkbenchData(query, { allowDemo: true })
+      const demoOptions = await loadWorkbenchOptions(query, { allowDemo: true })
+      const demoData = await loadWorkbenchData(query, { allowDemo: true })
+      if (sequence !== requestSequence) return
+      options.value = demoOptions
+      state.value = demoData
       reportContext.value = state.value.reportContext
       updateUrl()
       return
     }
 
     const loadedOptions = await loadWorkbenchOptions(query)
+    if (sequence !== requestSequence) return
     applyLoadedOptions(loadedOptions, query)
 
     const context = await loadReportContext(query)
+    if (sequence !== requestSequence) return
     reportContext.value = context
     if (!context.ready) {
       state.value = createEmptyWorkbenchData(query, context)
@@ -98,12 +117,21 @@ async function refreshWorkbench() {
       loadWorkbenchOptions(effectiveQuery),
       loadWorkbenchData(effectiveQuery)
     ])
+    if (sequence !== requestSequence) return
     applyLoadedOptions(refreshedOptions, effectiveQuery)
+    if (!responseMatchesQuery(loadedData, effectiveQuery)) return
     state.value = loadedData || createEmptyWorkbenchData(effectiveQuery, context)
     reportContext.value = state.value.reportContext || context
   } finally {
     isLoading.value = false
   }
+}
+
+function responseMatchesQuery(loadedData, expectedQuery) {
+  if (!loadedData?.query) return true
+  return loadedData.query.manufacturerCode === expectedQuery.manufacturerCode &&
+    loadedData.query.horizon === expectedQuery.horizon &&
+    loadedData.query.sortBy === expectedQuery.sortBy
 }
 
 onMounted(refreshWorkbench)
@@ -133,10 +161,11 @@ watch(
             </option>
           </select>
         </label>
-        <label class="control-field">
-          <span>观察日期</span>
-          <input v-model="query.observationDate" type="date" />
-        </label>
+        <SquareDatePicker
+          v-model="query.observationDate"
+          label="观察日期"
+          :available-dates="availableObservationDates"
+        />
       </div>
     </div>
 
@@ -204,7 +233,7 @@ watch(
       />
     </div>
 
-    <SectionCard title="今日重点风险对象" :subtitle="`按${selectedSortLabel}排序`">
+    <SectionCard title="今日重点风险对象" :subtitle="`按 ${selectedSortLabel} 排序`">
       <div class="table-toolbar">
         <span class="status-badge status-badge-neutral" v-if="isLoading">刷新中</span>
         <span class="muted">按当前条件展示 Top {{ query.topN }} 对象</span>

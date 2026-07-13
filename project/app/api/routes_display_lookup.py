@@ -28,6 +28,7 @@ def display_lookup_status(
     horizon: str | None = Query(default=None),
     manufacturer_code: str | None = Query(default=None),
     user_id: str | None = Query(default=None),
+    manual_report_month: bool = Query(default=False),
 ) -> dict:
     context = report_context_service.resolve(
         observation_date=observation_date,
@@ -36,6 +37,7 @@ def display_lookup_status(
         horizon=horizon,
         manufacturer_code=manufacturer_code,
         user_id=user_id,
+        manual_report_month=manual_report_month,
     )
     repository = report_context_service.probability_repository(context)
     contextual_service = (
@@ -47,7 +49,10 @@ def display_lookup_status(
         **contextual_service.status(),
         "report_context": context,
         "observation_date": context.get("observation_date"),
+        "effective_observation_date": context.get("effective_observation_date"),
         "probability_report_month": context.get("probability_report_month"),
+        "expected_probability_report_month": context.get("expected_probability_report_month"),
+        "effective_probability_report_month": context.get("effective_probability_report_month"),
         "probability_batch_available": context.get("probability_batch_available"),
         "detector_run_date": context.get("detector_run_date"),
         "detector_run_available": context.get("detector_run_available"),

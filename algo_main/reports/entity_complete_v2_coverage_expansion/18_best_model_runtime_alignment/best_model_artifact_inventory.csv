@@ -6,7 +6,7 @@ selected_model_predictions.parquet,algo_main\data\entity_complete_v2_coverage_ex
 entity_cutoff_feature_table.parquet,algo_main\data\entity_complete_v2_coverage_expansion\05_features\entity_cutoff_feature_table.parquet,True,116261501.0,golden_or_training_source
 alive_labels_H3_H6_H12.parquet,algo_main\data\entity_complete_v2_coverage_expansion\05_features\alive_labels_H3_H6_H12.parquet,True,4438936.0,golden_or_training_source
 artifact_manifest.json,model_artifacts\risk_algorithm_core\main_churn\current\artifact_manifest.json,True,3327.0,production_artifact_manifest
-model.joblib,model_artifacts\risk_algorithm_core\main_churn\current\model.joblib,True,503257.0,production_model_file
+model.joblib,model_artifacts\risk_algorithm_core\main_churn\current\model.joblib,True,504921.0,production_model_file
 feature_schema.json,model_artifacts\risk_algorithm_core\main_churn\current\feature_schema.json,True,10859.0,production_feature_schema
 best_model_family,,True,,xgboost_small
 best_feature_group,,True,,all_safe_features_without_choice_set

@@ -49,6 +49,7 @@ STANDARD_TABLES = [
     "monthly_reports",
     "proof_cases",
     "work_order_reserved",
+    "oneshot_terminals",
     "entity_display_lookup",
     "detector_catalog",
     "daily_detector_runs",

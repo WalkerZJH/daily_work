@@ -134,6 +134,7 @@ class RiskResultRepository(ABC):
         requested_detector_run_date: str | None = None,
         requested_horizon: str | None = None,
         batch_root: str | Path | None = None,
+        manual_report_month: bool = False,
     ) -> dict[str, Any]:
         raise NotImplementedError
 
@@ -320,6 +321,7 @@ class ParquetRiskResultRepository(RiskResultRepository):
         requested_detector_run_date: str | None = None,
         requested_horizon: str | None = None,
         batch_root: str | Path | None = None,
+        manual_report_month: bool = False,
     ) -> dict[str, Any]:
         return resolve_observation_context_from_rows(
             self.list_available_observation_contexts(batch_root=batch_root),
@@ -327,6 +329,7 @@ class ParquetRiskResultRepository(RiskResultRepository):
             requested_report_month=requested_report_month,
             requested_detector_run_date=requested_detector_run_date,
             requested_horizon=requested_horizon,
+            manual_report_month=manual_report_month,
         )
 
     def open_probability_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
@@ -499,6 +502,7 @@ class InMemoryRiskResultRepository(RiskResultRepository):
         requested_detector_run_date: str | None = None,
         requested_horizon: str | None = None,
         batch_root: str | Path | None = None,
+        manual_report_month: bool = False,
     ) -> dict[str, Any]:
         return resolve_observation_context_from_rows(
             self.list_available_observation_contexts(batch_root=batch_root),
@@ -506,6 +510,7 @@ class InMemoryRiskResultRepository(RiskResultRepository):
             requested_report_month=requested_report_month,
             requested_detector_run_date=requested_detector_run_date,
             requested_horizon=requested_horizon,
+            manual_report_month=manual_report_month,
         )
 
     def open_probability_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
@@ -624,6 +629,7 @@ class ClickHouseRiskResultRepository(RiskResultRepository):
         requested_detector_run_date: str | None = None,
         requested_horizon: str | None = None,
         batch_root: str | Path | None = None,
+        manual_report_month: bool = False,
     ) -> dict[str, Any]:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
@@ -823,15 +829,21 @@ def resolve_observation_context_from_rows(
     requested_report_month: str | None = None,
     requested_detector_run_date: str | None = None,
     requested_horizon: str | None = None,
+    manual_report_month: bool = False,
 ) -> dict[str, Any]:
     obs_date = str(observation_date or pd.Timestamp.today().date().isoformat())
-    probability_month = str(requested_report_month or previous_complete_month(obs_date))
+    expected_probability_month = previous_complete_month(obs_date)
+    probability_month = str(requested_report_month) if manual_report_month and requested_report_month else expected_probability_month
     detector_run_date = str(requested_detector_run_date or obs_date)
     requested_horizon = str(requested_horizon) if requested_horizon is not None else None
     if contexts.empty:
         return {
             "ready": False,
             "observation_date": obs_date,
+            "requested_observation_date": observation_date,
+            "effective_observation_date": obs_date,
+            "expected_probability_report_month": expected_probability_month,
+            "effective_probability_report_month": None,
             "probability_report_month": probability_month,
             "probability_batch_id": None,
             "probability_batch_dir": None,
@@ -841,6 +853,7 @@ def resolve_observation_context_from_rows(
             "detector_run_available": False,
             "context_status": "no_available_context",
             "manual_selection_required": True,
+            "manual_report_month": manual_report_month,
             "available_report_months": [],
             "available_detector_run_dates": [],
             "requested_horizon": requested_horizon,
@@ -894,16 +907,20 @@ def resolve_observation_context_from_rows(
         status = "detector_run_unavailable"
         manual = True
     else:
-        status = "probability_month_unavailable"
+        status = "EXPECTED_MONTH_BATCH_UNAVAILABLE"
         manual = True
 
     source = detector_rows.iloc[0] if not detector_rows.empty else (probability_rows.iloc[0] if not probability_rows.empty else selected)
+    effective_probability_month = str(source.get("probability_report_month") or "") if probability_available else None
     horizons = split_context_values(source.get("available_horizons", ""))
     primary_horizon = str(source.get("primary_horizon") or (horizons[0] if horizons else ""))
     effective_horizon = requested_horizon if requested_horizon in horizons else primary_horizon
     warnings: list[str] = []
     if not probability_available:
-        warnings.append("Probability report month is unavailable; manual selection is required.")
+        warnings.append(
+            f"Observation date {obs_date} expects probability report month {probability_month}, "
+            "but that formal monthly batch is unavailable; do not fallback to an older month silently."
+        )
     if probability_available and not detector_available:
         warnings.append("Detector run date is unavailable; do not substitute another run date silently.")
     if requested_horizon is not None and requested_horizon not in horizons:
@@ -912,15 +929,20 @@ def resolve_observation_context_from_rows(
     return {
         "ready": status == "ready",
         "observation_date": obs_date,
+        "requested_observation_date": observation_date,
+        "effective_observation_date": obs_date,
+        "expected_probability_report_month": expected_probability_month,
+        "effective_probability_report_month": effective_probability_month,
         "probability_report_month": probability_month,
-        "probability_batch_id": str(source.get("probability_batch_id") or ""),
-        "probability_batch_dir": str(source.get("probability_batch_dir") or ""),
+        "probability_batch_id": str(source.get("probability_batch_id") or "") if probability_available else None,
+        "probability_batch_dir": str(source.get("probability_batch_dir") or "") if probability_available else None,
         "probability_batch_available": probability_available,
         "detector_run_date": detector_run_date,
         "detector_run_id": str(source.get("detector_run_id") or ""),
         "detector_run_available": detector_available,
         "context_status": status,
         "manual_selection_required": manual,
+        "manual_report_month": manual_report_month,
         "available_report_months": available_report_months,
         "available_detector_run_dates": available_detector_run_dates,
         "requested_horizon": requested_horizon,

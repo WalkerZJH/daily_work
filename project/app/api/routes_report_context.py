@@ -25,6 +25,7 @@ def report_context(
     horizon: str | None = Query(default=None),
     manufacturer_code: str | None = Query(default=None),
     user_id: str | None = Query(default=None),
+    manual_report_month: bool = Query(default=False),
 ) -> dict:
     return service.resolve(
         observation_date=observation_date,
@@ -33,4 +34,5 @@ def report_context(
         horizon=horizon,
         manufacturer_code=manufacturer_code,
         user_id=user_id,
+        manual_report_month=manual_report_month,
     )

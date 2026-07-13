@@ -107,6 +107,7 @@ def run_entity_complete_v2_coverage_expansion(
     progress(root, "stage=leakage_audit")
     frame = load_v2_feature_label_frame(root)
     closed = frame[frame["label_window_closed"].astype(bool)].copy()
+    closed = recurring_monthly_backbone_frame(closed)
     closed["split"] = consolidation.assign_strict_split(closed)
     leakage = consolidation.audit_feature_leakage(frame)
     write_leakage_reports(root, leakage)
@@ -455,6 +456,20 @@ def load_v2_feature_label_frame(root: Path) -> pd.DataFrame:
         part["label_window_closed"] = part[f"label_window_closed_H{h}"].astype(bool)
         rows.append(part)
     return rebuild.add_baseline_scores(pd.concat(rows, ignore_index=True))
+
+
+def recurring_monthly_backbone_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    if frame.empty:
+        return frame.copy()
+    if "sample_class" in frame:
+        return frame[frame["sample_class"].astype(str).eq("recurring")].copy()
+    if "active_month_count_asof_cutoff" in frame:
+        active = pd.to_numeric(frame["active_month_count_asof_cutoff"], errors="coerce")
+        gap = pd.to_numeric(frame.get("months_since_last_purchase_asof_cutoff"), errors="coerce")
+        return frame[active.ge(2) & gap.le(12)].copy()
+    if "one_shot_flag" in frame:
+        return frame[~frame["one_shot_flag"].astype(bool)].copy()
+    return frame.copy()
 
 
 def write_leakage_reports(root: Path, leakage: pd.DataFrame) -> None:

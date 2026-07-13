@@ -41,6 +41,7 @@ def assemble_result_batch(
     timeline = _build_timeline(risk_entities, feature_frame)
     hospital_aggregates = _build_hospital_aggregates(risk_entities)
     drug_aggregates = _build_drug_aggregates(risk_entities)
+    oneshot_terminals = _build_oneshot_terminals(feature_frame, report_month, normalized_tables=normalized_tables)
     monthly_reports = _build_monthly_reports(report_month, risk_entities)
     proof_cases = pd.DataFrame(columns=["proof_case_id", "risk_entity_id", "candidate_id", "proof_status"])
     work_order_reserved = _build_work_order_reserved(risk_entities)
@@ -80,6 +81,7 @@ def assemble_result_batch(
         "monthly_reports": monthly_reports,
         "proof_cases": proof_cases,
         "work_order_reserved": work_order_reserved,
+        "oneshot_terminals": oneshot_terminals,
         "entity_display_lookup": entity_display_lookup,
         **detector_tables,
     }
@@ -154,6 +156,12 @@ def assemble_result_batch(
             "path": f"entity_display_lookup.{data_backend}",
             "row_count": int(len(entity_display_lookup)),
         },
+        "oneshot_terminals": {
+            "table_name": "oneshot_terminals",
+            "schema_version": "oneshot_terminal_v1",
+            "path": f"oneshot_terminals.{data_backend}",
+            "row_count": int(len(oneshot_terminals)),
+        },
         "caveats": [
             "bounded monthly worklist",
             "not full SQL universe claim",
@@ -210,6 +218,7 @@ def _first_run_date(run_dates: list[str] | None) -> str | None:
 
 
 def _build_risk_entities(status: pd.DataFrame, report_month: str) -> pd.DataFrame:
+    status = status[status.get("candidate_type", pd.Series("recurring", index=status.index)).astype(str).eq("recurring")].copy()
     out = pd.DataFrame()
     out["risk_entity_id"] = status["candidate_id"].astype(str)
     out["candidate_id"] = status["candidate_id"].astype(str)
@@ -227,8 +236,10 @@ def _build_risk_entities(status: pd.DataFrame, report_month: str) -> pd.DataFram
     out["report_month"] = report_month
     out["cutoff_month"] = status["cutoff_month"].astype(str)
     out["primary_horizon"] = status["horizon"].astype(str)
-    out["risk_probability_display"] = status.apply(lambda r: "hidden" if bool(r["is_one_shot"]) or bool(r["is_observation"]) else "risk band", axis=1)
-    out["risk_probability_value"] = status["churn_probability_H"].where(~status["is_one_shot"] & ~status["is_observation"], pd.NA)
+    out["candidate_type"] = status.get("candidate_type", "recurring")
+    out["sample_class"] = status.get("sample_class", status.get("candidate_type", "recurring"))
+    out["risk_probability_display"] = status.apply(lambda r: "hidden" if bool(r["is_one_shot"]) else "risk band", axis=1)
+    out["risk_probability_value"] = status["churn_probability_H"].where(~status["is_one_shot"], pd.NA)
     out["probability_display_mode"] = status["probability_display_mode"]
     out["risk_level"] = status["risk_level"]
     out["risk_color"] = status["risk_color"]
@@ -257,13 +268,95 @@ def _build_risk_entities(status: pd.DataFrame, report_month: str) -> pd.DataFram
         {
             "recurring": "Review purchasing context",
             "one_shot": "Check second-purchase opportunity",
-            "observation": "Continue monitoring",
-            "demand_shape_observation": "Continue monitoring",
         }
     ).fillna("Manual review")
     out["auto_dispatch_allowed"] = False
     out["created_at"] = dt.datetime.now(dt.UTC).isoformat()
     return out
+
+
+def _build_oneshot_terminals(
+    features: pd.DataFrame,
+    report_month: str,
+    normalized_tables: dict[str, pd.DataFrame] | None = None,
+) -> pd.DataFrame:
+    columns = [
+        "oneshot_id",
+        "tenant_id",
+        "enterprise_id",
+        "manufacturer_code",
+        "manufacturer_display_name",
+        "hospital_code",
+        "hospital_display_name",
+        "drug_group",
+        "drug_group_source",
+        "drug_display_name",
+        "region_code",
+        "region_display_name",
+        "report_month",
+        "candidate_type",
+        "first_purchase_date",
+        "first_purchase_amount",
+        "days_since_first_purchase",
+        "repurchase_propensity",
+        "expected_repurchase_amount",
+        "priority",
+        "ranking_basis",
+        "created_at",
+    ]
+    if features.empty:
+        return pd.DataFrame(columns=columns)
+    frame = features.copy()
+    if "sample_class" in frame:
+        mask = frame["sample_class"].astype(str).eq("one_shot")
+    elif "candidate_type" in frame:
+        mask = frame["candidate_type"].astype(str).eq("one_shot")
+    elif "one_shot_flag" in frame:
+        mask = frame["one_shot_flag"].fillna(False).astype(bool)
+    else:
+        mask = pd.Series(False, index=frame.index)
+    frame = frame[mask].copy()
+    if frame.empty:
+        return pd.DataFrame(columns=columns)
+    first_purchase = _actual_first_purchase_lookup(normalized_tables or {})
+    out = pd.DataFrame(index=frame.index)
+    out["oneshot_id"] = frame.apply(_oneshot_id, axis=1)
+    out["tenant_id"] = frame.get("tenant_id", "default_tenant")
+    out["enterprise_id"] = frame.get("enterprise_id", "default_enterprise")
+    out["manufacturer_code"] = frame["manufacturer_code"].astype(str)
+    out["manufacturer_display_name"] = frame.get("manufacturer_display_name", frame["manufacturer_code"]).fillna(frame["manufacturer_code"]).astype(str)
+    out["hospital_code"] = frame["hospital_code"].astype(str)
+    out["hospital_display_name"] = frame.get("hospital_display_name", frame["hospital_code"]).fillna(frame["hospital_code"]).astype(str)
+    out["drug_group"] = frame["drug_group"].astype(str)
+    out["drug_group_source"] = frame.get("drug_group_source", "drug_code")
+    out["drug_display_name"] = frame.get("drug_display_name", frame["drug_group"]).fillna(frame["drug_group"]).astype(str)
+    out["region_code"] = frame.get("region_code", "")
+    out["region_display_name"] = frame.get("region_display_name", "")
+    out["report_month"] = report_month
+    out["candidate_type"] = "one_shot"
+    first_dates = []
+    first_amounts = []
+    days_since = []
+    for _, row in frame.iterrows():
+        key = (_text(row.get("manufacturer_code")), _text(row.get("hospital_code")), _text(row.get("drug_group")))
+        actual = first_purchase.get(key, {})
+        first_date = _text(actual.get("first_purchase_date")) or _row_first_purchase_date(row)
+        first_amount = actual.get("first_purchase_amount")
+        if first_amount is None:
+            first_amount = _row_first_purchase_amount(row)
+        first_dates.append(first_date)
+        first_amounts.append(int(max(float(first_amount or 0), 0.0)))
+        days_since.append(_days_since(first_date, row.get("cutoff_month")))
+    out["first_purchase_date"] = first_dates
+    out["first_purchase_amount"] = first_amounts
+    out["days_since_first_purchase"] = days_since
+    score_source = frame.get("one_shot_attention_score", frame.get("risk_score", frame.get("confidence_score", 0.0)))
+    out["repurchase_propensity"] = pd.to_numeric(score_source, errors="coerce").fillna(0.0).clip(0, 1).round(6)
+    out["expected_repurchase_amount"] = 0
+    out["priority"] = out["repurchase_propensity"].map(lambda value: "high" if float(value) >= 0.75 else "medium")
+    out["ranking_basis"] = "首采事实与当前排序依据"
+    out["created_at"] = dt.datetime.now(dt.UTC).isoformat()
+    return out[columns].drop_duplicates("oneshot_id", keep="first").reset_index(drop=True)
 
 
 def _build_risk_entity_horizon_profiles(
@@ -307,7 +400,7 @@ def _build_risk_entity_horizon_profiles(
         risk_entity_id = str(entity["risk_entity_id"])
         entity_id = _base_entity_id(entity)
         primary_horizon = str(entity.get("primary_horizon") or entity.get("horizon") or "")
-        hide_probability = bool(entity.get("is_one_shot", False)) or bool(entity.get("is_observation", False))
+        hide_probability = bool(entity.get("is_one_shot", False))
         for horizon in horizons:
             status_row = _first_profile_row(status_source, entity_id, horizon)
             feature_row = _first_profile_row(feature_source, entity_id, horizon)
@@ -421,6 +514,83 @@ def _first_profile_row(df: pd.DataFrame, entity_id: str, horizon: str) -> pd.Ser
     return pd.Series(dtype=object) if rows.empty else rows.iloc[0]
 
 
+def _oneshot_id(row: pd.Series) -> str:
+    for field in ["oneshot_id", "entity_id", "candidate_id", "risk_entity_id"]:
+        text = _text(row.get(field))
+        if text:
+            return text
+    return "|".join([_text(row.get("manufacturer_code")), _text(row.get("hospital_code")), _text(row.get("drug_group"))])
+
+
+def _row_first_purchase_date(row: pd.Series) -> str:
+    for field in [
+        "first_purchase_date",
+        "first_purchase_time",
+        "first_order_date",
+        "first_seen_date",
+        "first_purchase_month_asof_cutoff",
+        "first_purchase_month",
+    ]:
+        parsed = pd.to_datetime(row.get(field), errors="coerce")
+        if pd.notna(parsed):
+            return parsed.date().isoformat()
+    parsed = pd.to_datetime(row.get("cutoff_month"), errors="coerce")
+    return parsed.date().isoformat() if pd.notna(parsed) else ""
+
+
+def _row_first_purchase_amount(row: pd.Series) -> int:
+    for field in [
+        "first_purchase_amount",
+        "purchase_amount_sum_first_purchase",
+        "purchase_amount_sum_last_1m_asof_cutoff",
+        "historical_avg_monthly_amount_asof_cutoff",
+    ]:
+        if field in row.index and pd.notna(row.get(field)):
+            return int(max(float(row.get(field)), 0.0))
+    return 0
+
+
+def _row_days_since_first_purchase(row: pd.Series) -> int:
+    return _days_since(_row_first_purchase_date(row), row.get("cutoff_month"))
+
+
+def _days_since(first_purchase_date: Any, cutoff_date: Any) -> int:
+    first = pd.to_datetime(first_purchase_date, errors="coerce")
+    cutoff = pd.to_datetime(cutoff_date, errors="coerce")
+    if pd.isna(first) or pd.isna(cutoff):
+        return 0
+    return max((cutoff.date() - first.date()).days, 0)
+
+
+def _actual_first_purchase_lookup(normalized_tables: dict[str, pd.DataFrame]) -> dict[tuple[str, str, str], dict[str, Any]]:
+    orders = normalized_tables.get("orders", pd.DataFrame()).copy()
+    if orders.empty:
+        return {}
+    required = {"manufacturer_code", "hospital_code", "drug_code", "order_date"}
+    if not required.issubset(orders.columns):
+        return {}
+    orders["order_date"] = pd.to_datetime(orders["order_date"], errors="coerce")
+    orders["order_amount"] = pd.to_numeric(orders.get("order_amount", 0), errors="coerce").fillna(0.0)
+    orders = orders.dropna(subset=["order_date"])
+    if orders.empty:
+        return {}
+    group_cols = ["manufacturer_code", "hospital_code", "drug_code"]
+    first_dates = orders.groupby(group_cols, dropna=False)["order_date"].min().reset_index(name="first_purchase_date")
+    first_orders = orders.merge(first_dates, on=group_cols, how="inner")
+    first_orders = first_orders[first_orders["order_date"].eq(first_orders["first_purchase_date"])]
+    first_amounts = first_orders.groupby(group_cols, dropna=False)["order_amount"].sum().reset_index(name="first_purchase_amount")
+    joined = first_dates.merge(first_amounts, on=group_cols, how="left")
+    out: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for _, row in joined.iterrows():
+        key = (_text(row.get("manufacturer_code")), _text(row.get("hospital_code")), _text(row.get("drug_code")))
+        parsed = pd.to_datetime(row.get("first_purchase_date"), errors="coerce")
+        out[key] = {
+            "first_purchase_date": parsed.date().isoformat() if pd.notna(parsed) else "",
+            "first_purchase_amount": float(row.get("first_purchase_amount") or 0),
+        }
+    return out
+
+
 def _profile_probability(score_row: pd.Series, status_row: pd.Series, entity_row: pd.Series, horizon: str, primary_horizon: str) -> float | Any:
     for row in [score_row, status_row]:
         for field in ["risk_probability", "churn_probability_H", "probability_score", "risk_probability_value"]:
@@ -484,7 +654,7 @@ def _risk_level_from_probability(probability: Any) -> str:
         return "orange"
     if value >= 0.4:
         return "yellow"
-    return "observation"
+    return "low"
 
 
 def _risk_band_from_level(risk_level: str) -> str:
@@ -493,8 +663,8 @@ def _risk_band_from_level(risk_level: str) -> str:
         return "High risk"
     if key in {"orange", "medium"}:
         return "Medium risk"
-    if key in {"yellow", "observation"}:
-        return "Observation"
+    if key == "yellow":
+        return "Lower risk"
     if key == "attention":
         return "Attention"
     return "Data unavailable"

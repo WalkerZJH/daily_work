@@ -63,10 +63,11 @@ class MonthlyRiskRunner:
             features, feature_report = engineer_features_from_facts(entity_base, normalized["fact_entity_month"], cutoff_date)
         else:
             features, feature_report = engineer_features(entity_base, normalized["orders"], cutoff_date)
+        model_input_features = _recurring_features(features)
         if use_rule_baseline:
             scorer = RuleBaselineScorer()
             model_artifact_id = "dry_run_rule_baseline"
-            model_features = features
+            model_features = model_input_features
             feature_parity_report = pd.DataFrame()
             artifact_metadata = {
                 "model_family": "rule_baseline",
@@ -77,7 +78,7 @@ class MonthlyRiskRunner:
             }
         else:
             artifact = load_current_model_artifact(cfg.artifact_dir, cfg.require_artifact)
-            aligned = build_model_feature_frame(features, artifact)
+            aligned = build_model_feature_frame(model_input_features, artifact)
             model_features = aligned.model_feature_frame
             feature_parity_report = aligned.parity_report
             scorer = ArtifactRiskScorer(artifact)
@@ -121,6 +122,7 @@ class MonthlyRiskRunner:
             "raw_batch_id": raw_batch.manifest.raw_batch_id,
             "entity_rows": int(len(entity_base)),
             "feature_rows": int(len(features)),
+            "recurring_feature_rows": int(len(model_input_features)),
             "score_rows": int(len(score_frame)),
             "selected_candidate_rows": int(len(selected)),
             "detector_output_rows": int(len(detector_outputs)),
@@ -131,6 +133,7 @@ class MonthlyRiskRunner:
             "dry_run_rule_baseline": bool(use_rule_baseline),
         }
         self._write_run_reports(batch_dir, summary, normalize_report, feature_report, feature_parity_report, selection_report, gate_decisions, disabled_notes)
+        self._write_unmonitorable_audit(batch_dir, feature_report)
         return summary
 
     def _run_detectors(self, selected: pd.DataFrame, features: pd.DataFrame, gate_decisions: pd.DataFrame) -> pd.DataFrame:
@@ -187,6 +190,12 @@ class MonthlyRiskRunner:
         gate_decisions.to_csv(batch_dir / "detector_quality_gate.csv", index=False)
         disabled_notes.to_csv(batch_dir / "disabled_detector_notes.csv", index=False)
 
+    def _write_unmonitorable_audit(self, batch_dir: Path, feature_report: pd.DataFrame) -> None:
+        audit = feature_report.attrs.get("unmonitorable_purchase_relationships")
+        if not isinstance(audit, pd.DataFrame):
+            return
+        audit.to_csv(batch_dir / "unmonitorable_purchase_relationships.csv", index=False)
+
 
 def _detector_run_dates(cfg: MonthlyRiskRunConfig) -> list[str]:
     configured = cfg.detectors.get("run_dates") or cfg.detectors.get("detector_run_dates")
@@ -195,3 +204,15 @@ def _detector_run_dates(cfg: MonthlyRiskRunConfig) -> list[str]:
     if configured:
         return [str(item) for item in configured]
     return [cfg.run_date]
+
+
+def _recurring_features(features: pd.DataFrame) -> pd.DataFrame:
+    if features.empty:
+        return features.copy()
+    if "sample_class" in features.columns:
+        return features[features["sample_class"].astype(str).eq("recurring")].copy()
+    if "active_month_count_asof_cutoff" in features.columns:
+        return features[pd.to_numeric(features["active_month_count_asof_cutoff"], errors="coerce").ge(2)].copy()
+    if "is_one_shot" in features.columns:
+        return features[~features["is_one_shot"].fillna(False).astype(bool)].copy()
+    return features.copy()

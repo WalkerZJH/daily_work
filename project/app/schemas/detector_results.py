@@ -65,7 +65,10 @@ class DailyDetectorStatusResponse(DetectorResultModel):
     warnings: list[str]
     report_context: dict[str, Any] = Field(default_factory=dict)
     observation_date: str | None = None
+    effective_observation_date: str | None = None
     probability_report_month: str | None = None
+    expected_probability_report_month: str | None = None
+    effective_probability_report_month: str | None = None
     probability_batch_available: bool | None = None
     detector_run_date: str | None = None
     detector_run_available: bool | None = None
@@ -132,7 +135,10 @@ class DailyDetectorCluesResponse(DetectorResultModel):
     warnings: list[str]
     report_context: dict[str, Any] = Field(default_factory=dict)
     observation_date: str | None = None
+    effective_observation_date: str | None = None
     probability_report_month: str | None = None
+    expected_probability_report_month: str | None = None
+    effective_probability_report_month: str | None = None
     probability_batch_available: bool | None = None
     detector_run_date: str | None = None
     detector_run_available: bool | None = None
@@ -174,7 +180,10 @@ class RiskEntityDetectorEvidenceResponse(DetectorResultModel):
     warnings: list[str]
     report_context: dict[str, Any] = Field(default_factory=dict)
     observation_date: str | None = None
+    effective_observation_date: str | None = None
     probability_report_month: str | None = None
+    expected_probability_report_month: str | None = None
+    effective_probability_report_month: str | None = None
     probability_batch_available: bool | None = None
     detector_run_date: str | None = None
     detector_run_available: bool | None = None

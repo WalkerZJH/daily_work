@@ -3,5 +3,5 @@
   "customer_facing_probability_service_allowed": false,
   "proof_case_report_allowed": false,
   "one_shot_recurring_probability_display": "forbidden",
-  "observation_high_risk": "forbidden"
+  "observation_category_removed": true
 }

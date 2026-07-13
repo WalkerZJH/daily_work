@@ -1275,6 +1275,9 @@ def run_entity_complete_feature_build(project_root: str | Path) -> dict[str, Any
     write_parquet(project_path(root, FEATURE_DIR / "entity_cutoff_feature_table.parquet"), features)
     write_parquet(project_path(root, FEATURE_DIR / "alive_labels_H3_H6_H12.parquet"), labels)
     write_parquet(project_path(root, FEATURE_DIR / "one_shot_first_purchase_features.parquet"), one_shot)
+    unmonitorable = features.attrs.get("unmonitorable_purchase_relationships")
+    if isinstance(unmonitorable, pd.DataFrame):
+        write_parquet(project_path(root, FEATURE_DIR / "unmonitorable_purchase_relationships.parquet"), unmonitorable)
     write_csv(project_path(root, FEATURE_REPORT_DIR / "cutoff_candidate_count_report.csv"), cutoff_report)
     write_csv(project_path(root, FEATURE_REPORT_DIR / "label_closure_audit.csv"), label_closure_audit(labels))
     write_csv(project_path(root, FEATURE_REPORT_DIR / "demand_shape_distribution.csv"), distribution_table(features, "demand_shape_label"))
@@ -1330,6 +1333,7 @@ def build_monthly_feature_table_fast(
     monthly["previous_purchase_month"] = monthly.groupby(ENTITY_KEYS, dropna=False)["purchase_month"].shift(1)
     monthly["gap_days"] = (monthly["purchase_month"] - monthly["previous_purchase_month"]).dt.days
     feature_parts: list[pd.DataFrame] = []
+    unmonitorable_parts: list[pd.DataFrame] = []
     report_rows: list[dict[str, Any]] = []
     total_cutoffs = len(cutoff_months)
     running_rows = 0
@@ -1341,6 +1345,9 @@ def build_monthly_feature_table_fast(
                 f"stage=feature_cutoff_start {idx}/{total_cutoffs} cutoff={cutoff_ts:%Y-%m} running_rows={running_rows}",
             )
         part = build_features_for_cutoff(monthly, cutoff_ts, max_monitor_gap_months=max_monitor_gap_months)
+        audit = part.attrs.get("unmonitorable_purchase_relationships")
+        if isinstance(audit, pd.DataFrame) and not audit.empty:
+            unmonitorable_parts.append(audit)
         running_rows += len(part)
         if progress_path is not None:
             progress_update(
@@ -1353,11 +1360,25 @@ def build_monthly_feature_table_fast(
                 "all_seen_entity_count": int(part.attrs.get("all_seen_entity_count", len(part))),
                 "monitorable_entity_count": int(len(part)),
                 "excluded_by_monitor_gap_count": int(part.attrs.get("excluded_by_monitor_gap_count", 0)),
+                "unmonitorable_entity_count": int(part.attrs.get("unmonitorable_entity_count", part.attrs.get("excluded_by_monitor_gap_count", 0))),
+                "one_shot_entity_count": int(part.attrs.get("one_shot_entity_count", 0)),
+                "recurring_entity_count": int(part.attrs.get("recurring_entity_count", 0)),
             }
         )
         if not part.empty:
             feature_parts.append(part)
     features = pd.concat(feature_parts, ignore_index=True) if feature_parts else pd.DataFrame()
+    if unmonitorable_parts:
+        features.attrs["unmonitorable_purchase_relationships"] = pd.concat(unmonitorable_parts, ignore_index=True)
+    for attr_name in [
+        "all_seen_entity_count",
+        "monitorable_entity_count",
+        "excluded_by_monitor_gap_count",
+        "unmonitorable_entity_count",
+        "one_shot_entity_count",
+        "recurring_entity_count",
+    ]:
+        features.attrs[attr_name] = int(pd.to_numeric(pd.DataFrame(report_rows).get(attr_name, pd.Series(dtype=float)), errors="coerce").fillna(0).sum())
     demand_cols = [
         *ENTITY_KEYS,
         "cutoff_month",
@@ -1385,6 +1406,10 @@ def build_features_for_cutoff(monthly: pd.DataFrame, cutoff_ts: pd.Timestamp, *,
     hist = monthly[monthly["purchase_month"].le(cutoff_ts)].copy()
     if hist.empty:
         return pd.DataFrame()
+    if "gap_days" not in hist.columns:
+        hist = hist.sort_values(ENTITY_KEYS + ["purchase_month"]).reset_index(drop=True)
+        hist["previous_purchase_month"] = hist.groupby(ENTITY_KEYS, dropna=False)["purchase_month"].shift(1)
+        hist["gap_days"] = (hist["purchase_month"] - hist["previous_purchase_month"]).dt.days
     grouped = hist.groupby(ENTITY_KEYS, dropna=False)
     base = grouped.agg(
         purchase_count_asof_cutoff=("order_count", "sum"),
@@ -1400,9 +1425,20 @@ def build_features_for_cutoff(monthly: pd.DataFrame, cutoff_ts: pd.Timestamp, *,
     base["months_observed_asof_cutoff"] = month_diff_series(cutoff_ts, base["first_purchase_month_asof_cutoff"]) + 1
     base["months_since_first_purchase_asof_cutoff"] = month_diff_series(cutoff_ts, base["first_purchase_month_asof_cutoff"])
     all_seen = len(base)
-    features = base[base["months_since_last_purchase"].le(max_monitor_gap_months)].copy()
-    features.attrs["all_seen_entity_count"] = all_seen
-    features.attrs["excluded_by_monitor_gap_count"] = all_seen - len(features)
+    base = classify_monthly_sample_scope(base, max_monitor_gap_months=max_monitor_gap_months)
+    unmonitorable_audit = _unmonitorable_audit_rows(base)
+    features = base[base["sample_class"].isin(["one_shot", "recurring"])].copy()
+    counts = base["sample_class"].value_counts(dropna=False).to_dict()
+    sample_scope_attrs = {
+        "all_seen_entity_count": all_seen,
+        "monitorable_entity_count": int(len(features)),
+        "excluded_by_monitor_gap_count": int(counts.get("unmonitorable", 0)),
+        "unmonitorable_entity_count": int(counts.get("unmonitorable", 0)),
+        "one_shot_entity_count": int(counts.get("one_shot", 0)),
+        "recurring_entity_count": int(counts.get("recurring", 0)),
+        "unmonitorable_purchase_relationships": unmonitorable_audit,
+    }
+    features.attrs.update(sample_scope_attrs)
     features["candidate_policy"] = "monitorable"
     features["days_since_last_purchase"] = features["months_since_last_purchase"] * 30.4375
     for months in [1, 3, 6, 12]:
@@ -1413,7 +1449,46 @@ def build_features_for_cutoff(monthly: pd.DataFrame, cutoff_ts: pd.Timestamp, *,
     features = merge_interval_demand(features, hist)
     features = merge_choice_context_for_cutoff(features, hist)
     features = finalize_feature_columns(features)
-    return features.reset_index(drop=True)
+    result = features.reset_index(drop=True)
+    result.attrs.update(sample_scope_attrs)
+    return result
+
+
+def classify_monthly_sample_scope(base: pd.DataFrame, *, max_monitor_gap_months: int = 12) -> pd.DataFrame:
+    out = base.copy()
+    active = pd.to_numeric(out["active_month_count_asof_cutoff"], errors="coerce")
+    gap = pd.to_numeric(out["months_since_last_purchase_asof_cutoff"], errors="coerce")
+    if active.lt(1).any():
+        raise ValueError("active_month_count_asof_cutoff must be >= 1 for all seen purchase relationships.")
+    out["sample_class"] = np.select(
+        [
+            gap.gt(max_monitor_gap_months),
+            active.eq(1),
+            active.ge(2),
+        ],
+        ["unmonitorable", "one_shot", "recurring"],
+        default="data_integrity_error",
+    )
+    bad = out["sample_class"].eq("data_integrity_error")
+    if bad.any():
+        raise ValueError(f"Unable to classify {int(bad.sum())} monthly purchase relationships.")
+    return out
+
+
+def _unmonitorable_audit_rows(base: pd.DataFrame) -> pd.DataFrame:
+    cols = [
+        *ENTITY_KEYS,
+        "cutoff_month",
+        "first_purchase_month_asof_cutoff",
+        "last_purchase_month_asof_cutoff",
+        "purchase_count_asof_cutoff",
+        "active_month_count_asof_cutoff",
+        "months_since_last_purchase_asof_cutoff",
+        "months_observed_asof_cutoff",
+        "sample_class",
+    ]
+    available = [col for col in cols if col in base.columns]
+    return base[base["sample_class"].eq("unmonitorable")][available].copy()
 
 
 def month_diff_series(cutoff_ts: pd.Timestamp, values: pd.Series) -> pd.Series:
@@ -1596,7 +1671,7 @@ def finalize_feature_columns(features: pd.DataFrame) -> pd.DataFrame:
         out[f"value_at_risk_quantity_raw_H{horizon}_asof_cutoff"] = out["historical_avg_monthly_quantity_asof_cutoff"] * horizon
         out[f"value_at_risk_amount_nonnegative_H{horizon}_asof_cutoff"] = out[f"value_at_risk_amount_raw_H{horizon}_asof_cutoff"].clip(lower=0)
         out[f"value_at_risk_quantity_nonnegative_H{horizon}_asof_cutoff"] = out[f"value_at_risk_quantity_raw_H{horizon}_asof_cutoff"].clip(lower=0)
-    out["one_shot_flag"] = out["purchase_count_asof_cutoff"].eq(1)
+    out["one_shot_flag"] = out["active_month_count_asof_cutoff"].eq(1)
     out["one_shot_silence_months"] = out["months_since_last_purchase_asof_cutoff"]
     out["drug_group_source"] = "drug_code"
     return out

@@ -59,6 +59,7 @@ def daily_detector_status(
     observation_date: str | None = None,
     report_month: str | None = None,
     run_date: str | None = None,
+    manual_report_month: bool = False,
     horizon: str | None = None,
     manufacturer_code: str | None = None,
     user_id: str | None = None,
@@ -70,6 +71,7 @@ def daily_detector_status(
         horizon=horizon,
         manufacturer_code=manufacturer_code,
         user_id=user_id,
+        manual_report_month=manual_report_month,
     )
     if not context.get("detector_run_available"):
         return _with_report_context(
@@ -81,6 +83,7 @@ def daily_detector_status(
         contextual_service.status(
             report_month=context.get("effective_report_month") or report_month,
             run_date=context.get("effective_run_date") or run_date,
+            manufacturer_code=manufacturer_code,
         ),
         context,
     )
@@ -121,6 +124,7 @@ def daily_detector_clues(
     observation_date: str | None = None,
     report_month: str | None = None,
     run_date: str | None = None,
+    manual_report_month: bool = False,
     manufacturer_code: str | None = None,
     horizon: str | None = None,
     top_n: int | None = Query(default=None, ge=1, le=200),
@@ -139,6 +143,7 @@ def daily_detector_clues(
         horizon=horizon,
         manufacturer_code=manufacturer_code,
         user_id=None,
+        manual_report_month=manual_report_month,
     )
     if not context.get("detector_run_available"):
         return _with_report_context(
@@ -171,6 +176,7 @@ def risk_entity_detector_evidence(
     report_month: str | None = None,
     detector_run_id: str | None = None,
     run_date: str | None = None,
+    manual_report_month: bool = False,
     horizon: str | None = None,
     manufacturer_code: str | None = None,
     user_id: str | None = None,
@@ -184,8 +190,14 @@ def risk_entity_detector_evidence(
         horizon=horizon,
         manufacturer_code=manufacturer_code,
         user_id=user_id,
+        manual_report_month=manual_report_month,
     )
     contextual_service = _detector_service_for_context(service, report_context_service, context)
+    _assert_risk_entity_manufacturer_scope(
+        contextual_service,
+        risk_entity_id=risk_entity_id,
+        manufacturer_code=manufacturer_code,
+    )
     evidence_run_date = (
         run_date
         if contextual_service.repository.__class__.__name__ == "InMemoryRiskResultRepository"
@@ -219,6 +231,8 @@ def _with_report_context(payload: dict, report_context: dict) -> dict:
         "report_context": report_context,
         "observation_date": report_context.get("observation_date"),
         "probability_report_month": report_context.get("probability_report_month"),
+        "expected_probability_report_month": report_context.get("expected_probability_report_month"),
+        "effective_probability_report_month": report_context.get("effective_probability_report_month"),
         "probability_batch_available": report_context.get("probability_batch_available"),
         "detector_run_date": report_context.get("detector_run_date"),
         "detector_run_available": report_context.get("detector_run_available"),
@@ -227,6 +241,7 @@ def _with_report_context(payload: dict, report_context: dict) -> dict:
         "partial_ready": report_context.get("partial_ready", False),
         "requested_report_month": report_context.get("requested_report_month"),
         "effective_report_month": report_context.get("effective_report_month"),
+        "effective_observation_date": report_context.get("effective_observation_date"),
         "requested_run_date": report_context.get("requested_run_date"),
         "effective_run_date": report_context.get("effective_run_date"),
         "date_resolution_status": report_context.get("date_resolution_status"),
@@ -242,6 +257,25 @@ def _detector_service_for_context(
         return service
     repository = report_context_service.detector_repository(context)
     return DetectorResultService(repository) if repository is not None else service
+
+
+def _assert_risk_entity_manufacturer_scope(
+    service: DetectorResultService,
+    *,
+    risk_entity_id: str,
+    manufacturer_code: str | None,
+) -> None:
+    entity = service.repository.get_risk_entity(risk_entity_id)
+    if not entity:
+        raise HTTPException(status_code=404, detail=f"Unknown risk entity: {risk_entity_id}")
+    if not manufacturer_code:
+        return
+    effective_manufacturer = str(entity.get("manufacturer_code") or "")
+    if effective_manufacturer != str(manufacturer_code):
+        raise HTTPException(
+            status_code=403,
+            detail={"error_code": "MANUFACTURER_SCOPE_FORBIDDEN"},
+        )
 
 
 def _missing_detector_status_payload(context: dict) -> dict:

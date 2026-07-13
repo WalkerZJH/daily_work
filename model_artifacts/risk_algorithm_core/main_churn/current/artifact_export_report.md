@@ -1,6 +1,6 @@
 # Artifact Export Report
 
-- artifact_id: xgboost_small_without_choice_set_20260707043129
+- artifact_id: xgboost_small_without_choice_set_20260713062634
 - model_family: xgboost_small
 - feature_group: all_safe_features_without_choice_set
 - calibration: raw

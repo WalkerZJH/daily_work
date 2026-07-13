@@ -11,7 +11,7 @@ def test_missing_detector_date_is_not_substituted_with_latest_available_run(monk
 
     payload = TestClient(app).get(
         "/api/v1/daily-detector/status",
-        params={"observation_date": "2025-12-05", "report_month": "2025-12"},
+        params={"observation_date": "2025-12-05", "report_month": "2025-12", "manual_report_month": "true"},
     ).json()
 
     assert payload["detector_run_date"] == "2025-12-05"

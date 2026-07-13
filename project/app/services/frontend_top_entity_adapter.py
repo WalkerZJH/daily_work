@@ -29,9 +29,6 @@ def build_risk_entities_payload_from_top_entities(
     entities = [
         entity for group in top_entities.get("groups", []) for entity in group.get("entities", [])
     ]
-    if not entities:
-        return None
-
     items = [_risk_entity_item(entity, top_entities) for entity in entities]
     return {
         "batch_context": _batch_context(top_entities),
@@ -69,8 +66,6 @@ def build_workbench_payload_from_top_entities(
         manufacturer_codes=manufacturer_codes,
         sort_by=sort_by,
     )
-    if not risk_entities_payload:
-        return None
     rows = [_workbench_row(item) for item in risk_entities_payload["entities"]]
     summary = detector_summary or {
         "detector_clue_count": 0,
@@ -106,6 +101,7 @@ def build_workbench_payload_from_top_entities(
         "today_high_score_rule_clues": list(summary.get("top_clues") or [])[:5],
         "monthly_risk_entities": rows,
         "warnings": list(risk_entities_payload.get("warnings") or []),
+        "empty_reason": "NO_RISK_ENTITIES_IN_SELECTED_SCOPE" if not rows else None,
     }
 
 
@@ -126,16 +122,18 @@ def _batch_context(top_entities: dict[str, Any]) -> dict[str, str]:
 
 def _risk_entity_item(entity: dict[str, Any], top_entities: dict[str, Any]) -> dict[str, Any]:
     probability = _clamped_probability(entity.get("risk_probability"))
-    involved_amount = _int_or_zero(entity.get("involved_amount"))
+    involved_amount = _int_or_none(entity.get("involved_amount"))
     return {
         "entity_id": _text(entity.get("risk_entity_id") or entity.get("candidate_id")),
         "hospital_name": _text(entity.get("hospital_display_name") or entity.get("hospital_code")),
         "drug_name": _text(entity.get("drug_display_name") or entity.get("drug_code")),
         "manufacturer_code": _text(entity.get("manufacturer_code")),
+        "manufacturer_display_name": _text(entity.get("manufacturer_display_name")),
+        "manufacturer_name": _text(entity.get("manufacturer_display_name")),
         "region": _text(entity.get("region_display_name")),
         "horizon": _text(entity.get("horizon") or top_entities.get("horizon") or "H6"),
         "risk_probability": probability,
-        "loss_value": _int_or_zero(entity.get("loss_value")),
+        "loss_value": _int_or_none(entity.get("loss_value")),
         "loss_value_status": _text(entity.get("loss_value_status") or "amount_proxy_missing"),
         "sort_policy": _text(entity.get("sort_policy") or "risk_probability_desc_due_to_missing_amount_proxy"),
         "involved_amount": involved_amount,
@@ -164,6 +162,8 @@ def _workbench_row(item: dict[str, Any]) -> dict[str, Any]:
         "row_id": item["entity_id"],
         "entity_id": item["entity_id"],
         "manufacturer_code": item["manufacturer_code"],
+        "manufacturer_display_name": item["manufacturer_display_name"],
+        "manufacturer_name": item["manufacturer_name"],
         "hospital_name": item["hospital_name"],
         "drug_name": item["drug_name"],
         "region": item["region"],
@@ -184,9 +184,15 @@ def _workbench_row(item: dict[str, Any]) -> dict[str, Any]:
 def _query(top_entities: dict[str, Any], sort_by: str) -> dict[str, Any]:
     return {
         "report_month": top_entities.get("report_month"),
+        "requested_horizon": top_entities.get("horizon"),
+        "effective_horizon": top_entities.get("horizon"),
         "horizon": top_entities.get("horizon"),
         "top_n": top_entities.get("top_n"),
-        "sort_by": sort_by,
+        "requested_sort_by": sort_by,
+        "effective_sort_by": _sort_by_from_effective_strategy(top_entities.get("effective_ranking_strategy") or sort_by),
+        "sort_by": _sort_by_from_effective_strategy(top_entities.get("effective_ranking_strategy") or sort_by),
+        "sort_metric_available": True,
+        "sort_warning": top_entities.get("ranking_strategy_warning"),
     }
 
 
@@ -224,3 +230,20 @@ def _text(value: Any) -> str:
     if value is None:
         return ""
     return str(value)
+
+
+def _int_or_none(value: Any) -> int | None:
+    try:
+        if value is None:
+            return None
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _sort_by_from_effective_strategy(strategy: str) -> str:
+    if strategy == "probability":
+        return "risk_probability"
+    if strategy in {"involved_amount", "loss_value", "detector_score"}:
+        return strategy
+    return str(strategy)

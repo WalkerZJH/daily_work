@@ -33,6 +33,8 @@ def engineer_features(entity_base: pd.DataFrame, orders: pd.DataFrame, cutoff_da
         [cutoff_ts],
         include_choice_context=False,
     )
+    sample_scope_attrs = _sample_scope_attrs(cutoff_features)
+    unmonitorable_audit = cutoff_report.attrs.get("unmonitorable_purchase_relationships")
     if cutoff_features.empty:
         return cutoff_features, _quality_report(0, 0, 0, 0, cutoff_report)
 
@@ -50,7 +52,7 @@ def engineer_features(entity_base: pd.DataFrame, orders: pd.DataFrame, cutoff_da
     expanded["cutoff_month"] = pd.to_datetime(expanded["cutoff_month"], errors="coerce")
     expanded = _add_runtime_sidecar_features(expanded)
     expanded = _merge_runtime_metadata(expanded, entity_base)
-    expanded = _ensure_entity_base_coverage(expanded, entity_base, cutoff_ts)
+    expanded.attrs.update(sample_scope_attrs)
 
     quality = _quality_report(
         feature_rows=len(expanded),
@@ -60,7 +62,11 @@ def engineer_features(entity_base: pd.DataFrame, orders: pd.DataFrame, cutoff_da
         cutoff_report=cutoff_report,
         input_mode="raw_orders_mode",
     )
-    return expanded.reset_index(drop=True), quality
+    if isinstance(unmonitorable_audit, pd.DataFrame):
+        quality.attrs["unmonitorable_purchase_relationships"] = unmonitorable_audit
+    result = expanded.reset_index(drop=True)
+    result.attrs.update(sample_scope_attrs)
+    return result, quality
 
 
 def engineer_features_from_facts(
@@ -86,6 +92,8 @@ def engineer_features_from_facts(
         [cutoff_ts],
         include_choice_context=False,
     )
+    sample_scope_attrs = _sample_scope_attrs(cutoff_features)
+    unmonitorable_audit = cutoff_report.attrs.get("unmonitorable_purchase_relationships")
     if cutoff_features.empty:
         return cutoff_features, _quality_report(0, 0, len(fact_entity_month), 0, cutoff_report, input_mode="normalized_fact_mode")
 
@@ -103,7 +111,7 @@ def engineer_features_from_facts(
     expanded["cutoff_month"] = pd.to_datetime(expanded["cutoff_month"], errors="coerce")
     expanded = _add_runtime_sidecar_features(expanded)
     expanded = _merge_runtime_metadata(expanded, entity_base)
-    expanded = _ensure_entity_base_coverage(expanded, entity_base, cutoff_ts)
+    expanded.attrs.update(sample_scope_attrs)
 
     quality = _quality_report(
         feature_rows=len(expanded),
@@ -113,7 +121,23 @@ def engineer_features_from_facts(
         cutoff_report=cutoff_report,
         input_mode="normalized_fact_mode",
     )
-    return expanded.reset_index(drop=True), quality
+    if isinstance(unmonitorable_audit, pd.DataFrame):
+        quality.attrs["unmonitorable_purchase_relationships"] = unmonitorable_audit
+    result = expanded.reset_index(drop=True)
+    result.attrs.update(sample_scope_attrs)
+    return result, quality
+
+
+def _sample_scope_attrs(frame: pd.DataFrame) -> dict[str, int]:
+    keys = [
+        "all_seen_entity_count",
+        "monitorable_entity_count",
+        "excluded_by_monitor_gap_count",
+        "unmonitorable_entity_count",
+        "one_shot_entity_count",
+        "recurring_entity_count",
+    ]
+    return {key: int(frame.attrs[key]) for key in keys if key in frame.attrs}
 
 
 def _orders_with_master_metadata(orders: pd.DataFrame, entity_base: pd.DataFrame) -> pd.DataFrame:
@@ -250,18 +274,11 @@ def _add_runtime_sidecar_features(features: pd.DataFrame) -> pd.DataFrame:
         out["potential_value_level"] = "unknown"
     out["is_one_shot"] = out["one_shot_flag"].fillna(False).astype(bool)
     out["one_shot_attention_score"] = np.where(out["is_one_shot"], out["value_at_risk_proxy"].rank(pct=True), 0.0)
-    out["probability_display_level"] = np.select(
-        [
-            out["history_sufficiency_flag"].eq("history_insufficient"),
-            out["history_sufficiency_flag"].eq("history_sufficient"),
-        ],
-        ["hidden_data_insufficient", "probability_allowed"],
-        default="risk_band_only",
-    )
+    out["probability_display_level"] = np.where(out["sample_class"].eq("recurring"), "probability_allowed", "hidden_one_shot")
     out["display_mode"] = np.select(
         [
             out["probability_display_level"].eq("probability_allowed"),
-            out["probability_display_level"].eq("hidden_data_insufficient"),
+            out["probability_display_level"].eq("hidden_one_shot"),
         ],
         ["show_probability", "hide_probability"],
         default="show_risk_band",
@@ -286,7 +303,14 @@ def _quality_report(
         {"metric": "entity_purchase_sequence_rows", "value": sequence_rows},
     ]
     if not cutoff_report.empty:
-        for col in ["all_seen_entity_count", "monitorable_entity_count", "excluded_by_monitor_gap_count"]:
+        for col in [
+            "all_seen_entity_count",
+            "monitorable_entity_count",
+            "excluded_by_monitor_gap_count",
+            "unmonitorable_entity_count",
+            "one_shot_entity_count",
+            "recurring_entity_count",
+        ]:
             if col in cutoff_report:
                 rows.append({"metric": col, "value": int(pd.to_numeric(cutoff_report[col], errors="coerce").fillna(0).sum())})
     return pd.DataFrame(rows)

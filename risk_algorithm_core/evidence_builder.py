@@ -22,7 +22,7 @@ def build_risk_cards(candidate_status: pd.DataFrame, detector_outputs: pd.DataFr
                 "card_level": row.risk_level,
                 "card_color": row.risk_color,
                 "horizon": row.horizon,
-                "risk_probability_display": "hidden" if row.is_one_shot or row.is_observation else "risk band",
+                "risk_probability_display": "hidden" if row.is_one_shot else "risk band",
                 "card_summary": _card_summary(row.candidate_type),
                 "candidate_reason": row.selection_reason,
                 "is_primary": True,
@@ -45,7 +45,7 @@ def build_risk_cards(candidate_status: pd.DataFrame, detector_outputs: pd.DataFr
                     "card_level": row.risk_level,
                     "card_color": row.risk_color,
                     "horizon": row.horizon,
-                    "risk_probability_display": "hidden" if row.is_one_shot or row.is_observation else "risk band",
+                    "risk_probability_display": "hidden" if row.is_one_shot else "risk band",
                     "card_summary": _detector_summary(str(detector.detector_name)),
                     "candidate_reason": str(detector.reason_code),
                     "is_primary": False,
@@ -117,8 +117,6 @@ def _primary_card_type(candidate_type: str) -> str:
     return {
         "recurring": "primary_risk",
         "one_shot": "one_shot_attention",
-        "observation": "demand_shape_observation",
-        "demand_shape_observation": "demand_shape_observation",
     }.get(candidate_type, "primary_risk")
 
 
@@ -126,8 +124,6 @@ def _card_title(candidate_type: str) -> str:
     return {
         "recurring": "Monthly risk review",
         "one_shot": "New terminal attention",
-        "observation": "Observation item",
-        "demand_shape_observation": "Observation item",
     }.get(candidate_type, "Monthly risk review")
 
 
@@ -135,8 +131,6 @@ def _card_summary(candidate_type: str) -> str:
     return {
         "recurring": "Selected for monthly purchasing risk review.",
         "one_shot": "Selected as a new terminal attention item; not recurring churn.",
-        "observation": "Selected for observation; not a strong warning.",
-        "demand_shape_observation": "Selected for observation; not a strong warning.",
     }.get(candidate_type, "Selected for monthly review.")
 
 
@@ -144,8 +138,6 @@ def _suggested_action(candidate_type: str) -> str:
     return {
         "recurring": "Review recent purchasing plans and demand context.",
         "one_shot": "Check whether a second purchase can be encouraged.",
-        "observation": "Continue monitoring without treating it as high risk.",
-        "demand_shape_observation": "Continue monitoring without treating it as high risk.",
     }.get(candidate_type, "Manual review recommended.")
 
 
@@ -153,8 +145,6 @@ def _caveat(candidate_type: str) -> str:
     return {
         "recurring": "Risk clue requires business verification.",
         "one_shot": "New terminal attention is not recurring churn probability.",
-        "observation": "Observation item is not high risk.",
-        "demand_shape_observation": "Observation item is not high risk.",
     }.get(candidate_type, "Business review required.")
 
 

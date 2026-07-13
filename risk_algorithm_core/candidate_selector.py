@@ -24,6 +24,15 @@ class BoundedCandidateSelector:
 
     def select(self, score_frame: pd.DataFrame, feature_frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         joined = self._join_features(score_frame, feature_frame)
+        joined["candidate_type"] = classify_candidate_type(
+            joined,
+            max_monitor_gap_months=int(self.config.get("max_monitor_gap_months", 12)),
+        )
+        all_seen_rows = int(feature_frame.attrs.get("all_seen_entity_count", len(feature_frame.drop_duplicates("entity_id")) if "entity_id" in feature_frame else len(feature_frame)))
+        unmonitorable_rows = int(feature_frame.attrs.get("unmonitorable_entity_count", 0))
+        one_shot_rows = int(feature_frame.attrs.get("one_shot_entity_count", joined["candidate_type"].eq("one_shot").sum()))
+        recurring_rows = int(feature_frame.attrs.get("recurring_entity_count", joined["candidate_type"].eq("recurring").sum()))
+        joined = joined[joined["candidate_type"].eq("recurring")].copy()
         candidate_parts: list[pd.DataFrame] = []
         report_rows: list[dict[str, Any]] = []
         for (horizon, cutoff), group in joined.groupby(["horizon", "cutoff_month"], dropna=False):
@@ -47,14 +56,12 @@ class BoundedCandidateSelector:
             )
         candidates = pd.concat(candidate_parts, ignore_index=True) if candidate_parts else pd.DataFrame(columns=joined.columns)
         candidates = candidates.drop_duplicates("candidate_id")
-        candidates["candidate_type"] = classify_candidate_type(candidates)
         candidates["display_section"] = candidates["candidate_type"].map(
             {
                 "recurring": "recurring_business_priority",
                 "one_shot": "one_shot_attention",
-                "demand_shape_observation": "demand_shape_observation",
             }
-        ).fillna("demand_shape_observation")
+        ).fillna("recurring_business_priority")
         candidates["is_high_risk_candidate"] = (
             candidates["candidate_type"].eq("recurring")
             & candidates.get("probability_display_level", pd.Series("risk_band_only", index=candidates.index)).isin(
@@ -77,9 +84,11 @@ class BoundedCandidateSelector:
                         [
                             {"metric": "candidate_policy_rows", "value": len(candidates)},
                             {"metric": "selected_candidate_rows", "value": len(selected)},
-                            {"metric": "recurring_rows", "value": int(selected["candidate_type"].eq("recurring").sum())},
-                            {"metric": "one_shot_rows", "value": int(selected["candidate_type"].eq("one_shot").sum())},
-                            {"metric": "observation_rows", "value": int(selected["candidate_type"].eq("demand_shape_observation").sum())},
+                            {"metric": "all_seen_purchase_relationship_rows", "value": all_seen_rows},
+                            {"metric": "unmonitorable_rows", "value": unmonitorable_rows},
+                            {"metric": "one_shot_rows", "value": one_shot_rows},
+                            {"metric": "recurring_rows", "value": recurring_rows},
+                            {"metric": "selected_recurring_rows", "value": int(selected["candidate_type"].eq("recurring").sum())},
                         ]
                     ),
                 ],
@@ -101,6 +110,9 @@ class BoundedCandidateSelector:
             "value_at_risk_proxy",
             "potential_value_level",
             "one_shot_attention_score",
+            "sample_class",
+            "active_month_count_asof_cutoff",
+            "months_since_last_purchase_asof_cutoff",
             "hospital_display_name",
             "drug_display_name",
             "region_code",
@@ -168,11 +180,6 @@ def build_manufacturer_worklist(df: pd.DataFrame, *, max_per_manufacturer: int =
         )
         rows.append(top.copy())
     out = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame(columns=df.columns)
-    fill = out["candidate_type"].ne("recurring")
-    out.loc[fill, "is_high_risk_candidate"] = False
-    out.loc[fill, "selection_reason"] = (
-        out.loc[fill, "selection_reason"].astype(str) + "|manufacturer_worklist_fill_observation"
-    )
     return out
 
 
@@ -186,15 +193,33 @@ def percentile_rank(values: Any) -> pd.Series:
     return s.rank(pct=True).fillna(0.0)
 
 
-def classify_candidate_type(df: pd.DataFrame) -> pd.Series:
-    shape = df.get("demand_shape_label", pd.Series("", index=df.index)).astype(str)
-    history = df.get("history_sufficiency_flag", pd.Series("", index=df.index)).astype(str)
+def classify_candidate_type(df: pd.DataFrame, *, max_monitor_gap_months: int = 12) -> pd.Series:
+    if "sample_class" in df:
+        values = df["sample_class"].astype(str)
+        return values.where(values.isin(["unmonitorable", "one_shot", "recurring"]), "recurring")
+    months_since = pd.to_numeric(df.get("months_since_last_purchase_asof_cutoff"), errors="coerce")
+    active_months = pd.to_numeric(df.get("active_month_count_asof_cutoff"), errors="coerce")
+    if active_months.notna().any():
+        if active_months.lt(1).any():
+            raise ValueError("active_month_count_asof_cutoff must be >= 1 for all seen purchase relationships.")
+        return pd.Series(
+            np.select(
+                [
+                    months_since.gt(max_monitor_gap_months),
+                    active_months.eq(1),
+                    active_months.ge(2),
+                ],
+                ["unmonitorable", "one_shot", "recurring"],
+                default="recurring",
+            ),
+            index=df.index,
+        )
     one_shot_source = df.get("one_shot_flag", df.get("is_one_shot", pd.Series(False, index=df.index)))
     one_shot = pd.Series(one_shot_source, index=df.index).fillna(False).astype(bool)
     return pd.Series(
         np.select(
-            [one_shot, shape.isin(["intermittent", "lumpy", "cold_start"]) | history.eq("history_insufficient")],
-            ["one_shot", "demand_shape_observation"],
+            [one_shot],
+            ["one_shot"],
             default="recurring",
         ),
         index=df.index,

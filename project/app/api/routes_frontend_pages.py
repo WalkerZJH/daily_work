@@ -24,7 +24,7 @@ from app.services.frontend_top_entity_adapter import (
 from app.services.display_lookup_service import DisplayLookupService
 from app.services.detector_result_service import DetectorResultService
 from app.services.report_context_service import ReportContextService
-from app.services.user_top_entity_service import TopEntityService
+from app.services.user_top_entity_service import HorizonNotAvailable, SortMetricUnavailable, TopEntityService
 
 router = APIRouter(prefix="/api/v1", tags=["frontend-pages"])
 WorkbenchSortBy = Literal["loss_value", "risk_probability", "detector_score", "involved_amount"]
@@ -43,6 +43,7 @@ def frontend_workbench(
     observation_date: str | None = Query(default=None),
     report_month: str | None = Query(default=None),
     run_date: str | None = Query(default=None),
+    manual_report_month: bool = Query(default=False),
     horizon: str = Query(default="H6"),
     top_n: int = Query(default=20, ge=1, le=100),
     sort_by: WorkbenchSortBy = Query(default="risk_probability"),
@@ -54,6 +55,7 @@ def frontend_workbench(
         horizon=horizon,
         manufacturer_code=_first_query_value(manufacturer_code),
         user_id=user_id or x_user_id,
+        manual_report_month=manual_report_month,
     )
     effective_report_month = context.get("effective_report_month") or report_month
     effective_run_date = context.get("effective_run_date") or run_date
@@ -63,6 +65,7 @@ def frontend_workbench(
         report_context_service,
         context,
     )
+    _assert_horizon_available(contextual_top_entity_service, horizon)
     contextual_display_lookup_service = _display_lookup_service_for_context(
         display_lookup_service,
         report_context_service,
@@ -72,6 +75,16 @@ def frontend_workbench(
         detector_service,
         report_context_service,
         context,
+    )
+    effective_manufacturer_codes = _effective_requested_manufacturer_codes(
+        contextual_top_entity_service,
+        user_id=user_id or x_user_id or "admin",
+        report_month=_report_month_for_top_entity_service(
+            contextual_top_entity_service,
+            effective_report_month,
+            report_month,
+        ),
+        requested_manufacturer_codes=manufacturer_code,
     )
     if not context.get("probability_batch_available", context.get("ready")):
         if os.getenv("ALLOW_MOCK_PAYLOADS", "").lower() == "true":
@@ -93,32 +106,49 @@ def frontend_workbench(
             ),
             context,
         )
-    payload = build_workbench_payload_from_top_entities(
-        contextual_top_entity_service,
-        user_id=user_id or x_user_id or "admin",
-        top_n=top_n,
-        horizon=effective_horizon,
-        report_month=_report_month_for_top_entity_service(
+    try:
+        payload = build_workbench_payload_from_top_entities(
             contextual_top_entity_service,
-            effective_report_month,
-            report_month,
-        ),
-        manufacturer_codes=manufacturer_code,
-        sort_by=sort_by,
-        detector_summary=_detector_summary(
-            contextual_detector_service,
-            run_date=effective_run_date,
+            user_id=user_id or x_user_id or "admin",
+            top_n=top_n,
+            horizon=effective_horizon,
+            report_month=_report_month_for_top_entity_service(
+                contextual_top_entity_service,
+                effective_report_month,
+                report_month,
+            ),
             manufacturer_codes=manufacturer_code,
-        ),
-        run_date=effective_run_date,
-    )
-    if payload:
-        return _with_report_context(
-            _with_display_lookup_status(payload, contextual_display_lookup_service),
-            context,
+            sort_by=sort_by,
+            detector_summary=_detector_summary(
+                contextual_detector_service,
+                run_date=effective_run_date,
+                manufacturer_codes=effective_manufacturer_codes,
+            ),
+            run_date=effective_run_date,
         )
-    contextual_page_service = _frontend_page_service_for_context(service, report_context_service, context)
-    return _with_report_context(_with_display_lookup_status(contextual_page_service.workbench(), contextual_display_lookup_service), context)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail={"error_code": str(exc)}) from exc
+    except SortMetricUnavailable as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error_code": "SORT_METRIC_NOT_AVAILABLE",
+                "requested_sort_by": exc.requested_sort_by,
+            },
+        ) from exc
+    except HorizonNotAvailable as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error_code": "HORIZON_NOT_AVAILABLE",
+                "requested_horizon": exc.requested_horizon,
+                "available_horizons": exc.available_horizons,
+            },
+        ) from exc
+    return _with_report_context(
+        _with_display_lookup_status(payload, contextual_display_lookup_service),
+        context,
+    )
 
 
 @router.get("/risk-entities", response_model=RiskEntitiesPayload)
@@ -133,6 +163,7 @@ def frontend_risk_entities(
     observation_date: str | None = Query(default=None),
     report_month: str | None = Query(default=None),
     run_date: str | None = Query(default=None),
+    manual_report_month: bool = Query(default=False),
     horizon: str = Query(default="H6"),
     top_n: int = Query(default=20, ge=1, le=100),
     sort_by: WorkbenchSortBy = Query(default="risk_probability"),
@@ -144,44 +175,66 @@ def frontend_risk_entities(
         horizon=horizon,
         manufacturer_code=_first_query_value(manufacturer_code),
         user_id=user_id or x_user_id,
+        manual_report_month=manual_report_month,
     )
     contextual_top_entity_service = _top_entity_service_for_context(
         top_entity_service,
         report_context_service,
         context,
     )
+    _assert_horizon_available(contextual_top_entity_service, horizon)
     contextual_display_lookup_service = _display_lookup_service_for_context(
         display_lookup_service,
         report_context_service,
         context,
     )
-    top_entity_payload = build_risk_entities_payload_from_top_entities(
-        contextual_top_entity_service,
-        user_id=user_id or x_user_id or "admin",
-        top_n=top_n,
-        horizon=context.get("effective_horizon") or horizon,
-        report_month=_report_month_for_top_entity_service(
+    try:
+        top_entity_payload = build_risk_entities_payload_from_top_entities(
             contextual_top_entity_service,
-            context.get("effective_report_month"),
-            report_month,
-        ),
-        manufacturer_codes=manufacturer_code,
-        sort_by=sort_by,
-    )
-    if top_entity_payload:
-        return _with_report_context(_with_display_lookup_status(top_entity_payload, contextual_display_lookup_service), context)
-    contextual_page_service = _frontend_page_service_for_context(service, report_context_service, context)
-    return _with_report_context(_with_display_lookup_status(contextual_page_service.risk_entities(), contextual_display_lookup_service), context)
+            user_id=user_id or x_user_id or "admin",
+            top_n=top_n,
+            horizon=context.get("effective_horizon") or horizon,
+            report_month=_report_month_for_top_entity_service(
+                contextual_top_entity_service,
+                context.get("effective_report_month"),
+                report_month,
+            ),
+            manufacturer_codes=manufacturer_code,
+            sort_by=sort_by,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail={"error_code": str(exc)}) from exc
+    except SortMetricUnavailable as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error_code": "SORT_METRIC_NOT_AVAILABLE",
+                "requested_sort_by": exc.requested_sort_by,
+            },
+        ) from exc
+    except HorizonNotAvailable as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error_code": "HORIZON_NOT_AVAILABLE",
+                "requested_horizon": exc.requested_horizon,
+                "available_horizons": exc.available_horizons,
+            },
+        ) from exc
+    return _with_report_context(_with_display_lookup_status(top_entity_payload, contextual_display_lookup_service), context)
 
 
 @router.get("/risk-entities/{entity_id}", response_model=RiskEntityDetailPayload)
 def frontend_risk_entity_detail(
     entity_id: str,
     service: FrontendPageService = Depends(get_frontend_page_service),
+    top_entity_service: TopEntityService = Depends(get_user_top_entity_service),
     report_context_service: ReportContextService = Depends(get_report_context_service),
+    x_user_id: Annotated[str | None, Header()] = None,
     observation_date: str | None = Query(default=None),
     report_month: str | None = Query(default=None),
     run_date: str | None = Query(default=None),
+    manual_report_month: bool = Query(default=False),
     manufacturer_code: str | None = Query(default=None),
     user_id: str | None = Query(default=None),
     horizon: str = Query(default="H6"),
@@ -193,9 +246,17 @@ def frontend_risk_entity_detail(
         horizon=horizon,
         manufacturer_code=manufacturer_code,
         user_id=user_id,
+        manual_report_month=manual_report_month,
     )
     contextual_page_service = _frontend_page_service_for_context(service, report_context_service, context)
     try:
+        _assert_entity_scope(
+            contextual_page_service,
+            top_entity_service,
+            entity_id=entity_id,
+            manufacturer_code=manufacturer_code,
+            user_id=user_id or x_user_id or "admin",
+        )
         return _with_report_context(
             contextual_page_service.risk_entity_detail(entity_id, horizon=context.get("effective_horizon") or horizon),
             context,
@@ -208,10 +269,13 @@ def frontend_risk_entity_detail(
 def frontend_risk_entity_probability_trend(
     entity_id: str,
     service: FrontendPageService = Depends(get_frontend_page_service),
+    top_entity_service: TopEntityService = Depends(get_user_top_entity_service),
     report_context_service: ReportContextService = Depends(get_report_context_service),
+    x_user_id: Annotated[str | None, Header()] = None,
     observation_date: str | None = Query(default=None),
     report_month: str | None = Query(default=None),
     run_date: str | None = Query(default=None),
+    manual_report_month: bool = Query(default=False),
     manufacturer_code: str | None = Query(default=None),
     user_id: str | None = Query(default=None),
     horizon: str = Query(default="H6"),
@@ -223,9 +287,17 @@ def frontend_risk_entity_probability_trend(
         horizon=horizon,
         manufacturer_code=manufacturer_code,
         user_id=user_id,
+        manual_report_month=manual_report_month,
     )
     contextual_page_service = _frontend_page_service_for_context(service, report_context_service, context)
     try:
+        _assert_entity_scope(
+            contextual_page_service,
+            top_entity_service,
+            entity_id=entity_id,
+            manufacturer_code=manufacturer_code,
+            user_id=user_id or x_user_id or "admin",
+        )
         return _with_report_context(
             contextual_page_service.probability_trend(
                 entity_id,
@@ -246,6 +318,7 @@ def my_manufacturers(
     observation_date: str | None = Query(default=None),
     report_month: str | None = Query(default=None),
     run_date: str | None = Query(default=None),
+    manual_report_month: bool = Query(default=False),
     horizon: str | None = Query(default=None),
     manufacturer_code: Annotated[list[str] | None, Query()] = None,
 ) -> dict:
@@ -254,33 +327,15 @@ def my_manufacturers(
         report_month=report_month,
         run_date=run_date,
         horizon=horizon,
-        manufacturer_code=_first_query_value(manufacturer_code),
+        manufacturer_code=None,
         user_id=user_id or x_user_id,
+        manual_report_month=manual_report_month,
     )
-    contextual_top_entity_service = _top_entity_service_for_context(
-        top_entity_service,
-        report_context_service,
-        context,
-    )
-    payload = contextual_top_entity_service.list_visible_manufacturers(
+    payload = top_entity_service.list_visible_manufacturers(
         user_id=user_id or x_user_id or "admin",
-        report_month=_report_month_for_top_entity_service(
-            contextual_top_entity_service,
-            context.get("effective_report_month"),
-            report_month,
-        ),
-        manufacturer_codes=manufacturer_code,
+        report_month=None,
+        manufacturer_codes=None,
     )
-    if not context.get("probability_batch_available", context.get("ready")):
-        payload = {
-            **payload,
-            "ready": False,
-            "scope_source": "result_batch_unavailable",
-            "warnings": [
-                *list(payload.get("warnings") or []),
-                "RISK_RESULT_BATCH_DIR_NOT_CONFIGURED_OR_UNREADABLE",
-            ],
-        }
     return _with_report_context(payload, context)
 
 
@@ -291,6 +346,7 @@ def frontend_oneshot_terminals(
     observation_date: str | None = Query(default=None),
     report_month: str | None = Query(default=None),
     run_date: str | None = Query(default=None),
+    manual_report_month: bool = Query(default=False),
     manufacturer_code: Annotated[list[str] | None, Query()] = None,
     user_id: str | None = Query(default=None),
     horizon: str = Query(default="H6"),
@@ -303,12 +359,13 @@ def frontend_oneshot_terminals(
         horizon=horizon,
         manufacturer_code=_first_query_value(manufacturer_code),
         user_id=user_id,
+        manual_report_month=manual_report_month,
     )
     contextual_page_service = _frontend_page_service_for_context(service, report_context_service, context)
     payload = contextual_page_service.oneshot_terminals(
         manufacturer_codes=manufacturer_code,
         report_month=context.get("effective_report_month") or report_month,
-        horizon=context.get("effective_horizon") or horizon,
+        observation_date=context.get("observation_date") or context.get("effective_observation_date"),
         top_n=top_n,
     )
     return _with_report_context(payload, context)
@@ -342,6 +399,8 @@ def _with_report_context(payload: dict, report_context: dict) -> dict:
         "report_context": report_context,
         "observation_date": report_context.get("observation_date"),
         "probability_report_month": report_context.get("probability_report_month"),
+        "expected_probability_report_month": report_context.get("expected_probability_report_month"),
+        "effective_probability_report_month": report_context.get("effective_probability_report_month"),
         "probability_batch_available": report_context.get("probability_batch_available"),
         "detector_run_date": report_context.get("detector_run_date"),
         "detector_run_available": report_context.get("detector_run_available"),
@@ -350,6 +409,7 @@ def _with_report_context(payload: dict, report_context: dict) -> dict:
         "partial_ready": report_context.get("partial_ready", False),
         "requested_report_month": report_context.get("requested_report_month"),
         "effective_report_month": report_context.get("effective_report_month"),
+        "effective_observation_date": report_context.get("effective_observation_date"),
         "requested_run_date": report_context.get("requested_run_date"),
         "effective_run_date": report_context.get("effective_run_date"),
         "date_resolution_status": report_context.get("date_resolution_status"),
@@ -366,12 +426,12 @@ def _with_report_context(payload: dict, report_context: dict) -> dict:
             summary["detector_clue_count"] = 0
             summary["highest_detector_score"] = None
             summary["top_clues"] = []
-        if enriched.get("current_observation_date") is None:
-            enriched["current_observation_date"] = (
-                report_context.get("observation_date")
-                or report_context.get("effective_run_date")
-                or report_context.get("detector_run_date")
-            )
+        enriched["current_observation_date"] = (
+            report_context.get("observation_date")
+            or report_context.get("effective_observation_date")
+            or report_context.get("effective_run_date")
+            or report_context.get("detector_run_date")
+        )
         enriched.setdefault("risk_entities", rows)
         enriched["daily_detector_summary"] = summary
         enriched.setdefault("top_rule_clues", list(summary.get("top_clues") or [])[:5])
@@ -489,13 +549,86 @@ def _report_month_for_top_entity_service(
     effective_report_month: str | None,
     requested_report_month: str | None,
 ) -> str | None:
-    if _is_in_memory_repository(service.repository):
-        return requested_report_month
     return effective_report_month or requested_report_month
 
 
 def _first_query_value(values: list[str] | None) -> str | None:
     return values[0] if values else None
+
+
+def _assert_horizon_available(top_entity_service: TopEntityService, horizon: str | None) -> None:
+    requested = str(horizon or "").strip()
+    if not requested:
+        return
+    try:
+        available = getattr(top_entity_service.repository.manifest(), "available_horizons", None) or []
+    except (FileNotFoundError, NotImplementedError, ValueError, AttributeError):
+        available = []
+    available_horizons = [str(item) for item in available]
+    if available_horizons and requested not in available_horizons:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error_code": "HORIZON_NOT_AVAILABLE",
+                "requested_horizon": requested,
+                "available_horizons": available_horizons,
+            },
+        )
+
+
+def _assert_entity_scope(
+    page_service: FrontendPageService,
+    top_entity_service: TopEntityService,
+    *,
+    entity_id: str,
+    manufacturer_code: str | None,
+    user_id: str,
+) -> None:
+    repository = getattr(page_service, "_repository", None)
+    if repository is None and getattr(page_service, "_builder", None) is not None:
+        repository = page_service._builder.repository
+    if repository is None:
+        raise KeyError(entity_id)
+    entity = repository.get_risk_entity(entity_id)
+    if entity is None:
+        raise KeyError(entity_id)
+    entity_manufacturer = str(entity.get("manufacturer_code") or "")
+    if manufacturer_code and entity_manufacturer != str(manufacturer_code):
+        raise HTTPException(status_code=403, detail={"error_code": "MANUFACTURER_SCOPE_FORBIDDEN"})
+    visible = top_entity_service.list_visible_manufacturers(user_id=user_id, report_month=None, manufacturer_codes=None)
+    allowed = {str(item.get("manufacturer_code")) for item in visible.get("manufacturers", [])}
+    if allowed and entity_manufacturer not in allowed:
+        raise HTTPException(status_code=403, detail={"error_code": "MANUFACTURER_SCOPE_FORBIDDEN"})
+
+
+def _effective_requested_manufacturer_codes(
+    top_entity_service: TopEntityService,
+    *,
+    user_id: str,
+    report_month: str | None,
+    requested_manufacturer_codes: list[str] | None,
+) -> list[str] | None:
+    requested = [str(code) for code in requested_manufacturer_codes or [] if str(code).strip()]
+    if not requested:
+        return None
+    entities = top_entity_service.repository.list_risk_entities()
+    if report_month and not entities.empty and "report_month" in entities.columns:
+        entities = entities[entities["report_month"].astype(str).eq(str(report_month))]
+    available_codes = (
+        entities.get("manufacturer_code")
+        .dropna()
+        .astype(str)
+        .drop_duplicates()
+        .tolist()
+        if not entities.empty and "manufacturer_code" in entities.columns
+        else []
+    )
+    scope, _ = top_entity_service.scope_service.resolve_scope(
+        user_id=user_id,
+        requested_manufacturer_codes=requested,
+        available_manufacturer_codes=available_codes,
+    )
+    return [item.manufacturer_code for item in scope]
 
 
 def _detector_summary(
@@ -506,18 +639,25 @@ def _detector_summary(
 ) -> dict[str, object]:
     runs = detector_service.runs(run_date=run_date, limit=1)
     latest = runs.get("items", [{}])[0] if runs.get("items") else {}
-    clues = detector_service.clues(run_date=run_date, sort_by="detector_score", page=1, page_size=200)
+    clues = detector_service.clues(
+        run_date=run_date,
+        manufacturer_code=manufacturer_codes[0] if manufacturer_codes and len(manufacturer_codes) == 1 else None,
+        sort_by="detector_score",
+        page=1,
+        page_size=200,
+    )
     items = clues.get("items", [])
     if manufacturer_codes:
         allowed = {str(code) for code in manufacturer_codes}
         items = [item for item in items if str(item.get("manufacturer_code")) in allowed]
+    clue_count = int(clues.get("total") or len(items))
     scores = [
         float(item["detector_score"])
         for item in items
         if item.get("detector_score") is not None
     ]
     return {
-        "detector_clue_count": len(items),
+        "detector_clue_count": clue_count,
         "highest_detector_score": max(scores) if scores else None,
         "latest_detector_run_date": latest.get("run_date"),
         "detector_status_summary": "ready" if latest else "missing",

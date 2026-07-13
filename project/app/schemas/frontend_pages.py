@@ -66,17 +66,19 @@ class WorkbenchRow(FrontendPageModel):
     row_id: str
     entity_id: str | None = None
     manufacturer_code: str
+    manufacturer_display_name: str | None = None
+    manufacturer_name: str | None = None
     hospital_name: str
     drug_name: str
     region: str
     horizon: str | None = None
     risk_probability: float = Field(ge=0, le=1)
-    loss_value: int = 0
+    loss_value: int | None = None
     loss_value_status: str | None = None
     sort_policy: str | None = None
-    involved_amount: int = 0
+    involved_amount: int | None = None
     involved_amount_source: str | None = None
-    average_consumption_in_window: int
+    average_consumption_in_window: int | None = None
     risk_band: str | None = None
     source_type: str
     action: str
@@ -111,9 +113,13 @@ class WorkbenchPayload(FrontendPageModel):
     top_rule_clues: list[dict[str, Any]] = Field(default_factory=list)
     risk_entities: list[dict[str, Any]] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+    empty_reason: str | None = None
     report_context: dict[str, Any] = Field(default_factory=dict)
     observation_date: str | None = None
+    effective_observation_date: str | None = None
     probability_report_month: str | None = None
+    expected_probability_report_month: str | None = None
+    effective_probability_report_month: str | None = None
     probability_batch_available: bool | None = None
     detector_run_date: str | None = None
     detector_run_available: bool | None = None
@@ -132,6 +138,8 @@ class RiskEntityItem(FrontendPageModel):
     hospital_name: str
     drug_name: str
     manufacturer_code: str
+    manufacturer_display_name: str | None = None
+    manufacturer_name: str | None = None
     region: str
     horizon: str
     risk_probability: float = Field(ge=0, le=1)
@@ -151,6 +159,7 @@ class RiskEntityItem(FrontendPageModel):
     value_level: str
     primary_reason: str
     main_reason_summary: str | None = None
+    candidate_type: str | None = None
 
 
 class RiskEntitiesPayload(FrontendPageModel):
@@ -165,7 +174,10 @@ class RiskEntitiesPayload(FrontendPageModel):
     warnings: list[str] = Field(default_factory=list)
     report_context: dict[str, Any] = Field(default_factory=dict)
     observation_date: str | None = None
+    effective_observation_date: str | None = None
     probability_report_month: str | None = None
+    expected_probability_report_month: str | None = None
+    effective_probability_report_month: str | None = None
     probability_batch_available: bool | None = None
     detector_run_date: str | None = None
     detector_run_available: bool | None = None
@@ -220,7 +232,10 @@ class RiskEntityDetailPayload(FrontendPageModel):
     selected_horizon_profile: HorizonProfile | dict[str, Any] | None = None
     report_context: dict[str, Any] = Field(default_factory=dict)
     observation_date: str | None = None
+    effective_observation_date: str | None = None
     probability_report_month: str | None = None
+    expected_probability_report_month: str | None = None
+    effective_probability_report_month: str | None = None
     probability_batch_available: bool | None = None
     detector_run_date: str | None = None
     detector_run_available: bool | None = None
@@ -236,6 +251,8 @@ class RiskEntityDetailPayload(FrontendPageModel):
 
 class OneshotSummary(FrontendPageModel):
     oneshot_count: int
+    daily_new_terminal_count: int = 0
+    monthly_new_terminal_count: int = 0
     high_repurchase_propensity_count: int
     average_repurchase_propensity: float = Field(ge=0, le=1)
     expected_repurchase_amount: int

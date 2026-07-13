@@ -1,5 +1,5 @@
 {
-  "artifact_id": "xgboost_small_without_choice_set_20260707043129",
+  "artifact_id": "xgboost_small_without_choice_set_20260713062634",
   "artifact_alias": "current",
   "source_experiment": "entity_complete_v2_coverage_expansion",
   "model_family": "xgboost_small",
@@ -8,9 +8,11 @@
   "calibration": "raw",
   "probability_calibration": "raw",
   "trained_at": "",
-  "reconstructed_at": "2026-07-07T04:31:29.408624+00:00",
+  "reconstructed_at": "2026-07-13T06:26:34.591832+00:00",
   "training_data_version": "entity_complete_v2_coverage_expansion",
   "training_config_frozen": true,
+  "training_sample_scope": "recurring_only",
+  "sample_classification_rule": "unmonitorable if months_since_last_purchase_asof_cutoff > max_monitor_gap_months; one_shot if monitorable and active_month_count_asof_cutoff == 1; recurring if monitorable and active_month_count_asof_cutoff >= 2",
   "hyperparameter_search_allowed": false,
   "selected_config": {
     "config_id": 3,
@@ -87,6 +89,7 @@
   "caveats": [
     "Reconstructed from frozen v2 best configuration; no hyperparameter search was run in this export.",
     "Choice-set features are excluded from the main backbone.",
+    "Monthly backbone artifact is trained on strict recurring samples only.",
     "Raw-to-feature exact parity is reported separately and remains blocked until a matched raw input batch is available."
   ]
 }

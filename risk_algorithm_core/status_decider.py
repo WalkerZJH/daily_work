@@ -17,34 +17,33 @@ class StatusDecider:
         out["detector_hit_count"] = out["detector_hit_count"].fillna(0).astype(int)
         out["strong_detector_hit_count"] = out["strong_detector_hit_count"].fillna(0).astype(int)
         out["is_one_shot"] = out["candidate_type"].eq("one_shot")
-        out["is_observation"] = out["candidate_type"].isin(["observation", "demand_shape_observation"])
+        out["is_observation"] = False
         out["is_high_risk"] = out["candidate_type"].eq("recurring") & (out["churn_probability_H"] >= 0.6)
         out["final_candidate_status"] = np.select(
             [
                 out["is_one_shot"],
-                out["is_observation"],
                 out["is_high_risk"],
                 out["candidate_type"].eq("recurring"),
             ],
-            ["one_shot_attention", "observation_only", "priority_review", "manual_review"],
+            ["one_shot_attention", "priority_review", "manual_review"],
             default="not_actionable",
         )
         out["review_priority"] = np.select(
-            [out["final_candidate_status"].eq("priority_review"), out["final_candidate_status"].eq("manual_review"), out["final_candidate_status"].eq("observation_only")],
-            ["P1", "P2", "P3"],
+            [out["final_candidate_status"].eq("priority_review"), out["final_candidate_status"].eq("manual_review")],
+            ["P1", "P2"],
             default="P3",
         )
         out["risk_level"] = np.select(
-            [out["is_high_risk"], out["final_candidate_status"].eq("manual_review"), out["is_observation"], out["is_one_shot"]],
-            ["orange", "yellow", "observation", "attention"],
+            [out["is_high_risk"], out["final_candidate_status"].eq("manual_review"), out["is_one_shot"]],
+            ["orange", "yellow", "attention"],
             default="insufficient",
         )
         out["risk_color"] = np.select(
-            [out["risk_level"].eq("orange"), out["risk_level"].eq("yellow"), out["risk_level"].eq("observation")],
-            ["orange", "yellow", "gray"],
+            [out["risk_level"].eq("orange"), out["risk_level"].eq("yellow")],
+            ["orange", "yellow"],
             default="gray",
         )
-        out["probability_display_mode"] = np.where(out["is_one_shot"] | out["is_observation"], "hide_probability", "show_risk_band")
+        out["probability_display_mode"] = np.where(out["is_one_shot"], "hide_probability", "show_risk_band")
         out["evidence_strength"] = np.select(
             [out["detector_hit_count"] >= 2, out["detector_hit_count"] == 1],
             ["medium", "weak"],

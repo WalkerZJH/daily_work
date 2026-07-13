@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
+import SquareDatePicker from '../../components/ui/SquareDatePicker.vue'
 import {
   applyReportContextToQuery,
   buildPersistentParams,
@@ -39,6 +40,7 @@ const selectedRuleFamily = ref('all')
 const selectedRuleId = ref('all')
 const isLoading = ref(false)
 let suppressWatcher = false
+let requestSequence = 0
 
 const entity = computed(() => state.value.entity)
 const clue = computed(() => state.value.clue || {})
@@ -46,6 +48,7 @@ const isMonthlyHighRiskEntity = computed(() => Boolean(state.value.isMonthlyHigh
 const ruleEvidence = computed(() => state.value.detectorEvidence || [])
 const probabilityTrend = computed(() => state.value.probabilityTrend || [])
 const selectedHorizonLabel = computed(() => options.value.horizonOptions.find((item) => item.id === query.horizon)?.label || query.horizon)
+const availableObservationDates = computed(() => options.value.dailyDetectorDateOptions?.map((item) => item.id).filter(Boolean) || [])
 
 const ruleFamilyOptions = computed(() => {
   const families = [...new Map(ruleEvidence.value.map((item) => [
@@ -104,6 +107,7 @@ function applyEffectiveQuery(nextQuery) {
 }
 
 async function refreshDetail() {
+  const sequence = ++requestSequence
   isLoading.value = true
   try {
     selectedRuleId.value = 'all'
@@ -116,6 +120,7 @@ async function refreshDetail() {
     }
 
     const context = await loadReportContext(query)
+    if (sequence !== requestSequence) return
     reportContext.value = context
     if (!context.ready) {
       options.value = createEmptyWorkbenchOptions(query)
@@ -130,11 +135,14 @@ async function refreshDetail() {
       loadWorkbenchOptions(effectiveQuery),
       loadClueDetailData({ clueId, riskEntityId, query: effectiveQuery })
     ])
+    if (sequence !== requestSequence) return
     options.value = loadedOptions || createEmptyWorkbenchOptions(effectiveQuery)
     state.value = loadedData || createEmptyClueDetailData({ clueId, riskEntityId, query: effectiveQuery, reportContext: context })
     reportContext.value = state.value.reportContext || context
   } finally {
-    isLoading.value = false
+    if (sequence === requestSequence) {
+      isLoading.value = false
+    }
   }
 }
 
@@ -171,7 +179,7 @@ watch(selectedRuleFamily, () => {
         </label>
         <label class="control-field">
           <span>观察日期</span>
-          <input v-model="query.observationDate" type="date" />
+          <SquareDatePicker v-model="query.observationDate" label="观察日期" :available-dates="availableObservationDates" />
         </label>
       </div>
     </div>

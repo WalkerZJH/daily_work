@@ -16,7 +16,7 @@ def test_workbench_uses_effective_report_context_for_missing_today() -> None:
             params={
                 "report_month": "2099-01",
                 "run_date": today,
-                "horizon": "H99",
+                "horizon": "H6",
                 "top_n": 2,
             },
         )

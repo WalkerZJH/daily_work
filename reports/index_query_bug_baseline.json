@@ -1,0 +1,1428 @@
+{
+  "base_url": "http://127.0.0.1:18080",
+  "user_id": "admin",
+  "observation_date": "2025-12-10",
+  "target_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+  "second_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+  "manufacturer_catalog_calls": [
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/my/manufacturers?user_id=admin",
+      "http_status": 200,
+      "manufacturer_count": 0,
+      "codes": [],
+      "warnings": [
+        "USER_SCOPE_FALLBACK_TO_BATCH_MANUFACTURERS",
+        "RISK_RESULT_BATCH_DIR_NOT_CONFIGURED_OR_UNREADABLE"
+      ],
+      "context_status": "probability_month_unavailable"
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/my/manufacturers?user_id=admin&observation_date=2025-12-10&horizon=H6",
+      "http_status": 200,
+      "manufacturer_count": 10,
+      "codes": [
+        "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "F9BDA11C2EE443F49615B9AD6AFBD4AA",
+        "7de4fd63-eac3-4347-87c4-3bd90dbf08bd",
+        "E50FC20840554CF79ACAEF2582AE63BD",
+        "DFC52F4CCF384D849D053242EA2935F3",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "3fc2389a-d9f9-4933-a714-f9c877f0f86f",
+        "C458C50660B24C6B96A91FEBAAE8E5C8"
+      ],
+      "warnings": [],
+      "context_status": "ready"
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/my/manufacturers?user_id=admin&observation_date=2025-12-10&horizon=H6&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0",
+      "http_status": 200,
+      "manufacturer_count": 1,
+      "codes": [
+        "43B3F24E6895475BA3EA1CD00FA74CE0"
+      ],
+      "warnings": [],
+      "context_status": "ready"
+    }
+  ],
+  "records": [
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=risk_probability",
+      "http_status": 200,
+      "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H3",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "risk_probability",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 24,
+      "returned_manufacturer_codes": [
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "DFC52F4CCF384D849D053242EA2935F3"
+      ],
+      "top20_entity_ids": [
+        "263F9947B4FA4F8DB61C9FF48D5A942A|YL233429|XM01AEB173N001010203693|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL360220|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611570|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL610917|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL3500133|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL132590|ZA16DAP0017010402404|H3",
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL4200319|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL373688|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H6"
+      ],
+      "top20_risk_probability": [
+        0.890771,
+        0.884088,
+        0.878391,
+        0.864916,
+        0.859067,
+        0.834287,
+        0.826279,
+        0.810761,
+        0.809214,
+        0.807248,
+        0.7843,
+        0.781386,
+        0.779721,
+        0.764883,
+        0.763777,
+        0.753123,
+        0.75073,
+        0.749007,
+        0.747434,
+        0.742032
+      ],
+      "top20_involved_amount": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        103458,
+        170826,
+        0,
+        303156,
+        0,
+        0,
+        0,
+        0,
+        0,
+        562690,
+        0,
+        0,
+        0,
+        0
+      ],
+      "top20_loss_value": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "api_scope": {},
+      "api_query": {},
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=involved_amount",
+      "http_status": 200,
+      "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H3",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "involved_amount",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 24,
+      "returned_manufacturer_codes": [
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "DFC52F4CCF384D849D053242EA2935F3"
+      ],
+      "top20_entity_ids": [
+        "263F9947B4FA4F8DB61C9FF48D5A942A|YL233429|XM01AEB173N001010203693|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL360220|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611570|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL610917|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL3500133|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL132590|ZA16DAP0017010402404|H3",
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL4200319|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL373688|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H6"
+      ],
+      "top20_risk_probability": [
+        0.890771,
+        0.884088,
+        0.878391,
+        0.864916,
+        0.859067,
+        0.834287,
+        0.826279,
+        0.810761,
+        0.809214,
+        0.807248,
+        0.7843,
+        0.781386,
+        0.779721,
+        0.764883,
+        0.763777,
+        0.753123,
+        0.75073,
+        0.749007,
+        0.747434,
+        0.742032
+      ],
+      "top20_involved_amount": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        103458,
+        170826,
+        0,
+        303156,
+        0,
+        0,
+        0,
+        0,
+        0,
+        562690,
+        0,
+        0,
+        0,
+        0
+      ],
+      "top20_loss_value": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "api_scope": {},
+      "api_query": {},
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=loss_value",
+      "http_status": 200,
+      "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H3",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "loss_value",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 24,
+      "returned_manufacturer_codes": [
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "DFC52F4CCF384D849D053242EA2935F3"
+      ],
+      "top20_entity_ids": [
+        "263F9947B4FA4F8DB61C9FF48D5A942A|YL233429|XM01AEB173N001010203693|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL360220|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611570|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL610917|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL3500133|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL132590|ZA16DAP0017010402404|H3",
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL4200319|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL373688|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H6"
+      ],
+      "top20_risk_probability": [
+        0.890771,
+        0.884088,
+        0.878391,
+        0.864916,
+        0.859067,
+        0.834287,
+        0.826279,
+        0.810761,
+        0.809214,
+        0.807248,
+        0.7843,
+        0.781386,
+        0.779721,
+        0.764883,
+        0.763777,
+        0.753123,
+        0.75073,
+        0.749007,
+        0.747434,
+        0.742032
+      ],
+      "top20_involved_amount": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        103458,
+        170826,
+        0,
+        303156,
+        0,
+        0,
+        0,
+        0,
+        0,
+        562690,
+        0,
+        0,
+        0,
+        0
+      ],
+      "top20_loss_value": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "api_scope": {},
+      "api_query": {},
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=risk_probability",
+      "http_status": 200,
+      "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "risk_probability",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 24,
+      "returned_manufacturer_codes": [
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "DFC52F4CCF384D849D053242EA2935F3"
+      ],
+      "top20_entity_ids": [
+        "263F9947B4FA4F8DB61C9FF48D5A942A|YL233429|XM01AEB173N001010203693|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL360220|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611570|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL610917|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL3500133|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL132590|ZA16DAP0017010402404|H3",
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL4200319|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL373688|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H6"
+      ],
+      "top20_risk_probability": [
+        0.890771,
+        0.884088,
+        0.878391,
+        0.864916,
+        0.859067,
+        0.834287,
+        0.826279,
+        0.810761,
+        0.809214,
+        0.807248,
+        0.7843,
+        0.781386,
+        0.779721,
+        0.764883,
+        0.763777,
+        0.753123,
+        0.75073,
+        0.749007,
+        0.747434,
+        0.742032
+      ],
+      "top20_involved_amount": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        103458,
+        170826,
+        0,
+        303156,
+        0,
+        0,
+        0,
+        0,
+        0,
+        562690,
+        0,
+        0,
+        0,
+        0
+      ],
+      "top20_loss_value": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "api_scope": {},
+      "api_query": {},
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=involved_amount",
+      "http_status": 200,
+      "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "involved_amount",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 24,
+      "returned_manufacturer_codes": [
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "DFC52F4CCF384D849D053242EA2935F3"
+      ],
+      "top20_entity_ids": [
+        "263F9947B4FA4F8DB61C9FF48D5A942A|YL233429|XM01AEB173N001010203693|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL360220|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611570|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL610917|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL3500133|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL132590|ZA16DAP0017010402404|H3",
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL4200319|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL373688|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H6"
+      ],
+      "top20_risk_probability": [
+        0.890771,
+        0.884088,
+        0.878391,
+        0.864916,
+        0.859067,
+        0.834287,
+        0.826279,
+        0.810761,
+        0.809214,
+        0.807248,
+        0.7843,
+        0.781386,
+        0.779721,
+        0.764883,
+        0.763777,
+        0.753123,
+        0.75073,
+        0.749007,
+        0.747434,
+        0.742032
+      ],
+      "top20_involved_amount": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        103458,
+        170826,
+        0,
+        303156,
+        0,
+        0,
+        0,
+        0,
+        0,
+        562690,
+        0,
+        0,
+        0,
+        0
+      ],
+      "top20_loss_value": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "api_scope": {},
+      "api_query": {},
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=loss_value",
+      "http_status": 200,
+      "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "loss_value",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 24,
+      "returned_manufacturer_codes": [
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "DFC52F4CCF384D849D053242EA2935F3"
+      ],
+      "top20_entity_ids": [
+        "263F9947B4FA4F8DB61C9FF48D5A942A|YL233429|XM01AEB173N001010203693|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL360220|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611570|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL610917|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL3500133|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL132590|ZA16DAP0017010402404|H3",
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL4200319|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL373688|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H6"
+      ],
+      "top20_risk_probability": [
+        0.890771,
+        0.884088,
+        0.878391,
+        0.864916,
+        0.859067,
+        0.834287,
+        0.826279,
+        0.810761,
+        0.809214,
+        0.807248,
+        0.7843,
+        0.781386,
+        0.779721,
+        0.764883,
+        0.763777,
+        0.753123,
+        0.75073,
+        0.749007,
+        0.747434,
+        0.742032
+      ],
+      "top20_involved_amount": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        103458,
+        170826,
+        0,
+        303156,
+        0,
+        0,
+        0,
+        0,
+        0,
+        562690,
+        0,
+        0,
+        0,
+        0
+      ],
+      "top20_loss_value": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "api_scope": {},
+      "api_query": {},
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=risk_probability",
+      "http_status": 200,
+      "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H12",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "risk_probability",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 24,
+      "returned_manufacturer_codes": [
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "DFC52F4CCF384D849D053242EA2935F3"
+      ],
+      "top20_entity_ids": [
+        "263F9947B4FA4F8DB61C9FF48D5A942A|YL233429|XM01AEB173N001010203693|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL360220|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611570|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL610917|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL3500133|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL132590|ZA16DAP0017010402404|H3",
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL4200319|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL373688|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H6"
+      ],
+      "top20_risk_probability": [
+        0.890771,
+        0.884088,
+        0.878391,
+        0.864916,
+        0.859067,
+        0.834287,
+        0.826279,
+        0.810761,
+        0.809214,
+        0.807248,
+        0.7843,
+        0.781386,
+        0.779721,
+        0.764883,
+        0.763777,
+        0.753123,
+        0.75073,
+        0.749007,
+        0.747434,
+        0.742032
+      ],
+      "top20_involved_amount": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        103458,
+        170826,
+        0,
+        303156,
+        0,
+        0,
+        0,
+        0,
+        0,
+        562690,
+        0,
+        0,
+        0,
+        0
+      ],
+      "top20_loss_value": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "api_scope": {},
+      "api_query": {},
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=involved_amount",
+      "http_status": 200,
+      "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H12",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "involved_amount",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 24,
+      "returned_manufacturer_codes": [
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "DFC52F4CCF384D849D053242EA2935F3"
+      ],
+      "top20_entity_ids": [
+        "263F9947B4FA4F8DB61C9FF48D5A942A|YL233429|XM01AEB173N001010203693|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL360220|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611570|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL610917|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL3500133|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL132590|ZA16DAP0017010402404|H3",
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL4200319|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL373688|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H6"
+      ],
+      "top20_risk_probability": [
+        0.890771,
+        0.884088,
+        0.878391,
+        0.864916,
+        0.859067,
+        0.834287,
+        0.826279,
+        0.810761,
+        0.809214,
+        0.807248,
+        0.7843,
+        0.781386,
+        0.779721,
+        0.764883,
+        0.763777,
+        0.753123,
+        0.75073,
+        0.749007,
+        0.747434,
+        0.742032
+      ],
+      "top20_involved_amount": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        103458,
+        170826,
+        0,
+        303156,
+        0,
+        0,
+        0,
+        0,
+        0,
+        562690,
+        0,
+        0,
+        0,
+        0
+      ],
+      "top20_loss_value": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "api_scope": {},
+      "api_query": {},
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=loss_value",
+      "http_status": 200,
+      "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H12",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "loss_value",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 24,
+      "returned_manufacturer_codes": [
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "DFC52F4CCF384D849D053242EA2935F3"
+      ],
+      "top20_entity_ids": [
+        "263F9947B4FA4F8DB61C9FF48D5A942A|YL233429|XM01AEB173N001010203693|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL360220|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611570|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL610917|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440996|ZA16DAP0017010402404|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL3500133|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL443040|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL440232|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL132590|ZA16DAP0017010402404|H3",
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL521019|ZA16DAP0017010402404|H6",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL4200319|ZA16DAP0017010202404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL373688|ZA16DAP0017010402404|H3",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A|YL611754|ZA16DAP0017010202404|H6"
+      ],
+      "top20_risk_probability": [
+        0.890771,
+        0.884088,
+        0.878391,
+        0.864916,
+        0.859067,
+        0.834287,
+        0.826279,
+        0.810761,
+        0.809214,
+        0.807248,
+        0.7843,
+        0.781386,
+        0.779721,
+        0.764883,
+        0.763777,
+        0.753123,
+        0.75073,
+        0.749007,
+        0.747434,
+        0.742032
+      ],
+      "top20_involved_amount": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        103458,
+        170826,
+        0,
+        303156,
+        0,
+        0,
+        0,
+        0,
+        0,
+        562690,
+        0,
+        0,
+        0,
+        0
+      ],
+      "top20_loss_value": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "api_scope": {},
+      "api_query": {},
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=risk_probability",
+      "http_status": 200,
+      "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H3",
+      "effective_horizon": "H3",
+      "top_n": 20,
+      "requested_sort_by": "risk_probability",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 1,
+      "returned_manufacturer_codes": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_risk_probability": [
+        0.567177
+      ],
+      "top20_involved_amount": [
+        0
+      ],
+      "top20_loss_value": [
+        0
+      ],
+      "api_scope": {
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ]
+      },
+      "api_query": {
+        "report_month": "2025-11",
+        "horizon": "H3",
+        "top_n": 20,
+        "sort_by": "risk_probability"
+      },
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=involved_amount",
+      "http_status": 200,
+      "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H3",
+      "effective_horizon": "H3",
+      "top_n": 20,
+      "requested_sort_by": "involved_amount",
+      "effective_sort_by": "involved_amount",
+      "returned_total_rows": 1,
+      "returned_manufacturer_codes": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_risk_probability": [
+        0.567177
+      ],
+      "top20_involved_amount": [
+        0
+      ],
+      "top20_loss_value": [
+        0
+      ],
+      "api_scope": {
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ]
+      },
+      "api_query": {
+        "report_month": "2025-11",
+        "horizon": "H3",
+        "top_n": 20,
+        "sort_by": "involved_amount"
+      },
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=loss_value",
+      "http_status": 200,
+      "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H3",
+      "effective_horizon": "H3",
+      "top_n": 20,
+      "requested_sort_by": "loss_value",
+      "effective_sort_by": "loss_value",
+      "returned_total_rows": 1,
+      "returned_manufacturer_codes": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_risk_probability": [
+        0.567177
+      ],
+      "top20_involved_amount": [
+        0
+      ],
+      "top20_loss_value": [
+        0
+      ],
+      "api_scope": {
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ]
+      },
+      "api_query": {
+        "report_month": "2025-11",
+        "horizon": "H3",
+        "top_n": 20,
+        "sort_by": "loss_value"
+      },
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=risk_probability",
+      "http_status": 200,
+      "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "risk_probability",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 1,
+      "returned_manufacturer_codes": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_risk_probability": [
+        0.59563
+      ],
+      "top20_involved_amount": [
+        108790
+      ],
+      "top20_loss_value": [
+        64799
+      ],
+      "api_scope": {
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ]
+      },
+      "api_query": {
+        "report_month": "2025-11",
+        "horizon": "H6",
+        "top_n": 20,
+        "sort_by": "risk_probability"
+      },
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=involved_amount",
+      "http_status": 200,
+      "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "involved_amount",
+      "effective_sort_by": "involved_amount",
+      "returned_total_rows": 1,
+      "returned_manufacturer_codes": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_risk_probability": [
+        0.59563
+      ],
+      "top20_involved_amount": [
+        108790
+      ],
+      "top20_loss_value": [
+        64799
+      ],
+      "api_scope": {
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ]
+      },
+      "api_query": {
+        "report_month": "2025-11",
+        "horizon": "H6",
+        "top_n": 20,
+        "sort_by": "involved_amount"
+      },
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=loss_value",
+      "http_status": 200,
+      "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "top_n": 20,
+      "requested_sort_by": "loss_value",
+      "effective_sort_by": "loss_value",
+      "returned_total_rows": 1,
+      "returned_manufacturer_codes": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_risk_probability": [
+        0.59563
+      ],
+      "top20_involved_amount": [
+        108790
+      ],
+      "top20_loss_value": [
+        64799
+      ],
+      "api_scope": {
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ]
+      },
+      "api_query": {
+        "report_month": "2025-11",
+        "horizon": "H6",
+        "top_n": 20,
+        "sort_by": "loss_value"
+      },
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=risk_probability",
+      "http_status": 200,
+      "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H12",
+      "effective_horizon": "H12",
+      "top_n": 20,
+      "requested_sort_by": "risk_probability",
+      "effective_sort_by": "risk_probability",
+      "returned_total_rows": 1,
+      "returned_manufacturer_codes": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_risk_probability": [
+        0.753123
+      ],
+      "top20_involved_amount": [
+        562690
+      ],
+      "top20_loss_value": [
+        423775
+      ],
+      "api_scope": {
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ]
+      },
+      "api_query": {
+        "report_month": "2025-11",
+        "horizon": "H12",
+        "top_n": 20,
+        "sort_by": "risk_probability"
+      },
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=involved_amount",
+      "http_status": 200,
+      "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H12",
+      "effective_horizon": "H12",
+      "top_n": 20,
+      "requested_sort_by": "involved_amount",
+      "effective_sort_by": "involved_amount",
+      "returned_total_rows": 1,
+      "returned_manufacturer_codes": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_risk_probability": [
+        0.753123
+      ],
+      "top20_involved_amount": [
+        562690
+      ],
+      "top20_loss_value": [
+        423775
+      ],
+      "api_scope": {
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ]
+      },
+      "api_query": {
+        "report_month": "2025-11",
+        "horizon": "H12",
+        "top_n": 20,
+        "sort_by": "involved_amount"
+      },
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=loss_value",
+      "http_status": 200,
+      "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "observation_date": "2025-12-10",
+      "requested_horizon": "H12",
+      "effective_horizon": "H12",
+      "top_n": 20,
+      "requested_sort_by": "loss_value",
+      "effective_sort_by": "loss_value",
+      "returned_total_rows": 1,
+      "returned_manufacturer_codes": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_risk_probability": [
+        0.753123
+      ],
+      "top20_involved_amount": [
+        562690
+      ],
+      "top20_loss_value": [
+        423775
+      ],
+      "api_scope": {
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ]
+      },
+      "api_query": {
+        "report_month": "2025-11",
+        "horizon": "H12",
+        "top_n": 20,
+        "sort_by": "loss_value"
+      },
+      "api_warnings": [],
+      "context_status": "ready",
+      "error_payload": null
+    }
+  ]
+}

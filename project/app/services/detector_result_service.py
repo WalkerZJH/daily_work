@@ -41,6 +41,7 @@ class DetectorResultService:
         *,
         report_month: str | None = None,
         run_date: str | None = None,
+        manufacturer_code: str | None = None,
     ) -> dict[str, Any]:
         runs = self._read_frame(
             "list_daily_detector_runs",
@@ -65,13 +66,14 @@ class DetectorResultService:
         clues = self._read_frame(
             "list_daily_detector_clues",
             detector_run_id=_text(latest.get("detector_run_id")) or None,
+            manufacturer_code=manufacturer_code,
         )
         return {
             "ready": True,
             "run_date": _text(latest.get("run_date")),
             "detector_run_id": _text(latest.get("detector_run_id")) or None,
             "detector_config_version": _text(latest.get("detector_config_version")) or None,
-            "clue_count": _int(latest.get("clue_count")),
+            "clue_count": int(len(clues)) if manufacturer_code else _int(latest.get("clue_count")),
             "attached_high_risk_count": _int(latest.get("attached_high_risk_count")),
             "highest_detector_score": _highest_detector_score(clues),
             "enabled_detectors": _clean_value(latest.get("enabled_detectors")),

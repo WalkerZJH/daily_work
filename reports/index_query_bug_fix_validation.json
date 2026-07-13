@@ -1,0 +1,857 @@
+{
+  "base_url": "http://127.0.0.1:18080",
+  "user_id": "admin",
+  "observation_date": "2025-12-10",
+  "catalog_checks": [
+    {
+      "url": "http://127.0.0.1:18080/api/v1/my/manufacturers?user_id=admin",
+      "status": 200,
+      "manufacturer_count": 10,
+      "codes": [
+        "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "F9BDA11C2EE443F49615B9AD6AFBD4AA",
+        "DFC52F4CCF384D849D053242EA2935F3",
+        "7de4fd63-eac3-4347-87c4-3bd90dbf08bd",
+        "E50FC20840554CF79ACAEF2582AE63BD",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "3fc2389a-d9f9-4933-a714-f9c877f0f86f",
+        "C458C50660B24C6B96A91FEBAAE8E5C8"
+      ],
+      "default_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "warnings": []
+    },
+    {
+      "url": "http://127.0.0.1:18080/api/v1/my/manufacturers?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H6",
+      "status": 200,
+      "manufacturer_count": 10,
+      "codes": [
+        "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "9701EFF559DF4862AF18CF0DC1B6962D",
+        "F9BDA11C2EE443F49615B9AD6AFBD4AA",
+        "DFC52F4CCF384D849D053242EA2935F3",
+        "7de4fd63-eac3-4347-87c4-3bd90dbf08bd",
+        "E50FC20840554CF79ACAEF2582AE63BD",
+        "263F9947B4FA4F8DB61C9FF48D5A942A",
+        "1D93E15EBB9B4F14A1C18E0CD1750A0A",
+        "3fc2389a-d9f9-4933-a714-f9c877f0f86f",
+        "C458C50660B24C6B96A91FEBAAE8E5C8"
+      ],
+      "default_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "warnings": []
+    }
+  ],
+  "workbench_checks": [
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=risk_probability",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "observation_date": "2025-12-10",
+        "horizon": "H3",
+        "top_n": 20,
+        "sort_by": "risk_probability"
+      },
+      "requested_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "effective_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "manufacturer_scope_applied": true,
+      "row_count": 0,
+      "row_manufacturer_code_unique_values": [],
+      "requested_horizon": "H3",
+      "effective_horizon": "H3",
+      "requested_sort": "risk_probability",
+      "effective_sort": "risk_probability",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [],
+      "top20_probabilities": [],
+      "top20_involved_amounts": [],
+      "top20_loss_values": [],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "43B3F24E6895475BA3EA1CD00FA74CE0"
+        ],
+        "requested_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "effective_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=involved_amount",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "observation_date": "2025-12-10",
+        "horizon": "H3",
+        "top_n": 20,
+        "sort_by": "involved_amount"
+      },
+      "requested_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "effective_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "manufacturer_scope_applied": true,
+      "row_count": 0,
+      "row_manufacturer_code_unique_values": [],
+      "requested_horizon": "H3",
+      "effective_horizon": "H3",
+      "requested_sort": "involved_amount",
+      "effective_sort": "involved_amount",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [],
+      "top20_probabilities": [],
+      "top20_involved_amounts": [],
+      "top20_loss_values": [],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "43B3F24E6895475BA3EA1CD00FA74CE0"
+        ],
+        "requested_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "effective_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=loss_value",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "observation_date": "2025-12-10",
+        "horizon": "H3",
+        "top_n": 20,
+        "sort_by": "loss_value"
+      },
+      "requested_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "effective_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "manufacturer_scope_applied": true,
+      "row_count": 0,
+      "row_manufacturer_code_unique_values": [],
+      "requested_horizon": "H3",
+      "effective_horizon": "H3",
+      "requested_sort": "loss_value",
+      "effective_sort": "loss_value",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [],
+      "top20_probabilities": [],
+      "top20_involved_amounts": [],
+      "top20_loss_values": [],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "43B3F24E6895475BA3EA1CD00FA74CE0"
+        ],
+        "requested_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "effective_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=risk_probability",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "observation_date": "2025-12-10",
+        "horizon": "H6",
+        "top_n": 20,
+        "sort_by": "risk_probability"
+      },
+      "requested_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "effective_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "manufacturer_scope_applied": true,
+      "row_count": 0,
+      "row_manufacturer_code_unique_values": [],
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "requested_sort": "risk_probability",
+      "effective_sort": "risk_probability",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [],
+      "top20_probabilities": [],
+      "top20_involved_amounts": [],
+      "top20_loss_values": [],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "43B3F24E6895475BA3EA1CD00FA74CE0"
+        ],
+        "requested_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "effective_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=involved_amount",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "observation_date": "2025-12-10",
+        "horizon": "H6",
+        "top_n": 20,
+        "sort_by": "involved_amount"
+      },
+      "requested_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "effective_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "manufacturer_scope_applied": true,
+      "row_count": 0,
+      "row_manufacturer_code_unique_values": [],
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "requested_sort": "involved_amount",
+      "effective_sort": "involved_amount",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [],
+      "top20_probabilities": [],
+      "top20_involved_amounts": [],
+      "top20_loss_values": [],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "43B3F24E6895475BA3EA1CD00FA74CE0"
+        ],
+        "requested_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "effective_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=loss_value",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "observation_date": "2025-12-10",
+        "horizon": "H6",
+        "top_n": 20,
+        "sort_by": "loss_value"
+      },
+      "requested_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "effective_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "manufacturer_scope_applied": true,
+      "row_count": 0,
+      "row_manufacturer_code_unique_values": [],
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "requested_sort": "loss_value",
+      "effective_sort": "loss_value",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [],
+      "top20_probabilities": [],
+      "top20_involved_amounts": [],
+      "top20_loss_values": [],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "43B3F24E6895475BA3EA1CD00FA74CE0"
+        ],
+        "requested_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "effective_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=risk_probability",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "observation_date": "2025-12-10",
+        "horizon": "H12",
+        "top_n": 20,
+        "sort_by": "risk_probability"
+      },
+      "requested_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "effective_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "manufacturer_scope_applied": true,
+      "row_count": 0,
+      "row_manufacturer_code_unique_values": [],
+      "requested_horizon": "H12",
+      "effective_horizon": "H12",
+      "requested_sort": "risk_probability",
+      "effective_sort": "risk_probability",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [],
+      "top20_probabilities": [],
+      "top20_involved_amounts": [],
+      "top20_loss_values": [],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "43B3F24E6895475BA3EA1CD00FA74CE0"
+        ],
+        "requested_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "effective_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=involved_amount",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "observation_date": "2025-12-10",
+        "horizon": "H12",
+        "top_n": 20,
+        "sort_by": "involved_amount"
+      },
+      "requested_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "effective_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "manufacturer_scope_applied": true,
+      "row_count": 0,
+      "row_manufacturer_code_unique_values": [],
+      "requested_horizon": "H12",
+      "effective_horizon": "H12",
+      "requested_sort": "involved_amount",
+      "effective_sort": "involved_amount",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [],
+      "top20_probabilities": [],
+      "top20_involved_amounts": [],
+      "top20_loss_values": [],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "43B3F24E6895475BA3EA1CD00FA74CE0"
+        ],
+        "requested_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "effective_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=loss_value",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "observation_date": "2025-12-10",
+        "horizon": "H12",
+        "top_n": 20,
+        "sort_by": "loss_value"
+      },
+      "requested_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "effective_manufacturer": "43B3F24E6895475BA3EA1CD00FA74CE0",
+      "manufacturer_scope_applied": true,
+      "row_count": 0,
+      "row_manufacturer_code_unique_values": [],
+      "requested_horizon": "H12",
+      "effective_horizon": "H12",
+      "requested_sort": "loss_value",
+      "effective_sort": "loss_value",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [],
+      "top20_probabilities": [],
+      "top20_involved_amounts": [],
+      "top20_loss_values": [],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "43B3F24E6895475BA3EA1CD00FA74CE0"
+        ],
+        "requested_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "effective_manufacturer_code": "43B3F24E6895475BA3EA1CD00FA74CE0",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=risk_probability",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "observation_date": "2025-12-10",
+        "horizon": "H3",
+        "top_n": 20,
+        "sort_by": "risk_probability"
+      },
+      "requested_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "effective_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "manufacturer_scope_applied": true,
+      "row_count": 1,
+      "row_manufacturer_code_unique_values": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "requested_horizon": "H3",
+      "effective_horizon": "H3",
+      "requested_sort": "risk_probability",
+      "effective_sort": "risk_probability",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_probabilities": [
+        0.567177
+      ],
+      "top20_involved_amounts": [
+        0
+      ],
+      "top20_loss_values": [
+        0
+      ],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ],
+        "requested_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "effective_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=involved_amount",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "observation_date": "2025-12-10",
+        "horizon": "H3",
+        "top_n": 20,
+        "sort_by": "involved_amount"
+      },
+      "requested_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "effective_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "manufacturer_scope_applied": true,
+      "row_count": 1,
+      "row_manufacturer_code_unique_values": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "requested_horizon": "H3",
+      "effective_horizon": "H3",
+      "requested_sort": "involved_amount",
+      "effective_sort": "involved_amount",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_probabilities": [
+        0.567177
+      ],
+      "top20_involved_amounts": [
+        0
+      ],
+      "top20_loss_values": [
+        0
+      ],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ],
+        "requested_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "effective_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H3&top_n=20&sort_by=loss_value",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "observation_date": "2025-12-10",
+        "horizon": "H3",
+        "top_n": 20,
+        "sort_by": "loss_value"
+      },
+      "requested_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "effective_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "manufacturer_scope_applied": true,
+      "row_count": 1,
+      "row_manufacturer_code_unique_values": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "requested_horizon": "H3",
+      "effective_horizon": "H3",
+      "requested_sort": "loss_value",
+      "effective_sort": "loss_value",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_probabilities": [
+        0.567177
+      ],
+      "top20_involved_amounts": [
+        0
+      ],
+      "top20_loss_values": [
+        0
+      ],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ],
+        "requested_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "effective_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=risk_probability",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "observation_date": "2025-12-10",
+        "horizon": "H6",
+        "top_n": 20,
+        "sort_by": "risk_probability"
+      },
+      "requested_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "effective_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "manufacturer_scope_applied": true,
+      "row_count": 1,
+      "row_manufacturer_code_unique_values": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "requested_sort": "risk_probability",
+      "effective_sort": "risk_probability",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_probabilities": [
+        0.59563
+      ],
+      "top20_involved_amounts": [
+        108790
+      ],
+      "top20_loss_values": [
+        64799
+      ],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ],
+        "requested_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "effective_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=involved_amount",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "observation_date": "2025-12-10",
+        "horizon": "H6",
+        "top_n": 20,
+        "sort_by": "involved_amount"
+      },
+      "requested_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "effective_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "manufacturer_scope_applied": true,
+      "row_count": 1,
+      "row_manufacturer_code_unique_values": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "requested_sort": "involved_amount",
+      "effective_sort": "involved_amount",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_probabilities": [
+        0.59563
+      ],
+      "top20_involved_amounts": [
+        108790
+      ],
+      "top20_loss_values": [
+        64799
+      ],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ],
+        "requested_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "effective_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H6&top_n=20&sort_by=loss_value",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "observation_date": "2025-12-10",
+        "horizon": "H6",
+        "top_n": 20,
+        "sort_by": "loss_value"
+      },
+      "requested_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "effective_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "manufacturer_scope_applied": true,
+      "row_count": 1,
+      "row_manufacturer_code_unique_values": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "requested_horizon": "H6",
+      "effective_horizon": "H6",
+      "requested_sort": "loss_value",
+      "effective_sort": "loss_value",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_probabilities": [
+        0.59563
+      ],
+      "top20_involved_amounts": [
+        108790
+      ],
+      "top20_loss_values": [
+        64799
+      ],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ],
+        "requested_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "effective_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=risk_probability",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "observation_date": "2025-12-10",
+        "horizon": "H12",
+        "top_n": 20,
+        "sort_by": "risk_probability"
+      },
+      "requested_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "effective_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "manufacturer_scope_applied": true,
+      "row_count": 1,
+      "row_manufacturer_code_unique_values": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "requested_horizon": "H12",
+      "effective_horizon": "H12",
+      "requested_sort": "risk_probability",
+      "effective_sort": "risk_probability",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_probabilities": [
+        0.753123
+      ],
+      "top20_involved_amounts": [
+        562690
+      ],
+      "top20_loss_values": [
+        423775
+      ],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ],
+        "requested_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "effective_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=involved_amount",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "observation_date": "2025-12-10",
+        "horizon": "H12",
+        "top_n": 20,
+        "sort_by": "involved_amount"
+      },
+      "requested_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "effective_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "manufacturer_scope_applied": true,
+      "row_count": 1,
+      "row_manufacturer_code_unique_values": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "requested_horizon": "H12",
+      "effective_horizon": "H12",
+      "requested_sort": "involved_amount",
+      "effective_sort": "involved_amount",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_probabilities": [
+        0.753123
+      ],
+      "top20_involved_amounts": [
+        562690
+      ],
+      "top20_loss_values": [
+        423775
+      ],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ],
+        "requested_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "effective_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "request_url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=9701EFF559DF4862AF18CF0DC1B6962D&observation_date=2025-12-10&horizon=H12&top_n=20&sort_by=loss_value",
+      "status": 200,
+      "request": {
+        "user_id": "admin",
+        "manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "observation_date": "2025-12-10",
+        "horizon": "H12",
+        "top_n": 20,
+        "sort_by": "loss_value"
+      },
+      "requested_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "effective_manufacturer": "9701EFF559DF4862AF18CF0DC1B6962D",
+      "manufacturer_scope_applied": true,
+      "row_count": 1,
+      "row_manufacturer_code_unique_values": [
+        "9701EFF559DF4862AF18CF0DC1B6962D"
+      ],
+      "requested_horizon": "H12",
+      "effective_horizon": "H12",
+      "requested_sort": "loss_value",
+      "effective_sort": "loss_value",
+      "sort_metric_available": true,
+      "sort_warning": null,
+      "top20_entity_ids": [
+        "9701EFF559DF4862AF18CF0DC1B6962D|YL4400396|ZA01BAS0839020103705|H12"
+      ],
+      "top20_probabilities": [
+        0.753123
+      ],
+      "top20_involved_amounts": [
+        562690
+      ],
+      "top20_loss_values": [
+        423775
+      ],
+      "api_scope": {
+        "scope_applied": true,
+        "manufacturer_count": 1,
+        "manufacturer_codes": [
+          "9701EFF559DF4862AF18CF0DC1B6962D"
+        ],
+        "requested_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "effective_manufacturer_code": "9701EFF559DF4862AF18CF0DC1B6962D",
+        "row_count": 150
+      },
+      "warnings": [],
+      "error": null
+    }
+  ],
+  "negative_checks": [
+    {
+      "name": "unavailable_horizon",
+      "url": "http://127.0.0.1:18080/api/v1/workbench?user_id=admin&manufacturer_code=43B3F24E6895475BA3EA1CD00FA74CE0&observation_date=2025-12-10&horizon=H24&top_n=20&sort_by=risk_probability",
+      "status": 422,
+      "payload": {
+        "detail": {
+          "error_code": "HORIZON_NOT_AVAILABLE",
+          "requested_horizon": "H24",
+          "available_horizons": [
+            "H3",
+            "H6",
+            "H12"
+          ]
+        }
+      }
+    }
+  ]
+}

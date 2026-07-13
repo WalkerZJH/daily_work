@@ -1,0 +1,619 @@
+{
+  "months": {
+    "2025-09": {
+      "batch_dir": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw",
+      "feature_quality_metrics": {
+        "runtime_input_mode": "normalized_fact_mode",
+        "feature_rows": "104007",
+        "source_truth_feature_rows": "104007",
+        "fact_purchase_event_rows": "0",
+        "fact_entity_month_rows": "560071",
+        "entity_purchase_sequence_rows": "0",
+        "all_seen_entity_count": "62325",
+        "monitorable_entity_count": "34669",
+        "excluded_by_monitor_gap_count": "27656",
+        "unmonitorable_entity_count": "27656",
+        "one_shot_entity_count": "6724",
+        "recurring_entity_count": "27945"
+      },
+      "selection_report_rows": 10,
+      "selection_report": [
+        {
+          "horizon": "H12",
+          "cutoff_month": "2025-09-30",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 27945.0,
+          "candidate_count": 7421.0,
+          "candidate_rate": 0.2655573447843979,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": "H3",
+          "cutoff_month": "2025-09-30",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 27945.0,
+          "candidate_count": 7190.0,
+          "candidate_rate": 0.2572911075326534,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": "H6",
+          "cutoff_month": "2025-09-30",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 27945.0,
+          "candidate_count": 7393.0,
+          "candidate_rate": 0.2645553766326713,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "candidate_policy_rows",
+          "value": 22004.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "selected_candidate_rows",
+          "value": 1164.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "all_seen_purchase_relationship_rows",
+          "value": 62325.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "unmonitorable_rows",
+          "value": 27656.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "one_shot_rows",
+          "value": 6724.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "recurring_rows",
+          "value": 27945.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "selected_recurring_rows",
+          "value": 1164.0
+        }
+      ],
+      "risk_entities": 1164,
+      "risk_entity_candidate_type_counts": {
+        "recurring": 1164
+      },
+      "risk_entity_sample_class_counts": {
+        "recurring": 1164
+      },
+      "risk_entity_is_one_shot_true": 0,
+      "risk_entity_is_observation_true": 0,
+      "risk_entity_horizons": {
+        "H3": 1164,
+        "H6": 1164,
+        "H12": 1164
+      },
+      "daily_detector_runs": 31,
+      "detector_run_min": "2025-10-01",
+      "detector_run_max": "2025-10-31",
+      "unmonitorable_audit_rows": 0,
+      "unmonitorable_audit_exists": false
+    },
+    "2025-10": {
+      "batch_dir": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw",
+      "feature_quality_metrics": {
+        "runtime_input_mode": "normalized_fact_mode",
+        "feature_rows": "104526",
+        "source_truth_feature_rows": "104526",
+        "fact_purchase_event_rows": "0",
+        "fact_entity_month_rows": "560071",
+        "entity_purchase_sequence_rows": "0",
+        "all_seen_entity_count": "63078",
+        "monitorable_entity_count": "34842",
+        "excluded_by_monitor_gap_count": "28236",
+        "unmonitorable_entity_count": "28236",
+        "one_shot_entity_count": "6463",
+        "recurring_entity_count": "28379"
+      },
+      "selection_report_rows": 10,
+      "selection_report": [
+        {
+          "horizon": "H12",
+          "cutoff_month": "2025-10-31",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 28379.0,
+          "candidate_count": 7181.0,
+          "candidate_rate": 0.253039219140914,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": "H3",
+          "cutoff_month": "2025-10-31",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 28379.0,
+          "candidate_count": 6977.0,
+          "candidate_rate": 0.245850805172839,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": "H6",
+          "cutoff_month": "2025-10-31",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 28379.0,
+          "candidate_count": 7183.0,
+          "candidate_rate": 0.2531096937876599,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "candidate_policy_rows",
+          "value": 21341.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "selected_candidate_rows",
+          "value": 1190.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "all_seen_purchase_relationship_rows",
+          "value": 63078.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "unmonitorable_rows",
+          "value": 28236.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "one_shot_rows",
+          "value": 6463.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "recurring_rows",
+          "value": 28379.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "selected_recurring_rows",
+          "value": 1190.0
+        }
+      ],
+      "risk_entities": 1190,
+      "risk_entity_candidate_type_counts": {
+        "recurring": 1190
+      },
+      "risk_entity_sample_class_counts": {
+        "recurring": 1190
+      },
+      "risk_entity_is_one_shot_true": 0,
+      "risk_entity_is_observation_true": 0,
+      "risk_entity_horizons": {
+        "H3": 1190,
+        "H6": 1190,
+        "H12": 1190
+      },
+      "daily_detector_runs": 30,
+      "detector_run_min": "2025-11-01",
+      "detector_run_max": "2025-11-30",
+      "unmonitorable_audit_rows": 0,
+      "unmonitorable_audit_exists": false
+    },
+    "2025-11": {
+      "batch_dir": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw",
+      "feature_quality_metrics": {
+        "runtime_input_mode": "normalized_fact_mode",
+        "feature_rows": "105675",
+        "source_truth_feature_rows": "105675",
+        "fact_purchase_event_rows": "0",
+        "fact_entity_month_rows": "560071",
+        "entity_purchase_sequence_rows": "0",
+        "all_seen_entity_count": "64011",
+        "monitorable_entity_count": "35225",
+        "excluded_by_monitor_gap_count": "28786",
+        "unmonitorable_entity_count": "28786",
+        "one_shot_entity_count": "6237",
+        "recurring_entity_count": "28988"
+      },
+      "selection_report_rows": 10,
+      "selection_report": [
+        {
+          "horizon": "H12",
+          "cutoff_month": "2025-11-30",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 28988.0,
+          "candidate_count": 8211.0,
+          "candidate_rate": 0.283255140057955,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": "H3",
+          "cutoff_month": "2025-11-30",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 28988.0,
+          "candidate_count": 7942.0,
+          "candidate_rate": 0.2739754381123223,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": "H6",
+          "cutoff_month": "2025-11-30",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 28988.0,
+          "candidate_count": 8236.0,
+          "candidate_rate": 0.2841175658893335,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "candidate_policy_rows",
+          "value": 24389.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "selected_candidate_rows",
+          "value": 1221.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "all_seen_purchase_relationship_rows",
+          "value": 64011.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "unmonitorable_rows",
+          "value": 28786.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "one_shot_rows",
+          "value": 6237.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "recurring_rows",
+          "value": 28988.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "selected_recurring_rows",
+          "value": 1221.0
+        }
+      ],
+      "risk_entities": 1221,
+      "risk_entity_candidate_type_counts": {
+        "recurring": 1221
+      },
+      "risk_entity_sample_class_counts": {
+        "recurring": 1221
+      },
+      "risk_entity_is_one_shot_true": 0,
+      "risk_entity_is_observation_true": 0,
+      "risk_entity_horizons": {
+        "H3": 1221,
+        "H6": 1221,
+        "H12": 1221
+      },
+      "daily_detector_runs": 31,
+      "detector_run_min": "2025-12-01",
+      "detector_run_max": "2025-12-31",
+      "unmonitorable_audit_rows": 0,
+      "unmonitorable_audit_exists": false
+    },
+    "2025-12": {
+      "batch_dir": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw",
+      "feature_quality_metrics": {
+        "runtime_input_mode": "normalized_fact_mode",
+        "feature_rows": "106647",
+        "source_truth_feature_rows": "106647",
+        "fact_purchase_event_rows": "0",
+        "fact_entity_month_rows": "560071",
+        "entity_purchase_sequence_rows": "0",
+        "all_seen_entity_count": "64899",
+        "monitorable_entity_count": "35549",
+        "excluded_by_monitor_gap_count": "29350",
+        "unmonitorable_entity_count": "29350",
+        "one_shot_entity_count": "6044",
+        "recurring_entity_count": "29505"
+      },
+      "selection_report_rows": 10,
+      "selection_report": [
+        {
+          "horizon": "H12",
+          "cutoff_month": "2025-12-31",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 29505.0,
+          "candidate_count": 8097.0,
+          "candidate_rate": 0.2744280630401627,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": "H3",
+          "cutoff_month": "2025-12-31",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 29505.0,
+          "candidate_count": 7844.0,
+          "candidate_rate": 0.2658532452126758,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": "H6",
+          "cutoff_month": "2025-12-31",
+          "candidate_policy": "multi_recall_union_top10",
+          "full_universe_rows": 29505.0,
+          "candidate_count": 8118.0,
+          "candidate_rate": 0.2751398068124047,
+          "manufacturer_coverage": 10.0,
+          "metric": NaN,
+          "value": NaN
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "candidate_policy_rows",
+          "value": 24059.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "selected_candidate_rows",
+          "value": 1229.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "all_seen_purchase_relationship_rows",
+          "value": 64899.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "unmonitorable_rows",
+          "value": 29350.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "one_shot_rows",
+          "value": 6044.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "recurring_rows",
+          "value": 29505.0
+        },
+        {
+          "horizon": NaN,
+          "cutoff_month": NaN,
+          "candidate_policy": NaN,
+          "full_universe_rows": NaN,
+          "candidate_count": NaN,
+          "candidate_rate": NaN,
+          "manufacturer_coverage": NaN,
+          "metric": "selected_recurring_rows",
+          "value": 1229.0
+        }
+      ],
+      "risk_entities": 1229,
+      "risk_entity_candidate_type_counts": {
+        "recurring": 1229
+      },
+      "risk_entity_sample_class_counts": {
+        "recurring": 1229
+      },
+      "risk_entity_is_one_shot_true": 0,
+      "risk_entity_is_observation_true": 0,
+      "risk_entity_horizons": {
+        "H3": 1229,
+        "H6": 1229,
+        "H12": 1229
+      },
+      "daily_detector_runs": 31,
+      "detector_run_min": "2026-01-01",
+      "detector_run_max": "2026-01-31",
+      "unmonitorable_audit_rows": 0,
+      "unmonitorable_audit_exists": false
+    }
+  },
+  "observation_context_2025_12_05": [
+    {
+      "observation_date": "2025-12-05",
+      "probability_report_month": "2025-11",
+      "probability_batch_id": "2025-11-monthly-risk-algorithm-formal-v2-raw",
+      "probability_batch_dir": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw",
+      "probability_batch_available": true,
+      "detector_run_date": "2025-12-05",
+      "detector_run_id": "2025-11-daily_detector_rules_v1-2025-12-05",
+      "detector_run_available": true,
+      "context_status": "ready",
+      "manual_selection_required": false,
+      "available_report_months": "2025-09;2025-10;2025-11;2025-12",
+      "available_detector_run_dates": "2025-10-01;2025-10-02;2025-10-03;2025-10-04;2025-10-05;2025-10-06;2025-10-07;2025-10-08;2025-10-09;2025-10-10;2025-10-11;2025-10-12;2025-10-13;2025-10-14;2025-10-15;2025-10-16;2025-10-17;2025-10-18;2025-10-19;2025-10-20;2025-10-21;2025-10-22;2025-10-23;2025-10-24;2025-10-25;2025-10-26;2025-10-27;2025-10-28;2025-10-29;2025-10-30;2025-10-31;2025-11-01;2025-11-02;2025-11-03;2025-11-04;2025-11-05;2025-11-06;2025-11-07;2025-11-08;2025-11-09;2025-11-10;2025-11-11;2025-11-12;2025-11-13;2025-11-14;2025-11-15;2025-11-16;2025-11-17;2025-11-18;2025-11-19;2025-11-20;2025-11-21;2025-11-22;2025-11-23;2025-11-24;2025-11-25;2025-11-26;2025-11-27;2025-11-28;2025-11-29;2025-11-30;2025-12-01;2025-12-02;2025-12-03;2025-12-04;2025-12-05;2025-12-06;2025-12-07;2025-12-08;2025-12-09;2025-12-10;2025-12-11;2025-12-12;2025-12-13;2025-12-14;2025-12-15;2025-12-16;2025-12-17;2025-12-18;2025-12-19;2025-12-20;2025-12-21;2025-12-22;2025-12-23;2025-12-24;2025-12-25;2025-12-26;2025-12-27;2025-12-28;2025-12-29;2025-12-30;2025-12-31;2026-01-01;2026-01-02;2026-01-03;2026-01-04;2026-01-05;2026-01-06;2026-01-07;2026-01-08;2026-01-09;2026-01-10;2026-01-11;2026-01-12;2026-01-13;2026-01-14;2026-01-15;2026-01-16;2026-01-17;2026-01-18;2026-01-19;2026-01-20;2026-01-21;2026-01-22;2026-01-23;2026-01-24;2026-01-25;2026-01-26;2026-01-27;2026-01-28;2026-01-29;2026-01-30;2026-01-31",
+      "primary_horizon": "H6",
+      "available_horizons": "H3;H6;H12",
+      "caveat": "bounded monthly worklist; not full SQL universe claim; business review required; raw_orders_mode_ready=false; current formal readiness is conditional_fact_mode_ready; daily detector tables are materialized for configured observation dates from the monthly scan feature frame; project_result_batch_published_outside_algo_main"
+    }
+  ]
+}

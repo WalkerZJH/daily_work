@@ -132,7 +132,7 @@ export async function loadReportContext(query = {}) {
   const normalized = normalizeWorkbenchQuery(query)
   if (normalized.demoMode) return loadDemo('reportContext', normalized)
   const reportContext = await tryLoad(
-    () => api(normalized).getReportContext(queryToApiParams(normalized)),
+    () => api(normalized).getReportContext(queryToReportContextParams(normalized)),
     (payload) => mapReportContextPayload(payload, normalized)
   )
   return reportContext || createEmptyReportContext(normalized)
@@ -238,6 +238,8 @@ export function createEmptyOneshotData() {
     oneshotSummary: {
       reportMonth: '',
       count: 0,
+      dailyNewTerminalCount: 0,
+      monthlyNewTerminalCount: 0,
       highPropensityCount: 0,
       averageRepurchasePropensity: '-',
       expectedRepurchaseAmount: '-',
@@ -281,8 +283,8 @@ export async function loadWorkbenchOptions(query = {}, { allowDemo = false } = {
   const normalizedQuery = normalizeWorkbenchQuery(query)
   if (allowDemo || normalizedQuery.demoMode) return loadDemo('workbenchOptions', normalizedQuery)
   const [manufacturers, context, catalog] = await Promise.all([
-    tryLoad(() => api(normalizedQuery).getMyManufacturers(queryToApiParams(normalizedQuery)), mapManufacturersPayload),
-    tryLoad(() => api(normalizedQuery).getReportContext(queryToApiParams(normalizedQuery)), (payload) => mapReportContextPayload(payload, normalizedQuery)),
+    tryLoad(() => api(normalizedQuery).getMyManufacturers(catalogQueryToApiParams(normalizedQuery)), mapManufacturersPayload),
+    tryLoad(() => api(normalizedQuery).getReportContext(queryToReportContextParams(normalizedQuery)), (payload) => mapReportContextPayload(payload, normalizedQuery)),
     tryLoad(() => api(normalizedQuery).getDetectorCatalog(), mapDetectorCatalogPayload)
   ])
   const fallback = createEmptyWorkbenchOptions(normalizedQuery)
@@ -508,10 +510,12 @@ function mapReportContextPayload(payload, fallbackQuery) {
     displayTitle: '',
     displayLines: []
   }
-  if (!probabilityBatchAvailable || context.manualSelectionRequired) {
+  if (!probabilityBatchAvailable) {
     context.displayTitle = context.message
   } else if (!detectorRunAvailable) {
     context.displayTitle = '该观察日期暂无规则巡检结果'
+  } else if (context.manualSelectionRequired) {
+    context.displayTitle = context.message
   }
   context.displayLines = [
     `观察日期：${context.observationDate || '-'}`,
@@ -521,9 +525,9 @@ function mapReportContextPayload(payload, fallbackQuery) {
 }
 
 function contextMessage({ probabilityBatchAvailable, detectorRunAvailable, manualSelectionRequired }) {
-  if (manualSelectionRequired) return '请选择可用月份或规则巡检日期'
   if (!probabilityBatchAvailable) return '该观察日期对应的月报基准尚未生成，请选择可用日期或月份'
   if (!detectorRunAvailable) return '该观察日期暂无规则巡检结果'
+  if (manualSelectionRequired) return '请选择可用月份或规则巡检日期'
   return ''
 }
 
@@ -543,13 +547,15 @@ function mapWorkbenchPayload(payload, fallbackQuery, related = {}) {
   const rows = (payload.risk_entities || payload.rows || payload.today_focus?.risk_entities || []).map((row) => mapWorkbenchRow(row, query))
   const topRuleClues = (payload.top_rule_clues || related.clues?.dailyDetectorClues || []).map(mapDailyRuleClue)
   const detectorSummary = normalizeDetectorSummary(payload.daily_detector_summary || payload.detector_summary, related.status, topRuleClues, rows, query, reportContext)
+  const emptyCopy = workbenchEmptyCopy(payload.empty_reason)
+  const scope = mapScope(payload.scope, query)
   return {
     ready: true,
     reportContext,
     displayLookupStatus: related.displayLookupStatus || normalizeDisplayLookupStatus(payload.display_lookup_status),
     query,
-    scope: mapScope(payload.scope, query),
-    overviewMetrics: buildTodayMetrics(rows, detectorSummary, query, reportContext),
+    scope,
+    overviewMetrics: buildTodayMetrics(rows, detectorSummary, { ...query, manufacturerName: scope.manufacturerName }, reportContext),
     dailyDetectorStatus: related.status || {
       ...FORMAL_EMPTY_STATUS,
       ready: detectorSummary.ready,
@@ -563,17 +569,33 @@ function mapWorkbenchPayload(payload, fallbackQuery, related = {}) {
     detectorSummary,
     workbenchDisplayRows: rows,
     topRuleClues,
-    emptyTitle: '',
-    emptyMessage: ''
+    emptyTitle: rows.length ? '' : emptyCopy.title,
+    emptyMessage: rows.length ? '' : emptyCopy.message
   }
 }
 
 function mapScope(scope = {}, query) {
+  const code = scope.manufacturer_code || scope.effective_manufacturer_code || query.manufacturerCode
   return {
-    manufacturerCode: scope.manufacturer_code || query.manufacturerCode,
-    manufacturerName: firstDisplayText(scope.manufacturer_display_name, scope.manufacturer_name, query.manufacturerCode, '未选择生产企业'),
+    manufacturerCode: code,
+    manufacturerName: resolveManufacturerPresentation({
+      manufacturerCode: code,
+      manufacturerDisplayName: scope.manufacturer_display_name,
+      manufacturerName: scope.manufacturer_name,
+      fallbackLabel: code ? '生产企业（名称未接入）' : '未选择生产企业'
+    }).displayName,
     reportMonth: scope.report_month || query.probabilityReportMonth || query.reportMonth
   }
+}
+
+function workbenchEmptyCopy(emptyReason) {
+  if (emptyReason === 'NO_RISK_ENTITIES_IN_SELECTED_SCOPE' || emptyReason === 'NO_RISK_ENTITIES_IN_SELECTED_MANUFACTURER_SCOPE') {
+    return {
+      title: '当前条件下暂无风险对象',
+      message: '该生产企业、观察日期和预测窗口下没有可展示的重点风险对象。'
+    }
+  }
+  return { title: '', message: '' }
 }
 
 function normalizeDisplayLookupStatus(payload) {
@@ -621,10 +643,14 @@ function normalizeDetectorSummary(summary = {}, status = {}, clues = [], rows = 
 }
 
 function mapWorkbenchRow(row, query) {
-  const manufacturer = firstDisplayText(row.manufacturer_display_name, row.manufacturer_name, row.manufacturer_code)
+  const manufacturer = resolveManufacturerPresentation({
+    manufacturerCode: row.manufacturer_code || query.manufacturerCode,
+    manufacturerDisplayName: row.manufacturer_display_name,
+    manufacturerName: row.manufacturer_name
+  }).displayName
   const hospital = firstDisplayText(row.hospital_display_name, row.hospital_name, row.hospital_code)
   const drug = firstDisplayText(row.drug_display_name, row.drug_name, row.drug_code, row.drug_group)
-  const involvedAmount = firstNumber(row.involved_amount, row.average_consumption_in_window, row.window_consumption)
+  const involvedAmount = firstNullableNumber(row.involved_amount, row.average_consumption_in_window, row.window_consumption)
   const lossValue = firstNullableNumber(row.loss_value, row.monthly_loss_value)
   return {
     id: row.row_id || row.entity_id || `${hospital}-${drug}`,
@@ -641,7 +667,7 @@ function mapWorkbenchRow(row, query) {
     involvedAmount,
     involvedAmountText: formatMoney(involvedAmount),
     lossValue,
-    lossValueText: lossValue === null || lossValue === undefined ? formatMoney(involvedAmount) : formatMoney(lossValue),
+    lossValueText: lossValue === null || lossValue === undefined ? '-' : formatMoney(lossValue),
     riskBand: row.risk_band || row.riskLevel || '',
     reason: replaceHorizonCodes(row.reason || row.primary_reason || ''),
     fillSource: '月报高风险',
@@ -652,13 +678,17 @@ function mapWorkbenchRow(row, query) {
 
 function mapRiskEntity(item, query = defaultWorkbenchQuery) {
   const profile = item.selected_horizon_profile || item
-  const involvedAmount = firstNumber(profile.involved_amount, item.involved_amount, profile.average_consumption_in_window, item.average_consumption_in_window)
+  const involvedAmount = firstNullableNumber(profile.involved_amount, item.involved_amount, profile.average_consumption_in_window, item.average_consumption_in_window)
   const lossValue = firstNullableNumber(profile.loss_value, item.loss_value)
   return {
     id: item.entity_id || item.risk_entity_id || item.id,
     hospital: firstDisplayText(item.hospital_display_name, item.hospital_name, item.hospital_code, item.hospital),
     drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_code, item.drug_group, item.drug),
-    manufacturer: firstDisplayText(item.manufacturer_display_name, item.manufacturer_name, item.manufacturer_code, item.manufacturer),
+    manufacturer: resolveManufacturerPresentation({
+      manufacturerCode: item.manufacturer_code || query.manufacturerCode,
+      manufacturerDisplayName: item.manufacturer_display_name,
+      manufacturerName: item.manufacturer_name || item.manufacturer
+    }).displayName,
     manufacturerCode: item.manufacturer_code || query.manufacturerCode,
     region: firstDisplayText(item.region_display_name, item.region, item.region_code),
     horizon: profile.horizon || item.horizon || query.horizon,
@@ -669,7 +699,7 @@ function mapRiskEntity(item, query = defaultWorkbenchQuery) {
     involvedAmount,
     involvedAmountText: formatMoney(involvedAmount),
     lossValue,
-    lossValueText: lossValue === null || lossValue === undefined ? formatMoney(involvedAmount) : formatMoney(lossValue),
+    lossValueText: lossValue === null || lossValue === undefined ? '-' : formatMoney(lossValue),
     status: item.status || item.monthly_status || '',
     reason: replaceHorizonCodes(profile.reason || item.primary_reason || item.reason || '')
   }
@@ -680,7 +710,7 @@ function mapHorizonProfiles(profiles) {
 }
 
 function mapHorizonProfile(profile) {
-  const involvedAmount = firstNumber(profile.involved_amount, profile.average_consumption_in_window, profile.window_consumption)
+  const involvedAmount = firstNullableNumber(profile.involved_amount, profile.average_consumption_in_window, profile.window_consumption)
   const lossValue = firstNullableNumber(profile.loss_value)
   return {
     horizon: profile.horizon,
@@ -690,7 +720,7 @@ function mapHorizonProfile(profile) {
     involvedAmount,
     involvedAmountText: formatMoney(involvedAmount),
     lossValue,
-    lossValueText: lossValue === null || lossValue === undefined ? formatMoney(involvedAmount) : formatMoney(lossValue),
+    lossValueText: lossValue === null || lossValue === undefined ? '-' : formatMoney(lossValue),
     reason: replaceHorizonCodes(profile.reason)
   }
 }
@@ -704,6 +734,8 @@ function mapOneshotPayload(payload) {
     oneshotSummary: {
       reportMonth: payload.report_month || payload.probability_report_month || '',
       count: payload.summary?.oneshot_count ?? items.length ?? 0,
+      dailyNewTerminalCount: payload.summary?.daily_new_terminal_count ?? 0,
+      monthlyNewTerminalCount: payload.summary?.monthly_new_terminal_count ?? 0,
       highPropensityCount: payload.summary?.high_repurchase_propensity_count ?? 0,
       averageRepurchasePropensity: formatPercent(payload.summary?.average_repurchase_propensity),
       expectedRepurchaseAmount: formatMoney(payload.summary?.expected_repurchase_amount),
@@ -711,6 +743,12 @@ function mapOneshotPayload(payload) {
     },
     oneshotTerminals: items.map((item) => ({
       id: item.oneshot_id || item.id,
+      manufacturer: resolveManufacturerPresentation({
+        manufacturerCode: item.manufacturer_code,
+        manufacturerDisplayName: item.manufacturer_display_name,
+        manufacturerName: item.manufacturer_name
+      }).displayName,
+      manufacturerCode: item.manufacturer_code || '',
       hospital: firstDisplayText(item.hospital_display_name, item.hospital_name, item.hospital_code),
       drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_code, item.drug_group),
       region: firstDisplayText(item.region_display_name, item.region, item.region_code),
@@ -724,8 +762,8 @@ function mapOneshotPayload(payload) {
       priority: item.priority,
       reason: hasEvidence ? replaceHorizonCodes(item.ranking_basis || item.reason || item.evidence_text) : ''
     })),
-    emptyTitle: '',
-    emptyMessage: ''
+    emptyTitle: items.length ? '' : '当前条件下暂无新进终端记录',
+    emptyMessage: items.length ? '' : '该观察日期和生产企业范围内没有可展示的新进终端。'
   }
 }
 
@@ -799,7 +837,11 @@ function mapDailyRuleClue(item, index = 0) {
     isMonthlyHighRiskEntity: isMonthly,
     hospital: firstDisplayText(item.hospital_display_name, item.hospital_name, title),
     drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_group, '规则线索'),
-    manufacturer: firstDisplayText(item.manufacturer_display_name, item.manufacturer_code),
+    manufacturer: resolveManufacturerPresentation({
+      manufacturerCode: item.manufacturer_code,
+      manufacturerDisplayName: item.manufacturer_display_name,
+      manufacturerName: item.manufacturer_name
+    }).displayName,
     region: firstDisplayText(item.region_display_name, item.region_code),
     detectorName: item.detector_name_label || item.detector_name || item.detector_id || '规则',
     detectorFamily: item.detector_family || '',
@@ -823,7 +865,7 @@ function mapDailyRuleClue(item, index = 0) {
     involvedAmount,
     involvedAmountText: involvedAmount === null || involvedAmount === undefined ? '-' : formatMoney(involvedAmount),
     lossValue: firstNullableNumber(item.loss_value),
-    lossValueText: formatMoney(firstNullableNumber(item.loss_value, involvedAmount)),
+    lossValueText: formatMoney(firstNullableNumber(item.loss_value)),
     actionText: isMonthly ? '查看风险详情' : '查看线索详情'
   }
 }
@@ -870,9 +912,28 @@ function mapProbabilityTrendPayload(payload) {
         involvedAmount,
         involvedAmountText: involvedAmount === null || involvedAmount === undefined ? '-' : formatMoney(involvedAmount),
         lossValue: firstNullableNumber(item.loss_value),
-        lossValueText: formatMoney(firstNullableNumber(item.loss_value, involvedAmount))
+        lossValueText: formatMoney(firstNullableNumber(item.loss_value))
       }
     })
+  }
+}
+
+export function queryToReportContextParams(query) {
+  const params = {
+    observation_date: query.observationDate,
+    manufacturer_code: query.manufacturerCode,
+    horizon: query.horizon,
+    top_n: query.topN,
+    sort_by: query.sortBy,
+    user_id: query.userId
+  }
+  if (query.observationDate) return params
+  return {
+    ...params,
+    report_month: query.probabilityReportMonth || query.reportMonth,
+    run_date: query.runDate,
+    probability_report_month: query.probabilityReportMonth || query.reportMonth,
+    detector_run_date: query.detectorRunDate
   }
 }
 
@@ -889,6 +950,12 @@ function queryToApiParams(query) {
     horizon: query.horizon,
     top_n: query.topN,
     sort_by: query.sortBy,
+    user_id: query.userId
+  }
+}
+
+function catalogQueryToApiParams(query) {
+  return {
     user_id: query.userId
   }
 }
@@ -930,8 +997,13 @@ function mapDetectorCatalogPayload(payload) {
 }
 
 function buildTodayMetrics(rows, detectorSummary, query, context = {}) {
+  const manufacturer = resolveManufacturerPresentation({
+    manufacturerCode: query.manufacturerCode,
+    manufacturerDisplayName: query.manufacturerDisplayName,
+    manufacturerName: query.manufacturerName
+  }).displayName
   return [
-    { label: '当前生产企业', value: query.manufacturerCode || '未选择', tone: 'info' },
+    { label: '当前生产企业', value: manufacturer || '未选择', tone: 'info' },
     { label: '观察日期', value: context.observationDate || query.observationDate || '-', tone: 'neutral' },
     { label: '规则巡检日期', value: context.detectorRunDate || query.detectorRunDate || '-', tone: 'success' },
     { label: '当前预测窗口', value: formatHorizonLabel(query.horizon), tone: 'warning' },
@@ -944,8 +1016,35 @@ function buildTodayMetrics(rows, detectorSummary, query, context = {}) {
 function manufacturerDisplayName(item, index) {
   const code = item.manufacturer_code || item.code || item.id || ''
   const name = item.manufacturer_display_name || item.manufacturer_name || item.name || ''
-  if (name && name !== code) return name
-  return `生产企业 ${index + 1}（名称未接入）`
+  return resolveManufacturerPresentation({
+    manufacturerCode: code,
+    manufacturerDisplayName: name,
+    manufacturerName: name,
+    fallbackLabel: `生产企业 ${index + 1}（名称未接入）`
+  }).displayName
+}
+
+export function resolveManufacturerPresentation({
+  manufacturerCode,
+  manufacturerDisplayName,
+  manufacturerName,
+  fallbackLabel = '生产企业（名称未接入）'
+} = {}) {
+  const code = String(manufacturerCode || '').trim()
+  const candidates = [manufacturerDisplayName, manufacturerName]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+  const name = candidates.find((value) => value !== code && !looksLikeCode(value))
+  return {
+    code,
+    displayName: name || fallbackLabel,
+    hasDisplayName: Boolean(name)
+  }
+}
+
+function looksLikeCode(value) {
+  const text = String(value || '').trim()
+  return /^[A-F0-9]{24,}$/i.test(text) || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(text)
 }
 
 function detectorFamilyLabel(family) {
@@ -965,7 +1064,9 @@ function detectorFamilyLabel(family) {
 }
 
 function currentManufacturerOption(query) {
-  return query.manufacturerCode ? [{ code: query.manufacturerCode, name: query.manufacturerCode }] : []
+  return query.manufacturerCode
+    ? [{ code: query.manufacturerCode, name: resolveManufacturerPresentation({ manufacturerCode: query.manufacturerCode }).displayName }]
+    : []
 }
 
 function highestRuleScore(items = []) {

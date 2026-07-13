@@ -1,4 +1,4 @@
-﻿.workbench-hero {
+.workbench-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr);
   gap: 22px;
@@ -980,6 +980,28 @@
   min-width: 150px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--navy);
+  padding: 9px 10px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.square-date-picker {
+  display: grid;
+  gap: 6px;
+}
+
+.square-date-picker span {
+  color: var(--text-sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.square-date-picker input {
+  min-width: 150px;
+  border: 1px solid var(--border);
+  border-radius: 0;
   background: #fff;
   color: var(--navy);
   padding: 9px 10px;
