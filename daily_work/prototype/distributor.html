@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>配送商预警 — ZZ医药系统性失约 — 终端不丢智能体</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="topbar-logo" href="index.html">
+    <div class="logo-icon">终</div>
+    <div>
+      <div class="logo-text">终端不丢智能体</div>
+      <div class="logo-sub">供应链风险巡检 · 智能预警</div>
+    </div>
+  </a>
+  <div class="topbar-spacer"></div>
+  <span class="topbar-tag">B.5 配送商系统性检测</span>
+  <div class="topbar-user"><div class="avatar">陈</div>营销VP · 陈总</div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">工作台</div>
+      <a href="index.html" class="sidebar-item"><span class="icon">🏠</span> VP 今日工作台<span class="sidebar-badge">8</span></a>
+      <a href="clues.html" class="sidebar-item"><span class="icon">🔍</span> 全部风险线索<span class="sidebar-badge orange">39</span></a>
+      <a href="watchlist.html" class="sidebar-item"><span class="icon">👁</span> 观察清单（黄）<span class="sidebar-badge" style="background:#eab308">14</span></a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">跟踪与核验</div>
+      <a href="verify.html" class="sidebar-item"><span class="icon">✅</span> 挽回核验<span class="sidebar-badge orange">4</span></a>
+      <a href="distributor.html" class="sidebar-item active"><span class="icon">⚠️</span> 配送商预警<span class="sidebar-badge">1</span></a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">分析</div>
+      <a href="dashboard.html" class="sidebar-item"><span class="icon">📊</span> 管理驾驶舱</a>
+      <a href="backtest.html" class="sidebar-item"><span class="icon">🔬</span> 回测报告</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">系统配置</div>
+      <a href="algo-config.html" class="sidebar-item"><span class="icon">⚙️</span> 算法配置管理</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>配送商系统性失约预警</h1>
+      <div class="subtitle">探测器 5（履约三段差）· 配送商级系统性检测 · B.5 断供型风险专题</div>
+    </div>
+
+    <!-- 警告横幅 -->
+    <div style="background:linear-gradient(90deg,#fff7ed,#fef3c7);border:2px solid #f59e0b;border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <span style="font-size:32px">⚠️</span>
+        <div style="flex:1">
+          <div style="font-size:18px;font-weight:800;color:#92400e">ZZ医药 · 系统性失约确认</div>
+          <div style="font-size:13px;color:#b45309;margin-top:4px">配送率近3月持续低于健康线 0.80，受影响医院数≥5家（SYS_MIN_HOSP触发）。结论：修配送商，不是修医院。</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:32px;font-weight:900;color:#b91c1c">0.61</div>
+          <div style="font-size:11px;color:#b45309">当前配送率</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:22px">
+      <div class="kpi-card danger">
+        <div class="kpi-label">ZZ医药当前配送率</div>
+        <div class="kpi-value" style="color:var(--red)">0.61</div>
+        <div class="kpi-meta"><span class="badge badge-red">低于健康线0.80</span></div>
+      </div>
+      <div class="kpi-card warn">
+        <div class="kpi-label">配送时延中位数</div>
+        <div class="kpi-value">11<span class="unit">天</span></div>
+        <div class="kpi-meta"><span class="text-orange">↑ 近3月 2→6→11天</span></div>
+      </div>
+      <div class="kpi-card danger">
+        <div class="kpi-label">拒单率（近90天）</div>
+        <div class="kpi-value" style="color:var(--red)">18%</div>
+        <div class="kpi-meta"><span class="badge badge-red">3单0配送</span></div>
+      </div>
+      <div class="kpi-card warn">
+        <div class="kpi-label">受影响医院数</div>
+        <div class="kpi-value">7<span class="unit">家</span></div>
+        <div class="kpi-meta"><span class="badge badge-orange">合计风险敞口¥210万</span></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- LEFT: 配送率趋势图 -->
+      <div class="chart-wrap">
+        <div class="chart-title">ZZ医药 配送率趋势（近3月）</div>
+        <svg viewBox="0 0 360 160" width="100%" style="display:block">
+          <!-- grid -->
+          <line x1="45" y1="15"  x2="45" y2="120" stroke="#d2e2f5" stroke-width="1"/>
+          <line x1="45" y1="15"  x2="340" y2="15"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="40"  x2="340" y2="40"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <!-- 健康线 0.80 → y=40+(1-0.80)*105=61 -->
+          <line x1="45" y1="57"  x2="340" y2="57"  stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="345" y="60" font-size="9" fill="#16a34a" font-weight="700">健康线 0.80</text>
+          <line x1="45" y1="80"  x2="340" y2="80"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="120" x2="340" y2="120" stroke="#d2e2f5" stroke-width="1"/>
+          <!-- Y labels: 1.0=15 0.8=57 0.6=99 0.0=120; 每0.1=10.5px -->
+          <text x="39" y="18"  text-anchor="end" font-size="10" fill="#8499b5">1.0</text>
+          <text x="39" y="60"  text-anchor="end" font-size="10" fill="#16a34a">0.8</text>
+          <text x="39" y="102" text-anchor="end" font-size="10" fill="#e5484d">0.6</text>
+          <text x="39" y="123" text-anchor="end" font-size="10" fill="#8499b5">0.0</text>
+          <!-- 3月0.93→y=15+(1-0.93)*105=22.35; 4月0.78→y=15+(1-0.78)*105=38.1; 5月0.61→y=15+(1-0.61)*105=55.95 -->
+          <!-- 简化成6个月点: 1月0.92, 2月0.91, 3月0.93, 4月0.82, 5月0.78, 6月0.61 -->
+          <!-- x positions: 45,88,131,174,217,260,303 -->
+          <!-- y: 0.92→23.4; 0.91→24.45; 0.93→22.35; 0.82→34.9; 0.78→39.1; 0.61→57.45 -->
+          <polyline points="70,23 120,24 170,22 220,35 270,39 320,57" fill="none" stroke="var(--orange)" stroke-width="2.5" stroke-linejoin="round"/>
+          <!-- area -->
+          <polygon points="70,23 120,24 170,22 220,35 270,39 320,57 320,120 70,120" fill="rgba(245,158,11,.1)"/>
+          <!-- critical zone below health line -->
+          <rect x="280" y="57" width="40" height="63" fill="rgba(229,72,77,.08)" rx="2"/>
+          <!-- dots -->
+          <circle cx="70"  cy="23" r="4" fill="#16a34a" stroke="#fff" stroke-width="2"/>
+          <circle cx="120" cy="24" r="4" fill="#16a34a" stroke="#fff" stroke-width="2"/>
+          <circle cx="170" cy="22" r="4" fill="#16a34a" stroke="#fff" stroke-width="2"/>
+          <circle cx="220" cy="35" r="4" fill="var(--orange)" stroke="#fff" stroke-width="2"/>
+          <circle cx="270" cy="39" r="4" fill="var(--orange)" stroke="#fff" stroke-width="2"/>
+          <circle cx="320" cy="57" r="5" fill="var(--red)" stroke="#fff" stroke-width="2.5"/>
+          <!-- current label -->
+          <rect x="295" y="40" width="35" height="16" rx="3" fill="var(--red)"/>
+          <text x="312" y="52" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">0.61↓</text>
+          <!-- X labels -->
+          <text x="70"  y="136" text-anchor="middle" font-size="10" fill="#8499b5">1月</text>
+          <text x="120" y="136" text-anchor="middle" font-size="10" fill="#8499b5">2月</text>
+          <text x="170" y="136" text-anchor="middle" font-size="10" fill="#8499b5">3月</text>
+          <text x="220" y="136" text-anchor="middle" font-size="10" fill="var(--orange)">4月</text>
+          <text x="270" y="136" text-anchor="middle" font-size="10" fill="var(--orange)">5月</text>
+          <text x="320" y="136" text-anchor="middle" font-size="10" fill="var(--red)" font-weight="700">6月</text>
+        </svg>
+        <div class="chart-legend">
+          <div class="chart-legend-item"><div class="chart-legend-line" style="background:var(--orange)"></div> ZZ医药配送率</div>
+          <div class="chart-legend-item"><div class="chart-legend-line" style="background:#16a34a;border-style:dashed"></div> 健康线 0.80</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: 配送时延趋势 -->
+      <div class="chart-wrap">
+        <div class="chart-title">配送时延中位数（天）趋势</div>
+        <svg viewBox="0 0 360 160" width="100%" style="display:block">
+          <!-- grid -->
+          <line x1="45" y1="15"  x2="45" y2="120" stroke="#d2e2f5" stroke-width="1"/>
+          <line x1="45" y1="15"  x2="330" y2="15"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="48"  x2="330" y2="48"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="80"  x2="330" y2="80"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="120" x2="330" y2="120" stroke="#d2e2f5" stroke-width="1"/>
+          <!-- Y: max=12 → y=15; 0 → y=120; 1day=8.75px -->
+          <text x="39" y="18"  text-anchor="end" font-size="10" fill="#8499b5">12天</text>
+          <text x="39" y="51"  text-anchor="end" font-size="10" fill="#8499b5">8天</text>
+          <text x="39" y="83"  text-anchor="end" font-size="10" fill="#8499b5">4天</text>
+          <text x="39" y="123" text-anchor="end" font-size="10" fill="#8499b5">0天</text>
+          <!-- 1月:2天 2月:2天 3月:2天 4月:4天 5月:6天 6月:11天 -->
+          <!-- y = 120 - val*8.75 -->
+          <!-- 2→102.5; 4→85; 6→67.5; 11→23.75 -->
+          <polyline points="70,103 120,103 170,103 220,85 270,68 320,24" fill="none" stroke="#e5484d" stroke-width="2.5" stroke-linejoin="round"/>
+          <polygon points="70,103 120,103 170,103 220,85 270,68 320,24 320,120 70,120" fill="rgba(229,72,77,.08)"/>
+          <circle cx="70"  cy="103" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <circle cx="120" cy="103" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <circle cx="170" cy="103" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <circle cx="220" cy="85"  r="4" fill="var(--orange)" stroke="#fff" stroke-width="2"/>
+          <circle cx="270" cy="68"  r="4" fill="var(--orange)" stroke="#fff" stroke-width="2"/>
+          <circle cx="320" cy="24"  r="5" fill="var(--red)" stroke="#fff" stroke-width="2.5"/>
+          <rect x="295" y="10" width="28" height="16" rx="3" fill="var(--red)"/>
+          <text x="309" y="22" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">11天</text>
+          <!-- X labels -->
+          <text x="70"  y="136" text-anchor="middle" font-size="10" fill="#8499b5">1月</text>
+          <text x="120" y="136" text-anchor="middle" font-size="10" fill="#8499b5">2月</text>
+          <text x="170" y="136" text-anchor="middle" font-size="10" fill="#8499b5">3月</text>
+          <text x="220" y="136" text-anchor="middle" font-size="10" fill="var(--orange)">4月</text>
+          <text x="270" y="136" text-anchor="middle" font-size="10" fill="var(--orange)">5月</text>
+          <text x="320" y="136" text-anchor="middle" font-size="10" fill="var(--red)" font-weight="700">6月</text>
+        </svg>
+        <div class="chart-legend">
+          <div class="chart-legend-item"><div class="chart-legend-line" style="background:#e5484d"></div> 配送时延中位数</div>
+          <div class="chart-legend-item" style="color:#e5484d">正常水位：2天 → 当前：11天</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 根因分析 -->
+    <div class="section-card" style="margin-top:18px">
+      <h2>根因分析与结论</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#92400e;margin-bottom:10px">⚠ 诊断：断供型，修配送商</div>
+          <div style="font-size:13px;color:#3e5878;line-height:1.8">
+            受影响7家医院<b>采购侧仍在正常下单</b>（医院并无需求衰减），但ZZ医药配送能力持续恶化：<br>
+            · 配送率 0.93→0.78→0.61（近3月）<br>
+            · 配送时延 2→6→11天<br>
+            · 拒单率18%（近90天内3单0配送）<br><br>
+            <b>判别结论</b>：采购健康 + 履约恶化 → 断供型风险。
+            根因指向<b>ZZ医药</b>配送能力，与医院需求无关。
+          </div>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#1d4ed8;margin-bottom:10px">💡 建议动作</div>
+          <div style="background:var(--blue-pale2);border:1px solid var(--blue-border);border-radius:8px;padding:14px;font-size:13px;color:#1d4ed8;line-height:1.8">
+            <b>1. 立即</b>：商务负责人本周内约谈ZZ医药，要求书面说明配送率下滑原因及改进时间表。<br>
+            <b>2. 紧急备案</b>：对7家受影响医院同步联系国药控股/华润医药，做配送渠道应急备份。<br>
+            <b>3. 核验窗口</b>：30天内若ZZ医药配送率未恢复至0.80以上，切换配送商。<br>
+            <b>4. 线索处理</b>：以下7家医院的"流失风险"线索已做履约因子抵扣，不纳入医院需求流失考核。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 受影响医院列表 -->
+    <div class="section-header">
+      <div class="section-title">受影响医院列表 <span class="count">7家 · 合计¥210万敞口</span></div>
+    </div>
+    <div class="data-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>医院名称</th>
+            <th>产品线</th>
+            <th>配送率（近3月）</th>
+            <th>配送时延</th>
+            <th>拒单率</th>
+            <th>采购侧状态</th>
+            <th>根因判别</th>
+            <th>敞口金额</th>
+            <th>处理建议</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="td-hospital">河南省人民医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="text-red">0.91→0.76→0.63</span></td>
+            <td>2→6→11天</td>
+            <td><span class="text-red">18%</span></td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">采购正常</span></td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>¥52万</td>
+            <td>切配送渠道</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">成都市第一人民医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="text-red">0.88→0.72→0.60</span></td>
+            <td>3→7→12天</td>
+            <td><span class="text-red">22%</span></td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">采购正常</span></td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>¥31万</td>
+            <td>切配送渠道</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">广州市第一人民医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="text-red">0.90→0.74→0.62</span></td>
+            <td>2→5→10天</td>
+            <td><span class="text-red">16%</span></td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">采购正常</span></td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>¥27万</td>
+            <td>切配送渠道</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">哈尔滨医科大学附属第二医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="text-orange">0.93→0.80→0.68</span></td>
+            <td>1→4→9天</td>
+            <td><span class="text-orange">12%</span></td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">采购正常</span></td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>¥24万</td>
+            <td>重点跟进</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">新疆医科大学第一附属医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="text-orange">0.92→0.79→0.65</span></td>
+            <td>2→5→9天</td>
+            <td><span class="text-orange">14%</span></td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">采购正常</span></td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>¥19万</td>
+            <td>备用渠道</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">兰州大学第二医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="text-orange">0.91→0.77→0.64</span></td>
+            <td>2→6→10天</td>
+            <td><span class="text-orange">15%</span></td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">采购正常</span></td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>¥16万</td>
+            <td>备用渠道</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">宁夏医科大学总医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="text-orange">0.94→0.81→0.66</span></td>
+            <td>1→4→8天</td>
+            <td><span class="text-orange">11%</span></td>
+            <td><span class="badge badge-green" style="background:#dcfce7;color:#15803d">采购正常</span></td>
+            <td><span class="badge badge-gray">断供型</span></td>
+            <td>¥14万</td>
+            <td>跟踪观察</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:12px;font-size:12px;color:#8499b5">
+      以上7家医院「流失风险分」已做ZZ医药履约因子抵扣，不计入医院需求流失考核。配送商问题解决后，风险分将自动修正。
+    </div>
+
+    <!-- 对比：其他配送商 -->
+    <div class="section-card" style="margin-top:18px">
+      <h2>同期配送商对比（供切换参考）</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        <div style="background:var(--red-bg);border:1px solid #fca5a5;border-radius:8px;padding:14px;text-align:center">
+          <div style="font-size:16px;font-weight:800;color:#b91c1c">ZZ医药</div>
+          <div style="font-size:28px;font-weight:900;color:#b91c1c">0.61</div>
+          <div style="font-size:11px;color:#b91c1c">配送率 · 低于健康线</div>
+          <div style="font-size:12px;color:#b91c1c;margin-top:4px">时延11天 · 拒单18%</div>
+        </div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;text-align:center">
+          <div style="font-size:16px;font-weight:800;color:#15803d">国药控股</div>
+          <div style="font-size:28px;font-weight:900;color:#15803d">0.94</div>
+          <div style="font-size:11px;color:#15803d">配送率 · 稳定优质</div>
+          <div style="font-size:12px;color:#15803d;margin-top:4px">时延2天 · 拒单2%</div>
+        </div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;text-align:center">
+          <div style="font-size:16px;font-weight:800;color:#15803d">华润医药</div>
+          <div style="font-size:28px;font-weight:900;color:#15803d">0.92</div>
+          <div style="font-size:11px;color:#15803d">配送率 · 稳定优质</div>
+          <div style="font-size:12px;color:#15803d;margin-top:4px">时延2天 · 拒单3%</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#eaf2fd;border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-top:4px">
+      <div style="font-size:13px;font-weight:700;color:#0b2a4a;margin-bottom:6px">📝 给VP的一句话结论</div>
+      <div style="font-size:13px;color:#3e5878;line-height:1.7">
+        这7家医院的"风险"不是医院的问题，是ZZ医药的问题。解法是约谈/切换配送商，而非让区域经理去拜访这7家——那样只会浪费人力、解决不了根本问题。建议本周内处理配送商层面。
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+</body>
+</html>

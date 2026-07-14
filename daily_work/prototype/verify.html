@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>挽回核验 — 终端不丢智能体</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="topbar-logo" href="index.html">
+    <div class="logo-icon">终</div>
+    <div>
+      <div class="logo-text">终端不丢智能体</div>
+      <div class="logo-sub">供应链风险巡检 · 智能预警</div>
+    </div>
+  </a>
+  <div class="topbar-spacer"></div>
+  <span class="topbar-tag">兑现率 = 6/12声称 = 71% · 让订单数据当裁判</span>
+  <div class="topbar-user"><div class="avatar">陈</div>营销VP · 陈总</div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">工作台</div>
+      <a href="index.html" class="sidebar-item"><span class="icon">🏠</span> VP 今日工作台<span class="sidebar-badge">8</span></a>
+      <a href="clues.html" class="sidebar-item"><span class="icon">🔍</span> 全部风险线索<span class="sidebar-badge orange">39</span></a>
+      <a href="watchlist.html" class="sidebar-item"><span class="icon">👁</span> 观察清单（黄）<span class="sidebar-badge" style="background:#eab308">14</span></a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">跟踪与核验</div>
+      <a href="verify.html" class="sidebar-item active"><span class="icon">✅</span> 挽回核验<span class="sidebar-badge orange">4</span></a>
+      <a href="distributor.html" class="sidebar-item"><span class="icon">⚠️</span> 配送商预警<span class="sidebar-badge">1</span></a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">分析</div>
+      <a href="dashboard.html" class="sidebar-item"><span class="icon">📊</span> 管理驾驶舱</a>
+      <a href="backtest.html" class="sidebar-item"><span class="icon">🔬</span> 回测报告</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">系统配置</div>
+      <a href="algo-config.html" class="sidebar-item"><span class="icon">⚙️</span> 算法配置管理</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>挽回核验</h1>
+      <div class="subtitle">声称已挽回的终端，系统自动回填订单数据核验真实兑现情况。让数据当裁判，不可刷处置数字。</div>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kpi-card blue">
+        <div class="kpi-label">本月声称挽回</div>
+        <div class="kpi-value">12<span class="unit">条</span></div>
+        <div class="kpi-meta"><span class="badge badge-blue">待核验 4 · 已兑现 6 · 未兑现 2</span></div>
+      </div>
+      <div class="kpi-card ok">
+        <div class="kpi-label">已兑现（订单回来了）</div>
+        <div class="kpi-value" style="color:var(--green)">6<span class="unit" style="color:var(--green)">条</span></div>
+        <div class="kpi-meta"><span class="badge badge-green">¥380万回款</span></div>
+      </div>
+      <div class="kpi-card warn">
+        <div class="kpi-label">核验中（等下轮巡检）</div>
+        <div class="kpi-value">4<span class="unit">条</span></div>
+        <div class="kpi-meta"><span class="badge badge-orange">7-14日窗口</span></div>
+      </div>
+      <div class="kpi-card danger">
+        <div class="kpi-label">未兑现（自动翻红重开）</div>
+        <div class="kpi-value" style="color:var(--red)">2<span class="unit" style="color:var(--red)">条</span></div>
+        <div class="kpi-meta"><span class="badge badge-red">已重新进入工作台</span></div>
+      </div>
+    </div>
+
+    <!-- 核心说明 -->
+    <div style="background:linear-gradient(90deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;border-radius:var(--radius);padding:14px 18px;margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:4px">核心机制：兑现率是不可造假的 KPI</div>
+      <div style="font-size:12px;color:#1e40af;line-height:1.7">
+        考核<b>处置率</b> → 一线刷处置；考核<b>兑现率</b> → 刷不动，订单数据他改不了。
+        系统在下个巡检周期（声称挽回后7-14天）自动回填：若期间出现新有效采购订单，判定「兑现✓」；若无，判定「未兑现✗」并自动翻红重开。
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="data-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>医院名称</th>
+            <th>产品线</th>
+            <th>原预警等级</th>
+            <th>声称挽回日</th>
+            <th>处置人</th>
+            <th>处置描述</th>
+            <th>核验截止日</th>
+            <th>核验状态</th>
+            <th>回款金额</th>
+            <th>备注</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 已兑现 6条 -->
+          <tr>
+            <td class="td-hospital">天津医科大学总医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-red">红</span></td>
+            <td>2026-05-28</td>
+            <td>王芳（华北区）</td>
+            <td>拜访心内科主任，确认无换药计划，复购</td>
+            <td>2026-06-11</td>
+            <td class="verify-status-done">✓ 已兑现</td>
+            <td class="td-value" style="color:var(--green)">¥88万</td>
+            <td style="font-size:12px;color:#15803d">新单 ORD-2026-06-9901 已到账</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">浙大附属第一医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-red">红</span></td>
+            <td>2026-05-30</td>
+            <td>李娜（华东区）</td>
+            <td>学术会议跟进，处方医生态度确认正向</td>
+            <td>2026-06-13</td>
+            <td class="verify-status-done">✓ 已兑现</td>
+            <td class="td-value" style="color:var(--green)">¥65万</td>
+            <td style="font-size:12px;color:#15803d">新单 ORD-2026-06-9834</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">重庆医科大学附属第一医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-orange">橙</span></td>
+            <td>2026-06-01</td>
+            <td>张伟（华西区）</td>
+            <td>科室回访，排除竞品替代，确认续购</td>
+            <td>2026-06-15</td>
+            <td class="verify-status-done">✓ 已兑现</td>
+            <td class="td-value" style="color:var(--green)">¥52万</td>
+            <td style="font-size:12px;color:#15803d">新单已开具</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">安徽省立医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-orange">橙</span></td>
+            <td>2026-06-03</td>
+            <td>李娜（华东区）</td>
+            <td>配送问题解决后医院主动补单</td>
+            <td>2026-06-17</td>
+            <td class="verify-status-done">✓ 已兑现</td>
+            <td class="td-value" style="color:var(--green)">¥41万</td>
+            <td style="font-size:12px;color:#15803d">回款确认</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">山东省立医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-red">红</span></td>
+            <td>2026-06-05</td>
+            <td>王芳（华北区）</td>
+            <td>政策沟通到位，医院恢复正常采购频次</td>
+            <td>2026-06-19</td>
+            <td class="verify-status-done">✓ 已兑现</td>
+            <td class="td-value" style="color:var(--green)">¥38万</td>
+            <td style="font-size:12px;color:#15803d">新单入账</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">内蒙古自治区医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-orange">橙</span></td>
+            <td>2026-06-06</td>
+            <td>赵美（东北区）</td>
+            <td>医院采购主任确认无换药意愿，签补充协议</td>
+            <td>2026-06-20</td>
+            <td class="verify-status-done">✓ 已兑现</td>
+            <td class="td-value" style="color:var(--green)">¥29万</td>
+            <td style="font-size:12px;color:#15803d">兑现</td>
+          </tr>
+
+          <!-- 核验中 4条 -->
+          <tr>
+            <td class="td-hospital">北京协和医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-red">红</span></td>
+            <td>2026-06-09</td>
+            <td>王磊（协和片区）</td>
+            <td>已拜访心内科，主任表示会保持采购</td>
+            <td>2026-06-23</td>
+            <td class="verify-status-pending">⏳ 核验中...</td>
+            <td class="text-muted">待回填</td>
+            <td style="font-size:12px;color:#8499b5">等待下次采购入账</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">西安交通大学第一附属医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-orange">橙</span></td>
+            <td>2026-06-10</td>
+            <td>苏洋（华南区）</td>
+            <td>回访后医院口头承诺本月补单</td>
+            <td>2026-06-24</td>
+            <td class="verify-status-pending">⏳ 核验中...</td>
+            <td class="text-muted">待回填</td>
+            <td style="font-size:12px;color:#8499b5">口头承诺，等订单</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">福建医科大学附属第一医院</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td><span class="badge badge-orange">橙</span></td>
+            <td>2026-06-11</td>
+            <td>苏洋（华南区）</td>
+            <td>联系科主任，表示下周安排采购</td>
+            <td>2026-06-25</td>
+            <td class="verify-status-pending">⏳ 核验中...</td>
+            <td class="text-muted">待回填</td>
+            <td style="font-size:12px;color:#8499b5">等确认</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">哈尔滨医科大学附属第二医院</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td><span class="badge badge-orange">橙</span></td>
+            <td>2026-06-11</td>
+            <td>赵美（东北区）</td>
+            <td>配送渠道已切换，医院确认可以下单</td>
+            <td>2026-06-25</td>
+            <td class="verify-status-pending">⏳ 核验中...</td>
+            <td class="text-muted">待回填</td>
+            <td style="font-size:12px;color:#8499b5">配送改善，等单</td>
+          </tr>
+
+          <!-- 未兑现 2条（标红） -->
+          <tr style="background:var(--red-bg)">
+            <td class="td-hospital" style="color:var(--red)">成都市第一人民医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-red">红</span></td>
+            <td>2026-05-20</td>
+            <td>张伟（华西区）</td>
+            <td>声称已拜访，医院表示会续购</td>
+            <td>2026-06-03</td>
+            <td class="verify-status-fail">✗ 未兑现</td>
+            <td style="color:var(--red);font-weight:700">¥0</td>
+            <td style="font-size:12px;color:#b91c1c;font-weight:600">⚠ 声称挽回未兑现·已自动翻红重开</td>
+          </tr>
+          <tr style="background:var(--red-bg)">
+            <td class="td-hospital" style="color:var(--red)">广州市第一人民医院</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td><span class="badge badge-red">红</span></td>
+            <td>2026-05-25</td>
+            <td>苏洋（华南区）</td>
+            <td>电话回访，对方表示下周订货</td>
+            <td>2026-06-08</td>
+            <td class="verify-status-fail">✗ 未兑现</td>
+            <td style="color:var(--red);font-weight:700">¥0</td>
+            <td style="font-size:12px;color:#b91c1c;font-weight:600">⚠ 声称挽回未兑现·已自动翻红重开</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:12px;font-size:12px;color:#8499b5">
+      本月兑现率：6/12 = <b style="color:var(--green)">71%</b> · 目标 ≥70% ✓ · 未兑现2条已翻红，重新进入工作台候队
+    </div>
+
+    <!-- 兑现率趋势小图 -->
+    <div class="chart-wrap" style="margin-top:18px">
+      <div class="chart-title">
+        近6月兑现率趋势
+        <span style="font-size:12px;color:#3e5878;font-weight:400">目标线 70%</span>
+      </div>
+      <svg viewBox="0 0 500 120" width="100%" style="display:block">
+        <!-- grid -->
+        <line x1="40" y1="10"  x2="40" y2="90"  stroke="#d2e2f5" stroke-width="1"/>
+        <line x1="40" y1="10"  x2="480" y2="10"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="40" y1="38"  x2="480" y2="38"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="40" y1="55"  x2="480" y2="55"  stroke="#2563eb" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+        <line x1="40" y1="66"  x2="480" y2="66"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="40" y1="90"  x2="480" y2="90"  stroke="#d2e2f5" stroke-width="1"/>
+        <text x="34" y="13"  text-anchor="end" font-size="10" fill="#8499b5">100%</text>
+        <text x="34" y="41"  text-anchor="end" font-size="10" fill="#8499b5">80%</text>
+        <text x="34" y="58"  text-anchor="end" font-size="10" fill="#2563eb">70%</text>
+        <text x="34" y="69"  text-anchor="end" font-size="10" fill="#8499b5">60%</text>
+        <text x="34" y="93"  text-anchor="end" font-size="10" fill="#8499b5">0%</text>
+        <!-- target line label -->
+        <text x="455" y="52" font-size="9" fill="#2563eb" font-weight="700">目标线</text>
+        <!-- 数据 Jan:55% Feb:58% Mar:62% Apr:65% May:68% Jun:71% -->
+        <!-- y=90 → 0%, y=10 → 100%, 1% = 0.8px -->
+        <!-- 55%→y=46; 58%→y=43.6; 62%→y=40.4; 65%→y=38; 68%→y=35.6; 71%→y=33.2 -->
+        <polyline points="80,46 160,44 240,40 320,38 400,36 480,33" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linejoin="round"/>
+        <polygon points="80,46 160,44 240,40 320,38 400,36 480,33 480,90 80,90" fill="rgba(22,163,74,.08)"/>
+        <circle cx="80"  cy="46" r="4" fill="var(--green)" stroke="#fff" stroke-width="2"/>
+        <circle cx="160" cy="44" r="4" fill="var(--green)" stroke="#fff" stroke-width="2"/>
+        <circle cx="240" cy="40" r="4" fill="var(--green)" stroke="#fff" stroke-width="2"/>
+        <circle cx="320" cy="38" r="4" fill="var(--green)" stroke="#fff" stroke-width="2"/>
+        <circle cx="400" cy="36" r="4" fill="var(--green)" stroke="#fff" stroke-width="2"/>
+        <circle cx="480" cy="33" r="5" fill="var(--green)" stroke="#fff" stroke-width="2.5"/>
+        <rect x="460" y="20" width="28" height="16" rx="3" fill="var(--green)"/>
+        <text x="474" y="32" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">71%</text>
+        <!-- X labels -->
+        <text x="80"  y="105" text-anchor="middle" font-size="10" fill="#8499b5">1月</text>
+        <text x="160" y="105" text-anchor="middle" font-size="10" fill="#8499b5">2月</text>
+        <text x="240" y="105" text-anchor="middle" font-size="10" fill="#8499b5">3月</text>
+        <text x="320" y="105" text-anchor="middle" font-size="10" fill="#8499b5">4月</text>
+        <text x="400" y="105" text-anchor="middle" font-size="10" fill="#8499b5">5月</text>
+        <text x="480" y="105" text-anchor="middle" font-size="10" fill="var(--green)" font-weight="700">6月</text>
+      </svg>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+</body>
+</html>

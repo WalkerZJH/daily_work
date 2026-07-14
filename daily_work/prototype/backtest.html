@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>回测报告 — 终端不丢智能体</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.report-hero {
+  background: linear-gradient(135deg, var(--navy) 0%, #1a3f68 50%, #0d3261 100%);
+  border-radius: var(--radius-lg); padding: 28px 32px; margin-bottom: 22px;
+  color: #fff; position: relative; overflow: hidden;
+}
+.report-hero::before {
+  content: '回测报告'; position: absolute; right: -20px; top: -30px;
+  font-size: 100px; font-weight: 900; color: rgba(255,255,255,.04);
+  letter-spacing: -5px; pointer-events: none;
+}
+.report-hero h1 { font-size: 22px; font-weight: 900; margin-bottom: 6px; }
+.report-hero .tagline { font-size: 14px; color: rgba(255,255,255,.7); line-height: 1.6; }
+.report-hero .highlight { color: #fde68a; font-weight: 700; }
+.lead-table th { background: #0b2a4a !important; }
+.lead-bar { height: 10px; background: #d2e2f5; border-radius: 5px; margin-top: 4px; }
+.lead-bar-fill { height: 100%; border-radius: 5px; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="topbar-logo" href="index.html">
+    <div class="logo-icon">终</div>
+    <div>
+      <div class="logo-text">终端不丢智能体</div>
+      <div class="logo-sub">供应链风险巡检 · 智能预警</div>
+    </div>
+  </a>
+  <div class="topbar-spacer"></div>
+  <span class="topbar-tag">签约弹药 · 附录C.6回测协议执行结果</span>
+  <div class="topbar-user"><div class="avatar">陈</div>营销VP · 陈总</div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">工作台</div>
+      <a href="index.html" class="sidebar-item"><span class="icon">🏠</span> VP 今日工作台<span class="sidebar-badge">8</span></a>
+      <a href="clues.html" class="sidebar-item"><span class="icon">🔍</span> 全部风险线索<span class="sidebar-badge orange">39</span></a>
+      <a href="watchlist.html" class="sidebar-item"><span class="icon">👁</span> 观察清单（黄）<span class="sidebar-badge" style="background:#eab308">14</span></a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">跟踪与核验</div>
+      <a href="verify.html" class="sidebar-item"><span class="icon">✅</span> 挽回核验<span class="sidebar-badge orange">4</span></a>
+      <a href="distributor.html" class="sidebar-item"><span class="icon">⚠️</span> 配送商预警</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">分析</div>
+      <a href="dashboard.html" class="sidebar-item"><span class="icon">📊</span> 管理驾驶舱</a>
+      <a href="backtest.html" class="sidebar-item active"><span class="icon">🔬</span> 回测报告</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">系统配置</div>
+      <a href="algo-config.html" class="sidebar-item"><span class="icon">⚙️</span> 算法配置管理</a>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- HERO -->
+    <div class="report-hero">
+      <div class="mb-8"><span class="badge" style="background:rgba(37,99,235,.3);color:#93c5fd;font-size:12px;padding:4px 12px">四阶上线第一阶 · 签约弹药</span></div>
+      <h1>📋 终端不丢智能体 · 离线回测报告</h1>
+      <div class="tagline">
+        基于客户<span class="highlight">去年真实流失的9个终端</span>进行回放验证。<br>
+        站在<span class="highlight">你已知答案的历史数据上</span>，证明算法能提前 N 天发现风险信号并给出分级预警。<br>
+        回测协议遵循 Walk-forward CV + BH-FDR控制 + 概率校准（附录C.1-C.4）。
+      </div>
+    </div>
+
+    <!-- 核心指标 -->
+    <div class="bt-summary-grid">
+      <div class="bt-kpi">
+        <div class="label">命中率 @30天</div>
+        <div class="value">65%</div>
+        <div class="sub">≥30天前给出橙+预警 · 9终端中6个</div>
+      </div>
+      <div class="bt-kpi">
+        <div class="label">命中率 @60天</div>
+        <div class="value">72%</div>
+        <div class="sub">≥60天前预警 · 9终端中6.5个</div>
+      </div>
+      <div class="bt-kpi">
+        <div class="label">命中率 @90天</div>
+        <div class="value">78%</div>
+        <div class="sub">≥90天前预警 · 超设计目标60%</div>
+      </div>
+      <div class="bt-kpi">
+        <div class="label">经验 FDR</div>
+        <div class="value">11%</div>
+        <div class="sub">BH过滤后误报率 · 接近目标10%</div>
+      </div>
+    </div>
+
+    <!-- 第二行指标 -->
+    <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:22px">
+      <div class="kpi-card ok">
+        <div class="kpi-label">提前量中位数（橙+）</div>
+        <div class="kpi-value" style="color:var(--green)">52<span class="unit">天</span></div>
+        <div class="kpi-meta">即真停购前52天给出橙预警</div>
+      </div>
+      <div class="kpi-card ok">
+        <div class="kpi-label">Brier 分（概率校准）</div>
+        <div class="kpi-value" style="color:var(--green)">0.12</div>
+        <div class="kpi-meta"><span class="text-green">校准良好（完美=0）</span></div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">AUC（判别力）</div>
+        <div class="kpi-value">0.83</div>
+        <div class="kpi-meta"><span class="text-blue">排序能力良好</span></div>
+      </div>
+      <div class="kpi-card warn">
+        <div class="kpi-label">Missed（未被30天命中）</div>
+        <div class="kpi-value">3<span class="unit">个</span></div>
+        <div class="kpi-meta"><span class="text-muted">2个政策型未识别</span></div>
+      </div>
+    </div>
+
+    <!-- 回放结果表 -->
+    <div class="section-header">
+      <div class="section-title">回放结果明细 <span class="count">9个去年真实流失终端</span></div>
+    </div>
+    <div class="data-table-wrap" style="margin-bottom:22px">
+      <table class="lead-table">
+        <thead>
+          <tr>
+            <th>医院名称</th>
+            <th>产品线</th>
+            <th>真停购日</th>
+            <th>首次黄预警</th>
+            <th>首次橙预警</th>
+            <th>首次红预警</th>
+            <th>提前量(橙+)</th>
+            <th>命中@30天</th>
+            <th>触发主因</th>
+            <th>备注</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="td-hospital">北京协和医院（2025去年）</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td>2025-08-15</td>
+            <td style="color:#b45309">2025-05-28（79天前）</td>
+            <td style="color:#b45309">2025-06-20（56天前）</td>
+            <td style="color:#b91c1c">2025-07-22（24天前）</td>
+            <td class="td-score" style="color:var(--green)">56天</td>
+            <td><span class="badge badge-green">✓ 命中</span></td>
+            <td>品规收窄→量衰减</td>
+            <td style="font-size:11px;color:#8499b5">验证最早信号</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">上海瑞金医院（2025去年）</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td>2025-07-20</td>
+            <td style="color:#b45309">2025-05-02（79天前）</td>
+            <td style="color:#b45309">2025-05-31（50天前）</td>
+            <td style="color:#b91c1c">2025-07-01（19天前）</td>
+            <td class="td-score" style="color:var(--green)">50天</td>
+            <td><span class="badge badge-green">✓ 命中</span></td>
+            <td>节奏拉长→停购</td>
+            <td style="font-size:11px;color:#8499b5">节奏信号领先</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">广州南方医院（2025去年）</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td>2025-09-10</td>
+            <td style="color:#b45309">2025-06-15（87天前）</td>
+            <td style="color:#b45309">2025-07-20（52天前）</td>
+            <td style="color:#b91c1c">2025-08-12（29天前）</td>
+            <td class="td-score" style="color:var(--green)">52天</td>
+            <td><span class="badge badge-green">✓ 命中</span></td>
+            <td>量衰减+品规收窄</td>
+            <td style="font-size:11px;color:#8499b5">双信号族印证</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">武汉协和医院（2025去年）</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td>2025-10-05</td>
+            <td style="color:#b45309">2025-07-12（85天前）</td>
+            <td style="color:#b45309">2025-08-15（51天前）</td>
+            <td style="color:#b91c1c">2025-09-18（17天前）</td>
+            <td class="td-score" style="color:var(--green)">51天</td>
+            <td><span class="badge badge-green">✓ 命中</span></td>
+            <td>频次衰减主导</td>
+            <td style="font-size:11px;color:#8499b5">频次信号有效</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">成都华西医院（2025去年）</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td>2025-06-28</td>
+            <td style="color:#b45309">2025-04-10（79天前）</td>
+            <td style="color:#b45309">2025-05-15（44天前）</td>
+            <td style="color:#b91c1c">2025-06-08（20天前）</td>
+            <td class="td-score" style="color:var(--green)">44天</td>
+            <td><span class="badge badge-green">✓ 命中</span></td>
+            <td>量断崖+P(alive)急降</td>
+            <td style="font-size:11px;color:#8499b5">主干信号准确</td>
+          </tr>
+          <tr>
+            <td class="td-hospital">杭州市一医院（2025去年）</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td>2025-11-20</td>
+            <td style="color:#b45309">2025-09-01（80天前）</td>
+            <td style="color:#b45309">2025-10-10（41天前）</td>
+            <td style="color:#b91c1c">2025-11-01（19天前）</td>
+            <td class="td-score" style="color:var(--green)">41天</td>
+            <td><span class="badge badge-green">✓ 命中</span></td>
+            <td>品规收窄(最早)</td>
+            <td style="font-size:11px;color:#8499b5">SKU信号领先验证</td>
+          </tr>
+          <tr style="background:#fffbeb">
+            <td class="td-hospital">重庆三峡医院（2025去年）</td>
+            <td><span class="badge badge-blue">B 抗感染</span></td>
+            <td>2025-08-30</td>
+            <td style="color:#b45309">2025-07-10（51天前）</td>
+            <td style="color:#b45309">2025-08-18（12天前）</td>
+            <td style="color:#8499b5">— 未红预警</td>
+            <td class="td-score" style="color:var(--orange)">12天</td>
+            <td><span class="badge badge-orange">✓ 橙命中</span></td>
+            <td>节奏拉长（单信号）</td>
+            <td style="font-size:11px;color:#b45309">橙刚好命中，红未及</td>
+          </tr>
+          <tr style="background:#fff0f0">
+            <td class="td-hospital">长沙湘雅二院（2025去年）</td>
+            <td><span class="badge badge-blue">A 心血管</span></td>
+            <td>2025-09-25</td>
+            <td style="color:#8499b5">— 未触发</td>
+            <td style="color:#8499b5">— 未触发</td>
+            <td style="color:#8499b5">— 未触发</td>
+            <td style="color:var(--red);font-weight:700">0天</td>
+            <td><span class="badge badge-red">✗ 未命中</span></td>
+            <td>集采落标（政策型）</td>
+            <td style="font-size:11px;color:#b91c1c">L2掩码后无信号，属已知边界</td>
+          </tr>
+          <tr style="background:#fff0f0">
+            <td class="td-hospital">西安交大二附院（2025去年）</td>
+            <td><span class="badge badge-blue">C 肿瘤</span></td>
+            <td>2025-07-15</td>
+            <td style="color:#b45309">2025-07-02（13天前）</td>
+            <td style="color:#8499b5">— 未触发</td>
+            <td style="color:#8499b5">— 未触发</td>
+            <td style="color:var(--red);font-weight:700">0天（黄仅）</td>
+            <td><span class="badge badge-red">✗ 未命中</span></td>
+            <td>样本量不足（冷启动）</td>
+            <td style="font-size:11px;color:#b91c1c">历史仅5单，低于N_MIN=6</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 提前量分布 + 可靠性图 -->
+    <div class="grid-2">
+      <div class="chart-wrap">
+        <div class="chart-title">提前量分布（橙+预警，天数）</div>
+        <div style="margin-bottom:10px;font-size:12px;color:#3e5878">
+          中位数：<b style="color:var(--green);font-size:16px">52天</b> · Q1：41天 · Q3：56天 · 最短：12天 · 最长：87天
+        </div>
+        <!-- 水平条 -->
+        <div style="padding:8px 0">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="min-width:140px;font-size:12px;color:#3e5878">北京协和（2025）</div>
+            <div style="flex:1;background:#e6eefb;border-radius:4px;height:18px;overflow:hidden"><div style="width:64%;height:100%;background:#16a34a;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff;font-weight:700">56天</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="min-width:140px;font-size:12px;color:#3e5878">上海瑞金（2025）</div>
+            <div style="flex:1;background:#e6eefb;border-radius:4px;height:18px;overflow:hidden"><div style="width:57%;height:100%;background:#16a34a;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff;font-weight:700">50天</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="min-width:140px;font-size:12px;color:#3e5878">广州南方（2025）</div>
+            <div style="flex:1;background:#e6eefb;border-radius:4px;height:18px;overflow:hidden"><div style="width:60%;height:100%;background:#16a34a;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff;font-weight:700">52天</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="min-width:140px;font-size:12px;color:#3e5878">武汉协和（2025）</div>
+            <div style="flex:1;background:#e6eefb;border-radius:4px;height:18px;overflow:hidden"><div style="width:59%;height:100%;background:#16a34a;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff;font-weight:700">51天</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="min-width:140px;font-size:12px;color:#3e5878">成都华西（2025）</div>
+            <div style="flex:1;background:#e6eefb;border-radius:4px;height:18px;overflow:hidden"><div style="width:51%;height:100%;background:#16a34a;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff;font-weight:700">44天</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="min-width:140px;font-size:12px;color:#3e5878">杭州市一（2025）</div>
+            <div style="flex:1;background:#e6eefb;border-radius:4px;height:18px;overflow:hidden"><div style="width:47%;height:100%;background:#16a34a;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff;font-weight:700">41天</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="min-width:140px;font-size:12px;color:#3e5878">重庆三峡（2025）</div>
+            <div style="flex:1;background:#e6eefb;border-radius:4px;height:18px;overflow:hidden"><div style="width:14%;height:100%;background:#f59e0b;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff;font-weight:700">12天</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="min-width:140px;font-size:12px;color:#3e5878">长沙湘雅二（2025）</div>
+            <div style="flex:1;background:#fee2e2;border-radius:4px;height:18px;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#b91c1c;font-weight:700">未命中（集采落标）</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="min-width:140px;font-size:12px;color:#3e5878">西安交大二附（2025）</div>
+            <div style="flex:1;background:#fee2e2;border-radius:4px;height:18px;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#b91c1c;font-weight:700">未命中（冷启动）</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 命中率对比 + 可靠性图 -->
+      <div>
+        <div class="chart-wrap" style="margin-bottom:18px">
+          <div class="chart-title">命中率@提前量（橙+预警）</div>
+          <div class="hit-rate-bars" style="height:160px">
+            <div class="hit-bar-item">
+              <div class="hit-bar-pct">65%</div>
+              <div class="hit-bar-track" style="height:120px">
+                <div class="hit-bar-fill" style="height:78px;background:#2563eb;border-radius:4px 4px 0 0"></div>
+              </div>
+              <div class="hit-bar-label">@30天</div>
+            </div>
+            <div class="hit-bar-item">
+              <div class="hit-bar-pct">72%</div>
+              <div class="hit-bar-track" style="height:120px">
+                <div class="hit-bar-fill" style="height:86px;background:#2563eb;border-radius:4px 4px 0 0"></div>
+              </div>
+              <div class="hit-bar-label">@60天</div>
+            </div>
+            <div class="hit-bar-item">
+              <div class="hit-bar-pct">78%</div>
+              <div class="hit-bar-track" style="height:120px">
+                <div class="hit-bar-fill" style="height:94px;background:#16a34a;border-radius:4px 4px 0 0"></div>
+              </div>
+              <div class="hit-bar-label">@90天</div>
+            </div>
+            <div class="hit-bar-item">
+              <div class="hit-bar-pct" style="color:#3e5878;font-size:12px">目标</div>
+              <div class="hit-bar-track" style="height:120px">
+                <div class="hit-bar-fill" style="height:72px;background:#d2e2f5;border:2px dashed #2563eb;border-radius:4px 4px 0 0"></div>
+              </div>
+              <div class="hit-bar-label">≥60%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-wrap">
+          <div class="chart-title">概率可靠性图（Reliability Diagram）</div>
+          <div style="font-size:12px;color:#3e5878;margin-bottom:8px">Brier分：<b style="color:var(--green)">0.12</b> · 近45°对角线表明校准良好</div>
+          <svg viewBox="0 0 200 200" width="180" style="display:block">
+            <!-- axes -->
+            <line x1="20" y1="10"  x2="20"  y2="180" stroke="#d2e2f5" stroke-width="1"/>
+            <line x1="20" y1="180" x2="190" y2="180" stroke="#d2e2f5" stroke-width="1"/>
+            <!-- 45° reference line -->
+            <line x1="20" y1="180" x2="190" y2="10" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.5"/>
+            <text x="160" y="30" font-size="9" fill="#2563eb" opacity="0.7">理想45°</text>
+            <!-- grid -->
+            <line x1="20" y1="146" x2="190" y2="146" stroke="#e6eefb" stroke-width="1"/>
+            <line x1="20" y1="112" x2="190" y2="112" stroke="#e6eefb" stroke-width="1"/>
+            <line x1="20" y1="78"  x2="190" y2="78"  stroke="#e6eefb" stroke-width="1"/>
+            <line x1="20" y1="44"  x2="190" y2="44"  stroke="#e6eefb" stroke-width="1"/>
+            <!-- Y labels -->
+            <text x="16" y="183" text-anchor="end" font-size="8" fill="#8499b5">0</text>
+            <text x="16" y="149" text-anchor="end" font-size="8" fill="#8499b5">.2</text>
+            <text x="16" y="115" text-anchor="end" font-size="8" fill="#8499b5">.4</text>
+            <text x="16" y="81"  text-anchor="end" font-size="8" fill="#8499b5">.6</text>
+            <text x="16" y="47"  text-anchor="end" font-size="8" fill="#8499b5">.8</text>
+            <text x="16" y="13"  text-anchor="end" font-size="8" fill="#8499b5">1.</text>
+            <!-- X labels -->
+            <text x="20"  y="192" text-anchor="middle" font-size="8" fill="#8499b5">0</text>
+            <text x="54"  y="192" text-anchor="middle" font-size="8" fill="#8499b5">.2</text>
+            <text x="88"  y="192" text-anchor="middle" font-size="8" fill="#8499b5">.4</text>
+            <text x="122" y="192" text-anchor="middle" font-size="8" fill="#8499b5">.6</text>
+            <text x="156" y="192" text-anchor="middle" font-size="8" fill="#8499b5">.8</text>
+            <text x="190" y="192" text-anchor="middle" font-size="8" fill="#8499b5">1.</text>
+            <!-- axis labels -->
+            <text x="105" y="200" text-anchor="middle" font-size="8" fill="#3e5878">预测概率</text>
+            <text x="7" y="100" text-anchor="middle" font-size="8" fill="#3e5878" transform="rotate(-90,7,100)">实际流失率</text>
+            <!-- Actual calibration points (预测vs实际) -->
+            <!-- (0.1,0.08) (0.2,0.17) (0.3,0.26) (0.4,0.37) (0.6,0.55) (0.7,0.66) (0.8,0.77) (0.9,0.86) -->
+            <!-- x = 20 + val*170; y = 180 - val*170 -->
+            <!-- pred/actual: (0.1,0.08) x=37,y=166.4; (0.2,0.17) x=54,y=151.1; (0.3,0.26) x=71,y=135.8 -->
+            <!-- (0.4,0.37) x=88,y=117.1; (0.6,0.55) x=122,y=86.5; (0.7,0.66) x=139,y=68; (0.8,0.77) x=156,y=49.1 -->
+            <polyline points="37,166 54,151 71,136 88,117 122,87 139,68 156,49" fill="none" stroke="#e5484d" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="37"  cy="166" r="4" fill="#e5484d" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="54"  cy="151" r="4" fill="#e5484d" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="71"  cy="136" r="4" fill="#e5484d" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="88"  cy="117" r="4" fill="#e5484d" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="122" cy="87"  r="4" fill="#e5484d" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="139" cy="68"  r="4" fill="#e5484d" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="156" cy="49"  r="4" fill="#e5484d" stroke="#fff" stroke-width="1.5"/>
+          </svg>
+          <div style="font-size:11px;color:#8499b5;margin-top:6px">红点接近蓝色对角线 = 预测概率与真实流失率吻合</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 结论 -->
+    <div class="section-card" style="margin-top:18px;background:linear-gradient(135deg,#eef4fc,#dbeafe);border-color:var(--blue-border)">
+      <h2 style="color:var(--navy)">📊 回测结论（签约弹药版）</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px">核心结论</div>
+          <div style="font-size:13px;color:#1e40af;line-height:1.9">
+            ✓ 在你<b>已知答案</b>的去年真实流失终端上，算法能在真正停购前<b>中位52天</b>发出橙色预警。<br>
+            ✓ 命中率@30天 <b>65%</b>，@90天 <b>78%</b>，超过设计目标60%。<br>
+            ✓ 经验FDR <b>11%</b>，BH控制后从44%压至11%——假预警比例可控，接近10%目标。<br>
+            ✓ Brier分 <b>0.12</b>（接近校准良好上限），概率名副其实。<br>
+            ✓ 品规收窄是最早信号，通常领先总量下滑<b>4-6周</b>。
+          </div>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px">已知局限（诚实披露）</div>
+          <div style="font-size:13px;color:#1e40af;line-height:1.9">
+            ⚠ 2个未命中：1个集采落标（政策型，L2掩码已知边界）；1个冷启动历史不足（仅5单）。<br>
+            ⚠ Walk-forward CV在9终端上统计检验力较弱，结论需更多数据验证。<br>
+            ⚠ 对照正常终端组（未流失）同期FDR统计已控制，但样本量仍小。<br>
+            → 建议进入影子运行阶段，在活体数据上积累更多标注，进一步校准。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FDR对照 -->
+    <div class="section-card" style="margin-top:4px">
+      <h2>BH-FDR 控制效果（开/关 对照）</h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>对照条件</th>
+              <th>总预警数</th>
+              <th>真阳（真流失）</th>
+              <th>假阳（误报）</th>
+              <th>经验FDR</th>
+              <th>真阳召回率</th>
+              <th>结论</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>关闭 BH（原始 p&lt;0.1）</b></td>
+              <td>32条</td>
+              <td>18个</td>
+              <td>14条（14/32=44%）</td>
+              <td><span class="text-red text-bold">44%</span></td>
+              <td>78%</td>
+              <td style="color:#b91c1c">假阳率高，一线会拒绝用</td>
+            </tr>
+            <tr style="background:#f0fdf4">
+              <td><b>开启 BH（FDR目标q=0.10）</b></td>
+              <td>18条</td>
+              <td>16个</td>
+              <td>2条（2/18=11%）</td>
+              <td><span class="text-green text-bold">11%（实测）</span></td>
+              <td>67%</td>
+              <td style="color:#15803d">假阳大幅压缩，精度提升</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size:12px;color:#8499b5;margin-top:8px">
+        BH控制将经验FDR从44%压至11%（2/18），代价是召回率从78%→67%（少1个漏报），精准度大幅提升——符合一线可信赖的预警产品要求。
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+</body>
+</html>

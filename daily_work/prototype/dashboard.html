@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理驾驶舱 — 终端不丢智能体</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.funnel-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.funnel-track { flex:1; background: #e6eefb; border-radius: 6px; height: 28px; overflow: hidden; }
+.funnel-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; font-size: 12px; font-weight: 700; color: #fff; transition: width .5s; }
+.funnel-label { min-width: 80px; font-size: 12px; color: #3e5878; font-weight: 600; }
+.funnel-val { min-width: 52px; text-align: right; font-size: 13px; font-weight: 800; color: #0b2a4a; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="topbar-logo" href="index.html">
+    <div class="logo-icon">终</div>
+    <div>
+      <div class="logo-text">终端不丢智能体</div>
+      <div class="logo-sub">供应链风险巡检 · 智能预警</div>
+    </div>
+  </a>
+  <div class="topbar-spacer"></div>
+  <span class="topbar-tag">管理驾驶舱 · 本月统计</span>
+  <div class="topbar-user"><div class="avatar">陈</div>营销VP · 陈总</div>
+</header>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">工作台</div>
+      <a href="index.html" class="sidebar-item"><span class="icon">🏠</span> VP 今日工作台<span class="sidebar-badge">8</span></a>
+      <a href="clues.html" class="sidebar-item"><span class="icon">🔍</span> 全部风险线索<span class="sidebar-badge orange">39</span></a>
+      <a href="watchlist.html" class="sidebar-item"><span class="icon">👁</span> 观察清单（黄）<span class="sidebar-badge" style="background:#eab308">14</span></a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">跟踪与核验</div>
+      <a href="verify.html" class="sidebar-item"><span class="icon">✅</span> 挽回核验<span class="sidebar-badge orange">4</span></a>
+      <a href="distributor.html" class="sidebar-item"><span class="icon">⚠️</span> 配送商预警<span class="sidebar-badge">1</span></a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">分析</div>
+      <a href="dashboard.html" class="sidebar-item active"><span class="icon">📊</span> 管理驾驶舱</a>
+      <a href="backtest.html" class="sidebar-item"><span class="icon">🔬</span> 回测报告</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">系统配置</div>
+      <a href="algo-config.html" class="sidebar-item"><span class="icon">⚙️</span> 算法配置管理</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="page-header">
+      <h1>管理驾驶舱</h1>
+      <div class="subtitle">2026年6月 · 趋势总览 · 产品线/地区风险分布 · 挽回漏斗</div>
+    </div>
+
+    <!-- TOP KPIs -->
+    <div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:22px">
+      <div class="kpi-card danger">
+        <div class="kpi-label">本月风险敞口</div>
+        <div class="kpi-value">¥1,240<span class="unit">万</span></div>
+        <div class="kpi-meta"><span class="trend-up">↑12% MoM</span></div>
+      </div>
+      <div class="kpi-card ok">
+        <div class="kpi-label">本月挽回金额</div>
+        <div class="kpi-value" style="color:var(--green)">¥380<span class="unit">万</span></div>
+        <div class="kpi-meta"><span class="text-green">↑8% MoM</span></div>
+      </div>
+      <div class="kpi-card ok">
+        <div class="kpi-label">兑现率</div>
+        <div class="kpi-value" style="color:var(--green)">71<span class="unit">%</span></div>
+        <div class="kpi-meta"><span class="text-green">目标≥70% ✓</span></div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">挽回ROI</div>
+        <div class="kpi-value">1:4.8</div>
+        <div class="kpi-meta"><span class="text-blue">投入¥79万</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">巡检覆盖单元</div>
+        <div class="kpi-value">3,847</div>
+        <div class="kpi-meta"><span class="text-muted">医院×产品线</span></div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+      <!-- 风险敞口趋势折线 -->
+      <div class="chart-wrap">
+        <div class="chart-title">
+          风险敞口月度趋势（¥万）
+          <span style="font-size:12px;color:#3e5878;font-weight:400">红+橙预警合计</span>
+        </div>
+        <svg viewBox="0 0 380 150" width="100%" style="display:block">
+          <line x1="45" y1="15"  x2="45"  y2="120" stroke="#d2e2f5" stroke-width="1"/>
+          <line x1="45" y1="15"  x2="365" y2="15"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="48"  x2="365" y2="48"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="82"  x2="365" y2="82"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="120" x2="365" y2="120" stroke="#d2e2f5" stroke-width="1"/>
+          <text x="39" y="18"  text-anchor="end" font-size="10" fill="#8499b5">1500</text>
+          <text x="39" y="51"  text-anchor="end" font-size="10" fill="#8499b5">1000</text>
+          <text x="39" y="85"  text-anchor="end" font-size="10" fill="#8499b5">500</text>
+          <text x="39" y="123" text-anchor="end" font-size="10" fill="#8499b5">0</text>
+          <!-- 1月:680 2月:720 3月:850 4月:920 5月:1100 6月:1240 -->
+          <!-- y=120-val*(105/1500) -->
+          <!-- 680→72.4; 720→69.6; 850→60.5; 920→55.7; 1100→43.0; 1240→32.8 -->
+          <polyline points="65,72 115,70 165,61 215,56 290,43 365,33" fill="none" stroke="#e5484d" stroke-width="2.5" stroke-linejoin="round"/>
+          <polygon points="65,72 115,70 165,61 215,56 290,43 365,33 365,120 65,120" fill="rgba(229,72,77,.08)"/>
+          <circle cx="65"  cy="72" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <circle cx="115" cy="70" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <circle cx="165" cy="61" r="4" fill="var(--orange)" stroke="#fff" stroke-width="2"/>
+          <circle cx="215" cy="56" r="4" fill="var(--orange)" stroke="#fff" stroke-width="2"/>
+          <circle cx="290" cy="43" r="4" fill="var(--red)" stroke="#fff" stroke-width="2"/>
+          <circle cx="365" cy="33" r="5" fill="var(--red)" stroke="#fff" stroke-width="2.5"/>
+          <rect x="338" y="18" width="36" height="16" rx="3" fill="var(--red)"/>
+          <text x="356" y="30" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">¥1240万</text>
+          <text x="65"  y="136" text-anchor="middle" font-size="10" fill="#8499b5">1月</text>
+          <text x="115" y="136" text-anchor="middle" font-size="10" fill="#8499b5">2月</text>
+          <text x="165" y="136" text-anchor="middle" font-size="10" fill="#8499b5">3月</text>
+          <text x="215" y="136" text-anchor="middle" font-size="10" fill="#8499b5">4月</text>
+          <text x="290" y="136" text-anchor="middle" font-size="10" fill="#8499b5">5月</text>
+          <text x="365" y="136" text-anchor="middle" font-size="10" fill="var(--red)" font-weight="700">6月</text>
+        </svg>
+      </div>
+
+      <!-- 兑现率趋势 -->
+      <div class="chart-wrap">
+        <div class="chart-title">
+          兑现率月度趋势
+          <span style="font-size:12px;color:#3e5878;font-weight:400">目标 ≥70%</span>
+        </div>
+        <svg viewBox="0 0 380 150" width="100%" style="display:block">
+          <line x1="45" y1="15"  x2="45"  y2="120" stroke="#d2e2f5" stroke-width="1"/>
+          <line x1="45" y1="15"  x2="365" y2="15"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="48"  x2="365" y2="48"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <!-- 目标线 70% → y = 120-(0.7*105)=46.5 ≈ 47 -->
+          <line x1="45" y1="47"  x2="365" y2="47"  stroke="#2563eb" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="370" y="50" font-size="9" fill="#2563eb" font-weight="700">70%</text>
+          <line x1="45" y1="82"  x2="365" y2="82"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="120" x2="365" y2="120" stroke="#d2e2f5" stroke-width="1"/>
+          <text x="39" y="18"  text-anchor="end" font-size="10" fill="#8499b5">100%</text>
+          <text x="39" y="51"  text-anchor="end" font-size="10" fill="#8499b5">67%</text>
+          <text x="39" y="85"  text-anchor="end" font-size="10" fill="#8499b5">33%</text>
+          <text x="39" y="123" text-anchor="end" font-size="10" fill="#8499b5">0%</text>
+          <!-- 1月:55% 2月:58% 3月:62% 4月:65% 5月:68% 6月:71% -->
+          <!-- y = 120 - val*1.05 -->
+          <!-- 0.55→62.3; 0.58→59.1; 0.62→54.9; 0.65→51.8; 0.68→48.6; 0.71→45.4 -->
+          <polyline points="65,62 115,59 165,55 215,52 290,49 365,45" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linejoin="round"/>
+          <polygon points="65,62 115,59 165,55 215,52 290,49 365,45 365,120 65,120" fill="rgba(22,163,74,.08)"/>
+          <circle cx="65"  cy="62" r="4" fill="#16a34a" stroke="#fff" stroke-width="2"/>
+          <circle cx="115" cy="59" r="4" fill="#16a34a" stroke="#fff" stroke-width="2"/>
+          <circle cx="165" cy="55" r="4" fill="#16a34a" stroke="#fff" stroke-width="2"/>
+          <circle cx="215" cy="52" r="4" fill="#16a34a" stroke="#fff" stroke-width="2"/>
+          <circle cx="290" cy="49" r="4" fill="#16a34a" stroke="#fff" stroke-width="2"/>
+          <circle cx="365" cy="45" r="5" fill="#16a34a" stroke="#fff" stroke-width="2.5"/>
+          <rect x="340" y="30" width="34" height="16" rx="3" fill="#16a34a"/>
+          <text x="357" y="42" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">71% ✓</text>
+          <text x="65"  y="136" text-anchor="middle" font-size="10" fill="#8499b5">1月</text>
+          <text x="115" y="136" text-anchor="middle" font-size="10" fill="#8499b5">2月</text>
+          <text x="165" y="136" text-anchor="middle" font-size="10" fill="#8499b5">3月</text>
+          <text x="215" y="136" text-anchor="middle" font-size="10" fill="#8499b5">4月</text>
+          <text x="290" y="136" text-anchor="middle" font-size="10" fill="#8499b5">5月</text>
+          <text x="365" y="136" text-anchor="middle" font-size="10" fill="#16a34a" font-weight="700">6月</text>
+        </svg>
+      </div>
+
+      <!-- 挽回漏斗 -->
+      <div class="chart-wrap">
+        <div class="chart-title">挽回漏斗（本月）</div>
+        <div style="padding:8px 0">
+          <div class="funnel-bar">
+            <div class="funnel-label">识别风险</div>
+            <div class="funnel-track"><div class="funnel-fill" style="width:100%;background:#2563eb">39条</div></div>
+            <div class="funnel-val">39</div>
+          </div>
+          <div class="funnel-bar">
+            <div class="funnel-label">VP处置（橙+红）</div>
+            <div class="funnel-track"><div class="funnel-fill" style="width:82%;background:#3b82f6">32条</div></div>
+            <div class="funnel-val">32</div>
+          </div>
+          <div class="funnel-bar">
+            <div class="funnel-label">转发到一线</div>
+            <div class="funnel-track"><div class="funnel-fill" style="width:64%;background:#0b2a4a">25条</div></div>
+            <div class="funnel-val">25</div>
+          </div>
+          <div class="funnel-bar">
+            <div class="funnel-label">声称挽回</div>
+            <div class="funnel-track"><div class="funnel-fill" style="width:31%;background:var(--orange)">12条</div></div>
+            <div class="funnel-val">12</div>
+          </div>
+          <div class="funnel-bar">
+            <div class="funnel-label">兑现核验通过</div>
+            <div class="funnel-track"><div class="funnel-fill" style="width:15%;background:#16a34a">6条</div></div>
+            <div class="funnel-val">6条 ¥380万</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#8499b5;margin-top:4px">漏斗转化率：识别→兑现 = 15.4%</div>
+      </div>
+
+      <!-- 产品线风险分布 条形图 -->
+      <div class="chart-wrap">
+        <div class="chart-title">产品线风险敞口分布（¥万）
+          <span style="font-size:11px;font-weight:400;color:#8499b5">· C肿瘤9条但高价值（人均CLV高）</span>
+        </div>
+        <svg viewBox="0 0 380 160" width="100%" style="display:block">
+          <!-- A产品线心血管: 红7+橙11=18条, ¥520万 -->
+          <!-- B产品线抗感染: 红3+橙9=12条, ¥360万 -->
+          <!-- C产品线肿瘤:   红5+橙4=9条,  ¥360万 -->
+          <!-- y轴: 0=130, 600=20; 每万=0.183px -->
+          <line x1="45" y1="20" x2="45"  y2="130" stroke="#d2e2f5" stroke-width="1"/>
+          <line x1="45" y1="20" x2="345" y2="20"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="65" x2="345" y2="65"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="110" x2="345" y2="110" stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="130" x2="345" y2="130" stroke="#d2e2f5" stroke-width="1"/>
+          <text x="39" y="23"  text-anchor="end" font-size="10" fill="#8499b5">600</text>
+          <text x="39" y="68"  text-anchor="end" font-size="10" fill="#8499b5">400</text>
+          <text x="39" y="113" text-anchor="end" font-size="10" fill="#8499b5">200</text>
+          <text x="39" y="133" text-anchor="end" font-size="10" fill="#8499b5">0</text>
+          <!-- A: 540万 → 130-540*0.183=130-98.8=31.2; h=98.8 -->
+          <rect x="75"  y="31"  width="60" height="99" fill="#e5484d" rx="4"/>
+          <text x="105" y="26"  text-anchor="middle" font-size="11" fill="#e5484d" font-weight="700">¥540万</text>
+          <text x="105" y="145" text-anchor="middle" font-size="11" fill="#3e5878">A产品线</text>
+          <text x="105" y="155" text-anchor="middle" font-size="10" fill="#8499b5">心血管 · 18条</text>
+          <!-- B: 420万 → 130-420*0.183=53.1; h=76.9 -->
+          <rect x="175" y="53"  width="60" height="77" fill="#f59e0b" rx="4"/>
+          <text x="205" y="48"  text-anchor="middle" font-size="11" fill="#f59e0b" font-weight="700">¥420万</text>
+          <text x="205" y="145" text-anchor="middle" font-size="11" fill="#3e5878">B产品线</text>
+          <text x="205" y="155" text-anchor="middle" font-size="10" fill="#8499b5">抗感染 · 12条</text>
+          <!-- C: 280万 (肿瘤高价值，9条) → 130-280*0.183=78.8; h=51.2 -->
+          <rect x="275" y="79"  width="60" height="51" fill="#2563eb" rx="4"/>
+          <text x="305" y="74"  text-anchor="middle" font-size="11" fill="#2563eb" font-weight="700">¥280万</text>
+          <text x="305" y="145" text-anchor="middle" font-size="11" fill="#3e5878">C产品线</text>
+          <text x="305" y="155" text-anchor="middle" font-size="10" fill="#8499b5">肿瘤高价值 · 9条</text>
+        </svg>
+      </div>
+
+      <!-- 地区风险分布 -->
+      <div class="chart-wrap">
+        <div class="chart-title">地区风险线索分布</div>
+        <svg viewBox="0 0 380 160" width="100%" style="display:block">
+          <!-- 地区: 华东16 华北8 华中7 西南4 华南3 其他1 = 39 -->
+          <!-- max=16; bar width: 16/16*260=260 -->
+          <!-- y 每行 25px，起始 y=20 -->
+          <!-- 华东 -->
+          <text x="44" y="33" text-anchor="end" font-size="11" fill="#3e5878">华东</text>
+          <rect x="48" y="20" width="260" height="18" rx="4" fill="#2563eb"/>
+          <text x="314" y="33" font-size="11" fill="#2563eb" font-weight="700">16条 · ¥450万</text>
+          <!-- 华北 -->
+          <text x="44" y="58" text-anchor="end" font-size="11" fill="#3e5878">华北</text>
+          <rect x="48" y="45" width="130" height="18" rx="4" fill="#3b82f6"/>
+          <text x="184" y="58" font-size="11" fill="#3b82f6" font-weight="700">8条 · ¥290万</text>
+          <!-- 华中 -->
+          <text x="44" y="83" text-anchor="end" font-size="11" fill="#3e5878">华中</text>
+          <rect x="48" y="70" width="114" height="18" rx="4" fill="#f59e0b"/>
+          <text x="168" y="83" font-size="11" fill="#f59e0b" font-weight="700">7条 · ¥185万</text>
+          <!-- 西南 -->
+          <text x="44" y="108" text-anchor="end" font-size="11" fill="#3e5878">西南</text>
+          <rect x="48" y="95" width="65" height="18" rx="4" fill="#e5484d"/>
+          <text x="119" y="108" font-size="11" fill="#e5484d" font-weight="700">4条 · ¥180万</text>
+          <!-- 华南 -->
+          <text x="44" y="133" text-anchor="end" font-size="11" fill="#3e5878">华南</text>
+          <rect x="48" y="120" width="49" height="18" rx="4" fill="#8499b5"/>
+          <text x="103" y="133" font-size="11" fill="#3e5878" font-weight="700">3条 · ¥100万</text>
+          <!-- 其他 -->
+          <text x="44" y="158" text-anchor="end" font-size="11" fill="#3e5878">其他</text>
+          <rect x="48" y="145" width="16" height="18" rx="4" fill="#b9cce4"/>
+          <text x="70" y="158" font-size="11" fill="#3e5878" font-weight="700">1条 · ¥35万</text>
+        </svg>
+      </div>
+
+      <!-- 挽回ROI趋势 -->
+      <div class="chart-wrap">
+        <div class="chart-title">挽回ROI月度趋势（挽回金额/投入成本）</div>
+        <svg viewBox="0 0 380 150" width="100%" style="display:block">
+          <line x1="45" y1="15"  x2="45"  y2="120" stroke="#d2e2f5" stroke-width="1"/>
+          <line x1="45" y1="15"  x2="365" y2="15"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="48"  x2="365" y2="48"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="82"  x2="365" y2="82"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+          <line x1="45" y1="120" x2="365" y2="120" stroke="#d2e2f5" stroke-width="1"/>
+          <text x="39" y="18"  text-anchor="end" font-size="10" fill="#8499b5">1:6</text>
+          <text x="39" y="51"  text-anchor="end" font-size="10" fill="#8499b5">1:4</text>
+          <text x="39" y="85"  text-anchor="end" font-size="10" fill="#8499b5">1:2</text>
+          <text x="39" y="123" text-anchor="end" font-size="10" fill="#8499b5">1:0</text>
+          <!-- ROI: 1月:2.1 2月:2.8 3月:3.2 4月:3.9 5月:4.1 6月:4.8 -->
+          <!-- max=6, y=120-val*(105/6); 1:0=y=120 -->
+          <!-- 2.1→83; 2.8→71; 3.2→64; 3.9→52; 4.1→48; 4.8→36 -->
+          <polyline points="65,83 115,71 165,64 215,52 290,48 365,36" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
+          <polygon points="65,83 115,71 165,64 215,52 290,48 365,36 365,120 65,120" fill="rgba(37,99,235,.07)"/>
+          <circle cx="65"  cy="83" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <circle cx="115" cy="71" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <circle cx="165" cy="64" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <circle cx="215" cy="52" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <circle cx="290" cy="48" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <circle cx="365" cy="36" r="5" fill="#16a34a" stroke="#fff" stroke-width="2.5"/>
+          <rect x="340" y="22" width="34" height="16" rx="3" fill="#16a34a"/>
+          <text x="357" y="34" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">1:4.8</text>
+          <text x="65"  y="136" text-anchor="middle" font-size="10" fill="#8499b5">1月</text>
+          <text x="115" y="136" text-anchor="middle" font-size="10" fill="#8499b5">2月</text>
+          <text x="165" y="136" text-anchor="middle" font-size="10" fill="#8499b5">3月</text>
+          <text x="215" y="136" text-anchor="middle" font-size="10" fill="#8499b5">4月</text>
+          <text x="290" y="136" text-anchor="middle" font-size="10" fill="#8499b5">5月</text>
+          <text x="365" y="136" text-anchor="middle" font-size="10" fill="#16a34a" font-weight="700">6月</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 全列宽 - 预警分级月度趋势 -->
+    <div class="chart-wrap" style="margin-top:18px">
+      <div class="chart-title">
+        预警线索数月度趋势（按等级）
+        <span style="font-size:12px;color:#3e5878;font-weight:400">红+橙+黄</span>
+      </div>
+      <svg viewBox="0 0 800 150" width="100%" style="display:block">
+        <line x1="60" y1="15"  x2="60"  y2="120" stroke="#d2e2f5" stroke-width="1"/>
+        <line x1="60" y1="15"  x2="760" y2="15"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="60" y1="48"  x2="760" y2="48"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="60" y1="82"  x2="760" y2="82"  stroke="#d2e2f5" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="60" y1="120" x2="760" y2="120" stroke="#d2e2f5" stroke-width="1"/>
+        <text x="54" y="18"  text-anchor="end" font-size="10" fill="#8499b5">30</text>
+        <text x="54" y="51"  text-anchor="end" font-size="10" fill="#8499b5">20</text>
+        <text x="54" y="85"  text-anchor="end" font-size="10" fill="#8499b5">10</text>
+        <text x="54" y="123" text-anchor="end" font-size="10" fill="#8499b5">0</text>
+        <!-- 月度数据: 1月 2月 3月 4月 5月 6月 -->
+        <!-- x positions均匀: 110,210,310,410,510,610,710 -->
+        <!-- 红: 6,7,8,9,11,12 → y=120-val*3.5 → 99,95.5,92,88.5,81.5,78 -->
+        <!-- 橙: 15,18,20,21,24,27 → y=120-val*3.5 → 67.5,57,50,46.5,36,25.5 -->
+        <!-- 黄: 8,9,10,11,13,14 → y=120-val*3.5 → 92,88.5,85,81.5,74.5,71 -->
+        <!-- 红线 -->
+        <polyline points="110,99 210,96 310,92 410,89 510,82 610,78" fill="none" stroke="#e5484d" stroke-width="2.5" stroke-linejoin="round"/>
+        <!-- 橙线 -->
+        <polyline points="110,68 210,57 310,50 410,47 510,36 610,26" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linejoin="round"/>
+        <!-- 黄线 -->
+        <polyline points="110,92 210,89 310,85 410,82 510,75 610,71" fill="none" stroke="#eab308" stroke-width="2" stroke-linejoin="round" stroke-dasharray="5,3"/>
+        <!-- dots -->
+        <circle cx="110" cy="99" r="3" fill="#e5484d"/>
+        <circle cx="210" cy="96" r="3" fill="#e5484d"/>
+        <circle cx="310" cy="92" r="3" fill="#e5484d"/>
+        <circle cx="410" cy="89" r="3" fill="#e5484d"/>
+        <circle cx="510" cy="82" r="3" fill="#e5484d"/>
+        <circle cx="610" cy="78" r="4" fill="#e5484d" stroke="#fff" stroke-width="2"/>
+        <circle cx="110" cy="68" r="3" fill="#f59e0b"/>
+        <circle cx="210" cy="57" r="3" fill="#f59e0b"/>
+        <circle cx="310" cy="50" r="3" fill="#f59e0b"/>
+        <circle cx="410" cy="47" r="3" fill="#f59e0b"/>
+        <circle cx="510" cy="36" r="3" fill="#f59e0b"/>
+        <circle cx="610" cy="26" r="4" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+        <!-- X labels -->
+        <text x="110" y="136" text-anchor="middle" font-size="10" fill="#8499b5">1月</text>
+        <text x="210" y="136" text-anchor="middle" font-size="10" fill="#8499b5">2月</text>
+        <text x="310" y="136" text-anchor="middle" font-size="10" fill="#8499b5">3月</text>
+        <text x="410" y="136" text-anchor="middle" font-size="10" fill="#8499b5">4月</text>
+        <text x="510" y="136" text-anchor="middle" font-size="10" fill="#8499b5">5月</text>
+        <text x="610" y="136" text-anchor="middle" font-size="10" fill="#0b2a4a" font-weight="700">6月</text>
+        <!-- legend -->
+        <line x1="650" y1="70" x2="670" y2="70" stroke="#e5484d" stroke-width="2.5"/>
+        <text x="675" y="74" font-size="11" fill="#3e5878">红 (12)</text>
+        <line x1="650" y1="85" x2="670" y2="85" stroke="#f59e0b" stroke-width="2.5"/>
+        <text x="675" y="89" font-size="11" fill="#3e5878">橙 (27)</text>
+        <line x1="650" y1="100" x2="670" y2="100" stroke="#eab308" stroke-width="2" stroke-dasharray="5,3"/>
+        <text x="675" y="104" font-size="11" fill="#3e5878">黄 (14)</text>
+      </svg>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+</body>
+</html>
