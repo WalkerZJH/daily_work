@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Iterable
 
 import pandas as pd
+import pyarrow.parquet as pq
 
 from .manifest import load_manifest
 from .schemas import (
@@ -39,8 +40,7 @@ def validate_result_batch(batch_dir: str | Path) -> None:
     for table in STANDARD_TABLES:
         if table == "risk_entity_horizon_profiles" and not _requires_horizon_profiles(manifest.schema_version):
             continue
-        if not (batch / f"{table}.parquet").exists() and not (batch / f"{table}.csv").exists():
-            raise FileNotFoundError(f"Missing standard result table: {table}")
+        _require_production_parquet_table(batch, table, manifest.raw)
 
     risk_entities = _load_table(batch, "risk_entities")
     risk_entity_horizon_profiles = _load_table(batch, "risk_entity_horizon_profiles")
@@ -66,6 +66,8 @@ def validate_result_batch(batch_dir: str | Path) -> None:
     _require_columns(high_risk_detector_evidence, HIGH_RISK_DETECTOR_EVIDENCE_REQUIRED_COLUMNS, "high_risk_detector_evidence")
     _require_unique(entity_display_lookup, ENTITY_DISPLAY_LOOKUP_UNIQUE_KEY, "entity_display_lookup")
 
+    _validate_full_recurring_persistence(manifest.raw, risk_entities)
+
     if "auto_dispatch_allowed" in risk_entities and bool(risk_entities["auto_dispatch_allowed"].fillna(False).any()):
         raise ValueError("risk_entities contains auto_dispatch_allowed=true.")
 
@@ -86,9 +88,16 @@ def validate_result_batch(batch_dir: str | Path) -> None:
     if not high_risk_detector_evidence.empty:
         if not set(high_risk_detector_evidence["risk_entity_id"].astype(str)).issubset(entity_ids):
             raise ValueError("high_risk_detector_evidence contains risk_entity_id outside risk_entities.")
-    reserved = detector_catalog[detector_catalog["status"].astype(str).isin(["reserved", "interface_only", "missing_fields"])]
+    reserved = detector_catalog[detector_catalog["status"].astype(str).isin([
+        "reserved",
+        "interface_only",
+        "missing_fields",
+        "blocked_by_data",
+        "blocked_by_missing_domain_concept",
+        "not_implemented",
+    ])]
     if not reserved.empty and reserved["enabled_by_default"].astype(str).str.lower().isin({"true", "1", "yes"}).any():
-        raise ValueError("reserved/interface-only detectors must not be enabled by default.")
+        raise ValueError("blocked or non-implemented detectors must not be enabled by default.")
 
     _validate_no_forbidden_claims(risk_cards, ["card_title", "card_summary", "suggested_action"])
     _validate_no_forbidden_claims(risk_card_evidence, ["evidence_text"])
@@ -96,14 +105,68 @@ def validate_result_batch(batch_dir: str | Path) -> None:
     _validate_no_forbidden_claims(high_risk_detector_evidence, ["evidence_text", "root_cause_label", "caveat"])
 
 
+def _validate_full_recurring_persistence(manifest: dict, risk_entities: pd.DataFrame) -> None:
+    full_count = manifest.get("full_recurring_count")
+    persisted_count = manifest.get("persisted_recurring_count")
+    if full_count is None and persisted_count is None:
+        return
+    if full_count is None or persisted_count is None:
+        raise ValueError("Manifest must declare both full_recurring_count and persisted_recurring_count.")
+    actual = int(
+        risk_entities.get("candidate_type", pd.Series("recurring", index=risk_entities.index))
+        .astype(str)
+        .eq("recurring")
+        .sum()
+    )
+    if int(full_count) != int(persisted_count) or int(persisted_count) != actual:
+        raise ValueError(
+            "Recurring candidate persistence mismatch: "
+            f"full={full_count}, persisted={persisted_count}, actual={actual}"
+        )
+
+
 def _load_table(batch: Path, name: str) -> pd.DataFrame:
     parquet = batch / f"{name}.parquet"
-    csv = batch / f"{name}.csv"
     if parquet.exists():
         return pd.read_parquet(parquet)
+    raise FileNotFoundError(f"Missing production Parquet table: {parquet}")
+
+
+def _require_production_parquet_table(batch: Path, table: str, manifest: dict) -> None:
+    parquet = batch / f"{table}.parquet"
+    csv = batch / f"{table}.csv"
+    if not parquet.exists():
+        raise FileNotFoundError(f"Missing standard Parquet result table: {table}")
     if csv.exists():
-        return pd.read_csv(csv)
-    return pd.DataFrame()
+        raise ValueError(f"Production batch contains forbidden CSV table beside Parquet: {csv}")
+    metadata = pq.ParquetFile(parquet).metadata
+    manifest_count = (manifest.get("result_table_row_counts") or {}).get(table)
+    if manifest_count is not None and int(manifest_count) != int(metadata.num_rows):
+        raise ValueError(
+            f"{table} row count mismatch: manifest={manifest_count}, parquet={metadata.num_rows}"
+        )
+    declared_paths = _manifest_table_paths(manifest)
+    declared_path = declared_paths.get(table)
+    if declared_path is not None and not str(declared_path).endswith(".parquet"):
+        raise ValueError(f"Manifest declares non-Parquet path for {table}: {declared_path}")
+
+
+def _manifest_table_paths(manifest: dict) -> dict[str, str]:
+    paths: dict[str, str] = {}
+    horizon = manifest.get("horizon_profile_table") or {}
+    if isinstance(horizon, dict) and horizon.get("table_name") and horizon.get("path"):
+        paths[str(horizon["table_name"])] = str(horizon["path"])
+    lookup = manifest.get("entity_display_lookup") or {}
+    if isinstance(lookup, dict) and lookup.get("table_name") and lookup.get("path"):
+        paths[str(lookup["table_name"])] = str(lookup["path"])
+    oneshot = manifest.get("oneshot_terminals") or {}
+    if isinstance(oneshot, dict) and oneshot.get("table_name") and oneshot.get("path"):
+        paths[str(oneshot["table_name"])] = str(oneshot["path"])
+    detector = manifest.get("detector_tables") or {}
+    if isinstance(detector, dict):
+        for table, path in detector.items():
+            paths[str(table)] = str(path)
+    return paths
 
 
 def _requires_horizon_profiles(schema_version: str) -> bool:

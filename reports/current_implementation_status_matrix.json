@@ -1,0 +1,123 @@
+[
+  {
+    "layer": "Model",
+    "module": "candidate_ranking_model",
+    "business_semantics": "full_recurring_candidate_universe",
+    "status": "implemented",
+    "evidence": ["risk_algorithm_core/candidate_selector.py: BoundedCandidateSelector.select"],
+    "working_parts": ["recurring is the sole admission rule", "ranking features remain sorting/diagnostic fields"],
+    "missing_parts": [],
+    "blocking_reason": null,
+    "affects_main_flow": true
+  },
+  {
+    "layer": "Model",
+    "module": "candidate_pool_policy",
+    "business_semantics": "legacy_truncation_policy",
+    "status": "obsolete_or_conflicting",
+    "evidence": ["risk_algorithm_core/candidate_selector.py: legacy candidate_policy_top_pct/global_candidate_cap no longer used"],
+    "working_parts": [],
+    "missing_parts": ["new formal Parquet batch must be materialized"],
+    "blocking_reason": "existing formal-v2-raw batch was produced under old truncation semantics",
+    "affects_main_flow": true
+  },
+  {
+    "layer": "Model",
+    "module": "full_recurring_manifest_contract",
+    "business_semantics": "formal_result_completeness",
+    "status": "implemented",
+    "evidence": ["risk_algorithm_core/result_assembler.py: full_recurring_count/persisted_recurring_count", "risk_result_contracts/validation.py: _validate_full_recurring_persistence"],
+    "working_parts": ["publish validation rejects count mismatch"],
+    "missing_parts": ["first compatible full-recurring batch completion"],
+    "blocking_reason": null,
+    "affects_main_flow": true
+  },
+  {
+    "layer": "Controller",
+    "module": "candidate_ranking_api",
+    "business_semantics": "candidate_ranking_api",
+    "status": "implemented",
+    "evidence": ["project/app/api/routes_frontend_pages.py: frontend_risk_entities", "project/app/services/user_top_entity_service.py: list_candidate_ranking"],
+    "working_parts": ["page/page_size", "true total/total_pages", "stable risk_entity_id tie-break", "detector_score 422"],
+    "missing_parts": [],
+    "blocking_reason": null,
+    "affects_main_flow": true
+  },
+  {
+    "layer": "View",
+    "module": "workbench_view",
+    "business_semantics": "candidate_ranking_top_n",
+    "status": "implemented",
+    "evidence": ["front_end/src/modules/monthly-workbench/MonthlyWorkbenchView.vue", "front_end/src/modules/monthly-demo/pageDataAdapter.js: loadWorkbenchData"],
+    "working_parts": ["draftQuery/appliedQuery", "Top N only", "no detector clue request"],
+    "missing_parts": [],
+    "blocking_reason": null,
+    "affects_main_flow": true
+  },
+  {
+    "layer": "View",
+    "module": "candidate_ranking_list_view",
+    "business_semantics": "paginated_candidate_ranking_list",
+    "status": "implemented",
+    "evidence": ["front_end/src/modules/risk-worklist/RiskEntityListView.vue", "pageDataAdapter.js: loadCandidateRankingData"],
+    "working_parts": ["current-page rendering", "previous/next paging", "candidate detail entry"],
+    "missing_parts": [],
+    "blocking_reason": null,
+    "affects_main_flow": true
+  },
+  {
+    "layer": "View",
+    "module": "candidate_detail_view",
+    "business_semantics": "candidate_monthly_result_and_detector_evidence",
+    "status": "implemented",
+    "evidence": ["front_end/src/modules/risk-worklist/RiskEntityDetailView.vue", "pageDataAdapter.js: loadClueDetailData"],
+    "working_parts": ["candidate ID required", "H3/H6/H12", "current date detector evidence"],
+    "missing_parts": [],
+    "blocking_reason": null,
+    "affects_main_flow": true
+  },
+  {
+    "layer": "View",
+    "module": "workbench_risk_source_column",
+    "business_semantics": "redundant_constant_monthly_source",
+    "status": "obsolete_or_conflicting",
+    "evidence": ["MonthlyWorkbenchView.vue: source column removed"],
+    "working_parts": [],
+    "missing_parts": [],
+    "blocking_reason": "all rows originate from monthly candidate ranking",
+    "affects_main_flow": true
+  },
+  {
+    "layer": "Model",
+    "module": "detector_evidence_contract",
+    "business_semantics": "detail_only_rule_evidence",
+    "status": "implemented",
+    "evidence": ["project/app/services/detector_result_service.py: _evidence_contract", "project/app/schemas/detector_results.py: HighRiskDetectorEvidenceItem"],
+    "working_parts": ["logic", "observed values", "threshold decision", "no probability contribution"],
+    "missing_parts": ["IPI materialization verification in new formal batch"],
+    "blocking_reason": null,
+    "affects_main_flow": true
+  },
+  {
+    "layer": "Model",
+    "module": "delivery_detectors",
+    "business_semantics": "delivery_rule_execution",
+    "status": "blocked_by_data",
+    "evidence": ["risk_algorithm_core/detector_catalog.py: fulfillment_gap", "configs/risk_algorithm_core/daily_detector_rules.yaml"],
+    "working_parts": ["enabled_by_default=false"],
+    "missing_parts": ["reliable delivery time fields"],
+    "blocking_reason": "delivery time quality and completeness are insufficient",
+    "affects_main_flow": false
+  },
+  {
+    "layer": "Model",
+    "module": "sku_shrink",
+    "business_semantics": "product_line_sku_shrink",
+    "status": "blocked_by_data",
+    "evidence": ["risk_algorithm_core/detector_catalog.py: sku_shrink"],
+    "working_parts": ["enabled_by_default=false"],
+    "missing_parts": ["product-line domain concept"],
+    "blocking_reason": "blocked_by_missing_domain_concept",
+    "affects_main_flow": false
+  }
+]

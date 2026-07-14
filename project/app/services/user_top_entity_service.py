@@ -161,7 +161,7 @@ class TopEntityService:
         report_month: str | None = None,
         horizon: str = "H6",
         top_n: int = 20,
-        max_n: int = 50,
+        max_n: int | None = None,
         group_by: GroupBy = "user_scope",
         ranking_strategy: RankingStrategy = "probability",
         candidate_type: CandidateType = "recurring",
@@ -180,7 +180,7 @@ class TopEntityService:
         if fill_policy != "none":
             warnings.append("FILL_POLICY_DEPRECATED_INTERNAL_ONLY")
         effective_top_n = top_n
-        if top_n > max_n:
+        if max_n is not None and top_n > max_n:
             effective_top_n = max_n
             warnings.append("TOP_N_CLAMPED_TO_MAX_N")
         entities = self.repository.list_risk_entities()
@@ -293,6 +293,90 @@ class TopEntityService:
             },
             "groups": groups,
             "warnings": _dedupe(warnings),
+        }
+
+    def list_candidate_ranking(
+        self,
+        *,
+        user_id: str,
+        report_month: str | None = None,
+        horizon: str = "H6",
+        manufacturer_codes: list[str] | None = None,
+        sort_by: str = "risk_probability",
+        sort_order: str = "desc",
+        page: int = 1,
+        page_size: int = 100,
+    ) -> dict[str, Any]:
+        """Return a page from the complete recurring candidate ranking.
+
+        This is the customer-facing path. The legacy top-entity method remains
+        available for internal compatibility, but it is not used here and has
+        no production max-N cap.
+        """
+        if page < 1:
+            raise ValueError("page must be >= 1")
+        if page_size < 1:
+            raise ValueError("page_size must be >= 1")
+        if sort_order not in {"asc", "desc"}:
+            raise ValueError("sort_order must be asc or desc")
+        if sort_by == "detector_score":
+            raise SortMetricUnavailable(sort_by)
+        if sort_by not in {"risk_probability", "involved_amount", "loss_value"}:
+            raise SortMetricUnavailable(sort_by)
+
+        ranking_strategy = {
+            "risk_probability": "probability",
+            "involved_amount": "involved_amount",
+            "loss_value": "loss_value",
+        }[sort_by]
+        full = self.list_user_top_entities(
+            user_id=user_id,
+            report_month=report_month,
+            horizon=horizon,
+            top_n=10**9,
+            max_n=None,
+            group_by="user_scope",
+            ranking_strategy=ranking_strategy,
+            candidate_type="recurring",
+            fill_policy="none",
+            manufacturer_codes=manufacturer_codes,
+        )
+        entities = [
+            entity
+            for group in full.get("groups", [])
+            for entity in group.get("entities", [])
+        ]
+        if entities:
+            frame = pd.DataFrame(entities)
+            frame["_sort_value"] = pd.to_numeric(frame.get(sort_by), errors="coerce")
+            frame["_sort_missing"] = frame["_sort_value"].isna()
+            frame = frame.sort_values(
+                ["_sort_missing", "_sort_value", "risk_entity_id"],
+                ascending=[True, sort_order == "asc", True],
+                na_position="last",
+                kind="mergesort",
+            )
+            entities = frame.drop(columns=["_sort_value", "_sort_missing"]).to_dict("records")
+        total = len(entities)
+        start = (page - 1) * page_size
+        page_items = entities[start : start + page_size]
+        for index, entity in enumerate(entities, start=1):
+            entity["rank"] = index
+        page_items = entities[start : start + page_size]
+        total_pages = math.ceil(total / page_size) if total else 0
+        return {
+            **full,
+            "business_semantics": "candidate_ranking_result",
+            "sort_by": sort_by,
+            "sort_order": sort_order,
+            "page": page,
+            "page_size": page_size,
+            "items": page_items,
+            "entities": page_items,
+            "total": total,
+            "total_pages": total_pages,
+            "top_n": len(page_items),
+            "requested_top_n": page_size,
         }
 
     def list_visible_manufacturers(

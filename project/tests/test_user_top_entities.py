@@ -279,16 +279,59 @@ def test_frontend_risk_entities_api_reuses_top_entity_service() -> None:
     try:
         response = TestClient(app).get(
             "/api/v1/risk-entities",
-            params={"top_n": 2},
+            params={"page": 1, "page_size": 2},
             headers={"X-User-Id": "user_a"},
         )
     finally:
         app.dependency_overrides.pop(get_user_top_entity_service, None)
 
     assert response.status_code == 200
-    entities = response.json()["entities"]
-    assert [item["entity_id"] for item in entities] == ["m1_high", "m2_high"]
-    assert len(entities) == 2
+    payload = response.json()
+    assert [item["entity_id"] for item in payload["items"]] == ["m1_high", "m2_high"]
+    assert payload["entities"] == payload["items"]  # temporary response compatibility
+    assert payload["pagination"] == {"page": 1, "page_size": 2, "total": 5, "total_pages": 3}
+
+
+def test_frontend_risk_entities_paginates_without_candidate_loss() -> None:
+    from app.api.routes_user_top_entities import get_user_top_entity_service
+    from app.services.user_top_entity_service import TopEntityService, UserManufacturerScopeService
+
+    app.dependency_overrides[get_user_top_entity_service] = lambda: TopEntityService(
+        _repository(),
+        scope_service=UserManufacturerScopeService.from_rows(_scope_rows()),
+    )
+    try:
+        first = TestClient(app).get(
+            "/api/v1/risk-entities",
+            params={"page": 1, "page_size": 2},
+            headers={"X-User-Id": "user_a"},
+        )
+        second = TestClient(app).get(
+            "/api/v1/risk-entities",
+            params={"page": 2, "page_size": 2},
+            headers={"X-User-Id": "user_a"},
+        )
+    finally:
+        app.dependency_overrides.pop(get_user_top_entity_service, None)
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    first_ids = {item["entity_id"] for item in first.json()["items"]}
+    second_ids = {item["entity_id"] for item in second.json()["items"]}
+    assert first_ids.isdisjoint(second_ids)
+    assert first.json()["pagination"]["total"] == 5
+    assert second.json()["pagination"]["total"] == 5
+
+
+def test_frontend_risk_entities_rejects_detector_score_sorting() -> None:
+    response = TestClient(app).get(
+        "/api/v1/risk-entities",
+        params={"sort_by": "detector_score"},
+        headers={"X-User-Id": "user_a"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["error_code"] == "SORT_METRIC_NOT_AVAILABLE"
 
 
 def test_user_top_entities_prefers_entity_display_lookup_names() -> None:

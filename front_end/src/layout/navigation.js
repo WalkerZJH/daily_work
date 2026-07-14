@@ -3,7 +3,7 @@ export const customerNavSections = [
     label: '客户主线',
     items: [
       { key: 'index', href: 'index.html', icon: '▦', text: '风险工作台' },
-      { key: 'clues', href: 'clues.html', icon: '◈', text: '今日规则线索', badgeClass: 'orange' },
+      { key: 'clues', href: 'clues.html', icon: '◈', text: '规则巡检结果', badgeClass: 'orange' },
       { key: 'oneshot', href: 'oneshot.html', icon: '+', text: '新进终端监测', badgeClass: 'green' }
     ]
   }

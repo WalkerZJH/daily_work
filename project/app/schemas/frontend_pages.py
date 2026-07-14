@@ -135,6 +135,7 @@ class WorkbenchPayload(FrontendPageModel):
 
 class RiskEntityItem(FrontendPageModel):
     entity_id: str
+    rank: int = 0
     hospital_name: str
     drug_name: str
     manufacturer_code: str
@@ -143,12 +144,12 @@ class RiskEntityItem(FrontendPageModel):
     region: str
     horizon: str
     risk_probability: float = Field(ge=0, le=1)
-    loss_value: int = 0
+    loss_value: int | None = None
     loss_value_status: str | None = None
     sort_policy: str | None = None
-    involved_amount: int = 0
+    involved_amount: int | None = None
     involved_amount_source: str | None = None
-    average_consumption_in_window: int
+    average_consumption_in_window: int | None = None
     risk_band: str
     risk_color: str
     last_purchase_date: str
@@ -164,6 +165,7 @@ class RiskEntityItem(FrontendPageModel):
 
 class RiskEntitiesPayload(FrontendPageModel):
     batch_context: BatchContext
+    items: list[RiskEntityItem] = Field(default_factory=list)
     entities: list[RiskEntityItem]
     pagination: dict[str, int]
     display_lookup_status: dict[str, Any] | None = None

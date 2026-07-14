@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
@@ -27,7 +27,8 @@ from app.services.report_context_service import ReportContextService
 from app.services.user_top_entity_service import HorizonNotAvailable, SortMetricUnavailable, TopEntityService
 
 router = APIRouter(prefix="/api/v1", tags=["frontend-pages"])
-WorkbenchSortBy = Literal["loss_value", "risk_probability", "detector_score", "involved_amount"]
+ALLOWED_CANDIDATE_SORT_FIELDS = {"loss_value", "risk_probability", "involved_amount"}
+ALLOWED_SORT_ORDERS = {"asc", "desc"}
 
 
 @router.get("/workbench", response_model=WorkbenchPayload)
@@ -46,8 +47,10 @@ def frontend_workbench(
     manual_report_month: bool = Query(default=False),
     horizon: str = Query(default="H6"),
     top_n: int = Query(default=20, ge=1, le=100),
-    sort_by: WorkbenchSortBy = Query(default="risk_probability"),
+    sort_by: str = Query(default="risk_probability"),
+    sort_order: str = Query(default="desc"),
 ) -> dict:
+    sort_by, sort_order = _validate_candidate_sort(sort_by, sort_order)
     context = report_context_service.resolve(
         observation_date=observation_date,
         report_month=report_month,
@@ -119,6 +122,7 @@ def frontend_workbench(
             ),
             manufacturer_codes=manufacturer_code,
             sort_by=sort_by,
+            sort_order=sort_order,
             detector_summary=_detector_summary(
                 contextual_detector_service,
                 run_date=effective_run_date,
@@ -165,9 +169,12 @@ def frontend_risk_entities(
     run_date: str | None = Query(default=None),
     manual_report_month: bool = Query(default=False),
     horizon: str = Query(default="H6"),
-    top_n: int = Query(default=20, ge=1, le=100),
-    sort_by: WorkbenchSortBy = Query(default="risk_probability"),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=100, ge=1, le=1000),
+    sort_by: str = Query(default="risk_probability"),
+    sort_order: str = Query(default="desc"),
 ) -> dict:
+    sort_by, sort_order = _validate_candidate_sort(sort_by, sort_order)
     context = report_context_service.resolve(
         observation_date=observation_date,
         report_month=report_month,
@@ -192,7 +199,8 @@ def frontend_risk_entities(
         top_entity_payload = build_risk_entities_payload_from_top_entities(
             contextual_top_entity_service,
             user_id=user_id or x_user_id or "admin",
-            top_n=top_n,
+            page=page,
+            page_size=page_size,
             horizon=context.get("effective_horizon") or horizon,
             report_month=_report_month_for_top_entity_service(
                 contextual_top_entity_service,
@@ -201,6 +209,7 @@ def frontend_risk_entities(
             ),
             manufacturer_codes=manufacturer_code,
             sort_by=sort_by,
+            sort_order=sort_order,
         )
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail={"error_code": str(exc)}) from exc
@@ -554,6 +563,30 @@ def _report_month_for_top_entity_service(
 
 def _first_query_value(values: list[str] | None) -> str | None:
     return values[0] if values else None
+
+
+def _validate_candidate_sort(sort_by: str, sort_order: str) -> tuple[str, str]:
+    normalized_sort = str(sort_by or "").strip()
+    normalized_order = str(sort_order or "").strip().lower()
+    if normalized_sort not in ALLOWED_CANDIDATE_SORT_FIELDS:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error_code": "SORT_METRIC_NOT_AVAILABLE",
+                "requested_sort_by": normalized_sort,
+                "allowed_sort_by": sorted(ALLOWED_CANDIDATE_SORT_FIELDS),
+            },
+        )
+    if normalized_order not in ALLOWED_SORT_ORDERS:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error_code": "SORT_ORDER_NOT_AVAILABLE",
+                "requested_sort_order": normalized_order,
+                "allowed_sort_order": sorted(ALLOWED_SORT_ORDERS),
+            },
+        )
+    return normalized_sort, normalized_order
 
 
 def _assert_horizon_available(top_entity_service: TopEntityService, horizon: str | None) -> None:

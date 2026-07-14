@@ -13,6 +13,11 @@ function withCurrentContext(href) {
   const query = params.toString()
   return query ? `${href}?${query}` : href
 }
+
+function navigateWithCurrentContext(event, href) {
+  event.preventDefault()
+  window.location.assign(withCurrentContext(href))
+}
 </script>
 
 <template>
@@ -23,6 +28,7 @@ function withCurrentContext(href) {
         v-for="item in section.items"
         :key="item.key"
         :href="withCurrentContext(item.href)"
+        @click.prevent="navigateWithCurrentContext($event, item.href)"
         class="sidebar-item"
         :class="{ active: item.key === active }"
       >

@@ -76,6 +76,8 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
         raise ValueError(f"Manifest missing required fields: {missing}")
     if manifest.get("report_type") != "monthly":
         raise ValueError("risk_result_batch report_type must be monthly.")
+    if manifest.get("data_backend") != "parquet":
+        raise ValueError("Production risk_result_batch data_backend must be parquet.")
     if manifest.get("auto_dispatch_allowed") is not False:
         raise ValueError("auto_dispatch_allowed must be false.")
     if manifest.get("customer_facing_probability_service_allowed") is not False:

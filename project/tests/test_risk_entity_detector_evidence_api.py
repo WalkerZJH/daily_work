@@ -22,6 +22,9 @@ def test_risk_entity_detector_evidence_api_attaches_evidence_only_to_existing_ri
     assert payload["items"][0]["detector_score"] == 0.82
     assert payload["items"][0]["detector_family_label"] == "采购间隔"
     assert payload["items"][0]["detector_name_label"] == "Purchase Interval Ipi"
+    assert payload["items"][0]["detector_version"] == "rule_result_batch"
+    assert payload["items"][0]["monitoring_logic"]["formula"]
+    assert payload["items"][0]["decision"]["threshold_operator"] == ">="
     assert payload["catalog_by_detector_id"]["purchase_interval_ipi"]["status"] == "implemented"
     assert "detector_probability" not in json.dumps(payload)
 

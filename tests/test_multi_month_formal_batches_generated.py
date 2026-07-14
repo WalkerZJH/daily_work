@@ -44,11 +44,11 @@ def test_required_tables_exist_for_each_month() -> None:
             "high_risk_detector_evidence",
             "risk_entity_horizon_profiles",
         ]:
-            assert any((current / f"{table}.{ext}").exists() for ext in ["parquet", "csv"]), f"{month}:{table}"
+            assert (current / f"{table}.parquet").exists(), f"{month}:{table}"
 
 
 def test_available_observation_contexts_has_required_dates() -> None:
-    registry = pd.read_csv(ROOT / "available_observation_contexts.csv")
+    registry = pd.read_parquet(ROOT / "available_observation_contexts.parquet")
     assert set(["2025-10-01", "2025-11-01", "2025-12-01", "2025-12-05", "2026-01-01"]).issubset(
         set(registry["observation_date"].astype(str))
     )

@@ -152,7 +152,7 @@ class RiskResultRepository(ABC):
 
 
 class ParquetRiskResultRepository(RiskResultRepository):
-    """Read a standard result batch from parquet, with csv fallback for fixtures."""
+    """Read a standard production result batch from Parquet only."""
 
     def __init__(self, batch_dir: str | Path):
         self.batch_dir = Path(batch_dir)
@@ -165,12 +165,9 @@ class ParquetRiskResultRepository(RiskResultRepository):
         if name not in STANDARD_TABLES:
             raise ValueError(f"Unknown standard table: {name}")
         parquet = self.batch_dir / f"{name}.parquet"
-        csv = self.batch_dir / f"{name}.csv"
         if parquet.exists():
             return pd.read_parquet(parquet)
-        if csv.exists():
-            return pd.read_csv(csv)
-        return pd.DataFrame()
+        raise FileNotFoundError(f"Missing production Parquet table: {parquet}")
 
     def list_risk_entities(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("risk_entities"), filters)
@@ -281,7 +278,8 @@ class ParquetRiskResultRepository(RiskResultRepository):
                 data = json.loads(Path(path).read_text(encoding="utf-8"))
                 rows = data.get("contexts", data if isinstance(data, list) else [data])
                 return pd.DataFrame(rows)
-            return pd.read_parquet(path) if path.suffix == ".parquet" else pd.read_csv(path)
+            if path.suffix == ".parquet":
+                return pd.read_parquet(path)
         return pd.DataFrame([available_context_row(self.manifest_context(), self.batch_dir)])
 
     def resolve_report_context(
@@ -301,7 +299,6 @@ class ParquetRiskResultRepository(RiskResultRepository):
         root = Path(batch_root) if batch_root is not None else infer_batch_root(self.batch_dir)
         for path in [
             root / "available_observation_contexts.parquet",
-            root / "available_observation_contexts.csv",
             root / "available_observation_contexts.json",
         ]:
             if not path_exists(path):
@@ -311,7 +308,8 @@ class ParquetRiskResultRepository(RiskResultRepository):
                     data = json.load(fh)
                 rows = data.get("contexts", data if isinstance(data, list) else [data])
                 return pd.DataFrame(rows)
-            return pd.read_parquet(path) if path.suffix == ".parquet" else pd.read_csv(path)
+            if path.suffix == ".parquet":
+                return pd.read_parquet(path)
         return pd.DataFrame()
 
     def resolve_observation_context(
@@ -716,7 +714,6 @@ def available_context_candidates(batch_dir: Path) -> list[Path]:
         paths.extend(
             [
                 root / "available_report_contexts.parquet",
-                root / "available_report_contexts.csv",
                 root / "available_report_contexts.json",
             ]
         )

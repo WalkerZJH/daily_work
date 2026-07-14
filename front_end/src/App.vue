@@ -15,7 +15,7 @@ const pageName = window.location.pathname.split('/').pop() || 'index.html'
 const routeMap = {
   'index.html': {
     active: 'index',
-    tag: 'VP 工作台 · 今日巡检线索',
+    tag: '候选对象排序工作台',
     component: MonthlyWorkbenchView
   },
   'dashboard.html': {
@@ -25,12 +25,12 @@ const routeMap = {
   },
   'clues.html': {
     active: 'clues',
-    tag: '今日巡检线索',
+    tag: '规则巡检结果',
     component: RiskEntityListView
   },
   'clue-detail.html': {
     active: 'clues',
-    tag: '规则线索详情',
+    tag: '候选对象详情',
     component: RiskEntityDetailView
   },
   'oneshot.html': {

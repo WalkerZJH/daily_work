@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import pyarrow.parquet as pq
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -35,12 +36,12 @@ from risk_algorithm_core.result_assembler import assemble_result_batch
 from risk_algorithm_core.scorer import ArtifactRiskScorer
 from risk_algorithm_core.status_decider import StatusDecider
 from risk_model_core.validation import validate_batch as validate_model_core_batch
-from risk_result_contracts import validate_result_batch
+from risk_result_contracts import validate_result_batch, write_production_parquet
 
 
 TARGET_COMPLETE_MONTHS = ["2025-09", "2025-10", "2025-11", "2025-12"]
-OUTPUT_ROOT = Path("algo_main/data/entity_complete_v2_coverage_expansion/16_multi_month_formal_result_batches")
-REPORT_ROOT = Path("algo_main/reports/entity_complete_v2_coverage_expansion/27_multi_month_formal_batches")
+OUTPUT_ROOT = Path("data/project_result_batches")
+REPORT_ROOT = Path("reports/full_recurring_formal_batches")
 DEFAULT_CONFIG = Path("configs/risk_algorithm_core/monthly_run.formal.example.yaml")
 
 
@@ -50,6 +51,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-root", default=str(OUTPUT_ROOT))
     parser.add_argument("--report-root", default=str(REPORT_ROOT))
     parser.add_argument("--months", nargs="*", default=TARGET_COMPLETE_MONTHS)
+    parser.add_argument("--run-id", default="full-recurring-v1")
     parser.add_argument("--clean-output", action="store_true")
     args = parser.parse_args(argv)
 
@@ -68,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
     summaries: list[dict[str, Any]] = []
 
     for month in args.months:
-        cfg = config_for_month(base_cfg, month, output_root)
+        cfg = config_for_month(base_cfg, month, output_root, args.run_id)
         result = run_profiled_month(cfg, default_observation_date(month))
         monthly_profiles.append(result["monthly_profile"])
         detector_profiles.append(result["detector_profile"])
@@ -80,21 +82,21 @@ def main(argv: list[str] | None = None) -> int:
     write_registry(output_root, contexts)
     write_profiles(output_root, monthly_profiles, detector_profiles, end_to_end_profiles)
     scaling = build_runtime_scaling_estimate(monthly_profiles, detector_profiles, end_to_end_profiles)
-    pd.DataFrame(scaling).to_csv(output_root / "runtime_scaling_estimate.csv", index=False)
+    write_production_parquet(pd.DataFrame(scaling), output_root / "runtime_scaling_estimate.parquet")
     write_reports(report_root, output_root, summaries, contexts, monthly_profiles, detector_profiles, end_to_end_profiles, scaling)
     print(json.dumps({"output_root": str(output_root), "months": args.months, "summaries": summaries}, ensure_ascii=False, indent=2))
     return 0
 
 
-def config_for_month(base_cfg: MonthlyRiskRunConfig, month: str, output_root: Path) -> MonthlyRiskRunConfig:
+def config_for_month(base_cfg: MonthlyRiskRunConfig, month: str, output_root: Path, run_id: str) -> MonthlyRiskRunConfig:
     export = dict(base_cfg.export)
-    export["write_parquet"] = False
+    export["write_parquet"] = True
     return replace(
         base_cfg,
         report_month=month,
         run_date=default_observation_date(month),
         output_root=str(output_root),
-        run_id="formal-v2-raw",
+        run_id=run_id,
         export=export,
     )
 
@@ -170,7 +172,7 @@ def run_profiled_month(cfg: MonthlyRiskRunConfig, observation_date: str) -> dict
         score_frame=score_frame,
         normalized_tables=normalized,
         artifact_metadata=artifact.manifest.raw,
-        write_parquet=bool(cfg.export.get("write_parquet", False)),
+        write_parquet=True,
     )
     result_write_seconds = elapsed(write_start)
 
@@ -305,25 +307,21 @@ def previous_complete_month(observation_date: str) -> str:
 
 
 def write_detector_tables(batch_dir: Path, tables: dict[str, pd.DataFrame], data_backend: str) -> None:
+    if data_backend != "parquet":
+        raise ValueError("Production detector tables must be written as Parquet.")
     for name, frame in tables.items():
         for ext in ["parquet", "csv"]:
             path = batch_dir / f"{name}.{ext}"
             if path.exists():
                 path.unlink()
-        if data_backend == "parquet":
-            frame.to_parquet(batch_dir / f"{name}.parquet", index=False)
-        else:
-            frame.to_csv(batch_dir / f"{name}.csv", index=False)
+        write_production_parquet(frame, batch_dir / f"{name}.parquet")
 
 
 def read_table(batch_dir: Path, name: str) -> pd.DataFrame:
     parquet = batch_dir / f"{name}.parquet"
-    csv = batch_dir / f"{name}.csv"
     if parquet.exists():
         return pd.read_parquet(parquet)
-    if csv.exists():
-        return pd.read_csv(csv)
-    return pd.DataFrame()
+    raise FileNotFoundError(f"Missing production Parquet table: {parquet}")
 
 
 def update_manifest_and_context(batch_dir: Path, observation_date: str, runtime_profile_summary: dict[str, Any]) -> None:
@@ -349,7 +347,11 @@ def update_manifest_and_context(batch_dir: Path, observation_date: str, runtime_
         "high_risk_detector_evidence": "high_risk_detector_evidence.parquet",
     }
     manifest["detector_score_probability_interpretation"] = "detector_score_is_not_probability"
-    manifest["detector_default_scope"] = "monthly_high_risk_entities"
+    recurring = risk_entities.get("candidate_type", pd.Series("recurring", index=risk_entities.index)).astype(str).eq("recurring")
+    manifest["candidate_pool_policy"] = "full_recurring_universe"
+    manifest["full_recurring_count"] = int(recurring.sum())
+    manifest["persisted_recurring_count"] = int(recurring.sum())
+    manifest["detector_default_scope"] = "recurring_candidates"
     manifest["result_table_row_counts"] = table_counts(batch_dir)
     caveats = list(manifest.get("caveats") or [])
     caveat = "multi_month_context_ready; default_observation_date is not a fabricated detector clue"
@@ -364,12 +366,10 @@ def update_manifest_and_context(batch_dir: Path, observation_date: str, runtime_
 
 def table_counts(batch_dir: Path) -> dict[str, int]:
     counts: dict[str, int] = {}
-    for path in list(batch_dir.glob("*.csv")) + list(batch_dir.glob("*.parquet")):
-        if path.name in {"available_report_contexts.csv", "available_observation_contexts.csv"}:
-            continue
+    for path in batch_dir.glob("*.parquet"):
         name = path.stem
         try:
-            counts[name] = int(len(pd.read_parquet(path) if path.suffix == ".parquet" else pd.read_csv(path)))
+            counts[name] = int(pq.ParquetFile(path).metadata.num_rows)
         except Exception:
             continue
     return counts
@@ -483,7 +483,7 @@ def unavailable_context(observation_date: str, probability_month: str) -> dict[s
 def write_registry(output_root: Path, contexts: list[dict[str, Any]]) -> None:
     ordered = sorted(contexts, key=lambda row: row["observation_date"])
     frame = pd.DataFrame(ordered)
-    frame.to_csv(output_root / "available_observation_contexts.csv", index=False)
+    write_production_parquet(frame, output_root / "available_observation_contexts.parquet")
     (output_root / "available_observation_contexts.json").write_text(
         json.dumps({"contexts": ordered}, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
@@ -496,9 +496,9 @@ def write_profiles(
     detector_profiles: list[dict[str, Any]],
     end_to_end_profiles: list[dict[str, Any]],
 ) -> None:
-    pd.DataFrame(monthly_profiles).to_csv(output_root / "monthly_probability_runtime_profile.csv", index=False)
-    pd.DataFrame(detector_profiles).to_csv(output_root / "daily_detector_runtime_profile.csv", index=False)
-    pd.DataFrame(end_to_end_profiles).to_csv(output_root / "end_to_end_runtime_profile.csv", index=False)
+    write_production_parquet(pd.DataFrame(monthly_profiles), output_root / "monthly_probability_runtime_profile.parquet")
+    write_production_parquet(pd.DataFrame(detector_profiles), output_root / "daily_detector_runtime_profile.parquet")
+    write_production_parquet(pd.DataFrame(end_to_end_profiles), output_root / "end_to_end_runtime_profile.parquet")
 
 
 def build_runtime_scaling_estimate(
@@ -610,12 +610,12 @@ def write_run_reports(
     disabled_notes: pd.DataFrame,
 ) -> None:
     (batch_dir / "run_summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=True), encoding="utf-8")
-    normalize_report.to_csv(batch_dir / "normalization_report.csv", index=False)
-    feature_report.to_csv(batch_dir / "feature_quality_report.csv", index=False)
-    feature_parity_report.to_csv(batch_dir / "feature_parity_runtime_report.csv", index=False)
-    selection_report.to_csv(batch_dir / "selection_report.csv", index=False)
-    gate_decisions.to_csv(batch_dir / "detector_quality_gate.csv", index=False)
-    disabled_notes.to_csv(batch_dir / "disabled_detector_notes.csv", index=False)
+    write_production_parquet(normalize_report, batch_dir / "normalization_report.parquet")
+    write_production_parquet(feature_report, batch_dir / "feature_quality_report.parquet")
+    write_production_parquet(feature_parity_report, batch_dir / "feature_parity_runtime_report.parquet")
+    write_production_parquet(selection_report, batch_dir / "selection_report.parquet")
+    write_production_parquet(gate_decisions, batch_dir / "detector_quality_gate.parquet")
+    write_production_parquet(disabled_notes, batch_dir / "disabled_detector_notes.parquet")
 
 
 def elapsed(start: float) -> float:

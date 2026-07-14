@@ -75,8 +75,9 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
     missing = [field for field in REQUIRED_MANIFEST_FIELDS if field not in manifest]
     if missing:
         raise ValueError(f"Manifest missing required fields: {missing}")
+    if manifest.get("data_backend") != "parquet":
+        raise ValueError("Production risk result repository requires data_backend=parquet.")
     if manifest.get("auto_dispatch_allowed") is not False:
         raise ValueError("auto_dispatch_allowed must be false for this risk model core stage.")
     if manifest.get("customer_facing_probability_service_allowed") is not False:
         raise ValueError("customer_facing_probability_service_allowed must be false for this stage.")
-

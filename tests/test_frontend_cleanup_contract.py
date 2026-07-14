@@ -135,6 +135,46 @@ def test_frontend_rule_clues_exposes_detector_filters() -> None:
     assert "detector_id" in adapter
 
 
+def test_clues_page_is_reserved_for_detector_inspection() -> None:
+    app = read(FRONTEND / "src" / "App.vue")
+    navigation = read(FRONTEND / "src" / "layout" / "navigation.js")
+    clues_page = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue")
+    boundary = read(FRONTEND / "AGENTS.md")
+
+    assert "tag: '规则巡检结果'" in app
+    assert "text: '规则巡检结果'" in navigation
+    assert "loadRuleCluesData" in clues_page
+    assert "dailyDetectorClues" in clues_page
+    assert "selectedDetectorFamily" in clues_page
+    assert "selectedDetectorId" in clues_page
+    assert "loadCandidateRankingData" not in clues_page
+    assert "createEmptyCandidateRankingData" not in clues_page
+    assert "reserved exclusively for displaying entities hit by detector rules" in boundary
+
+
+def test_workbench_and_clues_share_manual_query_context_without_duplicate_date_control() -> None:
+    workbench = read(FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue")
+    clues_page = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue")
+    sidebar = read(FRONTEND / "src" / "layout" / "Sidebar.vue")
+    topbar = read(FRONTEND / "src" / "layout" / "Topbar.vue")
+
+    for page in [workbench, clues_page]:
+        assert "draftQuery" in page
+        assert "appliedQuery" in page
+        assert "async function submitQuery()" in page
+        assert "function syncDraftContext()" in page
+        assert "watch(draftQuery, syncDraftContext, { deep: true })" in page
+        assert "onMounted(loadOptions)" in page
+
+    assert "refreshClues" not in clues_page
+    assert '<label class="control-field">\n          <span>观察日期</span>\n          <SquareDatePicker' not in clues_page
+    assert "查看规则巡检结果" in workbench
+    assert "function navigateWithCurrentContext(event, href)" in sidebar
+    assert '@click.prevent="navigateWithCurrentContext($event, item.href)"' in sidebar
+    assert "function navigateWithCurrentContext(event, href)" in topbar
+    assert '@click.prevent="navigateWithCurrentContext($event, \'index.html\')"' in topbar
+
+
 def test_frontend_does_not_depend_on_local_model_or_prototype_paths() -> None:
     scanned_files = [
         *FRONTEND.glob("*.html"),

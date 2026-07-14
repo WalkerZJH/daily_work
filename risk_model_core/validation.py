@@ -40,9 +40,6 @@ def validate_columns(df: pd.DataFrame, required: list[str], name: str) -> None:
 
 def load_table(batch: Path, name: str) -> pd.DataFrame:
     parquet = batch / f"{name}.parquet"
-    csv = batch / f"{name}.csv"
     if parquet.exists():
         return pd.read_parquet(parquet)
-    if csv.exists():
-        return pd.read_csv(csv)
-    return pd.DataFrame()
+    raise FileNotFoundError(f"Missing production Parquet table: {parquet}")

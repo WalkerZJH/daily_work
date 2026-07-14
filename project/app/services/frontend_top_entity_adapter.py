@@ -10,36 +10,39 @@ def build_risk_entities_payload_from_top_entities(
     *,
     user_id: str,
     top_n: int = 20,
+    page: int = 1,
+    page_size: int | None = None,
+    sort_order: str = "desc",
     horizon: str = "H6",
     report_month: str | None = None,
     manufacturer_codes: list[str] | None = None,
     sort_by: str = "risk_probability",
 ) -> dict[str, Any] | None:
-    top_entities = service.list_user_top_entities(
+    effective_page_size = page_size if page_size is not None else top_n
+    top_entities = service.list_candidate_ranking(
         user_id=user_id,
         report_month=report_month,
         horizon=horizon,
-        top_n=top_n,
-        group_by="user_scope",
-        ranking_strategy=_ranking_strategy(sort_by),
-        candidate_type="recurring",
-        fill_policy="none",
         manufacturer_codes=manufacturer_codes,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        page=page,
+        page_size=effective_page_size,
     )
-    entities = [
-        entity for group in top_entities.get("groups", []) for entity in group.get("entities", [])
-    ]
+    entities = list(top_entities.get("items") or [])
     items = [_risk_entity_item(entity, top_entities) for entity in entities]
     return {
         "batch_context": _batch_context(top_entities),
+        "items": items,
         "entities": items,
         "pagination": {
-            "page": 1,
-            "page_size": len(items),
-            "total": len(items),
+            "page": page,
+            "page_size": effective_page_size,
+            "total": int(top_entities.get("total") or 0),
+            "total_pages": int(top_entities.get("total_pages") or 0),
         },
         "scope": top_entities.get("scope", {}),
-        "query": _query(top_entities, sort_by),
+        "query": _query(top_entities, sort_by, sort_order),
         "current_user_id": top_entities.get("user_id"),
         "warnings": list(top_entities.get("warnings") or []),
     }
@@ -54,6 +57,7 @@ def build_workbench_payload_from_top_entities(
     report_month: str | None = None,
     manufacturer_codes: list[str] | None = None,
     sort_by: str = "risk_probability",
+    sort_order: str = "desc",
     detector_summary: dict[str, Any] | None = None,
     run_date: str | None = None,
 ) -> dict[str, Any] | None:
@@ -65,6 +69,9 @@ def build_workbench_payload_from_top_entities(
         report_month=report_month,
         manufacturer_codes=manufacturer_codes,
         sort_by=sort_by,
+        page=1,
+        page_size=top_n,
+        sort_order=sort_order,
     )
     rows = [_workbench_row(item) for item in risk_entities_payload["entities"]]
     summary = detector_summary or {
@@ -125,6 +132,7 @@ def _risk_entity_item(entity: dict[str, Any], top_entities: dict[str, Any]) -> d
     involved_amount = _int_or_none(entity.get("involved_amount"))
     return {
         "entity_id": _text(entity.get("risk_entity_id") or entity.get("candidate_id")),
+        "rank": _int_or_zero(entity.get("rank")),
         "hospital_name": _text(entity.get("hospital_display_name") or entity.get("hospital_code")),
         "drug_name": _text(entity.get("drug_display_name") or entity.get("drug_code")),
         "manufacturer_code": _text(entity.get("manufacturer_code")),
@@ -161,6 +169,7 @@ def _workbench_row(item: dict[str, Any]) -> dict[str, Any]:
     return {
         "row_id": item["entity_id"],
         "entity_id": item["entity_id"],
+        "rank": item.get("rank", 0),
         "manufacturer_code": item["manufacturer_code"],
         "manufacturer_display_name": item["manufacturer_display_name"],
         "manufacturer_name": item["manufacturer_name"],
@@ -181,16 +190,19 @@ def _workbench_row(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _query(top_entities: dict[str, Any], sort_by: str) -> dict[str, Any]:
+def _query(top_entities: dict[str, Any], sort_by: str, sort_order: str = "desc") -> dict[str, Any]:
     return {
         "report_month": top_entities.get("report_month"),
         "requested_horizon": top_entities.get("horizon"),
         "effective_horizon": top_entities.get("horizon"),
         "horizon": top_entities.get("horizon"),
         "top_n": top_entities.get("top_n"),
+        "page": top_entities.get("page", 1),
+        "page_size": top_entities.get("page_size", top_entities.get("top_n")),
         "requested_sort_by": sort_by,
         "effective_sort_by": _sort_by_from_effective_strategy(top_entities.get("effective_ranking_strategy") or sort_by),
         "sort_by": _sort_by_from_effective_strategy(top_entities.get("effective_ranking_strategy") or sort_by),
+        "sort_order": sort_order,
         "sort_metric_available": True,
         "sort_warning": top_entities.get("ranking_strategy_warning"),
     }

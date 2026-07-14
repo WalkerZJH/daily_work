@@ -1,0 +1,1299 @@
+{
+  "generated_at": "2026-07-14T01:54:35.881796+00:00",
+  "batch_root": "data/project_result_batches",
+  "baseline": "reports/current_production_state_baseline.json",
+  "root_registry": {
+    "action": "no_root_registry_csv"
+  },
+  "batches": [
+    {
+      "batch_dir": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw",
+      "actions": [
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 2872770,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 31,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/detector_catalog.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 7,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+          "category": "report_or_profiling",
+          "parquet_row_count": 13,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+          "category": "report_or_profiling",
+          "parquet_row_count": 8,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 28,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 34669,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+          "category": "report_or_profiling",
+          "parquet_row_count": 49,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+          "category": "report_or_profiling",
+          "parquet_row_count": 12,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 26102,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 617,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/monthly_reports.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 1,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/normalization_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+          "category": "report_or_profiling",
+          "parquet_row_count": 4,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/proof_cases.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 0,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 4963,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_cards.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 4963,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entities.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 1164,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 3492,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 1164,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/selection_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+          "category": "report_or_profiling",
+          "parquet_row_count": 10,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 1164,
+          "action": "kept_existing_parquet_duplicate"
+        }
+      ],
+      "blockers": [],
+      "manifest_update": {
+        "manifest_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+        "data_backend": "parquet",
+        "result_table_row_counts": {
+          "daily_detector_clues": 2872770,
+          "daily_detector_runs": 31,
+          "detector_catalog": 7,
+          "drug_aggregates": 28,
+          "entity_display_lookup": 34669,
+          "high_risk_detector_evidence": 26102,
+          "hospital_aggregates": 617,
+          "monthly_reports": 1,
+          "proof_cases": 0,
+          "risk_card_evidence": 4963,
+          "risk_cards": 4963,
+          "risk_entities": 1164,
+          "risk_entity_horizon_profiles": 3492,
+          "risk_entity_timeline": 1164,
+          "work_order_reserved": 1164,
+          "detector_quality_gate": 13,
+          "disabled_detector_notes": 8,
+          "feature_parity_runtime_report": 49,
+          "feature_quality_report": 12,
+          "normalization_report": 4,
+          "selection_report": 10
+        }
+      },
+      "csv_deleted": [
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/detector_catalog.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/monthly_reports.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/normalization_report.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/proof_cases.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_cards.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entities.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/selection_report.csv",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.csv"
+      ]
+    },
+    {
+      "batch_dir": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw",
+      "actions": [
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 2870640,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 30,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/detector_catalog.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+          "row_count": 7,
+          "columns": [
+            "detector_id",
+            "detector_family",
+            "detector_name",
+            "status",
+            "enabled_by_default",
+            "method",
+            "required_fields",
+            "optional_fields",
+            "output_schema_version",
+            "caveat"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+          "row_count": 13,
+          "columns": [
+            "detector_name",
+            "gate_status",
+            "required_fields_available",
+            "missing_rate_ok",
+            "numeric_reliability_ok",
+            "mapping_available",
+            "semantic_caveat",
+            "enable_frontend_display",
+            "enable_customer_copy",
+            "enable_internal_only",
+            "reason_code"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+          "row_count": 8,
+          "columns": [
+            "detector_name",
+            "gate_status",
+            "disabled_reason_text",
+            "reason_code"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+          "row_count": 27,
+          "columns": [
+            "tenant_id",
+            "drug_group",
+            "drug_group_source",
+            "risk_entity_count",
+            "high_risk_count"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 34842,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+          "row_count": 49,
+          "columns": [
+            "required_feature",
+            "production_dtype",
+            "missing_before",
+            "missing_after",
+            "production_imputation",
+            "implemented_in_risk_algorithm_core",
+            "parity_status",
+            "blocker_reason"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+          "row_count": 12,
+          "columns": [
+            "metric",
+            "value"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+          "row_count": 26040,
+          "columns": [
+            "risk_entity_id",
+            "detector_run_id",
+            "run_date",
+            "detector_id",
+            "detector_family",
+            "detector_score",
+            "confidence",
+            "root_cause_label",
+            "evidence_text",
+            "evidence_payload",
+            "caveat",
+            "created_at"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+          "row_count": 628,
+          "columns": [
+            "tenant_id",
+            "hospital_code",
+            "hospital_display_name",
+            "risk_entity_count",
+            "high_risk_count"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/monthly_reports.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+          "row_count": 1,
+          "columns": [
+            "monthly_report_id",
+            "report_type",
+            "report_month",
+            "title",
+            "summary_text"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/normalization_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+          "row_count": 4,
+          "columns": [
+            "metric",
+            "value"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/proof_cases.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+          "row_count": 0,
+          "columns": [
+            "proof_case_id",
+            "risk_entity_id",
+            "candidate_id",
+            "proof_status"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+          "row_count": 5078,
+          "columns": [
+            "evidence_id",
+            "risk_card_id",
+            "risk_entity_id",
+            "candidate_id",
+            "evidence_type",
+            "evidence_level",
+            "evidence_text",
+            "business_metric_name",
+            "business_metric_value",
+            "source_feature_name",
+            "source_feature_value",
+            "visibility_level",
+            "sort_order"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_cards.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+          "row_count": 5078,
+          "columns": [
+            "risk_card_id",
+            "risk_entity_id",
+            "candidate_id",
+            "card_type",
+            "card_title",
+            "card_level",
+            "card_color",
+            "horizon",
+            "risk_probability_display",
+            "card_summary",
+            "candidate_reason",
+            "is_primary",
+            "source_module",
+            "evidence_count",
+            "suggested_action",
+            "user_visible_caveat",
+            "created_at",
+            "source_detector_name",
+            "risk_card_count"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entities.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 1190,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 3570,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+          "row_count": 1190,
+          "columns": [
+            "timeline_id",
+            "risk_entity_id",
+            "candidate_id",
+            "tenant_id",
+            "month",
+            "purchase_count",
+            "purchase_amount_display",
+            "purchase_quantity_display",
+            "last_purchase_date",
+            "days_since_last_purchase",
+            "risk_probability_display",
+            "palive_display",
+            "display_note"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/selection_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+          "row_count": 10,
+          "columns": [
+            "horizon",
+            "cutoff_month",
+            "candidate_policy",
+            "full_universe_rows",
+            "candidate_count",
+            "candidate_rate",
+            "manufacturer_coverage",
+            "metric",
+            "value"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet",
+          "row_count": 1190,
+          "columns": [
+            "work_order_id",
+            "risk_entity_id",
+            "candidate_id",
+            "work_order_status",
+            "auto_dispatch_allowed"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        }
+      ],
+      "blockers": [],
+      "manifest_update": {
+        "manifest_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+        "data_backend": "parquet",
+        "result_table_row_counts": {
+          "daily_detector_clues": 2870640,
+          "daily_detector_runs": 30,
+          "detector_catalog": 7,
+          "drug_aggregates": 27,
+          "entity_display_lookup": 34842,
+          "high_risk_detector_evidence": 26040,
+          "hospital_aggregates": 628,
+          "monthly_reports": 1,
+          "proof_cases": 0,
+          "risk_card_evidence": 5078,
+          "risk_cards": 5078,
+          "risk_entities": 1190,
+          "risk_entity_horizon_profiles": 3570,
+          "risk_entity_timeline": 1190,
+          "work_order_reserved": 1190,
+          "detector_quality_gate": 13,
+          "disabled_detector_notes": 8,
+          "feature_parity_runtime_report": 49,
+          "feature_quality_report": 12,
+          "normalization_report": 4,
+          "selection_report": 10
+        }
+      },
+      "csv_deleted": [
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/detector_catalog.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/monthly_reports.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/normalization_report.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/proof_cases.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_cards.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entities.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/selection_report.csv",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.csv"
+      ]
+    },
+    {
+      "batch_dir": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw",
+      "actions": [
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 2881977,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 31,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/detector_catalog.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+          "row_count": 7,
+          "columns": [
+            "detector_id",
+            "detector_family",
+            "detector_name",
+            "status",
+            "enabled_by_default",
+            "method",
+            "required_fields",
+            "optional_fields",
+            "output_schema_version",
+            "caveat"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+          "row_count": 13,
+          "columns": [
+            "detector_name",
+            "gate_status",
+            "required_fields_available",
+            "missing_rate_ok",
+            "numeric_reliability_ok",
+            "mapping_available",
+            "semantic_caveat",
+            "enable_frontend_display",
+            "enable_customer_copy",
+            "enable_internal_only",
+            "reason_code"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+          "row_count": 8,
+          "columns": [
+            "detector_name",
+            "gate_status",
+            "disabled_reason_text",
+            "reason_code"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+          "row_count": 29,
+          "columns": [
+            "tenant_id",
+            "drug_group",
+            "drug_group_source",
+            "risk_entity_count",
+            "high_risk_count"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 35225,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+          "row_count": 49,
+          "columns": [
+            "required_feature",
+            "production_dtype",
+            "missing_before",
+            "missing_after",
+            "production_imputation",
+            "implemented_in_risk_algorithm_core",
+            "parity_status",
+            "blocker_reason"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+          "row_count": 12,
+          "columns": [
+            "metric",
+            "value"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+          "row_count": 27931,
+          "columns": [
+            "risk_entity_id",
+            "detector_run_id",
+            "run_date",
+            "detector_id",
+            "detector_family",
+            "detector_score",
+            "confidence",
+            "root_cause_label",
+            "evidence_text",
+            "evidence_payload",
+            "caveat",
+            "created_at"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+          "row_count": 641,
+          "columns": [
+            "tenant_id",
+            "hospital_code",
+            "hospital_display_name",
+            "risk_entity_count",
+            "high_risk_count"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/monthly_reports.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+          "row_count": 1,
+          "columns": [
+            "monthly_report_id",
+            "report_type",
+            "report_month",
+            "title",
+            "summary_text"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/normalization_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+          "row_count": 4,
+          "columns": [
+            "metric",
+            "value"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/proof_cases.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+          "row_count": 0,
+          "columns": [
+            "proof_case_id",
+            "risk_entity_id",
+            "candidate_id",
+            "proof_status"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+          "row_count": 5145,
+          "columns": [
+            "evidence_id",
+            "risk_card_id",
+            "risk_entity_id",
+            "candidate_id",
+            "evidence_type",
+            "evidence_level",
+            "evidence_text",
+            "business_metric_name",
+            "business_metric_value",
+            "source_feature_name",
+            "source_feature_value",
+            "visibility_level",
+            "sort_order"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_cards.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+          "row_count": 5145,
+          "columns": [
+            "risk_card_id",
+            "risk_entity_id",
+            "candidate_id",
+            "card_type",
+            "card_title",
+            "card_level",
+            "card_color",
+            "horizon",
+            "risk_probability_display",
+            "card_summary",
+            "candidate_reason",
+            "is_primary",
+            "source_module",
+            "evidence_count",
+            "suggested_action",
+            "user_visible_caveat",
+            "created_at",
+            "source_detector_name",
+            "risk_card_count"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entities.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 1221,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 3663,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+          "row_count": 1221,
+          "columns": [
+            "timeline_id",
+            "risk_entity_id",
+            "candidate_id",
+            "tenant_id",
+            "month",
+            "purchase_count",
+            "purchase_amount_display",
+            "purchase_quantity_display",
+            "last_purchase_date",
+            "days_since_last_purchase",
+            "risk_probability_display",
+            "palive_display",
+            "display_note"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/selection_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+          "row_count": 10,
+          "columns": [
+            "horizon",
+            "cutoff_month",
+            "candidate_policy",
+            "full_universe_rows",
+            "candidate_count",
+            "candidate_rate",
+            "manufacturer_coverage",
+            "metric",
+            "value"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet",
+          "row_count": 1221,
+          "columns": [
+            "work_order_id",
+            "risk_entity_id",
+            "candidate_id",
+            "work_order_status",
+            "auto_dispatch_allowed"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        }
+      ],
+      "blockers": [],
+      "manifest_update": {
+        "manifest_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+        "data_backend": "parquet",
+        "result_table_row_counts": {
+          "daily_detector_clues": 2881977,
+          "daily_detector_runs": 31,
+          "detector_catalog": 7,
+          "drug_aggregates": 29,
+          "entity_display_lookup": 35225,
+          "high_risk_detector_evidence": 27931,
+          "hospital_aggregates": 641,
+          "monthly_reports": 1,
+          "proof_cases": 0,
+          "risk_card_evidence": 5145,
+          "risk_cards": 5145,
+          "risk_entities": 1221,
+          "risk_entity_horizon_profiles": 3663,
+          "risk_entity_timeline": 1221,
+          "work_order_reserved": 1221,
+          "detector_quality_gate": 13,
+          "disabled_detector_notes": 8,
+          "feature_parity_runtime_report": 49,
+          "feature_quality_report": 12,
+          "normalization_report": 4,
+          "selection_report": 10
+        }
+      },
+      "csv_deleted": [
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/detector_catalog.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/monthly_reports.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/normalization_report.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/proof_cases.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_cards.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entities.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/selection_report.csv",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.csv"
+      ]
+    },
+    {
+      "batch_dir": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw",
+      "actions": [
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 2924013,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 31,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/detector_catalog.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+          "row_count": 7,
+          "columns": [
+            "detector_id",
+            "detector_family",
+            "detector_name",
+            "status",
+            "enabled_by_default",
+            "method",
+            "required_fields",
+            "optional_fields",
+            "output_schema_version",
+            "caveat"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+          "row_count": 13,
+          "columns": [
+            "detector_name",
+            "gate_status",
+            "required_fields_available",
+            "missing_rate_ok",
+            "numeric_reliability_ok",
+            "mapping_available",
+            "semantic_caveat",
+            "enable_frontend_display",
+            "enable_customer_copy",
+            "enable_internal_only",
+            "reason_code"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+          "row_count": 8,
+          "columns": [
+            "detector_name",
+            "gate_status",
+            "disabled_reason_text",
+            "reason_code"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+          "row_count": 29,
+          "columns": [
+            "tenant_id",
+            "drug_group",
+            "drug_group_source",
+            "risk_entity_count",
+            "high_risk_count"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 35549,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+          "row_count": 49,
+          "columns": [
+            "required_feature",
+            "production_dtype",
+            "missing_before",
+            "missing_after",
+            "production_imputation",
+            "implemented_in_risk_algorithm_core",
+            "parity_status",
+            "blocker_reason"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+          "row_count": 12,
+          "columns": [
+            "metric",
+            "value"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+          "row_count": 26319,
+          "columns": [
+            "risk_entity_id",
+            "detector_run_id",
+            "run_date",
+            "detector_id",
+            "detector_family",
+            "detector_score",
+            "confidence",
+            "root_cause_label",
+            "evidence_text",
+            "evidence_payload",
+            "caveat",
+            "created_at"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+          "row_count": 673,
+          "columns": [
+            "tenant_id",
+            "hospital_code",
+            "hospital_display_name",
+            "risk_entity_count",
+            "high_risk_count"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/monthly_reports.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+          "row_count": 1,
+          "columns": [
+            "monthly_report_id",
+            "report_type",
+            "report_month",
+            "title",
+            "summary_text"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/normalization_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+          "row_count": 4,
+          "columns": [
+            "metric",
+            "value"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/proof_cases.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+          "row_count": 0,
+          "columns": [
+            "proof_case_id",
+            "risk_entity_id",
+            "candidate_id",
+            "proof_status"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+          "row_count": 5049,
+          "columns": [
+            "evidence_id",
+            "risk_card_id",
+            "risk_entity_id",
+            "candidate_id",
+            "evidence_type",
+            "evidence_level",
+            "evidence_text",
+            "business_metric_name",
+            "business_metric_value",
+            "source_feature_name",
+            "source_feature_value",
+            "visibility_level",
+            "sort_order"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_cards.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+          "row_count": 5049,
+          "columns": [
+            "risk_card_id",
+            "risk_entity_id",
+            "candidate_id",
+            "card_type",
+            "card_title",
+            "card_level",
+            "card_color",
+            "horizon",
+            "risk_probability_display",
+            "card_summary",
+            "candidate_reason",
+            "is_primary",
+            "source_module",
+            "evidence_count",
+            "suggested_action",
+            "user_visible_caveat",
+            "created_at",
+            "source_detector_name",
+            "risk_card_count"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entities.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 1229,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+          "category": "formal_table",
+          "parquet_row_count": 3687,
+          "action": "kept_existing_parquet_duplicate"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+          "row_count": 1229,
+          "columns": [
+            "timeline_id",
+            "risk_entity_id",
+            "candidate_id",
+            "tenant_id",
+            "month",
+            "purchase_count",
+            "purchase_amount_display",
+            "purchase_quantity_display",
+            "last_purchase_date",
+            "days_since_last_purchase",
+            "risk_probability_display",
+            "palive_display",
+            "display_note"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/selection_report.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+          "row_count": 10,
+          "columns": [
+            "horizon",
+            "cutoff_month",
+            "candidate_policy",
+            "full_universe_rows",
+            "candidate_count",
+            "candidate_rate",
+            "manufacturer_coverage",
+            "metric",
+            "value"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "report_or_profiling"
+        },
+        {
+          "csv_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.csv",
+          "parquet_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet",
+          "row_count": 1229,
+          "columns": [
+            "work_order_id",
+            "risk_entity_id",
+            "candidate_id",
+            "work_order_status",
+            "auto_dispatch_allowed"
+          ],
+          "action": "converted_csv_to_parquet",
+          "category": "formal_table"
+        }
+      ],
+      "blockers": [],
+      "manifest_update": {
+        "manifest_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+        "data_backend": "parquet",
+        "result_table_row_counts": {
+          "daily_detector_clues": 2924013,
+          "daily_detector_runs": 31,
+          "detector_catalog": 7,
+          "drug_aggregates": 29,
+          "entity_display_lookup": 35549,
+          "high_risk_detector_evidence": 26319,
+          "hospital_aggregates": 673,
+          "monthly_reports": 1,
+          "proof_cases": 0,
+          "risk_card_evidence": 5049,
+          "risk_cards": 5049,
+          "risk_entities": 1229,
+          "risk_entity_horizon_profiles": 3687,
+          "risk_entity_timeline": 1229,
+          "work_order_reserved": 1229,
+          "detector_quality_gate": 13,
+          "disabled_detector_notes": 8,
+          "feature_parity_runtime_report": 49,
+          "feature_quality_report": 12,
+          "normalization_report": 4,
+          "selection_report": 10
+        }
+      },
+      "csv_deleted": [
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/detector_catalog.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/monthly_reports.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/normalization_report.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/proof_cases.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_cards.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entities.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/selection_report.csv",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.csv"
+      ]
+    }
+  ]
+}

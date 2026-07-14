@@ -10,7 +10,7 @@ from risk_algorithm_core.scorer import ArtifactRiskScorer
 from tests.risk_algorithm_core_test_utils import MODEL_FIXTURE, RAW_FIXTURE, SCHEMA_MAPPING
 
 
-def test_candidate_selector_is_bounded() -> None:
+def test_candidate_selector_persists_full_recurring_universe() -> None:
     batch = read_raw_input_batch(RAW_FIXTURE, SCHEMA_MAPPING)
     normalized, _ = normalize_raw_tables(batch.tables, "2026-07-31")
     entities = build_monthly_entities(
@@ -32,6 +32,9 @@ def test_candidate_selector_is_bounded() -> None:
             "global_candidate_cap": 5,
         }
     ).select(scores, features)
-    assert len(selected) <= 5
+    expected_recurring = int(features["sample_class"].eq("recurring").sum())
+    assert len(selected) == expected_recurring
     assert selected["is_selected_for_frontend"].all()
+    assert set(selected["candidate_policy"]) == {"full_recurring_universe"}
+    assert set(selected["selection_reason"]) == {"recurring_eligible"}
     assert "selected_candidate_rows" in set(report["metric"])

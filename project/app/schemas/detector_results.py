@@ -159,12 +159,19 @@ class HighRiskDetectorEvidenceItem(DetectorResultModel):
     detector_id: str
     detector_family: str
     detector_family_label: str | None = None
+    detector_name: str | None = None
     detector_name_label: str | None = None
+    detector_version: str | None = None
+    observation_date: str | None = None
+    hit_flag: bool = True
     detector_score: float | None = None
     confidence: float | None = None
     root_cause_label: str | None = None
     evidence_text: str | None = None
     evidence_payload: Any = None
+    monitoring_logic: dict[str, Any] = Field(default_factory=dict)
+    observed_values: dict[str, Any] = Field(default_factory=dict)
+    decision: dict[str, Any] = Field(default_factory=dict)
     caveat: str | None = None
     created_at: str | None = None
 

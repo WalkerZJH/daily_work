@@ -305,26 +305,38 @@ export async function loadWorkbenchData(query = {}, { allowDemo = false } = {}) 
   const normalizedQuery = normalizeWorkbenchQuery(query)
   if (allowDemo || normalizedQuery.demoMode) return loadDemo('workbenchData', normalizedQuery)
   const params = queryToApiParams(normalizedQuery)
-  const [workbenchPayload, statusPayload, cluesPayload, lookupPayload] = await Promise.all([
-    tryLoad(() => api(normalizedQuery).getWorkbench(params), (payload) => payload),
-    tryLoad(() => api(normalizedQuery).getDailyDetectorStatus(params), normalizeDailyRuleStatus),
-    tryLoad(() => api(normalizedQuery).getDailyDetectorClues({ ...params, sort_by: 'detector_score', page_size: Math.min(normalizedQuery.topN, 20) }), mapDailyRuleCluesPayload),
-    tryLoad(() => api(normalizedQuery).getDisplayLookupStatus(params), normalizeDisplayLookupStatus)
-  ])
+  const workbenchPayload = await tryLoad(() => api(normalizedQuery).getWorkbench(params), (payload) => payload)
   if (!workbenchPayload || workbenchPayload.ready === false) {
     const context = mapReportContextPayload(workbenchPayload?.report_context || workbenchPayload, normalizedQuery)
-    return {
-      ...createEmptyWorkbenchData(normalizedQuery, context),
-      displayLookupStatus: lookupPayload || DISPLAY_LOOKUP_EMPTY_STATUS,
-      dailyDetectorStatus: statusPayload || { ...FORMAL_EMPTY_STATUS, runDate: context.detectorRunDate || normalizedQuery.detectorRunDate },
-      topRuleClues: cluesPayload?.dailyDetectorClues || []
-    }
+    return createEmptyWorkbenchData(normalizedQuery, context)
   }
-  return mapWorkbenchPayload(workbenchPayload, normalizedQuery, {
-    status: statusPayload,
-    clues: cluesPayload,
-    displayLookupStatus: lookupPayload
-  })
+  return mapWorkbenchPayload(workbenchPayload, normalizedQuery)
+}
+
+export async function loadCandidateRankingData(query = {}, { page = 1, pageSize = 50 } = {}) {
+  const normalizedQuery = normalizeWorkbenchQuery(query)
+  if (normalizedQuery.demoMode) return createEmptyCandidateRankingData(normalizedQuery)
+  const payload = await tryLoad(
+    () => api(normalizedQuery).getRiskEntities({
+      ...queryToApiParams(normalizedQuery),
+      page,
+      page_size: pageSize,
+      sort_order: 'desc'
+    }),
+    (result) => result
+  )
+  return payload ? mapCandidateRankingPayload(payload, normalizedQuery) : createEmptyCandidateRankingData(normalizedQuery)
+}
+
+export function createEmptyCandidateRankingData(query = {}) {
+  return {
+    ready: false,
+    query: normalizeWorkbenchQuery(query),
+    items: [],
+    pagination: { page: 1, pageSize: 50, total: 0, totalPages: 0 },
+    emptyTitle: '暂无候选对象排序结果',
+    emptyMessage: '当前查询条件下没有可展示的 recurring 候选对象。'
+  }
 }
 
 export async function loadRuleCluesData(query = {}, { allowDemo = false } = {}) {
@@ -353,28 +365,13 @@ export async function loadClueDetailData({ clueId, riskEntityId, query } = {}, {
   const normalizedQuery = normalizeWorkbenchQuery(query)
   if (allowDemo || normalizedQuery.demoMode) return loadDemo('clueDetailData', { clueId, riskEntityId, query: normalizedQuery })
   const context = await loadReportContext(normalizedQuery)
-  if (riskEntityId) {
-    const detail = await loadRiskEntityDetailData(riskEntityId, normalizedQuery)
-    if (!detail?.entity) return createEmptyClueDetailData({ clueId, riskEntityId, query: normalizedQuery, reportContext: context })
-    return {
-      ...detail,
-      clue: detail.detectorEvidence[0] || {},
-      isMonthlyHighRiskEntity: true,
-      emptyTitle: '',
-      emptyMessage: ''
-    }
-  }
-  const cluesData = await loadRuleCluesData(normalizedQuery)
-  const clue = cluesData.dailyDetectorClues?.find((item) => item.id === clueId)
-  if (!clue) return createEmptyClueDetailData({ clueId, query: normalizedQuery, reportContext: context })
+  if (!riskEntityId) return createEmptyClueDetailData({ query: normalizedQuery, reportContext: context })
+  const detail = await loadRiskEntityDetailData(riskEntityId, normalizedQuery)
+  if (!detail?.entity) return createEmptyClueDetailData({ riskEntityId, query: normalizedQuery, reportContext: context })
   return {
-    ...cluesData,
-    clue,
-    entity: null,
-    isMonthlyHighRiskEntity: false,
-    detectorEvidence: [clue],
-    probabilityTrend: [],
-    horizonProfiles: {},
+    ...detail,
+    clue: detail.detectorEvidence[0] || {},
+    isMonthlyHighRiskEntity: true,
     emptyTitle: '',
     emptyMessage: ''
   }
@@ -574,6 +571,33 @@ function mapWorkbenchPayload(payload, fallbackQuery, related = {}) {
   }
 }
 
+function mapCandidateRankingPayload(payload, fallbackQuery) {
+  const query = normalizeWorkbenchQuery({
+    ...fallbackQuery,
+    manufacturer_code: payload.query?.manufacturer_code || payload.scope?.effective_manufacturer_code,
+    horizon: payload.query?.horizon || fallbackQuery.horizon,
+    sortBy: payload.query?.sort_by || fallbackQuery.sortBy
+  })
+  const items = (payload.items || payload.entities || []).map((item) => ({
+    ...mapWorkbenchRow(item, query),
+    rank: Number(item.rank || 0)
+  }))
+  const pagination = payload.pagination || {}
+  return {
+    ready: true,
+    query,
+    items,
+    pagination: {
+      page: Number(pagination.page || 1),
+      pageSize: Number(pagination.page_size || items.length || 50),
+      total: Number(pagination.total || 0),
+      totalPages: Number(pagination.total_pages || 0)
+    },
+    emptyTitle: items.length ? '' : '暂无候选对象排序结果',
+    emptyMessage: items.length ? '' : '当前查询条件下没有可展示的 recurring 候选对象。'
+  }
+}
+
 function mapScope(scope = {}, query) {
   const code = scope.manufacturer_code || scope.effective_manufacturer_code || query.manufacturerCode
   return {
@@ -655,6 +679,7 @@ function mapWorkbenchRow(row, query) {
   return {
     id: row.row_id || row.entity_id || `${hospital}-${drug}`,
     entityId: row.entity_id || row.risk_entity_id || '',
+    rank: Number(row.rank || 0),
     manufacturer,
     manufacturerCode: row.manufacturer_code || query.manufacturerCode,
     hospital,
@@ -896,9 +921,31 @@ function mapRiskEntityRuleEvidence(payload) {
         index
       ),
       detectorName: item.detector_name_label || payload.catalog_by_detector_id?.[item.detector_id]?.detector_name || item.detector_name || item.detector_id,
-      detectorFamilyLabel: item.detector_family_label || detectorFamilyLabel(item.detector_family)
+      detectorFamilyLabel: item.detector_family_label || detectorFamilyLabel(item.detector_family),
+      monitoringLogic: item.monitoring_logic || {},
+      observedValues: item.observed_values || {},
+      decision: item.decision || {},
+      currentValueText: evidenceCurrentValue(item.observed_values || {}),
+      baselineValueText: evidenceBaselineValue(item.observed_values || {}),
+      comparisonText: evidenceComparison(item.decision || {})
     }))
   }
+}
+
+function evidenceCurrentValue(values) {
+  return firstDisplayText(values.current_gap_days, values.recent_quantity, values.recent_frequency) || '-'
+}
+
+function evidenceBaselineValue(values) {
+  return firstDisplayText(values.historical_median_interval_days, values.baseline_quantity, values.baseline_frequency) || '-'
+}
+
+function evidenceComparison(decision) {
+  const value = decision.comparison_value
+  const threshold = decision.threshold_value
+  const operator = decision.threshold_operator || ''
+  if (value === null || value === undefined) return '-'
+  return threshold === null || threshold === undefined ? String(value) : `${value} ${operator} ${threshold}`
 }
 
 function mapProbabilityTrendPayload(payload) {

@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import os
 import sys
+import json
 from pathlib import Path
 from typing import Any
 
@@ -388,6 +389,8 @@ def _evidence_item(row: pd.Series, catalog: dict[str, dict[str, Any]] | None = N
     detector_id = _text(row.get("detector_id"))
     catalog_item = (catalog or {}).get(detector_id, {})
     detector_family = _text(row.get("detector_family"))
+    payload = _json_object(row.get("evidence_payload"))
+    contract = _evidence_contract(detector_id, catalog_item, payload)
     return {
         "risk_entity_id": _text(row.get("risk_entity_id")),
         "detector_run_id": _text(row.get("detector_run_id")),
@@ -395,14 +398,94 @@ def _evidence_item(row: pd.Series, catalog: dict[str, dict[str, Any]] | None = N
         "detector_id": detector_id,
         "detector_family": detector_family,
         "detector_family_label": _detector_family_label(detector_family),
+        "detector_name": _text(catalog_item.get("detector_name") or detector_id),
         "detector_name_label": _text(catalog_item.get("detector_name") or detector_id),
+        "detector_version": _text(payload.get("method") or catalog_item.get("method")) or None,
+        "observation_date": _text(row.get("run_date")) or None,
+        "hit_flag": _bool(row.get("hit_flag", True)),
         "detector_score": _number_or_none(row.get("detector_score")),
         "confidence": _number_or_none(row.get("confidence")),
         "root_cause_label": _text(row.get("root_cause_label")) or None,
         "evidence_text": _text(row.get("evidence_text")) or None,
-        "evidence_payload": _clean_value(row.get("evidence_payload")),
+        "evidence_payload": payload,
+        "monitoring_logic": contract["monitoring_logic"],
+        "observed_values": contract["observed_values"],
+        "decision": contract["decision"],
         "caveat": _text(row.get("caveat")) or None,
         "created_at": _text(row.get("created_at")) or None,
+    }
+
+
+def _json_object(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+
+def _evidence_contract(
+    detector_id: str,
+    catalog_item: dict[str, Any],
+    payload: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    method = _text(payload.get("method") or catalog_item.get("method"))
+    if detector_id == "purchase_interval_ipi":
+        return {
+            "monitoring_logic": {
+                "metric": "days_since_last_purchase",
+                "current_window": "observation_date",
+                "baseline_window": "entity historical purchase intervals",
+                "formula": "(current_gap - historical_median_interval) / max(historical_MAD, mad_floor_days)",
+                "eligibility": {"purchase_count": payload.get("purchase_count"), "min_purchase_count": payload.get("min_purchase_count")},
+                "hit_condition": "robust_z >= z_hit and purchase_count >= min_purchase_count",
+                "method": method,
+            },
+            "observed_values": {
+                "current_gap_days": payload.get("current_gap_days", payload.get("days_since_last_purchase")),
+                "historical_median_interval_days": payload.get("historical_median_interval_days", payload.get("median_days")),
+                "historical_mad_days": payload.get("historical_mad_days", payload.get("mad_days")),
+                "mad_floor_days": payload.get("mad_floor_days"),
+                "purchase_count": payload.get("purchase_count"),
+            },
+            "decision": {"threshold_operator": ">=", "threshold_value": payload.get("z_hit"), "comparison_value": payload.get("robust_z"), "hit_reason": "采购间隔显著高于对象自身历史基准"},
+        }
+    if detector_id == "purchase_quantity_trend":
+        return {
+            "monitoring_logic": {
+                "metric": "purchase_quantity",
+                "current_window": payload.get("recent_window_months"),
+                "baseline_window": payload.get("baseline_window_months"),
+                "formula": "recent_quantity / baseline_quantity",
+                "eligibility": {},
+                "hit_condition": "quantity_ratio <= drop_ratio_hit",
+                "method": method,
+            },
+            "observed_values": {"recent_quantity": payload.get("recent_quantity"), "baseline_quantity": payload.get("baseline_quantity")},
+            "decision": {"threshold_operator": "<=", "threshold_value": payload.get("drop_ratio_hit"), "comparison_value": payload.get("quantity_ratio"), "hit_reason": "近期采购数量低于对象自身历史基准"},
+        }
+    if detector_id == "purchase_frequency_drop":
+        return {
+            "monitoring_logic": {
+                "metric": "monthly_purchase_frequency",
+                "current_window": payload.get("recent_window_months"),
+                "baseline_window": payload.get("baseline_window_months"),
+                "formula": "recent_frequency / baseline_frequency",
+                "eligibility": {"baseline_frequency": payload.get("baseline_frequency", payload.get("base_rate")), "min_base_rate": payload.get("min_base_rate")},
+                "hit_condition": "frequency_ratio <= freq_drop_ratio and baseline_frequency >= min_base_rate",
+                "method": method,
+            },
+            "observed_values": {"recent_frequency": payload.get("recent_frequency"), "baseline_frequency": payload.get("baseline_frequency", payload.get("base_rate"))},
+            "decision": {"threshold_operator": "<=", "threshold_value": payload.get("freq_drop_ratio"), "comparison_value": payload.get("frequency_ratio"), "hit_reason": "近期采购频次低于对象自身历史基准"},
+        }
+    return {
+        "monitoring_logic": {"metric": None, "current_window": None, "baseline_window": None, "formula": None, "eligibility": {}, "hit_condition": None, "method": method},
+        "observed_values": payload,
+        "decision": {"threshold_operator": None, "threshold_value": None, "comparison_value": None, "hit_reason": None},
     }
 
 

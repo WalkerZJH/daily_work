@@ -1,0 +1,2837 @@
+{
+  "generated_at": "2026-07-14T02:07:59.585853+00:00",
+  "git_head": "d9df5aa98dc21d68e70091511bd4f9d6ddbfa643",
+  "batch_root": "data/project_result_batches",
+  "batches": [
+    {
+      "report_month": "2025-09",
+      "batch_id": "2025-09-monthly-risk-algorithm-formal-v2-raw",
+      "batch_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw",
+      "manifest_path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+      "manifest_data_backend": "parquet",
+      "manifest_declared_tables": {
+        "detector_catalog": {
+          "raw": "detector_catalog.parquet",
+          "path": "detector_catalog.parquet",
+          "manifest_row_count": 7
+        },
+        "daily_detector_runs": {
+          "raw": "daily_detector_runs.parquet",
+          "path": "daily_detector_runs.parquet",
+          "manifest_row_count": 31
+        },
+        "daily_detector_clues": {
+          "raw": "daily_detector_clues.parquet",
+          "path": "daily_detector_clues.parquet",
+          "manifest_row_count": 2872770
+        },
+        "high_risk_detector_evidence": {
+          "raw": "high_risk_detector_evidence.parquet",
+          "path": "high_risk_detector_evidence.parquet",
+          "manifest_row_count": 26102
+        },
+        "drug_aggregates": {
+          "manifest_row_count": 28
+        },
+        "entity_display_lookup": {
+          "manifest_row_count": 34669
+        },
+        "hospital_aggregates": {
+          "manifest_row_count": 617
+        },
+        "monthly_reports": {
+          "manifest_row_count": 1
+        },
+        "proof_cases": {
+          "manifest_row_count": 0
+        },
+        "risk_card_evidence": {
+          "manifest_row_count": 4963
+        },
+        "risk_cards": {
+          "manifest_row_count": 4963
+        },
+        "risk_entities": {
+          "manifest_row_count": 1164
+        },
+        "risk_entity_horizon_profiles": {
+          "manifest_row_count": 3492
+        },
+        "risk_entity_timeline": {
+          "manifest_row_count": 1164
+        },
+        "work_order_reserved": {
+          "manifest_row_count": 1164
+        },
+        "detector_quality_gate": {
+          "manifest_row_count": 13
+        },
+        "disabled_detector_notes": {
+          "manifest_row_count": 8
+        },
+        "feature_parity_runtime_report": {
+          "manifest_row_count": 49
+        },
+        "feature_quality_report": {
+          "manifest_row_count": 12
+        },
+        "normalization_report": {
+          "manifest_row_count": 4
+        },
+        "selection_report": {
+          "manifest_row_count": 10
+        }
+      },
+      "manifest_summary": {
+        "batch_id": "2025-09-monthly-risk-algorithm-formal-v2-raw",
+        "result_batch_id": "2025-09-monthly-risk-algorithm-formal-v2-raw",
+        "report_month": "2025-09",
+        "run_date": "2025-10-01",
+        "report_date": "2025-10-01",
+        "score_as_of_date": "2025-09-30",
+        "cutoff_date": "2025-09-30",
+        "model_artifact_id": "xgboost_small_without_choice_set_20260713062634",
+        "available_horizons": [
+          "H3",
+          "H6",
+          "H12"
+        ],
+        "primary_horizon": "H6",
+        "data_backend": "parquet"
+      },
+      "table_files": {
+        "risk_entities": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+            "suffix": ".parquet",
+            "bytes": 102928,
+            "sha256": "c2acd3be999c6a29ace0a7e632a92bde4df7ec67a6068f4191176f877afd42ba",
+            "row_count": 1164,
+            "columns": [
+              "risk_entity_id",
+              "candidate_id",
+              "entity_id",
+              "tenant_id",
+              "enterprise_id",
+              "manufacturer_code",
+              "manufacturer_display_name",
+              "hospital_code",
+              "hospital_display_name",
+              "drug_code",
+              "drug_group",
+              "drug_group_source",
+              "drug_display_name",
+              "report_month",
+              "cutoff_month",
+              "primary_horizon",
+              "candidate_type",
+              "sample_class",
+              "risk_probability_display",
+              "risk_probability_value",
+              "probability_display_mode",
+              "risk_level",
+              "risk_color",
+              "risk_score_display",
+              "palive_display",
+              "palive_display_mode",
+              "value_at_risk_display",
+              "potential_value_level",
+              "business_priority_display",
+              "main_reason_summary",
+              "risk_type_label",
+              "region_code",
+              "region_display_name",
+              "review_status",
+              "final_candidate_status",
+              "review_priority",
+              "evidence_strength",
+              "risk_card_count",
+              "has_work_order",
+              "is_high_risk",
+              "is_observation",
+              "is_one_shot",
+              "is_probability_allowed",
+              "user_visible_caveat",
+              "suggested_action_short",
+              "auto_dispatch_allowed",
+              "created_at"
+            ]
+          }
+        ],
+        "risk_entity_horizon_profiles": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+            "suffix": ".parquet",
+            "bytes": 87171,
+            "sha256": "13e400657f9aa082318523a76d62a2db354a0d653557f150540305b96e06e1ad",
+            "row_count": 3492,
+            "columns": [
+              "risk_entity_id",
+              "candidate_id",
+              "entity_id",
+              "report_month",
+              "horizon",
+              "risk_probability",
+              "involved_amount",
+              "involved_amount_source",
+              "risk_level",
+              "risk_band",
+              "main_reason_summary",
+              "reason",
+              "detector_evidence_count",
+              "updated_at"
+            ]
+          }
+        ],
+        "monthly_reports": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+            "suffix": ".parquet",
+            "bytes": 3858,
+            "sha256": "6ed8a29fe520f8f92378b839ecad43a216b0508993439a037a695408592753d8",
+            "row_count": 1,
+            "columns": [
+              "monthly_report_id",
+              "report_type",
+              "report_month",
+              "title",
+              "summary_text"
+            ]
+          }
+        ],
+        "proof_cases": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+            "suffix": ".parquet",
+            "bytes": 2442,
+            "sha256": "81ee89a473905424d026d727aa8f4060bce9fae48cc4a25381e4d7c00441d291",
+            "row_count": 0,
+            "columns": [
+              "proof_case_id",
+              "risk_entity_id",
+              "candidate_id",
+              "proof_status"
+            ]
+          }
+        ],
+        "risk_cards": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+            "suffix": ".parquet",
+            "bytes": 84649,
+            "sha256": "8ffb722f42e0cc18db17a09513e4b80afb70c25c88ae499c15b491e2ac6cc21e",
+            "row_count": 4963,
+            "columns": [
+              "risk_card_id",
+              "risk_entity_id",
+              "candidate_id",
+              "card_type",
+              "card_title",
+              "card_level",
+              "card_color",
+              "horizon",
+              "risk_probability_display",
+              "card_summary",
+              "candidate_reason",
+              "is_primary",
+              "source_module",
+              "evidence_count",
+              "suggested_action",
+              "user_visible_caveat",
+              "created_at",
+              "source_detector_name",
+              "risk_card_count"
+            ]
+          }
+        ],
+        "risk_card_evidence": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+            "suffix": ".parquet",
+            "bytes": 134764,
+            "sha256": "af4778bc51845a42640938347b0e0a4e1eda180df0fe532e59bb45745a68f16a",
+            "row_count": 4963,
+            "columns": [
+              "evidence_id",
+              "risk_card_id",
+              "risk_entity_id",
+              "candidate_id",
+              "evidence_type",
+              "evidence_level",
+              "evidence_text",
+              "business_metric_name",
+              "business_metric_value",
+              "source_feature_name",
+              "source_feature_value",
+              "visibility_level",
+              "sort_order"
+            ]
+          }
+        ],
+        "risk_entity_timeline": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+            "suffix": ".parquet",
+            "bytes": 39234,
+            "sha256": "31d020ea3df77e38a05832ace5531742bbe97c336fa8662919c720e7da22d703",
+            "row_count": 1164,
+            "columns": [
+              "timeline_id",
+              "risk_entity_id",
+              "candidate_id",
+              "tenant_id",
+              "month",
+              "purchase_count",
+              "purchase_amount_display",
+              "purchase_quantity_display",
+              "last_purchase_date",
+              "days_since_last_purchase",
+              "risk_probability_display",
+              "palive_display",
+              "display_note"
+            ]
+          }
+        ],
+        "hospital_aggregates": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+            "suffix": ".parquet",
+            "bytes": 17721,
+            "sha256": "16f7477052fce0fb9bbc8246b95f471d71c4275306df4d53959038a247c1c7e8",
+            "row_count": 617,
+            "columns": [
+              "tenant_id",
+              "hospital_code",
+              "hospital_display_name",
+              "risk_entity_count",
+              "high_risk_count"
+            ]
+          }
+        ],
+        "drug_aggregates": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+            "suffix": ".parquet",
+            "bytes": 4226,
+            "sha256": "f941a010dccfa585cabd6bceb8307b07c5dc537476330b9f36768c369c634857",
+            "row_count": 28,
+            "columns": [
+              "tenant_id",
+              "drug_group",
+              "drug_group_source",
+              "risk_entity_count",
+              "high_risk_count"
+            ]
+          }
+        ],
+        "work_order_reserved": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet",
+            "suffix": ".parquet",
+            "bytes": 34188,
+            "sha256": "7ee0afb7826e00b30939ea1a634be3ec433688021aa79491f75d78312e3df0bf",
+            "row_count": 1164,
+            "columns": [
+              "work_order_id",
+              "risk_entity_id",
+              "candidate_id",
+              "work_order_status",
+              "auto_dispatch_allowed"
+            ]
+          }
+        ],
+        "oneshot_terminals": [],
+        "entity_display_lookup": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+            "suffix": ".parquet",
+            "bytes": 1028084,
+            "sha256": "de9cfe54e8bb2477f01c3ff9988095a150ba561a5692ef262b479cc6b057a4d9",
+            "row_count": 34669,
+            "columns": [
+              "tenant_id",
+              "report_month",
+              "manufacturer_code",
+              "manufacturer_display_name",
+              "hospital_code",
+              "hospital_display_name",
+              "drug_code",
+              "drug_group",
+              "drug_display_name",
+              "product_line_code",
+              "product_line_name",
+              "region_code",
+              "region_display_name",
+              "display_key",
+              "display_name_source",
+              "display_name_quality",
+              "source_raw_batch_id",
+              "updated_at"
+            ],
+            "lookup_profile": {
+              "row_count": 34669,
+              "columns": [
+                "manufacturer_code",
+                "manufacturer_display_name",
+                "hospital_code",
+                "hospital_display_name",
+                "drug_code",
+                "drug_display_name"
+              ],
+              "manufacturer_code_non_empty": 34669,
+              "manufacturer_display_name_non_empty": 34669,
+              "hospital_code_non_empty": 34669,
+              "hospital_display_name_non_empty": 34669,
+              "drug_code_non_empty": 34669,
+              "drug_display_name_non_empty": 34669,
+              "manufacturer_display_name_equals_manufacturer_code": 0,
+              "manufacturer_display_name_equals_manufacturer_code_ratio": 0.0,
+              "hospital_display_name_equals_hospital_code": 5,
+              "hospital_display_name_equals_hospital_code_ratio": 0.0001442210620439009,
+              "drug_display_name_equals_drug_code": 0,
+              "drug_display_name_equals_drug_code_ratio": 0.0
+            }
+          }
+        ],
+        "detector_catalog": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+            "suffix": ".parquet",
+            "bytes": 8058,
+            "sha256": "f577cfe498d92843de00ec75874863376c304460e4b81573bcb509753a55e128",
+            "row_count": 7,
+            "columns": [
+              "detector_id",
+              "detector_family",
+              "detector_name",
+              "status",
+              "enabled_by_default",
+              "method",
+              "required_fields",
+              "optional_fields",
+              "output_schema_version",
+              "caveat"
+            ]
+          }
+        ],
+        "daily_detector_runs": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+            "suffix": ".parquet",
+            "bytes": 4903,
+            "sha256": "4cf2216d66e2a6abf0bb16cf223a605a5a7c354aebf606700559e24ece65057d",
+            "row_count": 31,
+            "columns": [
+              "detector_run_id",
+              "run_date",
+              "report_month",
+              "source_raw_batch_id",
+              "source_result_batch_id",
+              "detector_config_version",
+              "enabled_detectors",
+              "scanned_entity_count",
+              "clue_count",
+              "attached_high_risk_count",
+              "created_at"
+            ],
+            "detector_run_profile": {
+              "date_column": "run_date",
+              "date_count": 31,
+              "min_date": "2025-10-01",
+              "max_date": "2025-10-31"
+            }
+          }
+        ],
+        "daily_detector_clues": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+            "suffix": ".parquet",
+            "bytes": 60600614,
+            "sha256": "8f679cad436bd7ab2fcab22e230402d6ceff5bcfb57584bf09e964d613fc5cad",
+            "row_count": 2872770,
+            "columns": [
+              "detector_clue_id",
+              "detector_run_id",
+              "run_date",
+              "tenant_id",
+              "manufacturer_code",
+              "hospital_code",
+              "drug_group",
+              "detector_id",
+              "detector_family",
+              "detector_score",
+              "detector_level",
+              "confidence",
+              "hit_flag",
+              "root_cause_label",
+              "evidence_text",
+              "evidence_payload",
+              "is_monthly_high_risk_entity",
+              "risk_entity_id",
+              "monthly_risk_probability",
+              "monthly_loss_value",
+              "display_rank",
+              "caveat",
+              "created_at"
+            ]
+          }
+        ],
+        "high_risk_detector_evidence": [
+          {
+            "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+            "suffix": ".parquet",
+            "bytes": 17026,
+            "sha256": "2250601f66955d47b90d9b69fd85ee9d3263127219f7c04fc40746cadab51370",
+            "row_count": 26102,
+            "columns": [
+              "risk_entity_id",
+              "detector_run_id",
+              "run_date",
+              "detector_id",
+              "detector_family",
+              "detector_score",
+              "confidence",
+              "root_cause_label",
+              "evidence_text",
+              "evidence_payload",
+              "caveat",
+              "created_at"
+            ]
+          }
+        ],
+        "observation_registry": [],
+        "manufacturer_observation_registry": []
+      },
+      "csv_parquet_pairs": [],
+      "manifest_mismatches": [],
+      "all_files": [
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/run_summary.json",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/run_summary.md",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+        "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet"
+      ]
+    },
+    {
+      "report_month": "2025-10",
+      "batch_id": "2025-10-monthly-risk-algorithm-formal-v2-raw",
+      "batch_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw",
+      "manifest_path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+      "manifest_data_backend": "parquet",
+      "manifest_declared_tables": {
+        "detector_catalog": {
+          "raw": "detector_catalog.parquet",
+          "path": "detector_catalog.parquet",
+          "manifest_row_count": 7
+        },
+        "daily_detector_runs": {
+          "raw": "daily_detector_runs.parquet",
+          "path": "daily_detector_runs.parquet",
+          "manifest_row_count": 30
+        },
+        "daily_detector_clues": {
+          "raw": "daily_detector_clues.parquet",
+          "path": "daily_detector_clues.parquet",
+          "manifest_row_count": 2870640
+        },
+        "high_risk_detector_evidence": {
+          "raw": "high_risk_detector_evidence.parquet",
+          "path": "high_risk_detector_evidence.parquet",
+          "manifest_row_count": 26040
+        },
+        "drug_aggregates": {
+          "manifest_row_count": 27
+        },
+        "entity_display_lookup": {
+          "manifest_row_count": 34842
+        },
+        "hospital_aggregates": {
+          "manifest_row_count": 628
+        },
+        "monthly_reports": {
+          "manifest_row_count": 1
+        },
+        "proof_cases": {
+          "manifest_row_count": 0
+        },
+        "risk_card_evidence": {
+          "manifest_row_count": 5078
+        },
+        "risk_cards": {
+          "manifest_row_count": 5078
+        },
+        "risk_entities": {
+          "manifest_row_count": 1190
+        },
+        "risk_entity_horizon_profiles": {
+          "manifest_row_count": 3570
+        },
+        "risk_entity_timeline": {
+          "manifest_row_count": 1190
+        },
+        "work_order_reserved": {
+          "manifest_row_count": 1190
+        },
+        "detector_quality_gate": {
+          "manifest_row_count": 13
+        },
+        "disabled_detector_notes": {
+          "manifest_row_count": 8
+        },
+        "feature_parity_runtime_report": {
+          "manifest_row_count": 49
+        },
+        "feature_quality_report": {
+          "manifest_row_count": 12
+        },
+        "normalization_report": {
+          "manifest_row_count": 4
+        },
+        "selection_report": {
+          "manifest_row_count": 10
+        }
+      },
+      "manifest_summary": {
+        "batch_id": "2025-10-monthly-risk-algorithm-formal-v2-raw",
+        "result_batch_id": "2025-10-monthly-risk-algorithm-formal-v2-raw",
+        "report_month": "2025-10",
+        "run_date": "2025-11-01",
+        "report_date": "2025-11-01",
+        "score_as_of_date": "2025-10-31",
+        "cutoff_date": "2025-10-31",
+        "model_artifact_id": "xgboost_small_without_choice_set_20260713062634",
+        "available_horizons": [
+          "H3",
+          "H6",
+          "H12"
+        ],
+        "primary_horizon": "H6",
+        "data_backend": "parquet"
+      },
+      "table_files": {
+        "risk_entities": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+            "suffix": ".parquet",
+            "bytes": 104006,
+            "sha256": "5b1b455757d4a2245f5899058fd20bb788a527f9b2e8b20c031d15f88c77a9d3",
+            "row_count": 1190,
+            "columns": [
+              "risk_entity_id",
+              "candidate_id",
+              "entity_id",
+              "tenant_id",
+              "enterprise_id",
+              "manufacturer_code",
+              "manufacturer_display_name",
+              "hospital_code",
+              "hospital_display_name",
+              "drug_code",
+              "drug_group",
+              "drug_group_source",
+              "drug_display_name",
+              "report_month",
+              "cutoff_month",
+              "primary_horizon",
+              "candidate_type",
+              "sample_class",
+              "risk_probability_display",
+              "risk_probability_value",
+              "probability_display_mode",
+              "risk_level",
+              "risk_color",
+              "risk_score_display",
+              "palive_display",
+              "palive_display_mode",
+              "value_at_risk_display",
+              "potential_value_level",
+              "business_priority_display",
+              "main_reason_summary",
+              "risk_type_label",
+              "region_code",
+              "region_display_name",
+              "review_status",
+              "final_candidate_status",
+              "review_priority",
+              "evidence_strength",
+              "risk_card_count",
+              "has_work_order",
+              "is_high_risk",
+              "is_observation",
+              "is_one_shot",
+              "is_probability_allowed",
+              "user_visible_caveat",
+              "suggested_action_short",
+              "auto_dispatch_allowed",
+              "created_at"
+            ]
+          }
+        ],
+        "risk_entity_horizon_profiles": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+            "suffix": ".parquet",
+            "bytes": 87872,
+            "sha256": "c1722a965efaa1dc6dbbf710e2f7a32165270a66e1b46b8ce1fa8608144125e4",
+            "row_count": 3570,
+            "columns": [
+              "risk_entity_id",
+              "candidate_id",
+              "entity_id",
+              "report_month",
+              "horizon",
+              "risk_probability",
+              "involved_amount",
+              "involved_amount_source",
+              "risk_level",
+              "risk_band",
+              "main_reason_summary",
+              "reason",
+              "detector_evidence_count",
+              "updated_at"
+            ]
+          }
+        ],
+        "monthly_reports": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+            "suffix": ".parquet",
+            "bytes": 3858,
+            "sha256": "cc9f55be68a58b4aa47085ee08a65c468981f5a135856ef31cb5ae28449966a3",
+            "row_count": 1,
+            "columns": [
+              "monthly_report_id",
+              "report_type",
+              "report_month",
+              "title",
+              "summary_text"
+            ]
+          }
+        ],
+        "proof_cases": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+            "suffix": ".parquet",
+            "bytes": 2442,
+            "sha256": "81ee89a473905424d026d727aa8f4060bce9fae48cc4a25381e4d7c00441d291",
+            "row_count": 0,
+            "columns": [
+              "proof_case_id",
+              "risk_entity_id",
+              "candidate_id",
+              "proof_status"
+            ]
+          }
+        ],
+        "risk_cards": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+            "suffix": ".parquet",
+            "bytes": 86137,
+            "sha256": "de2270f003b244c7df4c343f54d1c4d4893e40d1d3f82ec65e12b14b0095585f",
+            "row_count": 5078,
+            "columns": [
+              "risk_card_id",
+              "risk_entity_id",
+              "candidate_id",
+              "card_type",
+              "card_title",
+              "card_level",
+              "card_color",
+              "horizon",
+              "risk_probability_display",
+              "card_summary",
+              "candidate_reason",
+              "is_primary",
+              "source_module",
+              "evidence_count",
+              "suggested_action",
+              "user_visible_caveat",
+              "created_at",
+              "source_detector_name",
+              "risk_card_count"
+            ]
+          }
+        ],
+        "risk_card_evidence": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+            "suffix": ".parquet",
+            "bytes": 137037,
+            "sha256": "ff9e8c4e3b0c433efe6906bc7b730d77e54376bda21f9a52958a60a2e64c649a",
+            "row_count": 5078,
+            "columns": [
+              "evidence_id",
+              "risk_card_id",
+              "risk_entity_id",
+              "candidate_id",
+              "evidence_type",
+              "evidence_level",
+              "evidence_text",
+              "business_metric_name",
+              "business_metric_value",
+              "source_feature_name",
+              "source_feature_value",
+              "visibility_level",
+              "sort_order"
+            ]
+          }
+        ],
+        "risk_entity_timeline": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+            "suffix": ".parquet",
+            "bytes": 39676,
+            "sha256": "041f156d38b70e4ef02df8c7ff8d6aeebd41c59685a763178abb0eae4623bd48",
+            "row_count": 1190,
+            "columns": [
+              "timeline_id",
+              "risk_entity_id",
+              "candidate_id",
+              "tenant_id",
+              "month",
+              "purchase_count",
+              "purchase_amount_display",
+              "purchase_quantity_display",
+              "last_purchase_date",
+              "days_since_last_purchase",
+              "risk_probability_display",
+              "palive_display",
+              "display_note"
+            ]
+          }
+        ],
+        "hospital_aggregates": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+            "suffix": ".parquet",
+            "bytes": 18244,
+            "sha256": "7968fc65f8ff15873e22448b4d1ab1ea5244671eedc964672d86891d3a978882",
+            "row_count": 628,
+            "columns": [
+              "tenant_id",
+              "hospital_code",
+              "hospital_display_name",
+              "risk_entity_count",
+              "high_risk_count"
+            ]
+          }
+        ],
+        "drug_aggregates": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+            "suffix": ".parquet",
+            "bytes": 4264,
+            "sha256": "9a2c4f68257356ea3eeb3053b8896f9cab32e6abc9d1cbae5a5e780f3d00524b",
+            "row_count": 27,
+            "columns": [
+              "tenant_id",
+              "drug_group",
+              "drug_group_source",
+              "risk_entity_count",
+              "high_risk_count"
+            ]
+          }
+        ],
+        "work_order_reserved": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet",
+            "suffix": ".parquet",
+            "bytes": 34610,
+            "sha256": "aa9c52ca6fdac52ce6ff3b8cf81cb494ed2657ab5bda920cb6dfa1d483c548b6",
+            "row_count": 1190,
+            "columns": [
+              "work_order_id",
+              "risk_entity_id",
+              "candidate_id",
+              "work_order_status",
+              "auto_dispatch_allowed"
+            ]
+          }
+        ],
+        "oneshot_terminals": [],
+        "entity_display_lookup": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+            "suffix": ".parquet",
+            "bytes": 1032990,
+            "sha256": "75f57f1e3f7eb3458bbd21a08f6b1bfa9e60443301e3aff19a5c741abf3b3c29",
+            "row_count": 34842,
+            "columns": [
+              "tenant_id",
+              "report_month",
+              "manufacturer_code",
+              "manufacturer_display_name",
+              "hospital_code",
+              "hospital_display_name",
+              "drug_code",
+              "drug_group",
+              "drug_display_name",
+              "product_line_code",
+              "product_line_name",
+              "region_code",
+              "region_display_name",
+              "display_key",
+              "display_name_source",
+              "display_name_quality",
+              "source_raw_batch_id",
+              "updated_at"
+            ],
+            "lookup_profile": {
+              "row_count": 34842,
+              "columns": [
+                "manufacturer_code",
+                "manufacturer_display_name",
+                "hospital_code",
+                "hospital_display_name",
+                "drug_code",
+                "drug_display_name"
+              ],
+              "manufacturer_code_non_empty": 34842,
+              "manufacturer_display_name_non_empty": 34842,
+              "hospital_code_non_empty": 34842,
+              "hospital_display_name_non_empty": 34842,
+              "drug_code_non_empty": 34842,
+              "drug_display_name_non_empty": 34842,
+              "manufacturer_display_name_equals_manufacturer_code": 0,
+              "manufacturer_display_name_equals_manufacturer_code_ratio": 0.0,
+              "hospital_display_name_equals_hospital_code": 4,
+              "hospital_display_name_equals_hospital_code_ratio": 0.00011480397221743872,
+              "drug_display_name_equals_drug_code": 0,
+              "drug_display_name_equals_drug_code_ratio": 0.0
+            }
+          }
+        ],
+        "detector_catalog": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+            "suffix": ".parquet",
+            "bytes": 8058,
+            "sha256": "f577cfe498d92843de00ec75874863376c304460e4b81573bcb509753a55e128",
+            "row_count": 7,
+            "columns": [
+              "detector_id",
+              "detector_family",
+              "detector_name",
+              "status",
+              "enabled_by_default",
+              "method",
+              "required_fields",
+              "optional_fields",
+              "output_schema_version",
+              "caveat"
+            ]
+          }
+        ],
+        "daily_detector_runs": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+            "suffix": ".parquet",
+            "bytes": 4885,
+            "sha256": "2aa153cf686b16b4c13b8d81ab02d348b69e283d1b5c5fd42a58774ffbc3dce6",
+            "row_count": 30,
+            "columns": [
+              "detector_run_id",
+              "run_date",
+              "report_month",
+              "source_raw_batch_id",
+              "source_result_batch_id",
+              "detector_config_version",
+              "enabled_detectors",
+              "scanned_entity_count",
+              "clue_count",
+              "attached_high_risk_count",
+              "created_at"
+            ],
+            "detector_run_profile": {
+              "date_column": "run_date",
+              "date_count": 30,
+              "min_date": "2025-11-01",
+              "max_date": "2025-11-30"
+            }
+          }
+        ],
+        "daily_detector_clues": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+            "suffix": ".parquet",
+            "bytes": 60560711,
+            "sha256": "7f01e0abe4004c4c5242a35a18bef4662f66af43a37703bb06bf95f1dba84463",
+            "row_count": 2870640,
+            "columns": [
+              "detector_clue_id",
+              "detector_run_id",
+              "run_date",
+              "tenant_id",
+              "manufacturer_code",
+              "hospital_code",
+              "drug_group",
+              "detector_id",
+              "detector_family",
+              "detector_score",
+              "detector_level",
+              "confidence",
+              "hit_flag",
+              "root_cause_label",
+              "evidence_text",
+              "evidence_payload",
+              "is_monthly_high_risk_entity",
+              "risk_entity_id",
+              "monthly_risk_probability",
+              "monthly_loss_value",
+              "display_rank",
+              "caveat",
+              "created_at"
+            ]
+          }
+        ],
+        "high_risk_detector_evidence": [
+          {
+            "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+            "suffix": ".parquet",
+            "bytes": 15954,
+            "sha256": "c7e4b62361d6d87558a58676fd1c6ea90e28701a8ed3b16366de4a9059712c99",
+            "row_count": 26040,
+            "columns": [
+              "risk_entity_id",
+              "detector_run_id",
+              "run_date",
+              "detector_id",
+              "detector_family",
+              "detector_score",
+              "confidence",
+              "root_cause_label",
+              "evidence_text",
+              "evidence_payload",
+              "caveat",
+              "created_at"
+            ]
+          }
+        ],
+        "observation_registry": [],
+        "manufacturer_observation_registry": []
+      },
+      "csv_parquet_pairs": [],
+      "manifest_mismatches": [],
+      "all_files": [
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/run_summary.json",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/run_summary.md",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+        "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet"
+      ]
+    },
+    {
+      "report_month": "2025-11",
+      "batch_id": "2025-11-monthly-risk-algorithm-formal-v2-raw",
+      "batch_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw",
+      "manifest_path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+      "manifest_data_backend": "parquet",
+      "manifest_declared_tables": {
+        "detector_catalog": {
+          "raw": "detector_catalog.parquet",
+          "path": "detector_catalog.parquet",
+          "manifest_row_count": 7
+        },
+        "daily_detector_runs": {
+          "raw": "daily_detector_runs.parquet",
+          "path": "daily_detector_runs.parquet",
+          "manifest_row_count": 31
+        },
+        "daily_detector_clues": {
+          "raw": "daily_detector_clues.parquet",
+          "path": "daily_detector_clues.parquet",
+          "manifest_row_count": 2881977
+        },
+        "high_risk_detector_evidence": {
+          "raw": "high_risk_detector_evidence.parquet",
+          "path": "high_risk_detector_evidence.parquet",
+          "manifest_row_count": 27931
+        },
+        "drug_aggregates": {
+          "manifest_row_count": 29
+        },
+        "entity_display_lookup": {
+          "manifest_row_count": 35225
+        },
+        "hospital_aggregates": {
+          "manifest_row_count": 641
+        },
+        "monthly_reports": {
+          "manifest_row_count": 1
+        },
+        "proof_cases": {
+          "manifest_row_count": 0
+        },
+        "risk_card_evidence": {
+          "manifest_row_count": 5145
+        },
+        "risk_cards": {
+          "manifest_row_count": 5145
+        },
+        "risk_entities": {
+          "manifest_row_count": 1221
+        },
+        "risk_entity_horizon_profiles": {
+          "manifest_row_count": 3663
+        },
+        "risk_entity_timeline": {
+          "manifest_row_count": 1221
+        },
+        "work_order_reserved": {
+          "manifest_row_count": 1221
+        },
+        "detector_quality_gate": {
+          "manifest_row_count": 13
+        },
+        "disabled_detector_notes": {
+          "manifest_row_count": 8
+        },
+        "feature_parity_runtime_report": {
+          "manifest_row_count": 49
+        },
+        "feature_quality_report": {
+          "manifest_row_count": 12
+        },
+        "normalization_report": {
+          "manifest_row_count": 4
+        },
+        "selection_report": {
+          "manifest_row_count": 10
+        }
+      },
+      "manifest_summary": {
+        "batch_id": "2025-11-monthly-risk-algorithm-formal-v2-raw",
+        "result_batch_id": "2025-11-monthly-risk-algorithm-formal-v2-raw",
+        "report_month": "2025-11",
+        "run_date": "2025-12-01",
+        "report_date": "2025-12-01",
+        "score_as_of_date": "2025-11-30",
+        "cutoff_date": "2025-11-30",
+        "model_artifact_id": "xgboost_small_without_choice_set_20260713062634",
+        "available_horizons": [
+          "H3",
+          "H6",
+          "H12"
+        ],
+        "primary_horizon": "H6",
+        "data_backend": "parquet"
+      },
+      "table_files": {
+        "risk_entities": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+            "suffix": ".parquet",
+            "bytes": 106314,
+            "sha256": "51c0784f2c30486be2c97fa9f1cc6e73721831513eca4002970932979c1ea362",
+            "row_count": 1221,
+            "columns": [
+              "risk_entity_id",
+              "candidate_id",
+              "entity_id",
+              "tenant_id",
+              "enterprise_id",
+              "manufacturer_code",
+              "manufacturer_display_name",
+              "hospital_code",
+              "hospital_display_name",
+              "drug_code",
+              "drug_group",
+              "drug_group_source",
+              "drug_display_name",
+              "report_month",
+              "cutoff_month",
+              "primary_horizon",
+              "candidate_type",
+              "sample_class",
+              "risk_probability_display",
+              "risk_probability_value",
+              "probability_display_mode",
+              "risk_level",
+              "risk_color",
+              "risk_score_display",
+              "palive_display",
+              "palive_display_mode",
+              "value_at_risk_display",
+              "potential_value_level",
+              "business_priority_display",
+              "main_reason_summary",
+              "risk_type_label",
+              "region_code",
+              "region_display_name",
+              "review_status",
+              "final_candidate_status",
+              "review_priority",
+              "evidence_strength",
+              "risk_card_count",
+              "has_work_order",
+              "is_high_risk",
+              "is_observation",
+              "is_one_shot",
+              "is_probability_allowed",
+              "user_visible_caveat",
+              "suggested_action_short",
+              "auto_dispatch_allowed",
+              "created_at"
+            ]
+          }
+        ],
+        "risk_entity_horizon_profiles": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+            "suffix": ".parquet",
+            "bytes": 90109,
+            "sha256": "46602d52c77392d53594846210de9fb45ac16df2ac5d5ea669889b917e38d4f2",
+            "row_count": 3663,
+            "columns": [
+              "risk_entity_id",
+              "candidate_id",
+              "entity_id",
+              "report_month",
+              "horizon",
+              "risk_probability",
+              "involved_amount",
+              "involved_amount_source",
+              "risk_level",
+              "risk_band",
+              "main_reason_summary",
+              "reason",
+              "detector_evidence_count",
+              "updated_at"
+            ]
+          }
+        ],
+        "monthly_reports": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+            "suffix": ".parquet",
+            "bytes": 3858,
+            "sha256": "5aa8db069b6d9e382badf3581481256f8cb75a6c60109c5a6f1523a89cd0f3ea",
+            "row_count": 1,
+            "columns": [
+              "monthly_report_id",
+              "report_type",
+              "report_month",
+              "title",
+              "summary_text"
+            ]
+          }
+        ],
+        "proof_cases": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+            "suffix": ".parquet",
+            "bytes": 2442,
+            "sha256": "81ee89a473905424d026d727aa8f4060bce9fae48cc4a25381e4d7c00441d291",
+            "row_count": 0,
+            "columns": [
+              "proof_case_id",
+              "risk_entity_id",
+              "candidate_id",
+              "proof_status"
+            ]
+          }
+        ],
+        "risk_cards": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+            "suffix": ".parquet",
+            "bytes": 87552,
+            "sha256": "4b790f84ea477ade571c01797c41c8ff6f0c5f8416a510032e924aa20606fea2",
+            "row_count": 5145,
+            "columns": [
+              "risk_card_id",
+              "risk_entity_id",
+              "candidate_id",
+              "card_type",
+              "card_title",
+              "card_level",
+              "card_color",
+              "horizon",
+              "risk_probability_display",
+              "card_summary",
+              "candidate_reason",
+              "is_primary",
+              "source_module",
+              "evidence_count",
+              "suggested_action",
+              "user_visible_caveat",
+              "created_at",
+              "source_detector_name",
+              "risk_card_count"
+            ]
+          }
+        ],
+        "risk_card_evidence": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+            "suffix": ".parquet",
+            "bytes": 139831,
+            "sha256": "06a06bee09fa5c955f94047ee13ffa4f889ab6a4a820aeec8ace89be84acf4b7",
+            "row_count": 5145,
+            "columns": [
+              "evidence_id",
+              "risk_card_id",
+              "risk_entity_id",
+              "candidate_id",
+              "evidence_type",
+              "evidence_level",
+              "evidence_text",
+              "business_metric_name",
+              "business_metric_value",
+              "source_feature_name",
+              "source_feature_value",
+              "visibility_level",
+              "sort_order"
+            ]
+          }
+        ],
+        "risk_entity_timeline": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+            "suffix": ".parquet",
+            "bytes": 40540,
+            "sha256": "3b1b5825ab768e288ca48a8ca7a9fe0dca1b5e99b0ba21d7ef5f676c87adc852",
+            "row_count": 1221,
+            "columns": [
+              "timeline_id",
+              "risk_entity_id",
+              "candidate_id",
+              "tenant_id",
+              "month",
+              "purchase_count",
+              "purchase_amount_display",
+              "purchase_quantity_display",
+              "last_purchase_date",
+              "days_since_last_purchase",
+              "risk_probability_display",
+              "palive_display",
+              "display_note"
+            ]
+          }
+        ],
+        "hospital_aggregates": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+            "suffix": ".parquet",
+            "bytes": 18374,
+            "sha256": "9fef77f07152058d6eb1217029a4957c6be141733aa132c71d68111aa0998eb2",
+            "row_count": 641,
+            "columns": [
+              "tenant_id",
+              "hospital_code",
+              "hospital_display_name",
+              "risk_entity_count",
+              "high_risk_count"
+            ]
+          }
+        ],
+        "drug_aggregates": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+            "suffix": ".parquet",
+            "bytes": 4279,
+            "sha256": "b842dadecc670a126d1845a7a80c640f20bcb672bd60ec32ead49660cf5417b8",
+            "row_count": 29,
+            "columns": [
+              "tenant_id",
+              "drug_group",
+              "drug_group_source",
+              "risk_entity_count",
+              "high_risk_count"
+            ]
+          }
+        ],
+        "work_order_reserved": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet",
+            "suffix": ".parquet",
+            "bytes": 35486,
+            "sha256": "7c816dc26676bcff205dae1b5129b4da01d7bebca80854b7de35ac8f5f6fb7c4",
+            "row_count": 1221,
+            "columns": [
+              "work_order_id",
+              "risk_entity_id",
+              "candidate_id",
+              "work_order_status",
+              "auto_dispatch_allowed"
+            ]
+          }
+        ],
+        "oneshot_terminals": [],
+        "entity_display_lookup": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+            "suffix": ".parquet",
+            "bytes": 1040183,
+            "sha256": "4855339acb62744d77b0d8c55c2dd56f7255db28f2dd760fa524ce0036f496df",
+            "row_count": 35225,
+            "columns": [
+              "tenant_id",
+              "report_month",
+              "manufacturer_code",
+              "manufacturer_display_name",
+              "hospital_code",
+              "hospital_display_name",
+              "drug_code",
+              "drug_group",
+              "drug_display_name",
+              "product_line_code",
+              "product_line_name",
+              "region_code",
+              "region_display_name",
+              "display_key",
+              "display_name_source",
+              "display_name_quality",
+              "source_raw_batch_id",
+              "updated_at"
+            ],
+            "lookup_profile": {
+              "row_count": 35225,
+              "columns": [
+                "manufacturer_code",
+                "manufacturer_display_name",
+                "hospital_code",
+                "hospital_display_name",
+                "drug_code",
+                "drug_display_name"
+              ],
+              "manufacturer_code_non_empty": 35225,
+              "manufacturer_display_name_non_empty": 35225,
+              "hospital_code_non_empty": 35225,
+              "hospital_display_name_non_empty": 35225,
+              "drug_code_non_empty": 35225,
+              "drug_display_name_non_empty": 35225,
+              "manufacturer_display_name_equals_manufacturer_code": 0,
+              "manufacturer_display_name_equals_manufacturer_code_ratio": 0.0,
+              "hospital_display_name_equals_hospital_code": 3,
+              "hospital_display_name_equals_hospital_code_ratio": 8.5166784953868e-05,
+              "drug_display_name_equals_drug_code": 0,
+              "drug_display_name_equals_drug_code_ratio": 0.0
+            }
+          }
+        ],
+        "detector_catalog": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+            "suffix": ".parquet",
+            "bytes": 8058,
+            "sha256": "f577cfe498d92843de00ec75874863376c304460e4b81573bcb509753a55e128",
+            "row_count": 7,
+            "columns": [
+              "detector_id",
+              "detector_family",
+              "detector_name",
+              "status",
+              "enabled_by_default",
+              "method",
+              "required_fields",
+              "optional_fields",
+              "output_schema_version",
+              "caveat"
+            ]
+          }
+        ],
+        "daily_detector_runs": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+            "suffix": ".parquet",
+            "bytes": 4900,
+            "sha256": "707c8a6b46af1255b15e3b29eed1f70e6979446973db6a3aad41225ae3c61971",
+            "row_count": 31,
+            "columns": [
+              "detector_run_id",
+              "run_date",
+              "report_month",
+              "source_raw_batch_id",
+              "source_result_batch_id",
+              "detector_config_version",
+              "enabled_detectors",
+              "scanned_entity_count",
+              "clue_count",
+              "attached_high_risk_count",
+              "created_at"
+            ],
+            "detector_run_profile": {
+              "date_column": "run_date",
+              "date_count": 31,
+              "min_date": "2025-12-01",
+              "max_date": "2025-12-31"
+            }
+          }
+        ],
+        "daily_detector_clues": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+            "suffix": ".parquet",
+            "bytes": 60862786,
+            "sha256": "0d72d3fa3bedc7c7507231105e8a760ae515c2e58443c6cacd0c0eab0d9fcc2e",
+            "row_count": 2881977,
+            "columns": [
+              "detector_clue_id",
+              "detector_run_id",
+              "run_date",
+              "tenant_id",
+              "manufacturer_code",
+              "hospital_code",
+              "drug_group",
+              "detector_id",
+              "detector_family",
+              "detector_score",
+              "detector_level",
+              "confidence",
+              "hit_flag",
+              "root_cause_label",
+              "evidence_text",
+              "evidence_payload",
+              "is_monthly_high_risk_entity",
+              "risk_entity_id",
+              "monthly_risk_probability",
+              "monthly_loss_value",
+              "display_rank",
+              "caveat",
+              "created_at"
+            ]
+          }
+        ],
+        "high_risk_detector_evidence": [
+          {
+            "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+            "suffix": ".parquet",
+            "bytes": 19453,
+            "sha256": "364602c3e7d78e079f1c9d0a9234ca5c8969645cbf5e8f65284a4bd933fc856b",
+            "row_count": 27931,
+            "columns": [
+              "risk_entity_id",
+              "detector_run_id",
+              "run_date",
+              "detector_id",
+              "detector_family",
+              "detector_score",
+              "confidence",
+              "root_cause_label",
+              "evidence_text",
+              "evidence_payload",
+              "caveat",
+              "created_at"
+            ]
+          }
+        ],
+        "observation_registry": [],
+        "manufacturer_observation_registry": []
+      },
+      "csv_parquet_pairs": [],
+      "manifest_mismatches": [],
+      "all_files": [
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/run_summary.json",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/run_summary.md",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+        "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet"
+      ]
+    },
+    {
+      "report_month": "2025-12",
+      "batch_id": "2025-12-monthly-risk-algorithm-formal-v2-raw",
+      "batch_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw",
+      "manifest_path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+      "manifest_data_backend": "parquet",
+      "manifest_declared_tables": {
+        "detector_catalog": {
+          "raw": "detector_catalog.parquet",
+          "path": "detector_catalog.parquet",
+          "manifest_row_count": 7
+        },
+        "daily_detector_runs": {
+          "raw": "daily_detector_runs.parquet",
+          "path": "daily_detector_runs.parquet",
+          "manifest_row_count": 31
+        },
+        "daily_detector_clues": {
+          "raw": "daily_detector_clues.parquet",
+          "path": "daily_detector_clues.parquet",
+          "manifest_row_count": 2924013
+        },
+        "high_risk_detector_evidence": {
+          "raw": "high_risk_detector_evidence.parquet",
+          "path": "high_risk_detector_evidence.parquet",
+          "manifest_row_count": 26319
+        },
+        "drug_aggregates": {
+          "manifest_row_count": 29
+        },
+        "entity_display_lookup": {
+          "manifest_row_count": 35549
+        },
+        "hospital_aggregates": {
+          "manifest_row_count": 673
+        },
+        "monthly_reports": {
+          "manifest_row_count": 1
+        },
+        "proof_cases": {
+          "manifest_row_count": 0
+        },
+        "risk_card_evidence": {
+          "manifest_row_count": 5049
+        },
+        "risk_cards": {
+          "manifest_row_count": 5049
+        },
+        "risk_entities": {
+          "manifest_row_count": 1229
+        },
+        "risk_entity_horizon_profiles": {
+          "manifest_row_count": 3687
+        },
+        "risk_entity_timeline": {
+          "manifest_row_count": 1229
+        },
+        "work_order_reserved": {
+          "manifest_row_count": 1229
+        },
+        "detector_quality_gate": {
+          "manifest_row_count": 13
+        },
+        "disabled_detector_notes": {
+          "manifest_row_count": 8
+        },
+        "feature_parity_runtime_report": {
+          "manifest_row_count": 49
+        },
+        "feature_quality_report": {
+          "manifest_row_count": 12
+        },
+        "normalization_report": {
+          "manifest_row_count": 4
+        },
+        "selection_report": {
+          "manifest_row_count": 10
+        }
+      },
+      "manifest_summary": {
+        "batch_id": "2025-12-monthly-risk-algorithm-formal-v2-raw",
+        "result_batch_id": "2025-12-monthly-risk-algorithm-formal-v2-raw",
+        "report_month": "2025-12",
+        "run_date": "2026-01-01",
+        "report_date": "2026-01-01",
+        "score_as_of_date": "2025-12-31",
+        "cutoff_date": "2025-12-31",
+        "model_artifact_id": "xgboost_small_without_choice_set_20260713062634",
+        "available_horizons": [
+          "H3",
+          "H6",
+          "H12"
+        ],
+        "primary_horizon": "H6",
+        "data_backend": "parquet"
+      },
+      "table_files": {
+        "risk_entities": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+            "suffix": ".parquet",
+            "bytes": 108799,
+            "sha256": "8701a09711c40fb14db0ae1a1d8d4dc05068e05af50ab3105b1b4127f8c27870",
+            "row_count": 1229,
+            "columns": [
+              "risk_entity_id",
+              "candidate_id",
+              "entity_id",
+              "tenant_id",
+              "enterprise_id",
+              "manufacturer_code",
+              "manufacturer_display_name",
+              "hospital_code",
+              "hospital_display_name",
+              "drug_code",
+              "drug_group",
+              "drug_group_source",
+              "drug_display_name",
+              "report_month",
+              "cutoff_month",
+              "primary_horizon",
+              "candidate_type",
+              "sample_class",
+              "risk_probability_display",
+              "risk_probability_value",
+              "probability_display_mode",
+              "risk_level",
+              "risk_color",
+              "risk_score_display",
+              "palive_display",
+              "palive_display_mode",
+              "value_at_risk_display",
+              "potential_value_level",
+              "business_priority_display",
+              "main_reason_summary",
+              "risk_type_label",
+              "region_code",
+              "region_display_name",
+              "review_status",
+              "final_candidate_status",
+              "review_priority",
+              "evidence_strength",
+              "risk_card_count",
+              "has_work_order",
+              "is_high_risk",
+              "is_observation",
+              "is_one_shot",
+              "is_probability_allowed",
+              "user_visible_caveat",
+              "suggested_action_short",
+              "auto_dispatch_allowed",
+              "created_at"
+            ]
+          }
+        ],
+        "risk_entity_horizon_profiles": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+            "suffix": ".parquet",
+            "bytes": 92664,
+            "sha256": "40e40275fa966f38c2f1d1e4a96a37f55ae8a6c3690a7cbacf86271f20766adc",
+            "row_count": 3687,
+            "columns": [
+              "risk_entity_id",
+              "candidate_id",
+              "entity_id",
+              "report_month",
+              "horizon",
+              "risk_probability",
+              "involved_amount",
+              "involved_amount_source",
+              "risk_level",
+              "risk_band",
+              "main_reason_summary",
+              "reason",
+              "detector_evidence_count",
+              "updated_at"
+            ]
+          }
+        ],
+        "monthly_reports": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+            "suffix": ".parquet",
+            "bytes": 3858,
+            "sha256": "1356479d2ef6be9275725d8fc7a93c94cd82073abdd31f887555478d36f50ec9",
+            "row_count": 1,
+            "columns": [
+              "monthly_report_id",
+              "report_type",
+              "report_month",
+              "title",
+              "summary_text"
+            ]
+          }
+        ],
+        "proof_cases": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+            "suffix": ".parquet",
+            "bytes": 2442,
+            "sha256": "81ee89a473905424d026d727aa8f4060bce9fae48cc4a25381e4d7c00441d291",
+            "row_count": 0,
+            "columns": [
+              "proof_case_id",
+              "risk_entity_id",
+              "candidate_id",
+              "proof_status"
+            ]
+          }
+        ],
+        "risk_cards": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+            "suffix": ".parquet",
+            "bytes": 88424,
+            "sha256": "99302815d597103fef2769dc244d4bbee73a89809ef10cdd1b4a99eaba9d808e",
+            "row_count": 5049,
+            "columns": [
+              "risk_card_id",
+              "risk_entity_id",
+              "candidate_id",
+              "card_type",
+              "card_title",
+              "card_level",
+              "card_color",
+              "horizon",
+              "risk_probability_display",
+              "card_summary",
+              "candidate_reason",
+              "is_primary",
+              "source_module",
+              "evidence_count",
+              "suggested_action",
+              "user_visible_caveat",
+              "created_at",
+              "source_detector_name",
+              "risk_card_count"
+            ]
+          }
+        ],
+        "risk_card_evidence": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+            "suffix": ".parquet",
+            "bytes": 140893,
+            "sha256": "e35c10c473edab9bfb8835665dc8499f2fa6d58193bb2f1e7465b06e8c13dbe1",
+            "row_count": 5049,
+            "columns": [
+              "evidence_id",
+              "risk_card_id",
+              "risk_entity_id",
+              "candidate_id",
+              "evidence_type",
+              "evidence_level",
+              "evidence_text",
+              "business_metric_name",
+              "business_metric_value",
+              "source_feature_name",
+              "source_feature_value",
+              "visibility_level",
+              "sort_order"
+            ]
+          }
+        ],
+        "risk_entity_timeline": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+            "suffix": ".parquet",
+            "bytes": 41236,
+            "sha256": "5bc0b6db495f91f6f9bfeeaaaecf74065df974ab85579272791b58c69981fb46",
+            "row_count": 1229,
+            "columns": [
+              "timeline_id",
+              "risk_entity_id",
+              "candidate_id",
+              "tenant_id",
+              "month",
+              "purchase_count",
+              "purchase_amount_display",
+              "purchase_quantity_display",
+              "last_purchase_date",
+              "days_since_last_purchase",
+              "risk_probability_display",
+              "palive_display",
+              "display_note"
+            ]
+          }
+        ],
+        "hospital_aggregates": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+            "suffix": ".parquet",
+            "bytes": 18986,
+            "sha256": "8c5fbba3e7c3fd0d28b865fa6616cb39e6bafb988d867183f7cec1e3031aa687",
+            "row_count": 673,
+            "columns": [
+              "tenant_id",
+              "hospital_code",
+              "hospital_display_name",
+              "risk_entity_count",
+              "high_risk_count"
+            ]
+          }
+        ],
+        "drug_aggregates": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+            "suffix": ".parquet",
+            "bytes": 4275,
+            "sha256": "3891df24fb6e2d0d84c0a49c5d96d7feddc10b3d70f54d25161e3febb2019d89",
+            "row_count": 29,
+            "columns": [
+              "tenant_id",
+              "drug_group",
+              "drug_group_source",
+              "risk_entity_count",
+              "high_risk_count"
+            ]
+          }
+        ],
+        "work_order_reserved": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet",
+            "suffix": ".parquet",
+            "bytes": 36179,
+            "sha256": "94230bc9932a0ebfb1c25c5fede0046d1101753cf0b14442a26c2ce4a8ad3668",
+            "row_count": 1229,
+            "columns": [
+              "work_order_id",
+              "risk_entity_id",
+              "candidate_id",
+              "work_order_status",
+              "auto_dispatch_allowed"
+            ]
+          }
+        ],
+        "oneshot_terminals": [],
+        "entity_display_lookup": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+            "suffix": ".parquet",
+            "bytes": 711929,
+            "sha256": "6948b9bcd7196bf57f70b7be9de0da27b32486289ff78b4e63275eaccf45d26c",
+            "row_count": 35549,
+            "columns": [
+              "tenant_id",
+              "report_month",
+              "manufacturer_code",
+              "manufacturer_display_name",
+              "hospital_code",
+              "hospital_display_name",
+              "drug_code",
+              "drug_group",
+              "drug_display_name",
+              "product_line_code",
+              "product_line_name",
+              "region_code",
+              "region_display_name",
+              "display_key",
+              "display_name_source",
+              "display_name_quality",
+              "source_raw_batch_id",
+              "updated_at"
+            ],
+            "lookup_profile": {
+              "row_count": 35549,
+              "columns": [
+                "manufacturer_code",
+                "manufacturer_display_name",
+                "hospital_code",
+                "hospital_display_name",
+                "drug_code",
+                "drug_display_name"
+              ],
+              "manufacturer_code_non_empty": 35549,
+              "manufacturer_display_name_non_empty": 35549,
+              "hospital_code_non_empty": 35549,
+              "hospital_display_name_non_empty": 35549,
+              "drug_code_non_empty": 35549,
+              "drug_display_name_non_empty": 35549,
+              "manufacturer_display_name_equals_manufacturer_code": 0,
+              "manufacturer_display_name_equals_manufacturer_code_ratio": 0.0,
+              "hospital_display_name_equals_hospital_code": 4,
+              "hospital_display_name_equals_hospital_code_ratio": 0.00011252074601254606,
+              "drug_display_name_equals_drug_code": 0,
+              "drug_display_name_equals_drug_code_ratio": 0.0
+            }
+          }
+        ],
+        "detector_catalog": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+            "suffix": ".parquet",
+            "bytes": 8058,
+            "sha256": "f577cfe498d92843de00ec75874863376c304460e4b81573bcb509753a55e128",
+            "row_count": 7,
+            "columns": [
+              "detector_id",
+              "detector_family",
+              "detector_name",
+              "status",
+              "enabled_by_default",
+              "method",
+              "required_fields",
+              "optional_fields",
+              "output_schema_version",
+              "caveat"
+            ]
+          }
+        ],
+        "daily_detector_runs": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+            "suffix": ".parquet",
+            "bytes": 4906,
+            "sha256": "1eb016f2d3b47838aa393a41fe5f42b803435f291211e9ec48264a9f036cce2f",
+            "row_count": 31,
+            "columns": [
+              "detector_run_id",
+              "run_date",
+              "report_month",
+              "source_raw_batch_id",
+              "source_result_batch_id",
+              "detector_config_version",
+              "enabled_detectors",
+              "scanned_entity_count",
+              "clue_count",
+              "attached_high_risk_count",
+              "created_at"
+            ],
+            "detector_run_profile": {
+              "date_column": "run_date",
+              "date_count": 31,
+              "min_date": "2026-01-01",
+              "max_date": "2026-01-31"
+            }
+          }
+        ],
+        "daily_detector_clues": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+            "suffix": ".parquet",
+            "bytes": 61778512,
+            "sha256": "2efc51e06a6912e01fea96d8f8397987f08383ebf60aa7a8fef8ba2d0ae664fc",
+            "row_count": 2924013,
+            "columns": [
+              "detector_clue_id",
+              "detector_run_id",
+              "run_date",
+              "tenant_id",
+              "manufacturer_code",
+              "hospital_code",
+              "drug_group",
+              "detector_id",
+              "detector_family",
+              "detector_score",
+              "detector_level",
+              "confidence",
+              "hit_flag",
+              "root_cause_label",
+              "evidence_text",
+              "evidence_payload",
+              "is_monthly_high_risk_entity",
+              "risk_entity_id",
+              "monthly_risk_probability",
+              "monthly_loss_value",
+              "display_rank",
+              "caveat",
+              "created_at"
+            ]
+          }
+        ],
+        "high_risk_detector_evidence": [
+          {
+            "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+            "suffix": ".parquet",
+            "bytes": 19171,
+            "sha256": "11e15492ef59e9e087572911873f181ab04c63e29c9ff35b75e4ad482b2c825d",
+            "row_count": 26319,
+            "columns": [
+              "risk_entity_id",
+              "detector_run_id",
+              "run_date",
+              "detector_id",
+              "detector_family",
+              "detector_score",
+              "confidence",
+              "root_cause_label",
+              "evidence_text",
+              "evidence_payload",
+              "caveat",
+              "created_at"
+            ]
+          }
+        ],
+        "observation_registry": [],
+        "manufacturer_observation_registry": []
+      },
+      "csv_parquet_pairs": [],
+      "manifest_mismatches": [],
+      "all_files": [
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup_refresh_status.json",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/manifest.json",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/run_summary.json",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/run_summary.md",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+        "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet"
+      ]
+    }
+  ],
+  "observation_registry": {
+    "files": [
+      {
+        "path": "data/project_result_batches/manufacturer_observation_registry.parquet",
+        "suffix": ".parquet",
+        "bytes": 9054,
+        "sha256": "1ce88b504504d81abfdc2a786410cee1a16b82e1586210ac3949b4af85372ea3",
+        "row_count": 1230,
+        "columns": [
+          "manufacturer_code",
+          "manufacturer_display_name",
+          "observation_date",
+          "probability_report_month",
+          "probability_batch_id",
+          "probability_batch_available",
+          "detector_run_date",
+          "detector_run_available",
+          "available_horizons",
+          "context_status",
+          "display_lookup_status"
+        ],
+        "date_ranges": {
+          "observation_date": {
+            "count": 123,
+            "min": "2025-10-01",
+            "max": "2026-01-31",
+            "sample": [
+              "2025-10-01",
+              "2025-10-02",
+              "2025-10-03",
+              "2025-10-04",
+              "2025-10-05",
+              "2026-01-27",
+              "2026-01-28",
+              "2026-01-29",
+              "2026-01-30",
+              "2026-01-31"
+            ]
+          },
+          "detector_run_date": {
+            "count": 123,
+            "min": "2025-10-01",
+            "max": "2026-01-31",
+            "sample": [
+              "2025-10-01",
+              "2025-10-02",
+              "2025-10-03",
+              "2025-10-04",
+              "2025-10-05",
+              "2026-01-27",
+              "2026-01-28",
+              "2026-01-29",
+              "2026-01-30",
+              "2026-01-31"
+            ]
+          }
+        }
+      },
+      {
+        "path": "data/project_result_batches/observation_registry.parquet",
+        "suffix": ".parquet",
+        "bytes": 18503,
+        "sha256": "b9201300bc733b2c094d1c5c9dfd48c985e19d6684f7f75cd4f6b8c5a3e7e8ac",
+        "row_count": 123,
+        "columns": [
+          "observation_date",
+          "probability_report_month",
+          "probability_batch_id",
+          "probability_batch_dir",
+          "probability_batch_available",
+          "detector_run_date",
+          "detector_run_id",
+          "detector_run_available",
+          "context_status",
+          "manual_selection_required",
+          "available_report_months",
+          "available_detector_run_dates",
+          "primary_horizon",
+          "available_horizons",
+          "caveat"
+        ],
+        "date_ranges": {
+          "observation_date": {
+            "count": 123,
+            "min": "2025-10-01",
+            "max": "2026-01-31",
+            "sample": [
+              "2025-10-01",
+              "2025-10-02",
+              "2025-10-03",
+              "2025-10-04",
+              "2025-10-05",
+              "2026-01-27",
+              "2026-01-28",
+              "2026-01-29",
+              "2026-01-30",
+              "2026-01-31"
+            ]
+          },
+          "detector_run_date": {
+            "count": 123,
+            "min": "2025-10-01",
+            "max": "2026-01-31",
+            "sample": [
+              "2025-10-01",
+              "2025-10-02",
+              "2025-10-03",
+              "2025-10-04",
+              "2025-10-05",
+              "2026-01-27",
+              "2026-01-28",
+              "2026-01-29",
+              "2026-01-30",
+              "2026-01-31"
+            ]
+          },
+          "available_detector_run_dates": {
+            "count": 1,
+            "min": "2025-10-01;2025-10-02;2025-10-03;2025-10-04;2025-10-05;2025-10-06;2025-10-07;2025-10-08;2025-10-09;2025-10-10;2025-10-11;2025-10-12;2025-10-13;2025-10-14;2025-10-15;2025-10-16;2025-10-17;2025-10-18;2025-10-19;2025-10-20;2025-10-21;2025-10-22;2025-10-23;2025-10-24;2025-10-25;2025-10-26;2025-10-27;2025-10-28;2025-10-29;2025-10-30;2025-10-31;2025-11-01;2025-11-02;2025-11-03;2025-11-04;2025-11-05;2025-11-06;2025-11-07;2025-11-08;2025-11-09;2025-11-10;2025-11-11;2025-11-12;2025-11-13;2025-11-14;2025-11-15;2025-11-16;2025-11-17;2025-11-18;2025-11-19;2025-11-20;2025-11-21;2025-11-22;2025-11-23;2025-11-24;2025-11-25;2025-11-26;2025-11-27;2025-11-28;2025-11-29;2025-11-30;2025-12-01;2025-12-02;2025-12-03;2025-12-04;2025-12-05;2025-12-06;2025-12-07;2025-12-08;2025-12-09;2025-12-10;2025-12-11;2025-12-12;2025-12-13;2025-12-14;2025-12-15;2025-12-16;2025-12-17;2025-12-18;2025-12-19;2025-12-20;2025-12-21;2025-12-22;2025-12-23;2025-12-24;2025-12-25;2025-12-26;2025-12-27;2025-12-28;2025-12-29;2025-12-30;2025-12-31;2026-01-01;2026-01-02;2026-01-03;2026-01-04;2026-01-05;2026-01-06;2026-01-07;2026-01-08;2026-01-09;2026-01-10;2026-01-11;2026-01-12;2026-01-13;2026-01-14;2026-01-15;2026-01-16;2026-01-17;2026-01-18;2026-01-19;2026-01-20;2026-01-21;2026-01-22;2026-01-23;2026-01-24;2026-01-25;2026-01-26;2026-01-27;2026-01-28;2026-01-29;2026-01-30;2026-01-31",
+            "max": "2025-10-01;2025-10-02;2025-10-03;2025-10-04;2025-10-05;2025-10-06;2025-10-07;2025-10-08;2025-10-09;2025-10-10;2025-10-11;2025-10-12;2025-10-13;2025-10-14;2025-10-15;2025-10-16;2025-10-17;2025-10-18;2025-10-19;2025-10-20;2025-10-21;2025-10-22;2025-10-23;2025-10-24;2025-10-25;2025-10-26;2025-10-27;2025-10-28;2025-10-29;2025-10-30;2025-10-31;2025-11-01;2025-11-02;2025-11-03;2025-11-04;2025-11-05;2025-11-06;2025-11-07;2025-11-08;2025-11-09;2025-11-10;2025-11-11;2025-11-12;2025-11-13;2025-11-14;2025-11-15;2025-11-16;2025-11-17;2025-11-18;2025-11-19;2025-11-20;2025-11-21;2025-11-22;2025-11-23;2025-11-24;2025-11-25;2025-11-26;2025-11-27;2025-11-28;2025-11-29;2025-11-30;2025-12-01;2025-12-02;2025-12-03;2025-12-04;2025-12-05;2025-12-06;2025-12-07;2025-12-08;2025-12-09;2025-12-10;2025-12-11;2025-12-12;2025-12-13;2025-12-14;2025-12-15;2025-12-16;2025-12-17;2025-12-18;2025-12-19;2025-12-20;2025-12-21;2025-12-22;2025-12-23;2025-12-24;2025-12-25;2025-12-26;2025-12-27;2025-12-28;2025-12-29;2025-12-30;2025-12-31;2026-01-01;2026-01-02;2026-01-03;2026-01-04;2026-01-05;2026-01-06;2026-01-07;2026-01-08;2026-01-09;2026-01-10;2026-01-11;2026-01-12;2026-01-13;2026-01-14;2026-01-15;2026-01-16;2026-01-17;2026-01-18;2026-01-19;2026-01-20;2026-01-21;2026-01-22;2026-01-23;2026-01-24;2026-01-25;2026-01-26;2026-01-27;2026-01-28;2026-01-29;2026-01-30;2026-01-31",
+            "sample": [
+              "2025-10-01;2025-10-02;2025-10-03;2025-10-04;2025-10-05;2025-10-06;2025-10-07;2025-10-08;2025-10-09;2025-10-10;2025-10-11;2025-10-12;2025-10-13;2025-10-14;2025-10-15;2025-10-16;2025-10-17;2025-10-18;2025-10-19;2025-10-20;2025-10-21;2025-10-22;2025-10-23;2025-10-24;2025-10-25;2025-10-26;2025-10-27;2025-10-28;2025-10-29;2025-10-30;2025-10-31;2025-11-01;2025-11-02;2025-11-03;2025-11-04;2025-11-05;2025-11-06;2025-11-07;2025-11-08;2025-11-09;2025-11-10;2025-11-11;2025-11-12;2025-11-13;2025-11-14;2025-11-15;2025-11-16;2025-11-17;2025-11-18;2025-11-19;2025-11-20;2025-11-21;2025-11-22;2025-11-23;2025-11-24;2025-11-25;2025-11-26;2025-11-27;2025-11-28;2025-11-29;2025-11-30;2025-12-01;2025-12-02;2025-12-03;2025-12-04;2025-12-05;2025-12-06;2025-12-07;2025-12-08;2025-12-09;2025-12-10;2025-12-11;2025-12-12;2025-12-13;2025-12-14;2025-12-15;2025-12-16;2025-12-17;2025-12-18;2025-12-19;2025-12-20;2025-12-21;2025-12-22;2025-12-23;2025-12-24;2025-12-25;2025-12-26;2025-12-27;2025-12-28;2025-12-29;2025-12-30;2025-12-31;2026-01-01;2026-01-02;2026-01-03;2026-01-04;2026-01-05;2026-01-06;2026-01-07;2026-01-08;2026-01-09;2026-01-10;2026-01-11;2026-01-12;2026-01-13;2026-01-14;2026-01-15;2026-01-16;2026-01-17;2026-01-18;2026-01-19;2026-01-20;2026-01-21;2026-01-22;2026-01-23;2026-01-24;2026-01-25;2026-01-26;2026-01-27;2026-01-28;2026-01-29;2026-01-30;2026-01-31"
+            ]
+          }
+        }
+      },
+      {
+        "path": "data/project_result_batches/registry_rebuild_status.json",
+        "suffix": ".json",
+        "bytes": 233,
+        "sha256": "033361ebc74a2b0de81ded1f1db450d13b1dc4742e4fc4b30d64837578e95e9d",
+        "row_count": 0,
+        "columns": [],
+        "date_ranges": {}
+      },
+      {
+        "path": "data/project_result_batches/available_observation_contexts.json",
+        "suffix": ".json",
+        "bytes": 298302,
+        "sha256": "4a36f6f867392f32ce44f040335aa9f69e09a287d0302b875071c3401dcaacc9",
+        "row_count": 0,
+        "columns": [],
+        "date_ranges": {}
+      },
+      {
+        "path": "data/project_result_batches/available_observation_contexts.parquet",
+        "suffix": ".parquet",
+        "bytes": 18503,
+        "sha256": "b9201300bc733b2c094d1c5c9dfd48c985e19d6684f7f75cd4f6b8c5a3e7e8ac",
+        "row_count": 123,
+        "columns": [
+          "observation_date",
+          "probability_report_month",
+          "probability_batch_id",
+          "probability_batch_dir",
+          "probability_batch_available",
+          "detector_run_date",
+          "detector_run_id",
+          "detector_run_available",
+          "context_status",
+          "manual_selection_required",
+          "available_report_months",
+          "available_detector_run_dates",
+          "primary_horizon",
+          "available_horizons",
+          "caveat"
+        ],
+        "date_ranges": {
+          "observation_date": {
+            "count": 123,
+            "min": "2025-10-01",
+            "max": "2026-01-31",
+            "sample": [
+              "2025-10-01",
+              "2025-10-02",
+              "2025-10-03",
+              "2025-10-04",
+              "2025-10-05",
+              "2026-01-27",
+              "2026-01-28",
+              "2026-01-29",
+              "2026-01-30",
+              "2026-01-31"
+            ]
+          },
+          "detector_run_date": {
+            "count": 123,
+            "min": "2025-10-01",
+            "max": "2026-01-31",
+            "sample": [
+              "2025-10-01",
+              "2025-10-02",
+              "2025-10-03",
+              "2025-10-04",
+              "2025-10-05",
+              "2026-01-27",
+              "2026-01-28",
+              "2026-01-29",
+              "2026-01-30",
+              "2026-01-31"
+            ]
+          },
+          "available_detector_run_dates": {
+            "count": 1,
+            "min": "2025-10-01;2025-10-02;2025-10-03;2025-10-04;2025-10-05;2025-10-06;2025-10-07;2025-10-08;2025-10-09;2025-10-10;2025-10-11;2025-10-12;2025-10-13;2025-10-14;2025-10-15;2025-10-16;2025-10-17;2025-10-18;2025-10-19;2025-10-20;2025-10-21;2025-10-22;2025-10-23;2025-10-24;2025-10-25;2025-10-26;2025-10-27;2025-10-28;2025-10-29;2025-10-30;2025-10-31;2025-11-01;2025-11-02;2025-11-03;2025-11-04;2025-11-05;2025-11-06;2025-11-07;2025-11-08;2025-11-09;2025-11-10;2025-11-11;2025-11-12;2025-11-13;2025-11-14;2025-11-15;2025-11-16;2025-11-17;2025-11-18;2025-11-19;2025-11-20;2025-11-21;2025-11-22;2025-11-23;2025-11-24;2025-11-25;2025-11-26;2025-11-27;2025-11-28;2025-11-29;2025-11-30;2025-12-01;2025-12-02;2025-12-03;2025-12-04;2025-12-05;2025-12-06;2025-12-07;2025-12-08;2025-12-09;2025-12-10;2025-12-11;2025-12-12;2025-12-13;2025-12-14;2025-12-15;2025-12-16;2025-12-17;2025-12-18;2025-12-19;2025-12-20;2025-12-21;2025-12-22;2025-12-23;2025-12-24;2025-12-25;2025-12-26;2025-12-27;2025-12-28;2025-12-29;2025-12-30;2025-12-31;2026-01-01;2026-01-02;2026-01-03;2026-01-04;2026-01-05;2026-01-06;2026-01-07;2026-01-08;2026-01-09;2026-01-10;2026-01-11;2026-01-12;2026-01-13;2026-01-14;2026-01-15;2026-01-16;2026-01-17;2026-01-18;2026-01-19;2026-01-20;2026-01-21;2026-01-22;2026-01-23;2026-01-24;2026-01-25;2026-01-26;2026-01-27;2026-01-28;2026-01-29;2026-01-30;2026-01-31",
+            "max": "2025-10-01;2025-10-02;2025-10-03;2025-10-04;2025-10-05;2025-10-06;2025-10-07;2025-10-08;2025-10-09;2025-10-10;2025-10-11;2025-10-12;2025-10-13;2025-10-14;2025-10-15;2025-10-16;2025-10-17;2025-10-18;2025-10-19;2025-10-20;2025-10-21;2025-10-22;2025-10-23;2025-10-24;2025-10-25;2025-10-26;2025-10-27;2025-10-28;2025-10-29;2025-10-30;2025-10-31;2025-11-01;2025-11-02;2025-11-03;2025-11-04;2025-11-05;2025-11-06;2025-11-07;2025-11-08;2025-11-09;2025-11-10;2025-11-11;2025-11-12;2025-11-13;2025-11-14;2025-11-15;2025-11-16;2025-11-17;2025-11-18;2025-11-19;2025-11-20;2025-11-21;2025-11-22;2025-11-23;2025-11-24;2025-11-25;2025-11-26;2025-11-27;2025-11-28;2025-11-29;2025-11-30;2025-12-01;2025-12-02;2025-12-03;2025-12-04;2025-12-05;2025-12-06;2025-12-07;2025-12-08;2025-12-09;2025-12-10;2025-12-11;2025-12-12;2025-12-13;2025-12-14;2025-12-15;2025-12-16;2025-12-17;2025-12-18;2025-12-19;2025-12-20;2025-12-21;2025-12-22;2025-12-23;2025-12-24;2025-12-25;2025-12-26;2025-12-27;2025-12-28;2025-12-29;2025-12-30;2025-12-31;2026-01-01;2026-01-02;2026-01-03;2026-01-04;2026-01-05;2026-01-06;2026-01-07;2026-01-08;2026-01-09;2026-01-10;2026-01-11;2026-01-12;2026-01-13;2026-01-14;2026-01-15;2026-01-16;2026-01-17;2026-01-18;2026-01-19;2026-01-20;2026-01-21;2026-01-22;2026-01-23;2026-01-24;2026-01-25;2026-01-26;2026-01-27;2026-01-28;2026-01-29;2026-01-30;2026-01-31",
+            "sample": [
+              "2025-10-01;2025-10-02;2025-10-03;2025-10-04;2025-10-05;2025-10-06;2025-10-07;2025-10-08;2025-10-09;2025-10-10;2025-10-11;2025-10-12;2025-10-13;2025-10-14;2025-10-15;2025-10-16;2025-10-17;2025-10-18;2025-10-19;2025-10-20;2025-10-21;2025-10-22;2025-10-23;2025-10-24;2025-10-25;2025-10-26;2025-10-27;2025-10-28;2025-10-29;2025-10-30;2025-10-31;2025-11-01;2025-11-02;2025-11-03;2025-11-04;2025-11-05;2025-11-06;2025-11-07;2025-11-08;2025-11-09;2025-11-10;2025-11-11;2025-11-12;2025-11-13;2025-11-14;2025-11-15;2025-11-16;2025-11-17;2025-11-18;2025-11-19;2025-11-20;2025-11-21;2025-11-22;2025-11-23;2025-11-24;2025-11-25;2025-11-26;2025-11-27;2025-11-28;2025-11-29;2025-11-30;2025-12-01;2025-12-02;2025-12-03;2025-12-04;2025-12-05;2025-12-06;2025-12-07;2025-12-08;2025-12-09;2025-12-10;2025-12-11;2025-12-12;2025-12-13;2025-12-14;2025-12-15;2025-12-16;2025-12-17;2025-12-18;2025-12-19;2025-12-20;2025-12-21;2025-12-22;2025-12-23;2025-12-24;2025-12-25;2025-12-26;2025-12-27;2025-12-28;2025-12-29;2025-12-30;2025-12-31;2026-01-01;2026-01-02;2026-01-03;2026-01-04;2026-01-05;2026-01-06;2026-01-07;2026-01-08;2026-01-09;2026-01-10;2026-01-11;2026-01-12;2026-01-13;2026-01-14;2026-01-15;2026-01-16;2026-01-17;2026-01-18;2026-01-19;2026-01-20;2026-01-21;2026-01-22;2026-01-23;2026-01-24;2026-01-25;2026-01-26;2026-01-27;2026-01-28;2026-01-29;2026-01-30;2026-01-31"
+            ]
+          }
+        }
+      }
+    ],
+    "machine_fact_source": "data/project_result_batches/available_observation_contexts.parquet"
+  },
+  "api_runtime": {
+    "base_url": "http://127.0.0.1:18080",
+    "observation_dates_checked": [
+      "2025-12-01",
+      "2025-12-05",
+      "2025-10-01",
+      "2025-10-02"
+    ],
+    "calls": {
+      "my_manufacturers": {
+        "url": "http://127.0.0.1:18080/api/v1/my/manufacturers",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "context_status": "EXPECTED_MONTH_BATCH_UNAVAILABLE",
+          "items_len": 10,
+          "manufacturers_len": 10,
+          "detector_run_available": false,
+          "probability_batch_available": false,
+          "probability_report_month": "2026-06",
+          "detector_run_date": "2026-07-14",
+          "observation_date": "2026-07-14"
+        }
+      },
+      "display_lookup_status": {
+        "url": "http://127.0.0.1:18080/api/v1/display-lookup/status",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "status": "ready",
+          "context_status": "EXPECTED_MONTH_BATCH_UNAVAILABLE",
+          "detector_run_available": false,
+          "probability_batch_available": false,
+          "probability_report_month": "2026-06",
+          "detector_run_date": "2026-07-14",
+          "observation_date": "2026-07-14"
+        }
+      },
+      "daily_detector_status_2025-12-01": {
+        "url": "http://127.0.0.1:18080/api/v1/daily-detector/status?observation_date=2025-12-01&manufacturer_code=DFC52F4CCF384D849D053242EA2935F3",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "context_status": "ready",
+          "detector_run_available": true,
+          "probability_batch_available": true,
+          "probability_report_month": "2025-11",
+          "detector_run_date": "2025-12-01",
+          "observation_date": "2025-12-01"
+        }
+      },
+      "daily_detector_clues_2025-12-01": {
+        "url": "http://127.0.0.1:18080/api/v1/daily-detector/clues?observation_date=2025-12-01&manufacturer_code=DFC52F4CCF384D849D053242EA2935F3&top_n=5",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "context_status": "ready",
+          "total": 22665,
+          "items_len": 5,
+          "detector_run_available": true,
+          "probability_batch_available": true,
+          "probability_report_month": "2025-11",
+          "detector_run_date": "2025-12-01",
+          "observation_date": "2025-12-01"
+        }
+      },
+      "workbench_2025-12-01": {
+        "url": "http://127.0.0.1:18080/api/v1/workbench?observation_date=2025-12-01&manufacturer_code=DFC52F4CCF384D849D053242EA2935F3&horizon=H3&top_n=5&sort_by=risk_probability",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "context_status": "ready",
+          "empty_reason": null,
+          "rows_len": 5,
+          "query": {
+            "report_month": "2025-11",
+            "requested_horizon": "H3",
+            "effective_horizon": "H3",
+            "horizon": "H3",
+            "top_n": 5,
+            "requested_sort_by": "risk_probability",
+            "effective_sort_by": "risk_probability",
+            "sort_by": "risk_probability",
+            "sort_metric_available": true,
+            "sort_warning": null
+          },
+          "scope": {
+            "scope_applied": true,
+            "manufacturer_count": 1,
+            "manufacturer_codes": [
+              "DFC52F4CCF384D849D053242EA2935F3"
+            ],
+            "requested_manufacturer_code": "DFC52F4CCF384D849D053242EA2935F3",
+            "effective_manufacturer_code": "DFC52F4CCF384D849D053242EA2935F3",
+            "manufacturer_display_name": "哈药集团制药六厂",
+            "manufacturer_name": "哈药集团制药六厂",
+            "row_count": 50
+          },
+          "detector_run_available": true,
+          "probability_batch_available": true,
+          "probability_report_month": "2025-11",
+          "detector_run_date": "2025-12-01",
+          "observation_date": "2025-12-01"
+        }
+      },
+      "oneshot_2025-12-01": {
+        "url": "http://127.0.0.1:18080/api/v1/oneshot-terminals?observation_date=2025-12-01&manufacturer_code=DFC52F4CCF384D849D053242EA2935F3&top_n=5",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "context_status": "ready",
+          "total": 0,
+          "items_len": 0,
+          "detector_run_available": true,
+          "probability_batch_available": true,
+          "probability_report_month": "2025-11",
+          "detector_run_date": "2025-12-01",
+          "observation_date": "2025-12-01"
+        }
+      },
+      "report_context_2025-12-01": {
+        "url": "http://127.0.0.1:18080/api/v1/report-context?observation_date=2025-12-01",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "context_status": "ready",
+          "detector_run_available": true,
+          "probability_batch_available": true,
+          "probability_report_month": "2025-11",
+          "detector_run_date": "2025-12-01",
+          "observation_date": "2025-12-01"
+        }
+      },
+      "daily_detector_status_2025-12-05": {
+        "url": "http://127.0.0.1:18080/api/v1/daily-detector/status?observation_date=2025-12-05&manufacturer_code=DFC52F4CCF384D849D053242EA2935F3",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "context_status": "ready",
+          "detector_run_available": true,
+          "probability_batch_available": true,
+          "probability_report_month": "2025-11",
+          "detector_run_date": "2025-12-05",
+          "observation_date": "2025-12-05"
+        }
+      },
+      "daily_detector_clues_2025-12-05": {
+        "url": "http://127.0.0.1:18080/api/v1/daily-detector/clues?observation_date=2025-12-05&manufacturer_code=DFC52F4CCF384D849D053242EA2935F3&top_n=5",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "context_status": "ready",
+          "total": 22665,
+          "items_len": 5,
+          "detector_run_available": true,
+          "probability_batch_available": true,
+          "probability_report_month": "2025-11",
+          "detector_run_date": "2025-12-05",
+          "observation_date": "2025-12-05"
+        }
+      },
+      "workbench_2025-12-05": {
+        "url": "http://127.0.0.1:18080/api/v1/workbench?observation_date=2025-12-05&manufacturer_code=DFC52F4CCF384D849D053242EA2935F3&horizon=H3&top_n=5&sort_by=risk_probability",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "context_status": "ready",
+          "empty_reason": null,
+          "rows_len": 5,
+          "query": {
+            "report_month": "2025-11",
+            "requested_horizon": "H3",
+            "effective_horizon": "H3",
+            "horizon": "H3",
+            "top_n": 5,
+            "requested_sort_by": "risk_probability",
+            "effective_sort_by": "risk_probability",
+            "sort_by": "risk_probability",
+            "sort_metric_available": true,
+            "sort_warning": null
+          },
+          "scope": {
+            "scope_applied": true,
+            "manufacturer_count": 1,
+            "manufacturer_codes": [
+              "DFC52F4CCF384D849D053242EA2935F3"
+            ],
+            "requested_manufacturer_code": "DFC52F4CCF384D849D053242EA2935F3",
+            "effective_manufacturer_code": "DFC52F4CCF384D849D053242EA2935F3",
+            "manufacturer_display_name": "哈药集团制药六厂",
+            "manufacturer_name": "哈药集团制药六厂",
+            "row_count": 50
+          },
+          "detector_run_available": true,
+          "probability_batch_available": true,
+          "probability_report_month": "2025-11",
+          "detector_run_date": "2025-12-05",
+          "observation_date": "2025-12-05"
+        }
+      },
+      "oneshot_2025-12-05": {
+        "url": "http://127.0.0.1:18080/api/v1/oneshot-terminals?observation_date=2025-12-05&manufacturer_code=DFC52F4CCF384D849D053242EA2935F3&top_n=5",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "context_status": "ready",
+          "total": 0,
+          "items_len": 0,
+          "detector_run_available": true,
+          "probability_batch_available": true,
+          "probability_report_month": "2025-11",
+          "detector_run_date": "2025-12-05",
+          "observation_date": "2025-12-05"
+        }
+      },
+      "report_context_2025-12-05": {
+        "url": "http://127.0.0.1:18080/api/v1/report-context?observation_date=2025-12-05",
+        "status": 200,
+        "ok": true,
+        "body_summary": {
+          "ready": true,
+          "context_status": "ready",
+          "detector_run_available": true,
+          "probability_batch_available": true,
+          "probability_report_month": "2025-11",
+          "detector_run_date": "2025-12-05",
+          "observation_date": "2025-12-05"
+        }
+      }
+    },
+    "selected_manufacturer_for_checks": "DFC52F4CCF384D849D053242EA2935F3"
+  },
+  "storage_formats": {
+    "root_csv_files": [],
+    "batch_csv_files": [],
+    "batch_parquet_files": [
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+      "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+      "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+      "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/detector_catalog.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/detector_quality_gate.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/disabled_detector_notes.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/drug_aggregates.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/feature_parity_runtime_report.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/feature_quality_report.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/hospital_aggregates.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/normalization_report.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/proof_cases.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_card_evidence.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_cards.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_timeline.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/selection_report.parquet",
+      "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/work_order_reserved.parquet"
+    ]
+  },
+  "lookup_readiness": {
+    "url": "http://127.0.0.1:18080/api/v1/display-lookup/status",
+    "status": 200,
+    "ok": true,
+    "body_summary": {
+      "ready": true,
+      "status": "ready",
+      "context_status": "EXPECTED_MONTH_BATCH_UNAVAILABLE",
+      "detector_run_available": false,
+      "probability_batch_available": false,
+      "probability_report_month": "2026-06",
+      "detector_run_date": "2026-07-14",
+      "observation_date": "2026-07-14"
+    }
+  },
+  "detector_run_coverage": {
+    "from_batch_tables": [
+      [
+        {
+          "path": "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+          "suffix": ".parquet",
+          "bytes": 4903,
+          "sha256": "4cf2216d66e2a6abf0bb16cf223a605a5a7c354aebf606700559e24ece65057d",
+          "row_count": 31,
+          "columns": [
+            "detector_run_id",
+            "run_date",
+            "report_month",
+            "source_raw_batch_id",
+            "source_result_batch_id",
+            "detector_config_version",
+            "enabled_detectors",
+            "scanned_entity_count",
+            "clue_count",
+            "attached_high_risk_count",
+            "created_at"
+          ],
+          "detector_run_profile": {
+            "date_column": "run_date",
+            "date_count": 31,
+            "min_date": "2025-10-01",
+            "max_date": "2025-10-31"
+          }
+        }
+      ],
+      [
+        {
+          "path": "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+          "suffix": ".parquet",
+          "bytes": 4885,
+          "sha256": "2aa153cf686b16b4c13b8d81ab02d348b69e283d1b5c5fd42a58774ffbc3dce6",
+          "row_count": 30,
+          "columns": [
+            "detector_run_id",
+            "run_date",
+            "report_month",
+            "source_raw_batch_id",
+            "source_result_batch_id",
+            "detector_config_version",
+            "enabled_detectors",
+            "scanned_entity_count",
+            "clue_count",
+            "attached_high_risk_count",
+            "created_at"
+          ],
+          "detector_run_profile": {
+            "date_column": "run_date",
+            "date_count": 30,
+            "min_date": "2025-11-01",
+            "max_date": "2025-11-30"
+          }
+        }
+      ],
+      [
+        {
+          "path": "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+          "suffix": ".parquet",
+          "bytes": 4900,
+          "sha256": "707c8a6b46af1255b15e3b29eed1f70e6979446973db6a3aad41225ae3c61971",
+          "row_count": 31,
+          "columns": [
+            "detector_run_id",
+            "run_date",
+            "report_month",
+            "source_raw_batch_id",
+            "source_result_batch_id",
+            "detector_config_version",
+            "enabled_detectors",
+            "scanned_entity_count",
+            "clue_count",
+            "attached_high_risk_count",
+            "created_at"
+          ],
+          "detector_run_profile": {
+            "date_column": "run_date",
+            "date_count": 31,
+            "min_date": "2025-12-01",
+            "max_date": "2025-12-31"
+          }
+        }
+      ],
+      [
+        {
+          "path": "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet",
+          "suffix": ".parquet",
+          "bytes": 4906,
+          "sha256": "1eb016f2d3b47838aa393a41fe5f42b803435f291211e9ec48264a9f036cce2f",
+          "row_count": 31,
+          "columns": [
+            "detector_run_id",
+            "run_date",
+            "report_month",
+            "source_raw_batch_id",
+            "source_result_batch_id",
+            "detector_config_version",
+            "enabled_detectors",
+            "scanned_entity_count",
+            "clue_count",
+            "attached_high_risk_count",
+            "created_at"
+          ],
+          "detector_run_profile": {
+            "date_column": "run_date",
+            "date_count": 31,
+            "min_date": "2026-01-01",
+            "max_date": "2026-01-31"
+          }
+        }
+      ]
+    ]
+  },
+  "checksums": {
+    "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/manifest.json": "ac3c3792b5ab0f9e0474274b850b3597319ad56eec470171f7c33d6284d3b46d",
+    "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/manifest.json": "cff800a7cf02959fb80a5ff11d1b016d86124815ad71043eef721261abf15e0f",
+    "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/manifest.json": "ae0162191d64a7f01ba6865e2b31780696aa9dab6309b3b3652c22e30b94d7d6",
+    "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/manifest.json": "f24f9b43a94cc46cf847c657bb188f31e36c6df869f8ac1072a03ed42b6fd158",
+    "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet": "c2acd3be999c6a29ace0a7e632a92bde4df7ec67a6068f4191176f877afd42ba",
+    "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet": "5b1b455757d4a2245f5899058fd20bb788a527f9b2e8b20c031d15f88c77a9d3",
+    "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet": "51c0784f2c30486be2c97fa9f1cc6e73721831513eca4002970932979c1ea362",
+    "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entities.parquet": "8701a09711c40fb14db0ae1a1d8d4dc05068e05af50ab3105b1b4127f8c27870",
+    "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet": "13e400657f9aa082318523a76d62a2db354a0d653557f150540305b96e06e1ad",
+    "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet": "c1722a965efaa1dc6dbbf710e2f7a32165270a66e1b46b8ce1fa8608144125e4",
+    "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet": "46602d52c77392d53594846210de9fb45ac16df2ac5d5ea669889b917e38d4f2",
+    "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/risk_entity_horizon_profiles.parquet": "40e40275fa966f38c2f1d1e4a96a37f55ae8a6c3690a7cbacf86271f20766adc",
+    "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet": "6ed8a29fe520f8f92378b839ecad43a216b0508993439a037a695408592753d8",
+    "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet": "cc9f55be68a58b4aa47085ee08a65c468981f5a135856ef31cb5ae28449966a3",
+    "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet": "5aa8db069b6d9e382badf3581481256f8cb75a6c60109c5a6f1523a89cd0f3ea",
+    "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/monthly_reports.parquet": "1356479d2ef6be9275725d8fc7a93c94cd82073abdd31f887555478d36f50ec9",
+    "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet": "4cf2216d66e2a6abf0bb16cf223a605a5a7c354aebf606700559e24ece65057d",
+    "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet": "2aa153cf686b16b4c13b8d81ab02d348b69e283d1b5c5fd42a58774ffbc3dce6",
+    "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet": "707c8a6b46af1255b15e3b29eed1f70e6979446973db6a3aad41225ae3c61971",
+    "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_runs.parquet": "1eb016f2d3b47838aa393a41fe5f42b803435f291211e9ec48264a9f036cce2f",
+    "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet": "8f679cad436bd7ab2fcab22e230402d6ceff5bcfb57584bf09e964d613fc5cad",
+    "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet": "7f01e0abe4004c4c5242a35a18bef4662f66af43a37703bb06bf95f1dba84463",
+    "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet": "0d72d3fa3bedc7c7507231105e8a760ae515c2e58443c6cacd0c0eab0d9fcc2e",
+    "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/daily_detector_clues.parquet": "2efc51e06a6912e01fea96d8f8397987f08383ebf60aa7a8fef8ba2d0ae664fc",
+    "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet": "2250601f66955d47b90d9b69fd85ee9d3263127219f7c04fc40746cadab51370",
+    "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet": "c7e4b62361d6d87558a58676fd1c6ea90e28701a8ed3b16366de4a9059712c99",
+    "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet": "364602c3e7d78e079f1c9d0a9234ca5c8969645cbf5e8f65284a4bd933fc856b",
+    "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/high_risk_detector_evidence.parquet": "11e15492ef59e9e087572911873f181ab04c63e29c9ff35b75e4ad482b2c825d",
+    "data/project_result_batches/report_month=2025-09/batch_id=2025-09-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet": "de9cfe54e8bb2477f01c3ff9988095a150ba561a5692ef262b479cc6b057a4d9",
+    "data/project_result_batches/report_month=2025-10/batch_id=2025-10-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet": "75f57f1e3f7eb3458bbd21a08f6b1bfa9e60443301e3aff19a5c741abf3b3c29",
+    "data/project_result_batches/report_month=2025-11/batch_id=2025-11-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet": "4855339acb62744d77b0d8c55c2dd56f7255db28f2dd760fa524ce0036f496df",
+    "data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw/entity_display_lookup.parquet": "6948b9bcd7196bf57f70b7be9de0da27b32486289ff78b4e63275eaccf45d26c",
+    "data/project_result_batches/available_observation_contexts.json": "4a36f6f867392f32ce44f040335aa9f69e09a287d0302b875071c3401dcaacc9",
+    "data/project_result_batches/available_observation_contexts.parquet": "b9201300bc733b2c094d1c5c9dfd48c985e19d6684f7f75cd4f6b8c5a3e7e8ac",
+    "data/project_result_batches/observation_registry.parquet": "b9201300bc733b2c094d1c5c9dfd48c985e19d6684f7f75cd4f6b8c5a3e7e8ac",
+    "data/project_result_batches/manufacturer_observation_registry.parquet": "1ce88b504504d81abfdc2a786410cee1a16b82e1586210ac3949b4af85372ea3"
+  }
+}

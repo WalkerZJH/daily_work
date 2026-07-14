@@ -62,9 +62,9 @@ def build_daily_detector_tables(
         clues = clues.sort_values(["detector_score", "confidence"], ascending=[False, False], na_position="last").reset_index(drop=True)
         clues["display_rank"] = range(1, len(clues) + 1)
 
-    high = clues[clues["is_monthly_high_risk_entity"].fillna(False) & clues["hit_flag"].fillna(False)].copy()
-    high = high[high["risk_entity_id"].notna()]
-    evidence = high[
+    attached = clues[clues["is_monthly_high_risk_entity"].fillna(False) & clues["hit_flag"].fillna(False)].copy()
+    attached = attached[attached["risk_entity_id"].notna()]
+    evidence = attached[
         [
             "risk_entity_id",
             "detector_run_id",
@@ -94,6 +94,8 @@ def build_daily_detector_tables(
                 "enabled_detectors": ",".join(enabled_catalog["detector_id"].astype(str).tolist()),
                 "scanned_entity_count": int(_scan_entity_count(scan_features)),
                 "clue_count": int(len(clues)),
+                # Historical column name retained for batch compatibility. It
+                # now counts evidence attached to recurring candidates.
                 "attached_high_risk_count": int(len(evidence)),
                 "created_at": created_at,
             }
@@ -139,7 +141,9 @@ def _build_clues(
 def _interval_result(row: dict[str, Any], cfg: dict[str, Any]) -> dict[str, Any]:
     days = _num(row.get("days_since_last_purchase"), 0.0)
     median = _first_num(row, ["historical_interval_median", "median_purchase_interval_days"], 0.0)
-    mad = max(_first_num(row, ["historical_interval_mad", "mad_purchase_interval_days"], 0.0), float(cfg.get("mad_floor_days", 3) or 3))
+    raw_mad = _first_num(row, ["historical_interval_mad", "mad_purchase_interval_days"], 0.0)
+    mad_floor = float(cfg.get("mad_floor_days", 3) or 3)
+    mad = max(raw_mad, mad_floor)
     z = max((days - median) / mad, 0.0) if median > 0 else 0.0
     z_hit = float(cfg.get("z_hit", 1.5) or 1.5)
     z_full = float(cfg.get("z_full", 3.5) or 3.5)
@@ -147,7 +151,18 @@ def _interval_result(row: dict[str, Any], cfg: dict[str, Any]) -> dict[str, Any]
     purchase_count = _first_num(row, ["purchase_count_total", "purchase_count"], 0.0)
     confidence = min(purchase_count / float(cfg.get("confidence_n", 12) or 12), 1.0)
     hit = z >= z_hit and purchase_count >= float(cfg.get("min_purchase_count", 4) or 4)
-    payload = {"method": "median_mad_robust_z_v1", "days_since_last_purchase": days, "median_days": median, "mad_days": mad, "robust_z": round(z, 4)}
+    payload = {
+        "method": "median_mad_robust_z_v1",
+        "current_gap_days": days,
+        "historical_median_interval_days": median,
+        "historical_mad_days": raw_mad,
+        "mad_floor_days": mad_floor,
+        "robust_z": round(z, 4),
+        "z_hit": z_hit,
+        "z_full": z_full,
+        "purchase_count": purchase_count,
+        "min_purchase_count": float(cfg.get("min_purchase_count", 4) or 4),
+    }
     return _result("purchase_interval_ipi", "interval", score, confidence, hit, payload)
 
 
@@ -158,7 +173,15 @@ def _quantity_result(row: dict[str, Any], cfg: dict[str, Any]) -> dict[str, Any]
     purchase_count = _first_num(row, ["purchase_count_total", "purchase_count"], 0.0)
     confidence = min(purchase_count / float(cfg.get("confidence_n", 6) or 6), 1.0)
     hit = not math.isnan(ratio) and ratio <= threshold
-    payload = {"method": "simplified_ratio_v1", "quantity_ratio": None if math.isnan(ratio) else round(ratio, 4), "drop_ratio_hit": threshold}
+    payload = {
+        "method": "simplified_ratio_v1",
+        "recent_quantity": _nullable_num(row, ["recent_quantity", "recent_purchase_quantity", "quantity_recent"]),
+        "baseline_quantity": _nullable_num(row, ["baseline_quantity", "base_quantity", "historical_quantity"]),
+        "recent_window_months": _nullable_num(row, ["recent_window_months", "recent_month_count"]),
+        "baseline_window_months": _nullable_num(row, ["baseline_window_months", "baseline_month_count"]),
+        "quantity_ratio": None if math.isnan(ratio) else round(ratio, 4),
+        "drop_ratio_hit": threshold,
+    }
     return _result("purchase_quantity_trend", "quantity", score, confidence, hit, payload)
 
 
@@ -169,7 +192,18 @@ def _frequency_result(row: dict[str, Any], cfg: dict[str, Any]) -> dict[str, Any
     score = 0.0 if math.isnan(ratio) else min(max((threshold - ratio) / threshold * 100.0, 0.0), 100.0)
     confidence = min(base_rate / float(cfg.get("confidence_base_rate", 2.0) or 2.0), 1.0)
     hit = not math.isnan(ratio) and ratio <= threshold and base_rate >= float(cfg.get("min_base_rate", 1.0) or 1.0)
-    payload = {"method": "recent_base_rate_ratio_v1", "frequency_ratio": None if math.isnan(ratio) else round(ratio, 4), "base_rate": base_rate, "freq_drop_ratio": threshold}
+    payload = {
+        "method": "recent_base_rate_ratio_v1",
+        "recent_purchase_count": _nullable_num(row, ["recent_purchase_count", "recent_order_count"]),
+        "baseline_purchase_count": _nullable_num(row, ["baseline_purchase_count", "baseline_order_count"]),
+        "recent_window_months": _nullable_num(row, ["recent_window_months", "recent_month_count"]),
+        "baseline_window_months": _nullable_num(row, ["baseline_window_months", "baseline_month_count"]),
+        "recent_frequency": _nullable_num(row, ["recent_frequency", "recent_purchase_frequency"]),
+        "baseline_frequency": base_rate,
+        "frequency_ratio": None if math.isnan(ratio) else round(ratio, 4),
+        "freq_drop_ratio": threshold,
+        "min_base_rate": float(cfg.get("min_base_rate", 1.0) or 1.0),
+    }
     return _result("purchase_frequency_drop", "frequency", score, confidence, hit, payload)
 
 
@@ -224,8 +258,7 @@ def _monthly_entity_map(risk_entities: pd.DataFrame) -> dict[str, dict[str, Any]
     if risk_entities.empty:
         return mapping
     for row in risk_entities.to_dict(orient="records"):
-        high = str(row.get("is_high_risk", True)).lower() not in {"false", "0", "nan", "none"}
-        if not high:
+        if str(row.get("candidate_type") or "recurring") != "recurring":
             continue
         row = dict(row)
         row["monthly_risk_probability"] = _first_num(row, ["risk_probability_value", "churn_probability_H"], math.nan)
@@ -280,6 +313,11 @@ def _first_num(row: dict[str, Any], keys: list[str], default: float) -> float:
         if not math.isnan(value):
             return value
     return default
+
+
+def _nullable_num(row: dict[str, Any], keys: list[str]) -> float | None:
+    value = _first_num(row, keys, math.nan)
+    return None if math.isnan(value) else value
 
 
 def _num(value: Any, default: float) -> float:

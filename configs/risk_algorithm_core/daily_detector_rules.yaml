@@ -36,20 +36,20 @@ detectors:
     confidence_base_rate: 2.0
   sku_shrink:
     enabled: false
-    status: interface_only
-    method: requires_product_line_mapping
+    status: blocked_by_missing_domain_concept
+    method: not_applicable_without_product_line_domain
     sku_shrink_ratio: 0.34
     min_baseline_sku_count: 2
   fulfillment_gap:
     enabled: false
-    status: experimental
+    status: blocked_by_data
     reject_days: 7
     reject_rate_hit: 0.15
     fill_ok: 0.8
     sys_min_hospital: 5
   price_competition:
     enabled: false
-    status: reserved
+    status: not_implemented
   peer_contrast:
     enabled: false
     status: reserved

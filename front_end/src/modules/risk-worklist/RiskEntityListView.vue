@@ -14,7 +14,7 @@ import {
 } from '../monthly-demo/pageDataAdapter'
 
 const params = new URLSearchParams(window.location.search)
-const query = reactive(
+const draftQuery = reactive(
   normalizeWorkbenchQuery({
     backendBaseUrl: params.get('backendBaseUrl'),
     userId: params.get('user_id') || params.get('userId'),
@@ -31,15 +31,16 @@ const query = reactive(
   })
 )
 
-const options = ref(createEmptyWorkbenchOptions(query))
+const query = draftQuery
+const appliedQuery = ref(normalizeWorkbenchQuery(draftQuery))
+const options = ref(createEmptyWorkbenchOptions(draftQuery))
 const manufacturerCatalog = ref([])
-const state = ref(createEmptyRuleCluesData(query))
+const state = ref(createEmptyRuleCluesData(appliedQuery.value))
 const reportContext = ref(state.value.reportContext)
 const activeFilter = ref('all')
 const selectedDetectorFamily = ref(query.detectorFamily || 'all')
 const selectedDetectorId = ref(query.detectorId || 'all')
 const isLoading = ref(false)
-let suppressWatcher = false
 let requestSequence = 0
 let initializedManufacturer = Boolean(query.manufacturerCode)
 
@@ -72,22 +73,17 @@ const filteredClues = computed(() => {
 })
 
 function detailHref(clue) {
-  const next = buildPersistentParams(query, { clueId: clue.id })
+  const next = buildPersistentParams(appliedQuery.value, { clueId: clue.id })
   if (clue.riskEntityId) next.set('id', clue.riskEntityId)
   return `clue-detail.html?${next.toString()}`
 }
 
 function updateUrl() {
-  window.history.replaceState({}, '', `${window.location.pathname}?${buildPersistentParams(query).toString()}`)
+  window.history.replaceState({}, '', `${window.location.pathname}?${buildPersistentParams(appliedQuery.value).toString()}`)
 }
 
-function applyEffectiveQuery(nextQuery) {
-  suppressWatcher = true
-  Object.assign(query, nextQuery)
-  updateUrl()
-  window.setTimeout(() => {
-    suppressWatcher = false
-  }, 0)
+function syncDraftContext() {
+  window.history.replaceState({}, '', `${window.location.pathname}?${buildPersistentParams(draftQuery).toString()}`)
 }
 
 function applyLoadedOptions(loadedOptions, fallbackQuery = query) {
@@ -103,39 +99,43 @@ function applyLoadedOptions(loadedOptions, fallbackQuery = query) {
   if (!initializedManufacturer && !query.manufacturerCode && codes.length) {
     const nextManufacturer = codes.includes(options.value.defaultManufacturerCode) ? options.value.defaultManufacturerCode : codes[0]
     initializedManufacturer = true
-    applyEffectiveQuery({ ...query, manufacturerCode: nextManufacturer })
+    query.manufacturerCode = nextManufacturer
   }
 }
 
-async function refreshClues() {
+async function loadOptions() {
+  const loadedOptions = await loadWorkbenchOptions(draftQuery)
+  applyLoadedOptions(loadedOptions, draftQuery)
+}
+
+async function submitQuery() {
   const sequence = ++requestSequence
   isLoading.value = true
   try {
-    query.detectorFamily = selectedDetectorFamily.value === 'all' ? '' : selectedDetectorFamily.value
-    query.detectorId = selectedDetectorId.value === 'all' ? '' : selectedDetectorId.value
-    if (query.demoMode) {
-      options.value = await loadWorkbenchOptions(query, { allowDemo: true })
-      state.value = await loadRuleCluesData(query, { allowDemo: true })
+    draftQuery.detectorFamily = selectedDetectorFamily.value === 'all' ? '' : selectedDetectorFamily.value
+    draftQuery.detectorId = selectedDetectorId.value === 'all' ? '' : selectedDetectorId.value
+    if (draftQuery.demoMode) {
+      options.value = await loadWorkbenchOptions(draftQuery, { allowDemo: true })
+      state.value = await loadRuleCluesData(draftQuery, { allowDemo: true })
+      appliedQuery.value = normalizeWorkbenchQuery(draftQuery)
       reportContext.value = state.value.reportContext
       updateUrl()
       return
     }
 
-    const loadedOptions = await loadWorkbenchOptions(query)
-    if (sequence !== requestSequence) return
-    applyLoadedOptions(loadedOptions, query)
-
-    const context = await loadReportContext(query)
+    const context = await loadReportContext(draftQuery)
     if (sequence !== requestSequence) return
     reportContext.value = context
     if (!context.ready) {
-      state.value = createEmptyRuleCluesData(query, context)
+      state.value = createEmptyRuleCluesData(draftQuery, context)
+      appliedQuery.value = normalizeWorkbenchQuery(draftQuery)
       updateUrl()
       return
     }
 
-    const effectiveQuery = applyReportContextToQuery(query, context)
-    applyEffectiveQuery(effectiveQuery)
+    const effectiveQuery = applyReportContextToQuery(draftQuery, context)
+    Object.assign(draftQuery, effectiveQuery)
+    appliedQuery.value = normalizeWorkbenchQuery(effectiveQuery)
     const [refreshedOptions, loadedData] = await Promise.all([
       loadWorkbenchOptions(effectiveQuery),
       loadRuleCluesData(effectiveQuery)
@@ -151,22 +151,18 @@ async function refreshClues() {
   }
 }
 
-onMounted(refreshClues)
+onMounted(loadOptions)
 
-watch(
-  () => [query.observationDate, query.horizon, query.manufacturerCode, query.backendBaseUrl, query.userId, query.demoMode],
-  () => {
-    if (!suppressWatcher) refreshClues()
-  }
-)
+watch(draftQuery, syncDraftContext, { deep: true })
 
 watch(selectedDetectorFamily, () => {
   selectedDetectorId.value = 'all'
-  if (!suppressWatcher) refreshClues()
+  draftQuery.detectorFamily = selectedDetectorFamily.value === 'all' ? '' : selectedDetectorFamily.value
+  draftQuery.detectorId = ''
 })
 
 watch(selectedDetectorId, () => {
-  if (!suppressWatcher) refreshClues()
+  draftQuery.detectorId = selectedDetectorId.value === 'all' ? '' : selectedDetectorId.value
 })
 </script>
 
@@ -174,7 +170,7 @@ watch(selectedDetectorId, () => {
   <div class="page-shell">
     <div class="page-header control-header">
       <div>
-        <h1>今日规则线索</h1>
+        <h1>规则巡检结果</h1>
         <div class="subtitle">{{ query.observationDate }} · 规则巡检 · {{ selectedHorizonLabel }}</div>
       </div>
       <div class="workbench-controls">
@@ -184,10 +180,7 @@ watch(selectedDetectorId, () => {
             <option v-for="item in options.manufacturerOptions" :key="item.code" :value="item.code">{{ item.name }}</option>
           </select>
         </label>
-        <label class="control-field">
-          <span>观察日期</span>
-          <SquareDatePicker v-model="query.observationDate" label="观察日期" :available-dates="availableObservationDates" />
-        </label>
+        <SquareDatePicker v-model="query.observationDate" label="观察日期" :available-dates="availableObservationDates" />
       </div>
     </div>
 
@@ -198,21 +191,21 @@ watch(selectedDetectorId, () => {
 
     <section class="panel clue-hero">
       <div>
-        <span class="eyebrow">今日规则线索</span>
+        <span class="eyebrow">规则巡检结果</span>
         <h2>全部规则线索</h2>
         <p>
-          月报高风险对象上的规则命中会附着到风险卡；未进入月报高风险清单但被规则命中的对象，仅作为今日规则线索展示。
+          月报高风险对象上的规则命中会附着到风险卡；未进入月报高风险清单但被规则命中的对象，仅作为规则巡检结果展示。
         </p>
       </div>
-        <div class="batch-card">
+      <div class="batch-card">
         <div class="batch-row"><span>观察日期</span><strong>{{ query.observationDate }}</strong></div>
-        <div class="batch-row"><span>今日线索</span><strong>{{ state.dailyDetectorStatus.clueCount }}</strong></div>
+        <div class="batch-row"><span>规则命中数</span><strong>{{ state.dailyDetectorStatus.clueCount }}</strong></div>
         <div class="batch-row"><span>已附着证据</span><strong>{{ state.dailyDetectorStatus.attachedHighRiskCount }}</strong></div>
         <div class="batch-row"><span>数据状态</span><strong>{{ state.dailyDetectorStatus.sourceLabel }}</strong></div>
       </div>
     </section>
 
-    <SectionCard title="线索筛选" subtitle="按线索来源查看今日巡检结果">
+    <SectionCard title="线索筛选" subtitle="按规则大类、小类与命中来源查看巡检结果">
       <div class="control-grid">
         <div class="control-group">
           <span class="control-label">预测窗口</span>
@@ -253,10 +246,11 @@ watch(selectedDetectorId, () => {
             <strong>{{ tab.label }}</strong>
           </button>
         </div>
+        <button type="button" class="btn btn-primary" :disabled="isLoading" @click="submitQuery">{{ isLoading ? '查询中…' : '查询' }}</button>
       </div>
     </SectionCard>
 
-    <SectionCard title="全部规则线索" subtitle="区分月报高风险与仅规则命中对象">
+    <SectionCard title="规则巡检结果" subtitle="展示 detector 命中的 entity；区分月报高风险与仅规则命中对象">
       <div v-if="isLoading" class="empty">刷新中</div>
       <div v-else-if="!filteredClues.length" class="empty">
         <strong>{{ state.emptyTitle }}</strong>
@@ -299,7 +293,7 @@ watch(selectedDetectorId, () => {
                   <span>丢失概率 {{ clue.monthlyRiskProbabilityText }}</span>
                   <div class="muted">涉及金额 {{ clue.involvedAmountText }}</div>
                 </template>
-                <span v-else class="muted">今日规则线索，按规则证据单独观察</span>
+                <span v-else class="muted">仅规则命中，按 detector 证据单独观察</span>
               </td>
               <td class="narrative-cell">
                 <strong>{{ clue.rootCauseLabel }}</strong>

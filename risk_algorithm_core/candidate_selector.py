@@ -10,17 +10,19 @@ import pandas as pd
 
 
 class BoundedCandidateSelector:
-    """Select candidates using the verified v2 multi-recall union policy.
+    """Build the complete recurring candidate universe.
 
-    Worklist topN values remain as downstream presentation load controls. They
-    do not define the core M1 candidate pool.
+    Ranking features are retained for downstream ordering and diagnostics. No
+    probability threshold, recall policy, manufacturer cap, or global cap is
+    allowed to decide whether a recurring entity is persisted.
     """
 
     def __init__(self, config: dict):
         self.config = config
+        # Kept as compatibility metadata for old manifests. They are not
+        # consulted by the production candidate selection path.
         self.policy_pct = float(config.get("candidate_policy_top_pct", 0.10))
         self.policy_name = str(config.get("candidate_policy_name", "multi_recall_union_top10"))
-        self.global_cap = int(config.get("global_candidate_cap", 30000))
 
     def select(self, score_frame: pd.DataFrame, feature_frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         joined = self._join_features(score_frame, feature_frame)
@@ -37,20 +39,18 @@ class BoundedCandidateSelector:
         report_rows: list[dict[str, Any]] = []
         for (horizon, cutoff), group in joined.groupby(["horizon", "cutoff_month"], dropna=False):
             scored = add_candidate_policy_scores(group.copy(), str(horizon))
-            members = candidate_policy_members(scored, pct=self.policy_pct)
-            idx = members.get(self.policy_name, members["multi_recall_union_top10"])
-            part = scored.loc[idx].copy()
-            part["candidate_policy"] = self.policy_name
-            part["selection_reason"] = self.policy_name
+            part = scored.copy()
+            part["candidate_policy"] = "full_recurring_universe"
+            part["selection_reason"] = "recurring_eligible"
             candidate_parts.append(part)
             report_rows.append(
                 {
                     "horizon": horizon,
                     "cutoff_month": cutoff,
-                    "candidate_policy": self.policy_name,
+                    "candidate_policy": "full_recurring_universe",
                     "full_universe_rows": len(scored),
                     "candidate_count": len(part),
-                    "candidate_rate": len(part) / len(scored) if len(scored) else np.nan,
+                    "candidate_rate": 1.0 if len(scored) else np.nan,
                     "manufacturer_coverage": int(part["manufacturer_code"].nunique()) if "manufacturer_code" in part else 0,
                 }
             )
@@ -69,12 +69,20 @@ class BoundedCandidateSelector:
             )
             & pd.to_numeric(candidates["probability_score"], errors="coerce").ge(0.7)
         )
-        selected = build_manufacturer_worklist(candidates, max_per_manufacturer=int(self.config.get("frontend_max_topN_per_manufacturer", 50)))
-        selected = selected.sort_values(["probability_score", "business_priority_score"], ascending=[False, False]).head(self.global_cap)
+        selected = candidates.copy()
+        sort_columns = [column for column in ["probability_score", "business_priority_score", "candidate_id"] if column in selected.columns]
+        if sort_columns:
+            selected = selected.sort_values(
+                sort_columns,
+                ascending=[False] * (len(sort_columns) - (1 if "candidate_id" in sort_columns else 0))
+                + ([True] if "candidate_id" in sort_columns else []),
+                na_position="last",
+                kind="mergesort",
+            )
         selected["rank_global"] = range(1, len(selected) + 1)
         selected["rank_per_manufacturer"] = selected.groupby("manufacturer_code").cumcount() + 1
         selected["is_selected_for_frontend"] = True
-        selected["selection_caveat"] = "source_aligned_m1_candidate_policy; presentation_user_fill_is_downstream"
+        selected["selection_caveat"] = "full_recurring_universe;_top_n_is_presentation_only"
         report = pd.DataFrame(report_rows)
         if not selected.empty:
             report = pd.concat(

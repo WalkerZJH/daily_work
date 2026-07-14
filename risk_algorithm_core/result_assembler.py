@@ -8,7 +8,7 @@ import datetime as dt
 
 import pandas as pd
 
-from risk_result_contracts import validate_result_batch, write_manifest
+from risk_result_contracts import validate_result_batch, write_manifest, write_production_parquet
 from .daily_detector_runner import build_daily_detector_tables
 from .entity_display_lookup import ENTITY_DISPLAY_LOOKUP_SCHEMA_VERSION, build_entity_display_lookup
 
@@ -38,6 +38,18 @@ def assemble_result_batch(
     batch_dir.mkdir(parents=True, exist_ok=True)
 
     risk_entities = _build_risk_entities(candidate_status, report_month)
+    full_recurring_count = int(
+        candidate_status.get("candidate_type", pd.Series("recurring", index=candidate_status.index))
+        .astype(str)
+        .eq("recurring")
+        .sum()
+    )
+    persisted_recurring_count = int(len(risk_entities))
+    if full_recurring_count != persisted_recurring_count:
+        raise ValueError(
+            "Full recurring candidate universe was not persisted: "
+            f"full_recurring_count={full_recurring_count}, persisted_recurring_count={persisted_recurring_count}"
+        )
     timeline = _build_timeline(risk_entities, feature_frame)
     hospital_aggregates = _build_hospital_aggregates(risk_entities)
     drug_aggregates = _build_drug_aggregates(risk_entities)
@@ -125,7 +137,10 @@ def assemble_result_batch(
             "high_risk_detector_evidence": f"high_risk_detector_evidence.{data_backend}",
         },
         "detector_score_probability_interpretation": "detector_score_is_not_probability",
-        "detector_default_scope": "monthly_high_risk_entities",
+        "detector_default_scope": "recurring_candidates",
+        "candidate_pool_policy": "full_recurring_universe",
+        "full_recurring_count": full_recurring_count,
+        "persisted_recurring_count": persisted_recurring_count,
         "runtime_profile_summary": artifact_metadata.get(
             "runtime_profile_summary",
             {
@@ -163,11 +178,11 @@ def assemble_result_batch(
             "row_count": int(len(oneshot_terminals)),
         },
         "caveats": [
-            "bounded monthly worklist",
-            "not full SQL universe claim",
+            "full recurring candidate universe persisted before presentation pagination",
+            "Top N is a presentation limit, not a candidate admission rule",
             "business review required",
             "raw_orders_mode_ready=false; current formal readiness is conditional_fact_mode_ready",
-            "daily detector tables are materialized for configured observation dates from the monthly scan feature frame",
+            "daily detector tables are materialized for recurring candidate detail evidence only",
         ],
     }
     write_manifest(batch_dir, manifest)
@@ -677,14 +692,8 @@ def _detector_evidence_counts(evidence: pd.DataFrame | None) -> dict[str, int]:
 
 
 def _write_tables(batch_dir: Path, tables: dict[str, pd.DataFrame], write_parquet: bool) -> str:
-    if write_parquet:
-        try:
-            for name, df in tables.items():
-                df.to_parquet(batch_dir / f"{name}.parquet", index=False)
-            return "parquet"
-        except Exception:
-            for path in batch_dir.glob("*.parquet"):
-                path.unlink(missing_ok=True)
+    if not write_parquet:
+        raise ValueError("Formal production result batches must be written as Parquet.")
     for name, df in tables.items():
-        df.to_csv(batch_dir / f"{name}.csv", index=False)
-    return "csv"
+        write_production_parquet(df, batch_dir / f"{name}.parquet")
+    return "parquet"
