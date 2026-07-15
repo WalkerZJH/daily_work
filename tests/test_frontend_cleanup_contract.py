@@ -164,6 +164,25 @@ def test_candidate_probability_trend_uses_real_probability_scale_and_model_chang
     assert "probabilityTrendWarnings" in adapter
 
 
+def test_candidate_probability_trend_has_dynamic_axes_and_direction_encoding() -> None:
+    detail = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityDetailView.vue")
+    styles = read(FRONTEND / "src" / "styles" / "library" / "_modules.scss")
+
+    for required in [
+        "trendYAxis",
+        "trendXTicks",
+        "trendDirection",
+        "trendDirectionText",
+        "trend-axis-line",
+        "trend-axis-label",
+        "trend-summary",
+    ]:
+        assert required in detail or required in styles
+    assert "▲" in detail
+    assert "▼" in detail
+    assert "个百分点" in detail
+
+
 def test_frontend_rule_clues_exposes_detector_filters() -> None:
     clues_page = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue")
     adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")

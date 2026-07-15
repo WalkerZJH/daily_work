@@ -286,30 +286,111 @@
 
 .probability-trend svg {
   width: 100%;
-  min-height: 180px;
+  min-height: 260px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: #fff;
+  background: linear-gradient(180deg, #fff 0%, #fbfdff 100%);
+}
+
+.trend-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #f8fafc;
+  padding: 10px 14px;
+  color: var(--text-sub);
+  font-size: 12px;
+}
+
+.trend-summary strong {
+  font-size: 16px;
+}
+
+.trend-summary small {
+  margin-left: auto;
+  color: var(--text-sub);
+  font-size: 12px;
+}
+
+.trend-summary-up strong {
+  color: #c2413b;
+}
+
+.trend-summary-down strong {
+  color: #15803d;
+}
+
+.trend-summary-flat strong,
+.trend-summary-single strong {
+  color: #475569;
 }
 
 .trend-grid-line {
-  fill: none;
   stroke: #e2e8f0;
   stroke-width: 1;
 }
 
+.trend-axis-line,
+.trend-axis-tick {
+  stroke: #94a3b8;
+  stroke-width: 1.2;
+}
+
+.trend-axis-label {
+  fill: #64748b;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.trend-axis-label-x {
+  font-size: 10px;
+}
+
+.trend-axis-title {
+  fill: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .trend-line {
   fill: none;
-  stroke: var(--blue);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 4;
 }
 
+.trend-line-up {
+  stroke: #dc5b55;
+}
+
+.trend-line-down {
+  stroke: #22a05a;
+}
+
+.trend-line-flat,
+.trend-line-single {
+  stroke: #64748b;
+}
+
 .trend-dot {
   fill: #fff;
-  stroke: var(--blue-deep);
   stroke-width: 3;
+}
+
+.trend-dot-up {
+  stroke: #c2413b;
+}
+
+.trend-dot-down {
+  stroke: #15803d;
+}
+
+.trend-dot-flat,
+.trend-dot-single {
+  stroke: #475569;
 }
 
 .trend-legend {

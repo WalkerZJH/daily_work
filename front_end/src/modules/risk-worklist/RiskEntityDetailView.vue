@@ -46,18 +46,97 @@ const selectedHorizonLabel = computed(() => horizonOptions.find((item) => item.i
 const ruleClue = computed(() => ruleOnlyState.value.clue)
 const evidenceFields = computed(() => flattenEvidence(ruleClue.value?.evidencePayload))
 
-const trendPolyline = computed(() => {
+const TREND_PLOT = Object.freeze({ left: 72, right: 648, top: 28, bottom: 218 })
+
+const trendYAxis = computed(() => {
+  const values = probabilityTrend.value
+    .map((point) => Number(point.riskProbability))
+    .filter(Number.isFinite)
+    .map((value) => Math.max(0, Math.min(1, value)))
+
+  if (!values.length) return { min: 0, max: 1, ticks: [] }
+
+  const observedMin = Math.min(...values)
+  const observedMax = Math.max(...values)
+  const observedSpan = observedMax - observedMin
+  const domainSpan = Math.max(observedSpan * 1.5, 0.02)
+  const center = (observedMin + observedMax) / 2
+  let min = center - domainSpan / 2
+  let max = center + domainSpan / 2
+
+  if (min < 0) {
+    max -= min
+    min = 0
+  }
+  if (max > 1) {
+    min -= max - 1
+    max = 1
+  }
+  min = Math.max(0, min)
+  max = Math.min(1, max)
+
+  const ticks = Array.from({ length: 5 }, (_, index) => {
+    const value = max - ((max - min) * index) / 4
+    return {
+      value,
+      y: scaleTrendY(value, min, max),
+      label: `${(value * 100).toFixed(1)}%`
+    }
+  })
+  return { min, max, ticks }
+})
+
+const trendXTicks = computed(() => probabilityTrend.value.map((point, index, points) => ({
+  ...point,
+  x: trendPointX(index, points.length)
+})))
+
+const trendDirection = computed(() => {
   const points = probabilityTrend.value
+  if (points.length < 2) return { kind: 'single', delta: 0 }
+  const delta = Number(points.at(-1).riskProbability) - Number(points[0].riskProbability)
+  if (delta > 0.0005) return { kind: 'up', delta }
+  if (delta < -0.0005) return { kind: 'down', delta }
+  return { kind: 'flat', delta }
+})
+
+const trendDirectionText = computed(() => {
+  if (trendDirection.value.kind === 'single') return '当前仅有 1 个有效月份'
+  const change = Math.abs(trendDirection.value.delta * 100).toFixed(1)
+  if (trendDirection.value.kind === 'up') return `▲ 上升 ${change} 个百分点`
+  if (trendDirection.value.kind === 'down') return `▼ 下降 ${change} 个百分点`
+  return `— 持平（变化 ${change} 个百分点）`
+})
+
+const trendRangeText = computed(() => {
+  const points = probabilityTrend.value
+  if (!points.length) return ''
+  const first = points[0]
+  const last = points.at(-1)
+  return `${first.reportMonth} ${first.riskProbabilityText} → ${last.reportMonth} ${last.riskProbabilityText}`
+})
+
+const trendAriaLabel = computed(() => `月度滚动丢失概率趋势。${trendRangeText.value}。${trendDirectionText.value}`)
+
+const trendPolyline = computed(() => {
+  const points = trendXTicks.value
   if (points.length < 2) return ''
-  return points.map((point, index) => {
-    const x = 24 + (index / (points.length - 1)) * 252
-    const y = trendPointY(point.riskProbability)
-    return `${x.toFixed(1)},${y.toFixed(1)}`
-  }).join(' ')
+  return points.map((point) => `${point.x.toFixed(1)},${trendPointY(point.riskProbability).toFixed(1)}`).join(' ')
 })
 
 function trendPointY(probability) {
-  return 118 - Math.max(0, Math.min(1, Number(probability))) * 92
+  return scaleTrendY(Number(probability), trendYAxis.value.min, trendYAxis.value.max)
+}
+
+function scaleTrendY(probability, min, max) {
+  const safeProbability = Math.max(min, Math.min(max, probability))
+  const ratio = max === min ? 0.5 : (safeProbability - min) / (max - min)
+  return TREND_PLOT.bottom - ratio * (TREND_PLOT.bottom - TREND_PLOT.top)
+}
+
+function trendPointX(index, count) {
+  if (count <= 1) return (TREND_PLOT.left + TREND_PLOT.right) / 2
+  return TREND_PLOT.left + (index / (count - 1)) * (TREND_PLOT.right - TREND_PLOT.left)
 }
 
 function trendWarningText(warning) {
@@ -206,7 +285,39 @@ onMounted(async () => {
         <SectionCard title="对象与当前月度结果" subtitle="该结果来自月度候选排序，不由 detector 生成"><dl class="definition-grid"><dt>医院 × 药品</dt><dd>{{ entity.hospital }} × {{ entity.drug }}</dd><dt>生产企业</dt><dd>{{ entity.manufacturer }}</dd><dt>观察日期</dt><dd>{{ appliedQuery.observationDate }}</dd><dt>预测窗口</dt><dd>{{ selectedHorizonLabel }}</dd><dt>月度概率</dt><dd>{{ selectedHorizonProfile?.probabilityDisplay || entity.probabilityDisplay }}</dd><dt>涉及金额</dt><dd>{{ selectedHorizonProfile?.involvedAmountText || entity.involvedAmountText }}</dd><dt>风险展示等级</dt><dd>{{ selectedHorizonProfile?.riskLevel || entity.riskLevel }}</dd></dl></SectionCard>
         <SectionCard title="H3 / H6 / H12 月度结果" subtitle="不同预测窗口相互独立"><div class="data-table-wrap"><table><thead><tr><th>窗口</th><th>月度概率</th><th>涉及金额</th><th>展示等级</th></tr></thead><tbody><tr v-for="profile in profiles" :key="profile.horizon"><td>{{ profile.horizon }}</td><td>{{ profile.probabilityDisplay }}</td><td>{{ profile.involvedAmountText }}</td><td>{{ profile.riskLevel }}</td></tr></tbody></table></div></SectionCard>
         <SectionCard title="当前日期命中的规则证据" subtitle="规则仅提供事实证据，不改变候选池、排序、概率或金额"><div v-if="!evidence.length" class="empty">当前 observation_date 没有该候选对象的 detector 命中。</div><article v-else v-for="item in evidence" :key="`${item.detectorId}-${item.detectorRunDate}`" class="detector-result-card"><h3>{{ item.detectorName || item.detectorId }}</h3><dl class="definition-grid compact"><dt>Detector ID</dt><dd>{{ item.detectorId || '-' }}</dd><dt>规则巡检分数</dt><dd>{{ item.detectorScoreText || '-' }}</dd><dt>命中说明</dt><dd>{{ item.evidenceText || '-' }}</dd><dt>当前值</dt><dd>{{ item.currentValueText || '-' }}</dd><dt>历史基准</dt><dd>{{ item.baselineValueText || '-' }}</dd><dt>比较值 / 阈值</dt><dd>{{ item.comparisonText || '-' }}</dd><dt>备注</dt><dd>{{ item.caveat || '-' }}</dd></dl></article></SectionCard>
-        <SectionCard title="月度滚动丢失概率趋势" :subtitle="`当前预测窗口：${selectedHorizonLabel}；每个点表示该月截止数据下的对应窗口丢失概率`"><div v-if="probabilityTrend.length" class="probability-trend"><svg viewBox="0 0 300 136" role="img" aria-label="月度滚动丢失概率趋势"><polyline class="trend-grid-line" points="24,26 276,26" /><polyline class="trend-grid-line" points="24,72 276,72" /><polyline class="trend-grid-line" points="24,118 276,118" /><polyline v-if="trendPolyline" class="trend-line" :points="trendPolyline" /><circle v-for="(point, index) in probabilityTrend" :key="point.reportMonth" class="trend-dot" :cx="24 + (index / Math.max(1, probabilityTrend.length - 1)) * 252" :cy="trendPointY(point.riskProbability)" r="4" /></svg><div class="trend-legend"><span v-for="point in probabilityTrend" :key="point.reportMonth">{{ point.reportMonth }} · {{ point.riskProbabilityText }} · 涉及金额 {{ point.involvedAmountText }}</span></div></div><div v-else class="empty">当前候选对象暂无可用的历史月度概率趋势。</div><div v-if="probabilityTrendWarnings.length" class="notice-strip context-notice"><span v-for="warning in probabilityTrendWarnings" :key="warning">{{ trendWarningText(warning) }}</span></div></SectionCard>
+        <SectionCard title="月度滚动丢失概率趋势" :subtitle="`当前预测窗口：${selectedHorizonLabel}；纵轴根据当前样本动态缩放，坐标值仍为真实概率`">
+          <div v-if="probabilityTrend.length" class="probability-trend">
+            <div class="trend-summary" :class="`trend-summary-${trendDirection.kind}`">
+              <span>区间变化</span>
+              <strong>{{ trendDirectionText }}</strong>
+              <small>{{ trendRangeText }}</small>
+            </div>
+            <svg viewBox="0 0 680 280" role="img" aria-label="月度滚动丢失概率趋势">
+              <desc>{{ trendAriaLabel }}</desc>
+              <g v-for="tick in trendYAxis.ticks" :key="tick.label">
+                <line class="trend-grid-line" :x1="TREND_PLOT.left" :x2="TREND_PLOT.right" :y1="tick.y" :y2="tick.y" />
+                <text class="trend-axis-label trend-axis-label-y" :x="TREND_PLOT.left - 12" :y="tick.y + 4" text-anchor="end">{{ tick.label }}</text>
+              </g>
+              <line class="trend-axis-line" :x1="TREND_PLOT.left" :x2="TREND_PLOT.left" :y1="TREND_PLOT.top" :y2="TREND_PLOT.bottom" />
+              <line class="trend-axis-line" :x1="TREND_PLOT.left" :x2="TREND_PLOT.right" :y1="TREND_PLOT.bottom" :y2="TREND_PLOT.bottom" />
+              <text class="trend-axis-title" x="18" y="123" text-anchor="middle" transform="rotate(-90 18 123)">丢失概率</text>
+              <text class="trend-axis-title" x="360" y="270" text-anchor="middle">报告月份</text>
+              <polyline v-if="trendPolyline" :class="['trend-line', `trend-line-${trendDirection.kind}`]" :points="trendPolyline" />
+              <g v-for="point in trendXTicks" :key="point.reportMonth">
+                <line class="trend-axis-tick" :x1="point.x" :x2="point.x" :y1="TREND_PLOT.bottom" :y2="TREND_PLOT.bottom + 6" />
+                <circle :class="['trend-dot', `trend-dot-${trendDirection.kind}`]" :cx="point.x" :cy="trendPointY(point.riskProbability)" r="5">
+                  <title>{{ point.reportMonth }}：{{ point.riskProbabilityText }}</title>
+                </circle>
+                <text class="trend-axis-label trend-axis-label-x" :x="point.x" :y="TREND_PLOT.bottom + 22" text-anchor="middle">{{ point.reportMonth }}</text>
+              </g>
+            </svg>
+            <div class="trend-legend">
+              <span v-for="point in probabilityTrend" :key="point.reportMonth">{{ point.reportMonth }} · {{ point.riskProbabilityText }} · 涉及金额 {{ point.involvedAmountText }}</span>
+            </div>
+          </div>
+          <div v-else class="empty">当前候选对象暂无可用的历史月度概率趋势。</div>
+          <div v-if="probabilityTrendWarnings.length" class="notice-strip context-notice"><span v-for="warning in probabilityTrendWarnings" :key="warning">{{ trendWarningText(warning) }}</span></div>
+        </SectionCard>
       </template>
     </template>
   </div>
