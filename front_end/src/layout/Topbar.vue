@@ -8,7 +8,6 @@ defineProps({
 
 const manufacturerScope = useManufacturerScope()
 const manufacturerOptions = manufacturerScope.manufacturerOptions
-const selectedManufacturer = manufacturerScope.selectedManufacturer
 const selectedManufacturerCode = computed({
   get: () => manufacturerScope.manufacturerCode.value,
   set: (value) => manufacturerScope.selectManufacturer(value)
@@ -59,9 +58,10 @@ try {
     <label class="topbar-manufacturer">
       <span>生产企业</span>
       <select v-model="selectedManufacturerCode" aria-label="全局生产企业" :disabled="manufacturerScope.isLoading.value">
+        <option v-if="manufacturerScope.isLoading.value && !manufacturerOptions.length" :value="selectedManufacturerCode" disabled>正在加载生产企业…</option>
+        <option v-else-if="!manufacturerOptions.length" :value="selectedManufacturerCode" disabled>暂无可用生产企业</option>
         <option v-for="item in manufacturerOptions" :key="item.code" :value="item.code">{{ item.name }}</option>
       </select>
-      <small v-if="selectedManufacturer.code && selectedManufacturer.name !== selectedManufacturer.code">编码 {{ selectedManufacturer.code }}</small>
     </label>
     <span class="topbar-tag">{{ tag }}</span>
     <div class="topbar-user"><div class="avatar">陈</div>营销VP · 陈总</div>

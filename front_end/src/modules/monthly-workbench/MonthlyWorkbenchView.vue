@@ -32,12 +32,16 @@ const options = ref(createEmptyWorkbenchOptions(draftQuery))
 const state = ref(createEmptyWorkbenchData(appliedQuery.value))
 const reportContext = ref(state.value.reportContext)
 const isLoading = ref(false)
+const hasSubmittedQuery = ref(false)
 const manufacturerScope = useManufacturerScope()
 const manufacturerCode = manufacturerScope.manufacturerCode
 let requestSequence = 0
 let pageReady = false
 
 const rows = computed(() => state.value.workbenchDisplayRows || [])
+const emptyTitle = computed(() => hasSubmittedQuery.value ? state.value.emptyTitle : '请设置查询条件并点击查询')
+const emptyMessage = computed(() => hasSubmittedQuery.value ? state.value.emptyMessage : '查询完成后将在此展示正式月度候选结果。')
+const showContextNotice = computed(() => hasSubmittedQuery.value && Boolean(reportContext.value?.displayTitle))
 const selectedHorizonLabel = computed(() => options.value.horizonOptions.find((item) => item.id === appliedQuery.value.horizon)?.label || appliedQuery.value.horizon)
 const availableObservationDates = computed(() => (options.value.dailyDetectorDateOptions || []).map((item) => item.runDate).filter(Boolean))
 
@@ -68,6 +72,7 @@ async function loadOptions() {
 async function submitQuery() {
   const sequence = ++requestSequence
   const manufacturerChanged = appliedQuery.value.manufacturerCode !== draftQuery.manufacturerCode
+  hasSubmittedQuery.value = true
   isLoading.value = true
   if (manufacturerChanged) options.value = createEmptyWorkbenchOptions(draftQuery)
   try {
@@ -122,7 +127,7 @@ watch(manufacturerCode, async (nextCode) => {
       </div>
     </div>
 
-    <section v-if="reportContext?.displayTitle" class="notice-strip context-notice">
+    <section v-if="showContextNotice" class="notice-strip context-notice">
       <strong>{{ reportContext.displayTitle }}</strong>
       <span v-for="line in reportContext.displayLines" :key="line">{{ line }}</span>
     </section>
@@ -154,8 +159,8 @@ watch(manufacturerCode, async (nextCode) => {
     <SectionCard title="排序靠前候选对象" :subtitle="`${selectedHorizonLabel} · Top ${appliedQuery.topN}`">
       <div v-if="isLoading" class="empty">正在读取月度排序结果…</div>
       <div v-else-if="!rows.length" class="empty">
-        <strong>{{ state.emptyTitle }}</strong>
-        <p>{{ state.emptyMessage }}</p>
+        <strong>{{ emptyTitle }}</strong>
+        <p>{{ emptyMessage }}</p>
       </div>
       <div v-else class="data-table-wrap">
         <table>

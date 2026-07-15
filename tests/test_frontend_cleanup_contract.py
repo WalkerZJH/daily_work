@@ -249,6 +249,8 @@ def test_workbench_and_clues_share_manual_query_context_without_duplicate_date_c
     for page in [workbench, clues_page]:
         assert "draftQuery" in page
         assert "appliedQuery" in page
+        assert "hasSubmittedQuery" in page
+        assert "请设置查询条件并点击查询" in page
         assert "async function submitQuery()" in page
         assert "function syncDraftContext()" in page
         assert "watch(draftQuery, syncDraftContext, { deep: true })" in page
@@ -279,6 +281,9 @@ def test_p175_topbar_owns_the_only_editable_manufacturer_selector() -> None:
     assert 'aria-label="全局生产企业"' in topbar
     assert 'v-model="selectedManufacturerCode"' in topbar
     assert "manufacturerOptions" in topbar
+    assert "正在加载生产企业" in topbar
+    assert "暂无可用生产企业" in topbar
+    assert "编码 {{ selectedManufacturer.code }}" not in topbar
     assert "loadManufacturerOptions" in context
     assert "window.history.replaceState" in context
 

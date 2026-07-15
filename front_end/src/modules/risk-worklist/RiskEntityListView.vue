@@ -42,6 +42,7 @@ const reportContext = ref(state.value.reportContext)
 const selectedDetectorFamily = ref(query.detectorFamily || 'all')
 const selectedDetectorId = ref(query.detectorId || 'all')
 const isLoading = ref(false)
+const hasSubmittedQuery = ref(false)
 const manufacturerScope = useManufacturerScope()
 const manufacturerCode = manufacturerScope.manufacturerCode
 let requestSequence = 0
@@ -63,6 +64,9 @@ const ruleSubtypeOptions = computed(() => {
   return [{ id: 'all', label: '全部小类' }, ...catalog.map((item) => ({ id: item.detectorId, label: item.detectorName || item.detectorId }))]
 })
 const displayedClues = computed(() => (state.value.dailyDetectorClues || []).filter((item) => selectedRuleCategory.value === 'all' || ruleCategoryForDetectorFamily(item.detectorFamily) === selectedRuleCategory.value))
+const emptyTitle = computed(() => hasSubmittedQuery.value ? state.value.emptyTitle : '请设置查询条件并点击查询')
+const emptyMessage = computed(() => hasSubmittedQuery.value ? state.value.emptyMessage : '查询完成后将在此展示规则巡检结果。')
+const showContextNotice = computed(() => hasSubmittedQuery.value && Boolean(reportContext.value?.displayTitle))
 
 function detailHref(clue) {
   const next = buildPersistentParams(appliedQuery.value, { clueId: clue.id })
@@ -89,6 +93,7 @@ async function loadOptions() {
 async function submitQuery() {
   const sequence = ++requestSequence
   const manufacturerChanged = appliedQuery.value.manufacturerCode !== draftQuery.manufacturerCode
+  hasSubmittedQuery.value = true
   isLoading.value = true
   if (manufacturerChanged) {
     options.value = createEmptyWorkbenchOptions(draftQuery)
@@ -181,7 +186,7 @@ watch(selectedDetectorId, () => {
       </div>
     </div>
 
-    <section v-if="reportContext?.displayTitle" class="notice-strip context-notice">
+    <section v-if="showContextNotice" class="notice-strip context-notice">
       <strong>{{ reportContext.displayTitle }}</strong>
       <span v-for="line in reportContext.displayLines" :key="line">{{ line }}</span>
     </section>
@@ -220,8 +225,8 @@ watch(selectedDetectorId, () => {
     <SectionCard title="规则巡检结果" subtitle="展示 detector 命中的 entity 与规则证据">
       <div v-if="isLoading" class="empty">刷新中</div>
       <div v-else-if="!displayedClues.length" class="empty">
-        <strong>{{ state.emptyTitle }}</strong>
-        <p>{{ state.emptyMessage }}</p>
+        <strong>{{ emptyTitle }}</strong>
+        <p>{{ emptyMessage }}</p>
       </div>
       <div v-else class="data-table-wrap">
         <table>

@@ -65,6 +65,7 @@ class WorkbenchFillPolicy(FrontendPageModel):
 class WorkbenchRow(FrontendPageModel):
     row_id: str
     entity_id: str | None = None
+    rank: int = Field(default=0, ge=0)
     manufacturer_code: str
     manufacturer_display_name: str | None = None
     manufacturer_name: str | None = None

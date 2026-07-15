@@ -9,11 +9,7 @@ const manufacturerScopeKey = Symbol('manufacturer-scope')
 export function provideManufacturerScope(query = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
   const manufacturerCode = ref(normalizedQuery.manufacturerCode)
-  const manufacturerOptions = ref(
-    normalizedQuery.manufacturerCode
-      ? [{ code: normalizedQuery.manufacturerCode, name: normalizedQuery.manufacturerCode }]
-      : []
-  )
+  const manufacturerOptions = ref([])
   const isLoading = ref(false)
   const isReady = ref(false)
   let initializePromise = null
@@ -22,7 +18,7 @@ export function provideManufacturerScope(query = {}) {
     const selected = manufacturerOptions.value.find((item) => item.code === manufacturerCode.value)
     return selected || {
       code: manufacturerCode.value,
-      name: manufacturerCode.value || '未选择生产企业'
+      name: manufacturerCode.value ? '当前生产企业' : '未选择生产企业'
     }
   })
 
@@ -41,7 +37,7 @@ export function provideManufacturerScope(query = {}) {
         if (directory.manufacturerOptions?.length) {
           const includesCurrent = directory.manufacturerOptions.some((item) => item.code === manufacturerCode.value)
           manufacturerOptions.value = manufacturerCode.value && !includesCurrent
-            ? [{ code: manufacturerCode.value, name: manufacturerCode.value }, ...directory.manufacturerOptions]
+            ? [{ code: manufacturerCode.value, name: '当前生产企业' }, ...directory.manufacturerOptions]
             : directory.manufacturerOptions
         }
         if (!manufacturerCode.value) {
