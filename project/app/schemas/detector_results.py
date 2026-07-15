@@ -152,6 +152,14 @@ class DailyDetectorCluesResponse(DetectorResultModel):
     date_resolution_status: str | None = None
 
 
+class DailyDetectorClueDetailResponse(DetectorResultModel):
+    ready: bool
+    source: str
+    item: DailyDetectorClueItem
+    semantic_caveats: list[str]
+    warnings: list[str]
+
+
 class HighRiskDetectorEvidenceItem(DetectorResultModel):
     risk_entity_id: str
     detector_run_id: str

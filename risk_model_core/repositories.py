@@ -102,6 +102,16 @@ class RiskResultRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_daily_detector_clue_by_id(
+        self,
+        detector_clue_id: str,
+        *,
+        columns: list[str] | None = None,
+    ) -> dict[str, Any] | None:
+        """Return one detector clue without materialising the clue list."""
+        raise NotImplementedError
+
+    @abstractmethod
     def list_high_risk_detector_evidence(self, risk_entity_id: str | None = None, detector_run_id: str | None = None, **filters: Any) -> pd.DataFrame:
         raise NotImplementedError
 
@@ -254,6 +264,34 @@ class ParquetRiskResultRepository(RiskResultRepository):
 
     def list_daily_detector_clues(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("daily_detector_clues"), filters)
+
+    def get_daily_detector_clue_by_id(
+        self,
+        detector_clue_id: str,
+        *,
+        columns: list[str] | None = None,
+    ) -> dict[str, Any] | None:
+        """Read a projected, predicate-filtered clue row directly from Parquet."""
+        try:
+            import pyarrow.dataset as ds
+        except ImportError as exc:  # pragma: no cover - deployment dependency guard
+            raise RuntimeError("PyArrow is required for detector clue detail lookup.") from exc
+
+        parquet = self.batch_dir / "daily_detector_clues.parquet"
+        if not parquet.exists():
+            raise FileNotFoundError(f"Missing production Parquet table: {parquet}")
+        dataset = ds.dataset(parquet, format="parquet")
+        available = set(dataset.schema.names)
+        projection = [column for column in (columns or dataset.schema.names) if column in available]
+        if "detector_clue_id" not in projection:
+            projection.append("detector_clue_id")
+        rows = dataset.to_table(
+            columns=projection,
+            filter=ds.field("detector_clue_id") == str(detector_clue_id),
+        ).to_pylist()
+        if len(rows) > 1:
+            raise ValueError(f"Duplicate detector_clue_id: {detector_clue_id}")
+        return rows[0] if rows else None
 
     def list_high_risk_detector_evidence(self, risk_entity_id: str | None = None, detector_run_id: str | None = None, **filters: Any) -> pd.DataFrame:
         normalized = dict(filters)
@@ -450,6 +488,23 @@ class InMemoryRiskResultRepository(RiskResultRepository):
     def list_daily_detector_clues(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("daily_detector_clues"), filters)
 
+    def get_daily_detector_clue_by_id(
+        self,
+        detector_clue_id: str,
+        *,
+        columns: list[str] | None = None,
+    ) -> dict[str, Any] | None:
+        frame = self.tables.get("daily_detector_clues", pd.DataFrame())
+        if frame.empty or "detector_clue_id" not in frame:
+            return None
+        matches = frame[frame["detector_clue_id"].astype(str).eq(str(detector_clue_id))]
+        if len(matches) > 1:
+            raise ValueError(f"Duplicate detector_clue_id: {detector_clue_id}")
+        if matches.empty:
+            return None
+        row = matches.iloc[0]
+        return {column: row.get(column) for column in columns} if columns else row.to_dict()
+
     def list_high_risk_detector_evidence(self, risk_entity_id: str | None = None, detector_run_id: str | None = None, **filters: Any) -> pd.DataFrame:
         normalized = dict(filters)
         if risk_entity_id is not None:
@@ -598,6 +653,14 @@ class ClickHouseRiskResultRepository(RiskResultRepository):
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
     def list_daily_detector_clues(self, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError("ClickHouse repository is a storage stub.")
+
+    def get_daily_detector_clue_by_id(
+        self,
+        detector_clue_id: str,
+        *,
+        columns: list[str] | None = None,
+    ) -> dict[str, Any] | None:
         raise NotImplementedError("ClickHouse repository is a storage stub.")
 
     def list_high_risk_detector_evidence(self, risk_entity_id: str | None = None, detector_run_id: str | None = None, **filters: Any) -> pd.DataFrame:

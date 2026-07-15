@@ -230,6 +230,15 @@ export class BackendApi {
     return getJson(this.baseUrl, '/api/v1/detectors/clues', params)
   }
 
+  async getDetectorClueDetail(detectorClueId, params = {}) {
+    return getJson(
+      this.baseUrl,
+      `/api/v1/detectors/clues/${encodeURIComponent(detectorClueId)}`,
+      params,
+      this.userOptions()
+    )
+  }
+
   async getMyManufacturers(params = {}) {
     return getJson(this.baseUrl, '/api/v1/my/manufacturers', params, this.userOptions())
   }

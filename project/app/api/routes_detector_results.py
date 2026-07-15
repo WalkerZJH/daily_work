@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.schemas.detector_results import (
     DailyDetectorCluesResponse,
+    DailyDetectorClueDetailResponse,
     DailyDetectorRunsResponse,
     DailyDetectorStatusResponse,
     DetectorCatalogResponse,
@@ -20,6 +22,7 @@ from app.api.routes_report_context import get_report_context_service
 from app.services.report_context_service import ReportContextService
 
 router = APIRouter(prefix="/api/v1", tags=["detector-results"])
+logger = logging.getLogger(__name__)
 
 
 def get_detector_result_service() -> DetectorResultService:
@@ -162,6 +165,31 @@ def daily_detector_clues(
         page=page,
         page_size=top_n or limit or page_size,
     ), context)
+
+
+@router.get(
+    "/detectors/clues/{detector_clue_id}",
+    response_model=DailyDetectorClueDetailResponse,
+)
+def detector_clue_detail(
+    detector_clue_id: str,
+    service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
+    detector_run_id: str | None = None,
+    run_date: str | None = None,
+    manufacturer_code: str | None = None,
+) -> dict:
+    try:
+        return service.clue_detail(
+            detector_clue_id=detector_clue_id,
+            detector_run_id=detector_run_id,
+            run_date=run_date,
+            manufacturer_code=manufacturer_code,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Detector clue not found") from exc
+    except ValueError as exc:
+        logger.exception("Detector clue detail lookup returned duplicate rows", extra={"detector_clue_id": detector_clue_id})
+        raise HTTPException(status_code=500, detail="Detector clue detail is unavailable") from exc
 
 
 @router.get(

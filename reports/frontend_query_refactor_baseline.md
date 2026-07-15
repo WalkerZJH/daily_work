@@ -10,6 +10,8 @@ Generated at: 2026-07-14
 - `oneshot.html` mounts the one-shot terminal flow.
 - Internal pages such as monthly report, proof case, and algorithm architecture keep URL query parameters through shared navigation helpers.
 
+`clue-detail.html` selects its mode before requesting data: `riskEntityId`/`id` uses the existing candidate detail, detector evidence, and probability-trend chain; a URL with only `clueId` calls `GET /api/v1/detectors/clues/{clueId}`. The rule-only mode does not call any risk-entity endpoint and returns to `clues.html`; candidate mode returns to `index.html`.
+
 ## Current query source
 
 The current frontend builds query state directly from `window.location.search` through `normalizeWorkbenchQuery`.
@@ -91,4 +93,3 @@ The light context readers are:
 - Invalid parameter combinations are partially corrected through report context application.
 - Older requests can still return after newer user input unless guarded by page-level sequence checks.
 - The production backend is now Parquet-only, so frontend context APIs should avoid repeatedly forcing large table scans.
-

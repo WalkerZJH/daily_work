@@ -232,6 +232,18 @@ export function createEmptyClueDetailData({ clueId, riskEntityId, query, reportC
   }
 }
 
+export function createEmptyRuleOnlyClueDetailData({ clueId, query } = {}) {
+  return {
+    ready: false,
+    query: normalizeWorkbenchQuery(query),
+    clueId,
+    clue: null,
+    semanticCaveats: [],
+    emptyTitle: '规则线索不可用',
+    emptyMessage: '当前查询条件下没有可展示的规则线索详情'
+  }
+}
+
 export function createEmptyOneshotData() {
   return {
     ready: false,
@@ -372,6 +384,25 @@ export async function loadClueDetailData({ clueId, riskEntityId, query } = {}, {
     ...detail,
     clue: detail.detectorEvidence[0] || {},
     isMonthlyHighRiskEntity: true,
+    emptyTitle: '',
+    emptyMessage: ''
+  }
+}
+
+export async function loadRuleOnlyClueDetailData(clueId, query = {}) {
+  const normalizedQuery = normalizeWorkbenchQuery(query)
+  if (!clueId || normalizedQuery.demoMode) return createEmptyRuleOnlyClueDetailData({ clueId, query: normalizedQuery })
+  const payload = await tryLoad(
+    () => api(normalizedQuery).getDetectorClueDetail(clueId, queryToClueDetailParams(normalizedQuery)),
+    (result) => result
+  )
+  if (!payload?.item) return createEmptyRuleOnlyClueDetailData({ clueId, query: normalizedQuery })
+  return {
+    ready: true,
+    query: normalizedQuery,
+    clueId,
+    clue: mapRuleOnlyClueDetail(payload.item),
+    semanticCaveats: Array.isArray(payload.semantic_caveats) ? payload.semantic_caveats : [],
     emptyTitle: '',
     emptyMessage: ''
   }
@@ -879,6 +910,7 @@ function mapDailyRuleClue(item, index = 0) {
     detectorLevel: item.detector_level || item.confidence || '-',
     rootCauseLabel: item.root_cause_label || '规则命中',
     evidenceText: item.evidence_text || item.caveat || '',
+    evidencePayload: item.evidence_payload,
     detectorRunDate: item.detector_run_date || item.run_date,
     monthlyRiskProbability: item.monthly_risk_probability ?? item.risk_probability,
     monthlyRiskProbabilityText:
@@ -893,6 +925,34 @@ function mapDailyRuleClue(item, index = 0) {
     lossValueText: formatMoney(firstNullableNumber(item.loss_value)),
     actionText: isMonthly ? '查看风险详情' : '查看线索详情'
   }
+}
+
+function mapRuleOnlyClueDetail(item) {
+  const clue = mapDailyRuleClue(item)
+  return {
+    ...clue,
+    confidence: item.confidence,
+    hitFlag: item.hit_flag === true,
+    rootCause: item.root_cause_label || '',
+    evidencePayload: normalizeEvidencePayload(item.evidence_payload),
+    observationDate: item.run_date || '',
+    manufacturer: firstDisplayText(item.manufacturer_display_name, item.manufacturer_name, item.manufacturer_code),
+    hospital: firstDisplayText(item.hospital_display_name, item.hospital_name, item.hospital_code),
+    drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_group),
+    relationshipLabel: '未关联月度风险候选'
+  }
+}
+
+function normalizeEvidencePayload(value) {
+  if (value === null || value === undefined || value === '') return null
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value)
+    } catch {
+      return value
+    }
+  }
+  return value
 }
 
 function mapRiskEntityRuleEvidence(payload) {
@@ -998,6 +1058,14 @@ function queryToApiParams(query) {
     top_n: query.topN,
     sort_by: query.sortBy,
     user_id: query.userId
+  }
+}
+
+function queryToClueDetailParams(query) {
+  return {
+    detector_run_id: query.detectorRunId || undefined,
+    run_date: query.detectorRunDate || query.observationDate || undefined,
+    manufacturer_code: query.manufacturerCode || undefined
   }
 }
 

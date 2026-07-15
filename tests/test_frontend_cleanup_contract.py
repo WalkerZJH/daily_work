@@ -109,17 +109,32 @@ def test_frontend_default_backend_points_to_project_api_port() -> None:
     assert "localStorage.getItem('backendBaseUrl')" not in adapter
 
 
-def test_frontend_observation_date_uses_date_input_and_no_probability_month_metric() -> None:
+def test_frontend_observation_date_uses_square_picker_and_draft_apply_boundary() -> None:
     workbench = read(FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue")
     adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
 
-    assert 'type="date"' in workbench
-    assert 'v-model="query.observationDate"' in workbench
-    assert "query.observationDate" in workbench
+    assert "SquareDatePicker" in workbench
+    assert 'v-model="draftQuery.observationDate"' in workbench
+    assert "appliedQuery" in workbench
+    assert "async function submitQuery()" in workbench
+    assert 'type="date"' not in workbench
     assert "概率基准月" not in workbench
 
     assert "if (!items.length && payload?.ready === false) return null" not in adapter
     assert "payload?.ready !== true && payload?.ready !== 'conditional'" in adapter
+
+
+def test_clue_detail_has_strict_rule_only_data_path() -> None:
+    detail = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityDetailView.vue")
+    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+    api = read(FRONTEND / "src" / "services" / "backendApi.js")
+
+    assert "detailMode === 'rule-only'" in detail
+    assert "loadRuleOnlyClueDetailData" in detail
+    assert "getDetectorClueDetail" in adapter
+    assert "/api/v1/detectors/clues/${encodeURIComponent(detectorClueId)}" in api
+    assert "规则巡检分数不是月度风险概率" in detail
+    assert "仅规则命中不会创建 Recurring 风险候选对象" in detail
 
 
 def test_frontend_rule_clues_exposes_detector_filters() -> None:

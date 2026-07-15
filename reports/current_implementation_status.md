@@ -2,6 +2,10 @@
 
 审计日期：2026-07-14
 
+## 2026-07-14 规则线索详情修正
+
+`clues.html` 是规则巡检结果，不是候选对象排序列表。`clue-detail.html` 已支持两条互斥的只读链路：带 `riskEntityId`（或兼容 `id`）时读取月度候选详情；仅带 `clueId` 时读取单条 Daily Detector 规则线索。后者不读取或展示月度概率、H3/H6/H12、金额、候选排名或概率趋势，也不会创建风险实体。
+
 ## 执行摘要
 
 当前业务语义已冻结为：完整查询参数 → 候选对象排序工作台（Top N）→ 候选对象排序列表（分页）→ 候选对象详情（月度结果与当前 observation_date detector 证据）。
@@ -46,10 +50,10 @@
 | 模块 | 状态 | 结论 |
 |---|---|---|
 | 候选对象排序工作台 | implemented | `MonthlyWorkbenchView.vue` 使用草稿查询与查询按钮；不再请求 detector clues/status，不展示风险来源列 |
-| 候选对象排序列表 | implemented | `RiskEntityListView.vue` 调用 `/api/v1/risk-entities?page=&page_size=`，只渲染当前页 |
-| 候选对象详情 | implemented | `RiskEntityDetailView.vue` 只接受候选对象 ID，显示月度结果、H3/H6/H12 和 detector 证据 |
+| 候选对象排序列表 | implemented | 月度候选排序属于 `index.html`，不由 `clues.html` 承担 |
+| 候选对象详情 | implemented | `clue-detail.html` 的 candidate mode 接受候选对象 ID，显示月度结果、H3/H6/H12 和 detector 证据 |
 | 首页风险来源列 | obsolete_or_conflicting | 所有对象来自月度候选排序，原列为常量语义，已从正式首页移除 |
-| 规则线索独立主列表 | obsolete_or_conflicting | `clues.html` 已承担候选对象排序列表语义；detector 不再形成客户侧主链路节点 |
+| 规则线索独立主列表 | implemented | `clues.html` 是规则巡检结果；`clue-detail.html?clueId=` 展示 rule-only detector 事实证据，不进入月度候选链路 |
 
 ## 主链路完整性结论
 

@@ -28,6 +28,15 @@ SEMANTIC_CAVEATS = [
     "monthly_risk_probability comes from monthly risk_result_batch and does not change daily",
     "monthly model probabilities do not change daily",
 ]
+_CLUE_DETAIL_COLUMNS = [
+    "detector_clue_id", "detector_run_id", "run_date", "tenant_id",
+    "manufacturer_code", "manufacturer_display_name", "hospital_code",
+    "hospital_display_name", "drug_group", "drug_display_name",
+    "region_display_name", "product_line_name", "detector_id", "detector_family",
+    "detector_score", "detector_level", "confidence", "hit_flag", "root_cause_label",
+    "evidence_text", "evidence_payload", "is_monthly_high_risk_entity", "risk_entity_id",
+    "monthly_risk_probability", "monthly_loss_value", "display_rank", "caveat", "created_at",
+]
 CONFIG_EDIT_SEMANTICS = (
     "规则参数调整后，将在下一次巡检运行后生效，历史结果不会被静默改写。"
 )
@@ -208,6 +217,37 @@ class DetectorResultService:
             },
             "semantic_caveats": SEMANTIC_CAVEATS,
             "warnings": [] if ready else [MISSING_WARNING],
+        }
+
+    def clue_detail(
+        self,
+        *,
+        detector_clue_id: str,
+        detector_run_id: str | None = None,
+        run_date: str | None = None,
+        manufacturer_code: str | None = None,
+    ) -> dict[str, Any]:
+        """Return one detector fact without loading the detector clue list."""
+        row = self.repository.get_daily_detector_clue_by_id(
+            detector_clue_id,
+            columns=_CLUE_DETAIL_COLUMNS,
+        )
+        if row is None or not _matches_clue_context(
+            row,
+            detector_run_id=detector_run_id,
+            run_date=run_date,
+            manufacturer_code=manufacturer_code,
+        ):
+            raise KeyError(detector_clue_id)
+        catalog = {item["detector_id"]: item for item in self.catalog()["items"]}
+        item = _clue_item(row, catalog)
+        item["evidence_payload"] = _safe_evidence_payload(row.get("evidence_payload"))
+        return {
+            "ready": True,
+            "source": SOURCE,
+            "item": item,
+            "semantic_caveats": SEMANTIC_CAVEATS,
+            "warnings": [],
         }
 
     def risk_entity_detector_evidence(
@@ -426,6 +466,49 @@ def _json_object(value: Any) -> dict[str, Any]:
         except json.JSONDecodeError:
             return {}
     return {}
+
+
+def _safe_evidence_payload(value: Any) -> Any:
+    """Convert evidence to a JSON-safe value without inventing business meaning."""
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return value
+    return _json_safe_value(value)
+
+
+def _json_safe_value(value: Any) -> Any:
+    if _is_missing(value):
+        return None
+    if hasattr(value, "item"):
+        return _json_safe_value(value.item())
+    if isinstance(value, dict):
+        return {str(key): _json_safe_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_json_safe_value(item) for item in value]
+    if isinstance(value, float) and math.isnan(value):
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return value
+
+
+def _matches_clue_context(
+    row: dict[str, Any],
+    *,
+    detector_run_id: str | None,
+    run_date: str | None,
+    manufacturer_code: str | None,
+) -> bool:
+    return all(
+        requested is None or _text(row.get(field)) == str(requested)
+        for field, requested in {
+            "detector_run_id": detector_run_id,
+            "run_date": run_date,
+            "manufacturer_code": manufacturer_code,
+        }.items()
+    )
 
 
 def _evidence_contract(
