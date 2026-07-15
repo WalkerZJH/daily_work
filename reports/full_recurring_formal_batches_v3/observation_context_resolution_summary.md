@@ -1,0 +1,6 @@
+# Observation Context Resolution Summary
+
+| observation_date | probability_report_month | probability_batch_id | probability_batch_dir | probability_batch_available | detector_run_date | detector_run_id | detector_run_available | context_status | manual_selection_required | available_report_months | available_detector_run_dates | primary_horizon | available_horizons | caveat |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-01-01 | 2025-12 | 2025-12-monthly-risk-algorithm-full-recurring-v3 | data/project_result_batches/report_month=2025-12/batch_id=2025-12-monthly-risk-algorithm-full-recurring-v3 | True | 2026-01-01 |  | False | detector_run_unavailable | True | 2025-12 |  | H6 | H3;H6;H12 | full recurring candidate universe persisted before presentation pagination; Top N is a presentation limit, not a candidate admission rule; business review required; raw_orders_mode_ready=false; current formal readiness is conditional_fact_mode_ready; daily detector evidence is published independently and does not gate monthly candidates; multi_month_context_ready; default_observation_date is not a fabricated detector clue |
+| 2025-12-05 | 2025-11 |  |  | False | 2025-12-05 |  | False | probability_month_unavailable | True | 2025-12 |  | H6 | H3;H6;H12 | probability month unavailable |

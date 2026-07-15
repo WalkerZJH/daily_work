@@ -290,6 +290,7 @@ def test_frontend_risk_entities_api_reuses_top_entity_service() -> None:
     assert [item["entity_id"] for item in payload["items"]] == ["m1_high", "m2_high"]
     assert payload["entities"] == payload["items"]  # temporary response compatibility
     assert payload["pagination"] == {"page": 1, "page_size": 2, "total": 5, "total_pages": 3}
+    assert payload["batch_context"]["result_batch_id"] == "batch"
 
 
 def test_frontend_risk_entities_paginates_without_candidate_loss() -> None:

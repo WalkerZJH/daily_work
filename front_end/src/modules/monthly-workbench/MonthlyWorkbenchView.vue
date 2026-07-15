@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
 import SquareDatePicker from '../../components/ui/SquareDatePicker.vue'
@@ -99,7 +99,7 @@ watch(draftQuery, syncDraftContext, { deep: true })
       <span v-for="line in reportContext.displayLines" :key="line">{{ line }}</span>
     </section>
 
-    <SectionCard title="查询条件" subtitle="修改条件后点击查询，结果不会随输入自动刷新">
+    <SectionCard title="查询条件">
       <div class="control-grid">
         <div class="control-group">
           <span class="control-label">预测窗口</span>

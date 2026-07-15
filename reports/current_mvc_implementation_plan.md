@@ -2,7 +2,7 @@
 
 ## Phase 0：口径冻结与正式批次发布
 
-当前状态：代码已冻结为全 recurring 候选池；新的 `2025-12/full-recurring-v1` Parquet 批次正在物化。
+当前状态：代码已冻结为全 recurring 候选池；正式 `2025-12/full-recurring-v3` Parquet 批次已物化并通过双计数、结果契约与模型层校验。月度主干与 Detector 独立发布：主干读取 v3，规则巡检保留使用按观察日期匹配的有效 Detector 批次。
 
 - 冻结 recurring 准入、实体键、H3/H6/H12、默认排序字段和 Top N 仅为展示截断的口径。
 - 禁止 `risk_level`、`is_high_risk`、detector 命中、企业 cap、global cap 参与候选准入。

@@ -1,0 +1,14 @@
+{
+  "output_root": "data\\project_result_batches",
+  "summaries": [
+    {
+      "report_month": "2025-12",
+      "batch_dir": "data\\project_result_batches\\report_month=2025-12\\batch_id=2025-12-monthly-risk-algorithm-full-recurring-v3",
+      "risk_entities": 88515,
+      "detector_runs": 0,
+      "detector_clues": 0,
+      "high_risk_detector_evidence": 0,
+      "end_to_end_seconds": 359.3291
+    }
+  ]
+}

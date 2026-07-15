@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 import risk_algorithm_core.result_assembler as result_assembler
@@ -11,6 +12,12 @@ from risk_model_core.repositories import ParquetRiskResultRepository
 from risk_result_contracts import validate_result_batch
 from risk_result_contracts.schemas import RISK_ENTITY_HORIZON_PROFILE_REQUIRED_COLUMNS
 from tests.risk_algorithm_core_test_utils import RUN_CONFIG
+
+
+def test_formal_generator_default_run_id_uses_current_valid_batch() -> None:
+    from scripts.generate_multi_month_formal_batches import DEFAULT_RUN_ID
+
+    assert DEFAULT_RUN_ID == "full-recurring-v3"
 
 
 def test_result_assembler_outputs_monthly_contract(tmp_path) -> None:
@@ -78,6 +85,47 @@ def test_multi_month_generator_can_publish_main_batch_without_running_detector(t
     assert result["summary"]["detector_runs"] == 0
     assert not (batch_dir / "daily_detector_runs.parquet").exists()
     assert json.loads((batch_dir / "manifest.json").read_text(encoding="utf-8"))["detector_tables"] == {}
+
+
+def test_horizon_profiles_use_preindexed_rows_instead_of_repeated_frame_filters(monkeypatch) -> None:
+    risk_entities = pd.DataFrame(
+        [
+            {"risk_entity_id": "r1", "entity_id": "e1", "primary_horizon": "H6", "is_one_shot": False, "risk_level": "watch"},
+            {"risk_entity_id": "r2", "entity_id": "e2", "primary_horizon": "H6", "is_one_shot": False, "risk_level": "warning"},
+        ]
+    )
+    status = pd.DataFrame(
+        [
+            {"entity_id": entity, "horizon": horizon, "candidate_id": f"{entity}|{horizon}", "risk_level": "watch", "risk_band": "medium"}
+            for entity in ["e1", "e2"]
+            for horizon in ["H3", "H6", "H12"]
+        ]
+    )
+    features = status.copy()
+    scores = pd.DataFrame(
+        [
+            {"entity_id": entity, "horizon": horizon, "churn_probability_H": 0.4}
+            for entity in ["e1", "e2"]
+            for horizon in ["H3", "H6", "H12"]
+        ]
+    )
+
+    def fail_if_repeated_scan(*_args, **_kwargs):
+        raise AssertionError("horizon profile builder must not scan a full DataFrame per entity/window")
+
+    monkeypatch.setattr(result_assembler, "_first_profile_row", fail_if_repeated_scan)
+
+    profiles = result_assembler._build_risk_entity_horizon_profiles(
+        risk_entities,
+        status,
+        features,
+        "2025-12",
+        ["H3", "H6", "H12"],
+        score_frame=scores,
+    )
+
+    assert len(profiles) == 6
+    assert set(profiles["candidate_id"]) == {f"{entity}|{horizon}" for entity in ["e1", "e2"] for horizon in ["H3", "H6", "H12"]}
 
 
 def test_result_assembler_does_not_publish_partial_batch_when_a_table_write_fails(tmp_path, monkeypatch) -> None:

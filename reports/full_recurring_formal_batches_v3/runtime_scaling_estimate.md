@@ -1,0 +1,10 @@
+# Runtime Scaling Estimate
+
+| stage | current_run_seconds | current_run_raw_rows | current_run_entity_count | current_run_feature_rows | sql_clickhouse_full_row_count | full_dataset_row_multiplier | full_dataset_entity_multiplier | stage_specific_scaling_assumption | estimated_full_dataset_seconds_low | estimated_full_dataset_seconds_mid | estimated_full_dataset_seconds_high | confidence_level | caveat |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| clickhouse_read | 4.178969 | 750042 | 194652 | 106647 | 750042 | 1.0 | 1.0 | linear_raw_rows | 3.134227 | 4.178969 | 6.268454 | low | Set RISK_FULL_DATASET_ROW_COUNT for full ClickHouse-count scaling; detector estimate applies selected monthly scope only. |
+| feature_build | 43.138454 | 750042 | 194652 | 106647 | 750042 | 1.0 | 1.0 | roughly_linear_raw_rows_with_groupby_caveat | 32.353841 | 43.138454 | 64.707681 | low | Set RISK_FULL_DATASET_ROW_COUNT for full ClickHouse-count scaling; detector estimate applies selected monthly scope only. |
+| monthly_probability | 298.625592 | 750042 | 194652 | 106647 | 750042 | 1.0 | 1.0 | linear_feature_rows | 223.969194 | 298.625592 | 447.938388 | low | Set RISK_FULL_DATASET_ROW_COUNT for full ClickHouse-count scaling; detector estimate applies selected monthly scope only. |
+| detector | 0.0 | 750042 | 194652 | 106647 | 750042 | 1.0 | 1.0 | selected_scope_not_raw_rows | 0.0 | 0.0 | 0.0 | low | Set RISK_FULL_DATASET_ROW_COUNT for full ClickHouse-count scaling; detector estimate applies selected monthly scope only. |
+| validation | 2.403022 | 750042 | 194652 | 106647 | 750042 | 1.0 | 1.0 | result_table_size | 1.802266 | 2.403022 | 3.604533 | low | Set RISK_FULL_DATASET_ROW_COUNT for full ClickHouse-count scaling; detector estimate applies selected monthly scope only. |
+| end_to_end | 359.3291 | 750042 | 194652 | 106647 | 750042 | 1.0 | 1.0 | dominant_raw_and_feature_stages | 269.496825 | 359.3291 | 538.99365 | low | Set RISK_FULL_DATASET_ROW_COUNT for full ClickHouse-count scaling; detector estimate applies selected monthly scope only. |

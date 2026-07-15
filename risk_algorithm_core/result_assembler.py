@@ -415,9 +415,9 @@ def _build_risk_entity_horizon_profiles(
     if risk_entities.empty:
         return pd.DataFrame(columns=columns)
 
-    status_source = _with_entity_horizon(status)
-    feature_source = _with_entity_horizon(feature_frame)
-    score_source = _with_entity_horizon(score_frame if score_frame is not None else pd.DataFrame())
+    status_index = _index_profile_rows(_with_entity_horizon(status))
+    feature_index = _index_profile_rows(_with_entity_horizon(feature_frame))
+    score_index = _index_profile_rows(_with_entity_horizon(score_frame if score_frame is not None else pd.DataFrame()))
     evidence_counts = _detector_evidence_counts(high_risk_detector_evidence)
     updated_at = dt.datetime.now(dt.UTC).isoformat()
     rows: list[dict[str, Any]] = []
@@ -429,9 +429,9 @@ def _build_risk_entity_horizon_profiles(
         primary_horizon = str(entity.get("primary_horizon") or entity.get("horizon") or "")
         hide_probability = bool(entity.get("is_one_shot", False))
         for horizon in horizons:
-            status_row = _first_profile_row(status_source, entity_id, horizon)
-            feature_row = _first_profile_row(feature_source, entity_id, horizon)
-            score_row = _first_profile_row(score_source, entity_id, horizon)
+            status_row = _profile_row_from_index(status_index, entity_id, horizon)
+            feature_row = _profile_row_from_index(feature_index, entity_id, horizon)
+            score_row = _profile_row_from_index(score_index, entity_id, horizon)
             probability = pd.NA if hide_probability else _profile_probability(score_row, status_row, entity, horizon, primary_horizon)
             involved_amount, involved_source = _profile_involved_amount(feature_row, status_row, horizon)
             risk_level = _profile_text(status_row, ["risk_level"]) or (
@@ -539,6 +539,26 @@ def _first_profile_row(df: pd.DataFrame, entity_id: str, horizon: str) -> pd.Ser
         return pd.Series(dtype=object)
     rows = df[df["entity_id"].astype(str).eq(str(entity_id)) & df["horizon"].astype(str).eq(str(horizon))]
     return pd.Series(dtype=object) if rows.empty else rows.iloc[0]
+
+
+def _index_profile_rows(df: pd.DataFrame) -> pd.DataFrame | None:
+    """Index profile rows once; callers must not repeatedly scan a full profile table."""
+
+    if df.empty or "entity_id" not in df or "horizon" not in df:
+        return None
+    indexed = df.copy()
+    indexed["entity_id"] = indexed["entity_id"].astype(str)
+    indexed["horizon"] = indexed["horizon"].astype(str)
+    return indexed.drop_duplicates(["entity_id", "horizon"], keep="first").set_index(["entity_id", "horizon"], drop=False)
+
+
+def _profile_row_from_index(indexed: pd.DataFrame | None, entity_id: str, horizon: str) -> pd.Series:
+    if indexed is None:
+        return pd.Series(dtype=object)
+    try:
+        return indexed.loc[(str(entity_id), str(horizon))]
+    except KeyError:
+        return pd.Series(dtype=object)
 
 
 def _oneshot_id(row: pd.Series) -> str:

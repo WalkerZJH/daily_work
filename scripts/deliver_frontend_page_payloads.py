@@ -21,13 +21,10 @@ ROOT = Path(__file__).resolve().parents[1]
 VERSION = "entity_complete_v2_coverage_expansion"
 DEFAULT_BATCH_DIR = (
     ROOT
-    / "algo_main"
     / "data"
-    / VERSION
-    / "13_formal_algorithm_core_raw_to_batch"
-    / "formal_result_batches"
+    / "project_result_batches"
     / "report_month=2025-12"
-    / "batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw"
+    / "batch_id=2025-12-monthly-risk-algorithm-full-recurring-v3"
 )
 REPORT_DIR = ROOT / "algo_main" / "reports" / VERSION / "22_frontend_payload_delivery"
 SCHEMA_PATH = ROOT / "project" / "app" / "schemas" / "frontend_pages.py"

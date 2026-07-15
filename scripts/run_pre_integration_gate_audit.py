@@ -26,13 +26,10 @@ FORMAL_REPORT_DIR = ROOT / "algo_main" / "reports" / VERSION / "19_formal_algori
 BEST_MODEL_REPORT_DIR = ROOT / "algo_main" / "reports" / VERSION / "18_best_model_runtime_alignment"
 FORMAL_BATCH_DIR = (
     ROOT
-    / "algo_main"
     / "data"
-    / VERSION
-    / "13_formal_algorithm_core_raw_to_batch"
-    / "formal_result_batches"
+    / "project_result_batches"
     / "report_month=2025-12"
-    / "batch_id=2025-12-monthly-risk-algorithm-formal-v2-raw"
+    / "batch_id=2025-12-monthly-risk-algorithm-full-recurring-v3"
 )
 FORMAL_CONFIG = ROOT / "configs" / "risk_algorithm_core" / "monthly_run.formal.example.yaml"
 SMOKE_OUTPUT_ROOT = DATA_DIR / "smoke"

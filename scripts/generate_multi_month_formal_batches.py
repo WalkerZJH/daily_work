@@ -43,6 +43,7 @@ TARGET_COMPLETE_MONTHS = ["2025-09", "2025-10", "2025-11", "2025-12"]
 OUTPUT_ROOT = Path("data/project_result_batches")
 REPORT_ROOT = Path("reports/full_recurring_formal_batches")
 DEFAULT_CONFIG = Path("configs/risk_algorithm_core/monthly_run.formal.example.yaml")
+DEFAULT_RUN_ID = "full-recurring-v3"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -51,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-root", default=str(OUTPUT_ROOT))
     parser.add_argument("--report-root", default=str(REPORT_ROOT))
     parser.add_argument("--months", nargs="*", default=TARGET_COMPLETE_MONTHS)
-    parser.add_argument("--run-id", default="full-recurring-v1")
+    parser.add_argument("--run-id", default=DEFAULT_RUN_ID)
     parser.add_argument("--without-detector-evidence", action="store_true")
     parser.add_argument("--clean-output", action="store_true")
     args = parser.parse_args(argv)

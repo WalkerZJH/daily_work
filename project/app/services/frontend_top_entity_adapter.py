@@ -32,7 +32,7 @@ def build_risk_entities_payload_from_top_entities(
     entities = list(top_entities.get("items") or [])
     items = [_risk_entity_item(entity, top_entities) for entity in entities]
     return {
-        "batch_context": _batch_context(top_entities),
+        "batch_context": _batch_context(top_entities, service),
         "items": items,
         "entities": items,
         "pagination": {
@@ -112,15 +112,18 @@ def build_workbench_payload_from_top_entities(
     }
 
 
-def _batch_context(top_entities: dict[str, Any]) -> dict[str, str]:
+def _batch_context(top_entities: dict[str, Any], service: TopEntityService) -> dict[str, str]:
     report_month = str(top_entities.get("report_month") or "latest")
     horizon = str(top_entities.get("horizon") or "H6")
+    manifest = service.repository.manifest()
+    manifest_raw = getattr(manifest, "raw", {}) or {}
+    result_batch_id = str(manifest_raw.get("result_batch_id") or manifest.batch_id)
     return {
         "report_month": report_month,
-        "score_as_of_date": report_month,
-        "data_watermark_at": report_month,
+        "score_as_of_date": str(getattr(manifest, "score_cutoff_month", None) or report_month),
+        "data_watermark_at": str(getattr(manifest, "report_date", None) or report_month),
         "score_batch_id": "top_entity_service",
-        "result_batch_id": "risk_result_batch",
+        "result_batch_id": result_batch_id,
         "primary_horizon": horizon,
         "primary_horizon_label": horizon,
         "involved_amount_definition": "selected horizon window consumption",
