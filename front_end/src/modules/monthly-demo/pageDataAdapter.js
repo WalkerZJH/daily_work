@@ -8,6 +8,17 @@ export const horizonOptions = [
 
 export const topNOptions = [10, 20, 50, 100]
 
+export const RULE_CATEGORY_DEFINITIONS = [
+  { id: 'price', label: '价格异常', families: ['price'] },
+  { id: 'fulfillment', label: '配送异常', families: ['fulfillment'], unavailable: true },
+  { id: 'terminal', label: '终端变动', families: ['interval', 'assortment'] },
+  { id: 'sales', label: '销量波动', families: ['quantity', 'frequency'] }
+]
+
+export function ruleCategoryForDetectorFamily(family) {
+  return RULE_CATEGORY_DEFINITIONS.find((item) => item.families.includes(family))?.id || ''
+}
+
 export const sortOptions = [
   { id: 'risk_probability', label: '丢失概率' },
   { id: 'involved_amount', label: '涉及金额' },

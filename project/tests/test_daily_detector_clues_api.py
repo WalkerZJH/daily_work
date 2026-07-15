@@ -57,6 +57,22 @@ def test_daily_detector_clues_returns_only_detector_hits() -> None:
     assert all(item["hit_flag"] is True for item in payload["clues"])
 
 
+def test_daily_detector_clues_deduplicates_detector_clue_id() -> None:
+    repository = make_frontend_repository()
+    duplicate = repository.load_table("daily_detector_clues").iloc[[0]].copy()
+    repository.tables["daily_detector_clues"] = pd.concat(
+        [repository.load_table("daily_detector_clues"), duplicate], ignore_index=True
+    )
+
+    with override_frontend_result_repository(repository):
+        response = TestClient(app).get("/api/v1/daily-detector/clues", params={"sort_by": "detector_score"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 2
+    assert len({item["detector_clue_id"] for item in payload["items"]}) == payload["total"]
+
+
 def test_daily_detector_clues_labels_non_monthly_high_risk_as_rule_only() -> None:
     with override_frontend_result_repository():
         response = TestClient(app).get(

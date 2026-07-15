@@ -189,6 +189,7 @@ class DetectorResultService:
             clues = clues[clues.get("hit_flag", pd.Series(False, index=clues.index)).map(_bool)]
         clues = _merge_entity_display_lookup(clues, self.repository)
         clues = _sort_clues(clues, sort_by)
+        clues = _deduplicate_clues(clues)
         total = int(len(clues))
         current_page = max(int(page), 1)
         current_size = min(max(int(page_size), 1), 200)
@@ -646,6 +647,14 @@ def _sort_clues(frame: pd.DataFrame, sort_by: str) -> pd.DataFrame:
     if sort_by == "loss_value" and "monthly_loss_value" in frame:
         return frame.sort_values("monthly_loss_value", ascending=False, na_position="last", kind="mergesort")
     return _sort_frame(frame, ["display_rank", "created_at"], ascending=True)
+
+
+def _deduplicate_clues(frame: pd.DataFrame) -> pd.DataFrame:
+    """Keep one deterministic row per formal detector clue identity."""
+
+    if frame.empty or "detector_clue_id" not in frame:
+        return frame
+    return frame.drop_duplicates(subset=["detector_clue_id"], keep="first")
 
 
 def _highest_detector_score(clues: pd.DataFrame) -> float | None:

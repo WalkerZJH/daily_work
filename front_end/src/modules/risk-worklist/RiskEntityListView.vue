@@ -10,7 +10,9 @@ import {
   loadReportContext,
   loadRuleCluesData,
   loadWorkbenchOptions,
-  normalizeWorkbenchQuery
+  normalizeWorkbenchQuery,
+  RULE_CATEGORY_DEFINITIONS,
+  ruleCategoryForDetectorFamily
 } from '../monthly-demo/pageDataAdapter'
 
 const params = new URLSearchParams(window.location.search)
@@ -44,20 +46,21 @@ let requestSequence = 0
 let initializedManufacturer = Boolean(query.manufacturerCode)
 
 const availableObservationDates = computed(() => options.value.dailyDetectorDateOptions?.map((item) => item.id).filter(Boolean) || [])
-const detectorFamilyOptions = computed(() => {
-  const families = [...new Map((options.value.detectorCatalog || []).map((item) => [
-    item.detectorFamily,
-    { id: item.detectorFamily, label: item.detectorFamilyLabel || item.detectorFamily }
-  ])).values()].filter((item) => item.id)
-  return [{ id: 'all', label: '全部大类' }, ...families]
-})
-const detectorIdOptions = computed(() => {
-  const catalog = selectedDetectorFamily.value === 'all'
+const selectedRuleCategory = selectedDetectorFamily
+if (selectedRuleCategory.value === 'all') selectedDetectorId.value = 'all'
+const ruleCategoryOptions = computed(() => [{ id: 'all', label: '全部大类' }, ...RULE_CATEGORY_DEFINITIONS.map((item) => ({
+  id: item.id,
+  label: item.unavailable ? `${item.label}（暂未实现）` : item.label,
+  disabled: Boolean(item.unavailable)
+}))])
+const ruleSubtypeOptions = computed(() => {
+  if (selectedRuleCategory.value === 'all') return [{ id: 'all', label: '全部小类' }]
+  const catalog = selectedRuleCategory.value === 'all'
     ? options.value.detectorCatalog || []
-    : (options.value.detectorCatalog || []).filter((item) => item.detectorFamily === selectedDetectorFamily.value)
+    : (options.value.detectorCatalog || []).filter((item) => ruleCategoryForDetectorFamily(item.detectorFamily) === selectedRuleCategory.value)
   return [{ id: 'all', label: '全部小类' }, ...catalog.map((item) => ({ id: item.detectorId, label: item.detectorName || item.detectorId }))]
 })
-const displayedClues = computed(() => state.value.dailyDetectorClues || [])
+const displayedClues = computed(() => (state.value.dailyDetectorClues || []).filter((item) => selectedRuleCategory.value === 'all' || ruleCategoryForDetectorFamily(item.detectorFamily) === selectedRuleCategory.value))
 
 function detailHref(clue) {
   const next = buildPersistentParams(appliedQuery.value, { clueId: clue.id })
@@ -98,7 +101,7 @@ async function submitQuery() {
   const sequence = ++requestSequence
   isLoading.value = true
   try {
-    draftQuery.detectorFamily = selectedDetectorFamily.value === 'all' ? '' : selectedDetectorFamily.value
+    draftQuery.detectorFamily = ''
     draftQuery.detectorId = selectedDetectorId.value === 'all' ? '' : selectedDetectorId.value
     if (draftQuery.demoMode) {
       options.value = await loadWorkbenchOptions(draftQuery, { allowDemo: true })
@@ -141,7 +144,7 @@ onMounted(loadOptions)
 
 watch(draftQuery, syncDraftContext, { deep: true })
 
-watch(selectedDetectorFamily, () => {
+watch(selectedRuleCategory, () => {
   selectedDetectorId.value = 'all'
   draftQuery.detectorFamily = selectedDetectorFamily.value === 'all' ? '' : selectedDetectorFamily.value
   draftQuery.detectorId = ''
@@ -192,14 +195,14 @@ watch(selectedDetectorId, () => {
       <div class="control-grid">
         <label class="control-field">
           <span>规则大类</span>
-          <select v-model="selectedDetectorFamily">
-            <option v-for="item in detectorFamilyOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
+          <select v-model="selectedRuleCategory">
+            <option v-for="item in ruleCategoryOptions" :key="item.id" :value="item.id" :disabled="item.disabled">{{ item.label }}</option>
           </select>
         </label>
         <label class="control-field">
           <span>规则小类</span>
           <select v-model="selectedDetectorId">
-            <option v-for="item in detectorIdOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
+            <option v-for="item in ruleSubtypeOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
           </select>
         </label>
         <button type="button" class="btn btn-primary" :disabled="isLoading" @click="submitQuery">{{ isLoading ? '查询中…' : '查询' }}</button>

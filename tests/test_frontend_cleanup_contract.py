@@ -182,6 +182,18 @@ def test_clues_page_does_not_expose_monthly_candidate_state() -> None:
     assert "clue-detail.html?${next.toString()}" in clues_page
 
 
+def test_clues_page_uses_four_business_categories_with_dependent_subtypes() -> None:
+    clues_page = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue")
+    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+
+    for label in ["价格异常", "配送异常", "终端变动", "销量波动"]:
+        assert label in adapter
+    assert "RULE_CATEGORY_DEFINITIONS" in adapter
+    assert "selectedRuleCategory" in clues_page
+    assert "ruleCategoryOptions" in clues_page
+    assert "ruleSubtypeOptions" in clues_page
+
+
 def test_workbench_and_clues_share_manual_query_context_without_duplicate_date_control() -> None:
     workbench = read(FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue")
     clues_page = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue")
