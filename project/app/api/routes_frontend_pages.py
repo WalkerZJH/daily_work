@@ -499,7 +499,7 @@ def _frontend_page_service_for_context(
     if service._repository is not None and _is_in_memory_repository(service._repository):
         return service
     repository = report_context_service.probability_repository(context)
-    return FrontendPageService(repository=repository) if repository is not None else service
+    return FrontendPageService(repository=repository, batch_root=report_context_service.batch_root) if repository is not None else service
 
 
 def _unavailable_workbench_payload(

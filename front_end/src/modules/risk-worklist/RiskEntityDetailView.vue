@@ -40,6 +40,7 @@ const entity = computed(() => candidateState.value.entity)
 const profiles = computed(() => Object.values(candidateState.value.horizonProfiles || {}))
 const evidence = computed(() => candidateState.value.detectorEvidence || [])
 const probabilityTrend = computed(() => candidateState.value.probabilityTrend || [])
+const probabilityTrendWarnings = computed(() => candidateState.value.probabilityTrendWarnings || [])
 const selectedHorizonProfile = computed(() => candidateState.value.horizonProfiles?.[appliedQuery.value.horizon] || null)
 const selectedHorizonLabel = computed(() => horizonOptions.find((item) => item.id === appliedQuery.value.horizon)?.label || appliedQuery.value.horizon)
 const ruleClue = computed(() => ruleOnlyState.value.clue)
@@ -50,10 +51,21 @@ const trendPolyline = computed(() => {
   if (points.length < 2) return ''
   return points.map((point, index) => {
     const x = 24 + (index / (points.length - 1)) * 252
-    const y = 118 - Math.max(0.05, Math.min(0.95, Number(point.riskProbability || 0))) * 92
+    const y = trendPointY(point.riskProbability)
     return `${x.toFixed(1)},${y.toFixed(1)}`
   }).join(' ')
 })
+
+function trendPointY(probability) {
+  return 118 - Math.max(0, Math.min(1, Number(probability))) * 92
+}
+
+function trendWarningText(warning) {
+  if (warning === 'TREND_MODEL_ARTIFACT_CHANGED') return '趋势区间内模型版本发生变化，概率变化可能同时受到模型版本和实体特征变化影响。'
+  if (warning === 'HISTORICAL_RISK_PROBABILITY_UNAVAILABLE') return '部分月份存在结果记录但月度概率不可用，未作为趋势采样点展示。'
+  if (warning === 'HISTORICAL_RISK_ENTITY_SCOPE_MISMATCH') return '部分历史记录未通过同一生产企业、医院和药品关系校验，未纳入趋势。'
+  return warning
+}
 
 function backHref() {
   const query = buildPersistentParams(appliedQuery.value)
@@ -194,7 +206,7 @@ onMounted(async () => {
         <SectionCard title="对象与当前月度结果" subtitle="该结果来自月度候选排序，不由 detector 生成"><dl class="definition-grid"><dt>医院 × 药品</dt><dd>{{ entity.hospital }} × {{ entity.drug }}</dd><dt>生产企业</dt><dd>{{ entity.manufacturer }}</dd><dt>观察日期</dt><dd>{{ appliedQuery.observationDate }}</dd><dt>预测窗口</dt><dd>{{ selectedHorizonLabel }}</dd><dt>月度概率</dt><dd>{{ selectedHorizonProfile?.probabilityDisplay || entity.probabilityDisplay }}</dd><dt>涉及金额</dt><dd>{{ selectedHorizonProfile?.involvedAmountText || entity.involvedAmountText }}</dd><dt>风险展示等级</dt><dd>{{ selectedHorizonProfile?.riskLevel || entity.riskLevel }}</dd></dl></SectionCard>
         <SectionCard title="H3 / H6 / H12 月度结果" subtitle="不同预测窗口相互独立"><div class="data-table-wrap"><table><thead><tr><th>窗口</th><th>月度概率</th><th>涉及金额</th><th>展示等级</th></tr></thead><tbody><tr v-for="profile in profiles" :key="profile.horizon"><td>{{ profile.horizon }}</td><td>{{ profile.probabilityDisplay }}</td><td>{{ profile.involvedAmountText }}</td><td>{{ profile.riskLevel }}</td></tr></tbody></table></div></SectionCard>
         <SectionCard title="当前日期命中的规则证据" subtitle="规则仅提供事实证据，不改变候选池、排序、概率或金额"><div v-if="!evidence.length" class="empty">当前 observation_date 没有该候选对象的 detector 命中。</div><article v-else v-for="item in evidence" :key="`${item.detectorId}-${item.detectorRunDate}`" class="detector-result-card"><h3>{{ item.detectorName || item.detectorId }}</h3><dl class="definition-grid compact"><dt>Detector ID</dt><dd>{{ item.detectorId || '-' }}</dd><dt>规则巡检分数</dt><dd>{{ item.detectorScoreText || '-' }}</dd><dt>命中说明</dt><dd>{{ item.evidenceText || '-' }}</dd><dt>当前值</dt><dd>{{ item.currentValueText || '-' }}</dd><dt>历史基准</dt><dd>{{ item.baselineValueText || '-' }}</dd><dt>比较值 / 阈值</dt><dd>{{ item.comparisonText || '-' }}</dd><dt>备注</dt><dd>{{ item.caveat || '-' }}</dd></dl></article></SectionCard>
-        <SectionCard title="丢失概率趋势" subtitle="横轴为月报月份，纵轴为月度丢失概率，金额为同窗口涉及金额"><div v-if="probabilityTrend.length" class="probability-trend"><svg viewBox="0 0 300 136" role="img" aria-label="丢失概率趋势"><polyline class="trend-grid-line" points="24,26 276,26" /><polyline class="trend-grid-line" points="24,72 276,72" /><polyline class="trend-grid-line" points="24,118 276,118" /><polyline v-if="trendPolyline" class="trend-line" :points="trendPolyline" /><circle v-for="(point, index) in probabilityTrend" :key="point.reportMonth" class="trend-dot" :cx="24 + (index / Math.max(1, probabilityTrend.length - 1)) * 252" :cy="118 - Math.max(0.05, Math.min(0.95, Number(point.riskProbability || 0))) * 92" r="4" /></svg><div class="trend-legend"><span v-for="point in probabilityTrend" :key="point.reportMonth">{{ point.reportMonth }} · {{ point.riskProbabilityText }} · 涉及金额 {{ point.involvedAmountText }}</span></div></div><div v-else class="empty">暂无趋势数据</div></SectionCard>
+        <SectionCard title="月度滚动丢失概率趋势" :subtitle="`当前预测窗口：${selectedHorizonLabel}；每个点表示该月截止数据下的对应窗口丢失概率`"><div v-if="probabilityTrend.length" class="probability-trend"><svg viewBox="0 0 300 136" role="img" aria-label="月度滚动丢失概率趋势"><polyline class="trend-grid-line" points="24,26 276,26" /><polyline class="trend-grid-line" points="24,72 276,72" /><polyline class="trend-grid-line" points="24,118 276,118" /><polyline v-if="trendPolyline" class="trend-line" :points="trendPolyline" /><circle v-for="(point, index) in probabilityTrend" :key="point.reportMonth" class="trend-dot" :cx="24 + (index / Math.max(1, probabilityTrend.length - 1)) * 252" :cy="trendPointY(point.riskProbability)" r="4" /></svg><div class="trend-legend"><span v-for="point in probabilityTrend" :key="point.reportMonth">{{ point.reportMonth }} · {{ point.riskProbabilityText }} · 涉及金额 {{ point.involvedAmountText }}</span></div></div><div v-else class="empty">当前候选对象暂无可用的历史月度概率趋势。</div><div v-if="probabilityTrendWarnings.length" class="notice-strip context-notice"><span v-for="warning in probabilityTrendWarnings" :key="warning">{{ trendWarningText(warning) }}</span></div></SectionCard>
       </template>
     </template>
   </div>

@@ -9,6 +9,7 @@ import json
 import os
 
 import pandas as pd
+import pyarrow.parquet as pq
 
 from .manifest import RiskResultManifest, load_manifest
 from .schemas import STANDARD_TABLES
@@ -48,6 +49,7 @@ class RiskResultRepository(ABC):
         risk_entity_id: str | None = None,
         report_month: str | None = None,
         horizon: str | None = None,
+        columns: list[str] | None = None,
         **filters: Any,
     ) -> pd.DataFrame:
         """Return per-horizon result-batch profile rows for frontend switching."""
@@ -174,7 +176,7 @@ class ParquetRiskResultRepository(RiskResultRepository):
     def load_table(self, name: str) -> pd.DataFrame:
         if name not in STANDARD_TABLES:
             raise ValueError(f"Unknown standard table: {name}")
-        parquet = self.batch_dir / f"{name}.parquet"
+        parquet = self._table_path(name)
         if parquet.exists():
             return pd.read_parquet(parquet)
         raise FileNotFoundError(f"Missing production Parquet table: {parquet}")
@@ -209,6 +211,7 @@ class ParquetRiskResultRepository(RiskResultRepository):
         risk_entity_id: str | None = None,
         report_month: str | None = None,
         horizon: str | None = None,
+        columns: list[str] | None = None,
         **filters: Any,
     ) -> pd.DataFrame:
         normalized = dict(filters)
@@ -218,7 +221,20 @@ class ParquetRiskResultRepository(RiskResultRepository):
             normalized["report_month"] = report_month
         if horizon is not None:
             normalized["horizon"] = horizon
-        return apply_filters(self.load_table("risk_entity_horizon_profiles"), normalized)
+        parquet = self._table_path("risk_entity_horizon_profiles")
+        available_columns = set(pq.ParquetFile(parquet).schema_arrow.names)
+        requested_columns = [column for column in dict.fromkeys(columns or []) if column in available_columns] or None
+        parquet_filters = [(name, "==", value) for name, value in normalized.items() if value is not None]
+        frame = pd.read_parquet(parquet, columns=requested_columns, filters=parquet_filters or None)
+        return apply_filters(frame, normalized)
+
+    def _table_path(self, name: str) -> Path:
+        if name == "risk_entity_horizon_profiles":
+            declared = self._manifest.raw.get("horizon_profile_table")
+            path = declared.get("path") if isinstance(declared, dict) else None
+            if isinstance(path, str) and path:
+                return self.batch_dir / path
+        return self.batch_dir / f"{name}.parquet"
 
     def get_risk_entity(self, risk_entity_id: str) -> dict[str, Any] | None:
         df = self.load_table("risk_entities")
@@ -433,6 +449,7 @@ class InMemoryRiskResultRepository(RiskResultRepository):
         risk_entity_id: str | None = None,
         report_month: str | None = None,
         horizon: str | None = None,
+        columns: list[str] | None = None,
         **filters: Any,
     ) -> pd.DataFrame:
         normalized = dict(filters)
@@ -442,7 +459,8 @@ class InMemoryRiskResultRepository(RiskResultRepository):
             normalized["report_month"] = report_month
         if horizon is not None:
             normalized["horizon"] = horizon
-        return apply_filters(self.load_table("risk_entity_horizon_profiles"), normalized)
+        frame = apply_filters(self.load_table("risk_entity_horizon_profiles"), normalized)
+        return frame if columns is None else frame[[column for column in columns if column in frame.columns]]
 
     def get_risk_entity(self, risk_entity_id: str) -> dict[str, Any] | None:
         rows = self.list_risk_entities(risk_entity_id=risk_entity_id)
@@ -615,6 +633,7 @@ class ClickHouseRiskResultRepository(RiskResultRepository):
         risk_entity_id: str | None = None,
         report_month: str | None = None,
         horizon: str | None = None,
+        columns: list[str] | None = None,
         **filters: Any,
     ) -> pd.DataFrame:
         raise NotImplementedError("ClickHouse repository is a storage stub.")

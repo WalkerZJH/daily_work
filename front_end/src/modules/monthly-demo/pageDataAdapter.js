@@ -237,6 +237,7 @@ export function createEmptyClueDetailData({ clueId, riskEntityId, query, reportC
     isMonthlyHighRiskEntity: Boolean(riskEntityId),
     detectorEvidence: [],
     probabilityTrend: [],
+    probabilityTrendWarnings: [],
     horizonProfiles: {},
     emptyTitle: '接口未就绪',
     emptyMessage: '当前没有可展示的详情'
@@ -445,6 +446,7 @@ export async function loadRiskEntityDetailData(entityId, query = {}) {
     dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, ready: true, sourceLabel: '后端数据', runDate: normalizedQuery.detectorRunDate },
     detectorEvidence: evidenceData?.detectorEvidence || [],
     probabilityTrend: trendData?.probabilityTrend || [],
+    probabilityTrendWarnings: trendData?.probabilityTrendWarnings || [],
     horizonProfiles: mapHorizonProfiles(detailPayload.horizon_profiles || detailPayload.horizonProfiles || {}),
     emptyTitle: '',
     emptyMessage: ''
@@ -1022,6 +1024,7 @@ function evidenceComparison(decision) {
 
 function mapProbabilityTrendPayload(payload) {
   return {
+    probabilityTrendWarnings: Array.isArray(payload?.warnings) ? payload.warnings : [],
     probabilityTrend: (payload.items || payload.trend || []).map((item) => {
       const involvedAmount = firstNullableNumber(item.involved_amount, item.average_consumption_in_window)
       return {
@@ -1030,6 +1033,8 @@ function mapProbabilityTrendPayload(payload) {
         riskProbabilityText: formatPercent(firstNumber(item.risk_probability)),
         involvedAmount,
         involvedAmountText: involvedAmount === null || involvedAmount === undefined ? '-' : formatMoney(involvedAmount),
+        resultBatchId: item.result_batch_id || '',
+        modelArtifactId: item.model_artifact_id || '',
         lossValue: firstNullableNumber(item.loss_value),
         lossValueText: formatMoney(firstNullableNumber(item.loss_value))
       }

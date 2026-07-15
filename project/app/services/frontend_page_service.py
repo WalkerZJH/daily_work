@@ -14,7 +14,7 @@ if str(REPO_ROOT) not in sys.path:
 from risk_model_core import ParquetRiskResultRepository  # noqa: E402
 from risk_model_core import RiskResultRepository  # noqa: E402
 from risk_model_core.page_payload_builder import PagePayloadBuilder  # noqa: E402
-from app.services.result_batch_discovery import latest_monthly_batch
+from app.services.result_batch_discovery import latest_monthly_batch, published_monthly_profile_batches
 
 try:  # noqa: E402
     from risk_model_core.page_payload_builder import build_default_frontend_payloads  # type: ignore[attr-defined]
@@ -182,8 +182,11 @@ class FrontendPageService:
         self,
         batch_dir: str | Path | None = None,
         repository: RiskResultRepository | None = None,
+        *,
+        batch_root: str | Path | None = None,
     ):
         self.batch_dir = Path(batch_dir) if batch_dir else None
+        self.batch_root = Path(batch_root) if batch_root else None
         self._repository = repository
         self._mock_allowed = os.getenv("ALLOW_MOCK_PAYLOADS", "").lower() == "true"
         self._default_payloads = build_default_frontend_payloads()
@@ -215,6 +218,8 @@ class FrontendPageService:
     def probability_trend(self, entity_id: str, *, horizon: str = "H6") -> dict[str, Any]:
         if self._builder:
             repository = self._builder.repository
+            if self.batch_root is not None:
+                return self._cross_month_probability_trend(repository, entity_id, horizon=horizon)
             profiles = repository.list_risk_entity_horizon_profiles(
                 risk_entity_id=entity_id,
                 horizon=horizon,
@@ -256,6 +261,77 @@ class FrontendPageService:
                 }
             ],
             "warnings": ["DEFAULT_PAYLOAD_TREND_SINGLE_POINT"],
+        }
+
+    def _cross_month_probability_trend(
+        self,
+        current_repository: RiskResultRepository,
+        entity_id: str,
+        *,
+        horizon: str,
+    ) -> dict[str, Any]:
+        current_entity = current_repository.get_risk_entity(entity_id)
+        if current_entity is None:
+            raise KeyError(entity_id)
+        current_manifest = current_repository.manifest()
+        rows: list[dict[str, Any]] = []
+        warnings: list[str] = []
+        artifact_ids: set[str] = set()
+        columns = [
+            "risk_entity_id", "report_month", "horizon", "risk_probability", "involved_amount",
+            "involved_amount_source", "reason", "main_reason_summary", "updated_at",
+        ]
+        for batch_dir in published_monthly_profile_batches(
+            self.batch_root,
+            through_report_month=current_manifest.report_month,
+            limit=12,
+        ):
+            repository = ParquetRiskResultRepository(batch_dir)
+            historical_entity = repository.get_risk_entity(entity_id)
+            if historical_entity is None:
+                continue
+            if not _same_recurring_identity(current_entity, historical_entity):
+                warnings.append("HISTORICAL_RISK_ENTITY_SCOPE_MISMATCH")
+                continue
+            profiles = repository.list_risk_entity_horizon_profiles(
+                risk_entity_id=entity_id,
+                horizon=horizon,
+                columns=columns,
+            )
+            if len(profiles.index) > 1:
+                warnings.append("HISTORICAL_HORIZON_PROFILE_NOT_UNIQUE")
+                continue
+            if profiles.empty:
+                continue
+            row = profiles.iloc[0]
+            probability = _number_or_none(row.get("risk_probability"))
+            if probability is None:
+                warnings.append("HISTORICAL_RISK_PROBABILITY_UNAVAILABLE")
+                continue
+            manifest = repository.manifest()
+            artifact_id = _text(manifest.raw.get("model_artifact_id"))
+            if artifact_id:
+                artifact_ids.add(artifact_id)
+            rows.append(
+                {
+                    "report_month": str(row.get("report_month") or manifest.report_month),
+                    "horizon": str(row.get("horizon") or horizon),
+                    "risk_probability": probability,
+                    "involved_amount": _int_or_zero(row.get("involved_amount")),
+                    "involved_amount_source": _text(row.get("involved_amount_source")),
+                    "reason": _text(row.get("reason") or row.get("main_reason_summary")),
+                    "updated_at": _text(row.get("updated_at")),
+                    "result_batch_id": manifest.batch_id,
+                    "model_artifact_id": artifact_id,
+                }
+            )
+        if len(artifact_ids) > 1:
+            warnings.append("TREND_MODEL_ARTIFACT_CHANGED")
+        return {
+            "risk_entity_id": entity_id,
+            "horizon": horizon,
+            "items": sorted(rows, key=lambda item: item["report_month"]),
+            "warnings": list(dict.fromkeys(warnings)),
         }
 
     def oneshot_terminals(
@@ -316,7 +392,7 @@ class FrontendPageService:
 
 @lru_cache(maxsize=1)
 def get_frontend_page_service() -> FrontendPageService:
-    return FrontendPageService(_default_batch_dir())
+    return FrontendPageService(_default_batch_dir(), batch_root=os.getenv("RISK_RESULT_BATCH_ROOT"))
 
 
 def _default_batch_dir() -> str | Path | None:
@@ -324,6 +400,15 @@ def _default_batch_dir() -> str | Path | None:
     if batch_root:
         return latest_monthly_batch(batch_root)
     return os.getenv("RISK_RESULT_BATCH_DIR")
+
+
+def _same_recurring_identity(current: dict[str, Any], historical: dict[str, Any]) -> bool:
+    for field in ["manufacturer_code", "hospital_code"]:
+        if _text(current.get(field)) != _text(historical.get(field)):
+            return False
+    current_drug = _text(current.get("drug_code") or current.get("drug_group"))
+    historical_drug = _text(historical.get("drug_code") or historical.get("drug_group"))
+    return bool(current_drug) and current_drug == historical_drug
 
 
 def _strip_customer_hidden_fields(value: Any) -> Any:

@@ -146,11 +146,22 @@ def test_candidate_clue_detail_retains_horizon_evidence_and_probability_trend() 
     assert "selectedHorizonProfile" in detail
     assert "async function selectHorizon" in detail
     assert "profile.probabilityDisplay" in detail
-    assert 'aria-label="丢失概率趋势"' in detail
+    assert 'aria-label="月度滚动丢失概率趋势"' in detail
     assert "trendPolyline" in detail
     assert "candidateState.value.detectorEvidence" in detail
     assert "SquareDatePicker" not in detail
     assert 'v-model="draftQuery.manufacturerCode"' not in detail
+
+
+def test_candidate_probability_trend_uses_real_probability_scale_and_model_change_notice() -> None:
+    detail = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityDetailView.vue")
+    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+
+    assert "月度滚动丢失概率趋势" in detail
+    assert "trendPointY" in detail
+    assert "TREND_MODEL_ARTIFACT_CHANGED" in detail
+    assert "Math.max(0.05" not in detail
+    assert "probabilityTrendWarnings" in adapter
 
 
 def test_frontend_rule_clues_exposes_detector_filters() -> None:

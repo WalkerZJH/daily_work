@@ -26,6 +26,30 @@ def latest_detector_batch(root: str | Path) -> Path | None:
     return _latest(root, _has_detector_tables)
 
 
+def published_monthly_profile_batches(
+    root: str | Path,
+    *,
+    through_report_month: str | None = None,
+    limit: int = 12,
+) -> list[Path]:
+    """Return at most one published horizon-profile batch per month, oldest first."""
+
+    root_path = Path(root)
+    if not root_path.exists() or limit <= 0:
+        return []
+    selected: dict[str, Path] = {}
+    for manifest_path in sorted(root_path.glob("report_month=*/batch_id=*/manifest.json"), reverse=True):
+        manifest = _read_manifest(manifest_path)
+        report_month = str((manifest or {}).get("report_month") or "")
+        if not report_month or (through_report_month and report_month > through_report_month):
+            continue
+        batch = manifest_path.parent
+        if report_month not in selected and _has_monthly_horizon_profiles(batch, manifest):
+            selected[report_month] = batch
+    months = sorted(selected)[-limit:]
+    return [selected[month] for month in months]
+
+
 def _latest(root: str | Path, predicate) -> Path | None:
     root_path = Path(root)
     if not root_path.exists():
@@ -51,6 +75,14 @@ def _has_detector_tables(batch: Path, manifest: dict) -> bool:
         isinstance(declared.get(name), str) and (batch / declared[name]).is_file()
         for name in _DETECTOR_TABLES
     )
+
+
+def _has_monthly_horizon_profiles(batch: Path, manifest: dict | None) -> bool:
+    if not manifest or not _is_monthly_batch(batch, manifest):
+        return False
+    table = manifest.get("horizon_profile_table")
+    path = table.get("path") if isinstance(table, dict) else None
+    return isinstance(path, str) and bool(path) and (batch / path).is_file()
 
 
 def _read_manifest(path: Path) -> dict | None:
