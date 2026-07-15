@@ -153,12 +153,14 @@ export function createStaticClueDetailData({ clueId, riskEntityId, query } = {})
 export function createStaticOneshotData() {
   return {
     ready: true,
+    status: oneshotTerminals.length ? 'ready' : 'empty',
     displayLookupStatus: { ready: false, label: '演示模式', message: '' },
-    oneshotSummary: {
-      ...oneshotSummary,
-      evidenceReady: false
-    },
-    oneshotTerminals: oneshotTerminals.map(({ reason, ...item }) => item),
+    oneshotSummary: { ...oneshotSummary },
+    pagination: { page: 1, pageSize: 20, total: oneshotTerminals.length, totalPages: oneshotTerminals.length ? 1 : 0 },
+    sortBy: 'first_purchase_date',
+    sortOrder: 'desc',
+    oneshotTerminals: [...oneshotTerminals],
+    errorMessage: '',
     emptyTitle: '',
     emptyMessage: ''
   }

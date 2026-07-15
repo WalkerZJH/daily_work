@@ -126,30 +126,21 @@ def _risk_entity_detail(entity: dict[str, Any]) -> dict[str, Any]:
 
 
 def _oneshot_payload() -> dict[str, Any]:
-    items = [
-        {
-            "oneshot_id": "oneshot_01",
-            "hospital_name": "Hospital New 01",
-            "drug_name": "Drug New 01",
-            "region": "default-region",
-            "first_purchase_date": "2025-12-01",
-            "first_purchase_amount": 1200,
-            "days_since_first_purchase": 30,
-            "repurchase_propensity": 0.72,
-            "expected_repurchase_amount": 860,
-            "priority": "medium",
-            "reason": "New terminal attention score indicates a follow-up opportunity.",
-        }
-    ]
     return {
-        "report_month": "2025-12",
+        "ready": False,
+        "status": "ONESHOT_RESULT_NOT_AVAILABLE",
+        "report_month": "",
+        "cutoff_date": "",
+        "result_batch_id": "",
         "summary": {
-            "oneshot_count": len(items),
-            "high_repurchase_propensity_count": 0,
-            "average_repurchase_propensity": 0.72,
-            "expected_repurchase_amount": 860,
+            "oneshot_count": 0,
+            "daily_new_terminal_count": 0,
+            "monthly_new_terminal_count": 0,
         },
-        "items": items,
+        "items": [],
+        "pagination": {"page": 1, "page_size": 20, "total": 0, "total_pages": 0},
+        "sort_by": "first_purchase_date",
+        "sort_order": "desc",
     }
 
 

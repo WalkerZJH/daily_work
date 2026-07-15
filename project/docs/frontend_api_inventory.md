@@ -265,7 +265,21 @@ Query:
 
 ### `GET /api/v1/oneshot-terminals`
 
-旧 one-shot 页面入口。客户侧不要把 one-shot 称为模型高风险。
+P2-01 新进终端事实工作台入口。正式模式只读取当前批次声明的
+`oneshot_terminals.parquet`，缺表时返回
+`ready=false,status=ONESHOT_RESULT_NOT_AVAILABLE`，不得回退到 Recurring
+`risk_entities`。
+
+查询参数：
+
+- `manufacturer_code`；
+- `report_month` / observation context；
+- `page`、`page_size`；
+- `sort_by=first_purchase_date|first_purchase_amount|days_since_first_purchase`；
+- `sort_order=asc|desc`。
+
+返回正式批次 ID、数据月份、截止日期、分页信息和当前页事实记录。客户响应不包含
+`repurchase_propensity`、`expected_repurchase_amount`、预测优先级或模型排序依据。
 
 ### `GET /api/v1/monthly-reports`
 

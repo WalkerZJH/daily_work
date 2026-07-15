@@ -11,6 +11,7 @@ from app.api.routes_report_context import get_report_context_service
 from app.api.routes_user_top_entities import get_user_top_entity_service
 from app.schemas.frontend_pages import (
     MonthlyReportsPayload,
+    OneshotPayload,
     ProofCasesPayload,
     RiskEntitiesPayload,
     RiskEntityDetailPayload,
@@ -28,6 +29,7 @@ from app.services.user_top_entity_service import HorizonNotAvailable, SortMetric
 
 router = APIRouter(prefix="/api/v1", tags=["frontend-pages"])
 ALLOWED_CANDIDATE_SORT_FIELDS = {"loss_value", "risk_probability", "involved_amount"}
+ALLOWED_ONESHOT_SORT_FIELDS = {"first_purchase_date", "first_purchase_amount", "days_since_first_purchase"}
 ALLOWED_SORT_ORDERS = {"asc", "desc"}
 
 
@@ -348,7 +350,7 @@ def my_manufacturers(
     return _with_report_context(payload, context)
 
 
-@router.get("/oneshot-terminals")
+@router.get("/oneshot-terminals", response_model=OneshotPayload)
 def frontend_oneshot_terminals(
     service: FrontendPageService = Depends(get_frontend_page_service),
     report_context_service: ReportContextService = Depends(get_report_context_service),
@@ -359,8 +361,13 @@ def frontend_oneshot_terminals(
     manufacturer_code: Annotated[list[str] | None, Query()] = None,
     user_id: str | None = Query(default=None),
     horizon: str = Query(default="H6"),
-    top_n: int = Query(default=20, ge=1, le=100),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    sort_by: str = Query(default="first_purchase_date"),
+    sort_order: str = Query(default="desc"),
+    top_n: int | None = Query(default=None, ge=1, le=100),
 ) -> dict:
+    sort_by, sort_order = _validate_oneshot_sort(sort_by, sort_order)
     context = report_context_service.resolve(
         observation_date=observation_date,
         report_month=report_month,
@@ -368,14 +375,17 @@ def frontend_oneshot_terminals(
         horizon=horizon,
         manufacturer_code=_first_query_value(manufacturer_code),
         user_id=user_id,
-        manual_report_month=manual_report_month,
+        manual_report_month=manual_report_month or bool(report_month),
     )
     contextual_page_service = _frontend_page_service_for_context(service, report_context_service, context)
     payload = contextual_page_service.oneshot_terminals(
         manufacturer_codes=manufacturer_code,
-        report_month=context.get("effective_report_month") or report_month,
+        report_month=report_month or context.get("effective_report_month"),
         observation_date=context.get("observation_date") or context.get("effective_observation_date"),
-        top_n=top_n,
+        page=page,
+        page_size=top_n if top_n is not None and page_size == 20 else page_size,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
     return _with_report_context(payload, context)
 
@@ -582,6 +592,30 @@ def _validate_candidate_sort(sort_by: str, sort_order: str) -> tuple[str, str]:
             status_code=422,
             detail={
                 "error_code": "SORT_ORDER_NOT_AVAILABLE",
+                "requested_sort_order": normalized_order,
+                "allowed_sort_order": sorted(ALLOWED_SORT_ORDERS),
+            },
+        )
+    return normalized_sort, normalized_order
+
+
+def _validate_oneshot_sort(sort_by: str, sort_order: str) -> tuple[str, str]:
+    normalized_sort = str(sort_by or "").strip()
+    normalized_order = str(sort_order or "").strip().lower()
+    if normalized_sort not in ALLOWED_ONESHOT_SORT_FIELDS:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error_code": "ONESHOT_SORT_NOT_AVAILABLE",
+                "requested_sort_by": normalized_sort,
+                "allowed_sort_by": sorted(ALLOWED_ONESHOT_SORT_FIELDS),
+            },
+        )
+    if normalized_order not in ALLOWED_SORT_ORDERS:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error_code": "ONESHOT_SORT_ORDER_NOT_AVAILABLE",
                 "requested_sort_order": normalized_order,
                 "allowed_sort_order": sorted(ALLOWED_SORT_ORDERS),
             },

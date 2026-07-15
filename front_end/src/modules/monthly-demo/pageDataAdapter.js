@@ -258,22 +258,25 @@ export function createEmptyRuleOnlyClueDetailData({ clueId, query } = {}) {
   }
 }
 
-export function createEmptyOneshotData() {
+export function createEmptyOneshotData({ status = 'idle', errorMessage = '' } = {}) {
   return {
     ready: false,
+    status,
     oneshotSummary: {
       reportMonth: '',
+      cutoffDate: '',
+      resultBatchId: '',
       count: 0,
       dailyNewTerminalCount: 0,
-      monthlyNewTerminalCount: 0,
-      highPropensityCount: 0,
-      averageRepurchasePropensity: '-',
-      expectedRepurchaseAmount: '-',
-      evidenceReady: false
+      monthlyNewTerminalCount: 0
     },
+    pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
+    sortBy: 'first_purchase_date',
+    sortOrder: 'desc',
     oneshotTerminals: [],
-    emptyTitle: '接口未就绪',
-    emptyMessage: '当前没有可展示的新进终端记录'
+    errorMessage,
+    emptyTitle: '当前生产企业暂无新进终端记录',
+    emptyMessage: '当前生产企业在所选数据月份暂无新进终端记录。'
   }
 }
 
@@ -482,8 +485,22 @@ export async function loadRiskEntityDetailData(entityId, query = {}) {
 export async function loadOneshotData(query = {}, { allowDemo = false } = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
   if (allowDemo || normalizedQuery.demoMode) return loadDemo('oneshotData', normalizedQuery)
-  const data = await tryLoad(() => api(normalizedQuery).frontendOneshotTerminals(queryToApiParams(normalizedQuery)), mapOneshotPayload)
-  return data || createEmptyOneshotData()
+  const params = queryToApiParams(normalizedQuery)
+  delete params.top_n
+  Object.assign(params, {
+    page: Math.max(Number(query.page) || 1, 1),
+    page_size: Math.max(Number(query.pageSize ?? query.page_size) || 20, 1),
+    sort_by: query.sortBy || query.sort_by || 'first_purchase_date',
+    sort_order: query.sortOrder || query.sort_order || 'desc'
+  })
+  try {
+    return mapOneshotPayload(await api(normalizedQuery).frontendOneshotTerminals(params))
+  } catch (error) {
+    return createEmptyOneshotData({
+      status: 'error',
+      errorMessage: error?.message || '新进终端数据读取失败，请稍后重试。'
+    })
+  }
 }
 
 export async function loadMonthlyReportsData(query = {}, { allowDemo = false } = {}) {
@@ -822,21 +839,39 @@ function mapHorizonProfile(profile) {
 }
 
 function mapOneshotPayload(payload) {
-  if (payload?.ready === false) return createEmptyOneshotData()
+  if (payload?.ready === false) {
+    const unavailable = createEmptyOneshotData({ status: payload.status || 'ONESHOT_RESULT_NOT_AVAILABLE' })
+    unavailable.oneshotSummary.reportMonth = payload.report_month || ''
+    unavailable.oneshotSummary.cutoffDate = payload.cutoff_date || ''
+    unavailable.oneshotSummary.resultBatchId = payload.result_batch_id || ''
+    unavailable.pagination = {
+      page: Number(payload.pagination?.page || 1),
+      pageSize: Number(payload.pagination?.page_size || 20),
+      total: Number(payload.pagination?.total || 0),
+      totalPages: Number(payload.pagination?.total_pages || 0)
+    }
+    return unavailable
+  }
   const items = payload.items || payload.rows || []
-  const hasEvidence = items.some((item) => item.reason || item.evidence_text || item.ranking_basis)
   return {
     ready: true,
+    status: items.length ? 'ready' : 'empty',
     oneshotSummary: {
       reportMonth: payload.report_month || payload.probability_report_month || '',
+      cutoffDate: payload.cutoff_date || payload.observation_date || '',
+      resultBatchId: payload.result_batch_id || '',
       count: payload.summary?.oneshot_count ?? items.length ?? 0,
       dailyNewTerminalCount: payload.summary?.daily_new_terminal_count ?? 0,
-      monthlyNewTerminalCount: payload.summary?.monthly_new_terminal_count ?? 0,
-      highPropensityCount: payload.summary?.high_repurchase_propensity_count ?? 0,
-      averageRepurchasePropensity: formatPercent(payload.summary?.average_repurchase_propensity),
-      expectedRepurchaseAmount: formatMoney(payload.summary?.expected_repurchase_amount),
-      evidenceReady: hasEvidence
+      monthlyNewTerminalCount: payload.summary?.monthly_new_terminal_count ?? 0
     },
+    pagination: {
+      page: Number(payload.pagination?.page || 1),
+      pageSize: Number(payload.pagination?.page_size || items.length || 20),
+      total: Number(payload.pagination?.total ?? payload.summary?.oneshot_count ?? items.length ?? 0),
+      totalPages: Number(payload.pagination?.total_pages || 0)
+    },
+    sortBy: payload.sort_by || 'first_purchase_date',
+    sortOrder: payload.sort_order || 'desc',
     oneshotTerminals: items.map((item) => ({
       id: item.oneshot_id || item.id,
       manufacturer: resolveManufacturerPresentation({
@@ -850,16 +885,14 @@ function mapOneshotPayload(payload) {
       region: firstDisplayText(item.region_display_name, item.region, item.region_code),
       firstPurchaseDate: item.first_purchase_date,
       firstPurchaseAmount: item.first_purchase_amount,
-      firstPurchaseAmountText: formatMoney(item.first_purchase_amount),
-      daysSinceFirstPurchase: item.days_since_first_purchase,
-      repurchasePropensity: item.repurchase_propensity,
-      repurchasePropensityText: formatPercent(item.repurchase_propensity),
-      expectedRepurchaseAmountText: formatMoney(item.expected_repurchase_amount),
-      priority: item.priority,
-      reason: hasEvidence ? replaceHorizonCodes(item.ranking_basis || item.reason || item.evidence_text) : ''
+      firstPurchaseAmountText: item.first_purchase_amount === null || item.first_purchase_amount === undefined
+        ? '暂无数据'
+        : formatMoney(item.first_purchase_amount),
+      daysSinceFirstPurchase: item.days_since_first_purchase
     })),
+    errorMessage: '',
     emptyTitle: items.length ? '' : '当前生产企业暂无新进终端记录',
-    emptyMessage: items.length ? '' : '该观察日期和生产企业范围内没有可展示的新进终端。'
+    emptyMessage: items.length ? '' : '当前生产企业在所选数据月份暂无新进终端记录。'
   }
 }
 

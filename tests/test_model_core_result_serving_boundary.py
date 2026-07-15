@@ -7,6 +7,7 @@ import pandas as pd
 from risk_model_core.manifest import RiskResultManifest
 from risk_model_core.page_payload_builder import PagePayloadBuilder
 from risk_model_core.repositories import ClickHouseRiskResultRepository, InMemoryRiskResultRepository
+from risk_model_core import page_payload_builder as page_payload_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -124,6 +125,25 @@ def make_repository_without_page_payloads() -> InMemoryRiskResultRepository:
                 },
             ]
         ),
+        "oneshot_terminals": pd.DataFrame(
+            [
+                {
+                    "oneshot_id": "oneshot-1",
+                    "tenant_id": "tenant",
+                    "manufacturer_code": "M1",
+                    "hospital_code": "H2",
+                    "hospital_display_name": "Hospital Two",
+                    "drug_group": "D2",
+                    "drug_display_name": "Drug Two",
+                    "region_display_name": "East",
+                    "report_month": "2025-12",
+                    "candidate_type": "one_shot",
+                    "first_purchase_date": "2025-12-10",
+                    "first_purchase_amount": 500,
+                    "days_since_first_purchase": 21,
+                }
+            ]
+        ),
         "risk_cards": pd.DataFrame(
             [
                 {
@@ -210,7 +230,31 @@ def test_page_payload_builder_constructs_real_payloads_when_json_is_absent() -> 
     assert detail["horizon_profiles"]["H6"]["detector_results"]
     assert oneshot["items"][0]["oneshot_id"] == "oneshot-1"
     assert "risk_probability" not in oneshot["items"][0]
+    assert "repurchase_propensity" not in oneshot["items"][0]
+    assert "expected_repurchase_amount" not in oneshot["items"][0]
     assert reports["monthly_reports"][0]["monthly_report_id"] == "monthly-2025-12"
+
+
+def test_oneshot_summary_uses_vectorized_date_handling(monkeypatch) -> None:
+    rows = pd.DataFrame(
+        {
+            "first_purchase_date": ["2025-12-31", "2025-12-05"] * 50,
+        }
+    )
+    original = page_payload_module._parse_date
+    calls = 0
+
+    def tracked_parse_date(value):
+        nonlocal calls
+        calls += 1
+        return original(value)
+
+    monkeypatch.setattr(page_payload_module, "_parse_date", tracked_parse_date)
+
+    summary = page_payload_module._oneshot_summary(rows, "2025-12-31", None)
+
+    assert summary == {"daily_new_terminal_count": 50, "monthly_new_terminal_count": 100}
+    assert calls <= 2
 
 
 def test_dynamic_payloads_preserve_optional_ranking_fields_without_fabrication() -> None:

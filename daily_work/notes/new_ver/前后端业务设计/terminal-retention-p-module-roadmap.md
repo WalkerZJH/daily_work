@@ -213,7 +213,7 @@ git status --short
 | 2 | `P1-01` | P1 | Rule-only Detector 线索独立详情 | `DONE` | `P0-01` | 否 |
 | 3 | `P1-02` | P1 | Recurring 全量候选分页列表 | `BLOCKED` | 全量批次门禁 | 是 |
 | 4 | `P1.5-01` | P1.5 | Recurring 候选概率趋势与详情导航闭环 | `PLANNED` | 趋势数据审计、候选详情稳定 | 是 |
-| 5 | `P2-01` | P2 | One-shot 首采事实工作台完善 | `PLANNED` | One-shot 字段与口径审计 | 是 |
+| 5 | `P2-01` | P2 | One-shot 首采事实工作台完善 | `DONE` | One-shot 字段与口径审计 | 是 |
 | 6 | `P2-02` | P2 | Detector 规则目录与运行状态只读中心 | `PLANNED` | 现有 catalog/run/status API | 是 |
 | 7 | `P2.5-01` | P2.5 | Detector 输入快照契约与独立运行链路 | `BLOCKED` | 冻结 snapshot schema、正式样本 | 是 |
 | 8 | `P3-01` | P3 | 事实型管理驾驶舱 v0 | `PLANNED` | 指标字典、汇总口径、前序模块 | 是 |
@@ -955,6 +955,16 @@ Brier: 0.352
 - 不创建第三类业务；
 - 不污染 Recurring；
 - 测试和构建通过。
+
+## 9.9 实施结果（2026-07-15）
+
+P2-01 已按事实优先边界完成：`oneshot.html` 只读取正式
+`oneshot_terminals.parquet`，提供生产企业范围查询、事实字段排序和服务端分页；
+缺表时显式返回不可用状态，不再回退到 Recurring 候选数据。页面已移除复购倾向、
+预计复购金额、模型优先级等未经模型门禁验证的语义，并区分加载、错误、缺表和空结果状态。
+
+本阶段没有新增 One-shot 物化、详情页或预测模型，也没有运行训练、预测和 Detector
+物化。One-shot 预测能力继续受独立模型有效性门禁约束，P2-02 仍为独立后续模块。
 
 ---
 

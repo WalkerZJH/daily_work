@@ -16,6 +16,13 @@ from .schemas import STANDARD_TABLES
 
 
 class RiskResultRepository(ABC):
+    def has_table(self, name: str) -> bool:
+        try:
+            self.load_table(name)
+        except (FileNotFoundError, NotImplementedError, ValueError, AttributeError):
+            return False
+        return True
+
     @abstractmethod
     def manifest(self) -> RiskResultManifest:
         raise NotImplementedError
@@ -180,6 +187,11 @@ class ParquetRiskResultRepository(RiskResultRepository):
         if parquet.exists():
             return pd.read_parquet(parquet)
         raise FileNotFoundError(f"Missing production Parquet table: {parquet}")
+
+    def has_table(self, name: str) -> bool:
+        if name not in STANDARD_TABLES:
+            return False
+        return self._table_path(name).exists()
 
     def list_risk_entities(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("risk_entities"), filters)
@@ -418,6 +430,9 @@ class InMemoryRiskResultRepository(RiskResultRepository):
 
     def load_table(self, name: str) -> pd.DataFrame:
         return self.tables.get(name, pd.DataFrame()).copy()
+
+    def has_table(self, name: str) -> bool:
+        return name in self.tables
 
     def list_risk_entities(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("risk_entities"), filters)

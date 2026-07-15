@@ -50,6 +50,7 @@ def make_frontend_repository(
         _manifest(),
         {
             "risk_entities": _risk_entities(),
+            "oneshot_terminals": _oneshot_terminals(),
             "entity_display_lookup": _entity_display_lookup(),
             "detector_catalog": _detector_catalog(),
             "daily_detector_runs": _daily_detector_runs(
@@ -61,6 +62,89 @@ def make_frontend_repository(
             "monthly_reports": _monthly_reports(),
             "proof_cases": pd.DataFrame(columns=["proof_case_id", "risk_entity_id", "candidate_id", "proof_status"]),
         },
+    )
+
+
+def _oneshot_terminals() -> pd.DataFrame:
+    base = {
+        "tenant_id": "tenant",
+        "enterprise_id": "enterprise",
+        "manufacturer_display_name": "M1",
+        "drug_group_source": "test",
+        "report_month": "2025-12",
+        "candidate_type": "one_shot",
+        "expected_repurchase_amount": 0,
+        "ranking_basis": "internal score",
+        "created_at": "2025-12-31T09:00:00+08:00",
+    }
+    return pd.DataFrame(
+        [
+            {
+                **base,
+                "oneshot_id": "oneshot_1",
+                "manufacturer_code": "M1",
+                "hospital_code": "entity_1_hospital",
+                "hospital_display_name": "entity_1_hospital",
+                "drug_group": "entity_1_drug",
+                "drug_display_name": "entity_1_drug",
+                "region_code": "R1",
+                "region_display_name": "R1",
+                "first_purchase_date": "2025-12-31",
+                "first_purchase_amount": 1200,
+                "days_since_first_purchase": 0,
+                "repurchase_propensity": 0.91,
+                "priority": "high",
+            },
+            {
+                **base,
+                "oneshot_id": "oneshot_2",
+                "manufacturer_code": "M1",
+                "hospital_code": "entity_2_hospital",
+                "hospital_display_name": "entity_2_hospital",
+                "drug_group": "entity_2_drug",
+                "drug_display_name": "entity_2_drug",
+                "region_code": "R1",
+                "region_display_name": "R1",
+                "first_purchase_date": "2025-12-05",
+                "first_purchase_amount": 800,
+                "days_since_first_purchase": 26,
+                "repurchase_propensity": 0.12,
+                "priority": "medium",
+            },
+            {
+                **base,
+                "oneshot_id": "oneshot_3",
+                "manufacturer_code": "M1",
+                "hospital_code": "entity_3_hospital",
+                "hospital_display_name": "entity_3_hospital",
+                "drug_group": "entity_3_drug",
+                "drug_display_name": "entity_3_drug",
+                "region_code": "R2",
+                "region_display_name": "R2",
+                "first_purchase_date": "2025-11-15",
+                "first_purchase_amount": 2400,
+                "days_since_first_purchase": 46,
+                "repurchase_propensity": 0.75,
+                "priority": "high",
+            },
+            {
+                **base,
+                "oneshot_id": "oneshot_m2",
+                "manufacturer_code": "M2",
+                "manufacturer_display_name": "M2",
+                "hospital_code": "m2_hospital",
+                "hospital_display_name": "m2_hospital",
+                "drug_group": "m2_drug",
+                "drug_display_name": "m2_drug",
+                "region_code": "R2",
+                "region_display_name": "R2",
+                "first_purchase_date": "2025-12-20",
+                "first_purchase_amount": 500,
+                "days_since_first_purchase": 11,
+                "repurchase_propensity": 0.99,
+                "priority": "high",
+            },
+        ]
     )
 
 

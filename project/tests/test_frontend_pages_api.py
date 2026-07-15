@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from app.main import app
+from frontend_api_test_utils import make_frontend_repository, override_frontend_result_repository
 
 
 def test_frontend_workbench_returns_customer_rows_without_legacy_fields_or_model_metrics() -> None:
@@ -46,17 +47,26 @@ def test_frontend_risk_entities_and_detail_expose_horizons_detectors_and_explana
       assert profile["detector_narrative"]
 
 
-def test_frontend_oneshot_returns_repurchase_propensity_payload() -> None:
-    response = TestClient(app).get("/api/v1/oneshot-terminals")
+def test_frontend_oneshot_returns_paginated_fact_payload() -> None:
+    with override_frontend_result_repository(make_frontend_repository()):
+        response = TestClient(app).get(
+            "/api/v1/oneshot-terminals",
+            params={"manufacturer_code": "M1", "page": 1, "page_size": 2},
+        )
 
     assert response.status_code == 200
     payload = response.json()
 
-    assert payload["summary"]["oneshot_count"] == len(payload["items"])
+    assert payload["summary"]["oneshot_count"] == 3
+    assert payload["pagination"]["total"] == 3
+    assert len(payload["items"]) == 2
     assert payload["items"]
     first = payload["items"][0]
-    assert 0 <= first["repurchase_propensity"] <= 1
-    assert "expected_repurchase_amount" in first
+    assert "first_purchase_date" in first
+    assert "first_purchase_amount" in first
+    assert "days_since_first_purchase" in first
+    assert "repurchase_propensity" not in first
+    assert "expected_repurchase_amount" not in first
 
 
 def test_removed_watchlist_page_api_is_not_exposed() -> None:

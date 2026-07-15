@@ -345,3 +345,61 @@ def test_frontend_does_not_depend_on_local_model_or_prototype_paths() -> None:
 
     for forbidden in ["algo_main", "daily_work/prototype", "risk_model_core", "RiskResultBatch"]:
         assert forbidden not in combined
+
+
+def test_p201_oneshot_page_is_a_paginated_facts_only_workbench() -> None:
+    view = read(FRONTEND / "src" / "modules" / "oneshot-monitor" / "OneshotMonitorView.vue")
+    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+    demo_adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "demoPageDataAdapter.js")
+    demo_data = read(FRONTEND / "src" / "modules" / "monthly-demo" / "demoData.js")
+    default_payloads = read(ROOT / "project" / "app" / "services" / "frontend_default_payloads.py")
+    page_service = read(ROOT / "project" / "app" / "services" / "frontend_page_service.py")
+
+    for required in [
+        "新进终端工作台",
+        "首次采购时点金额",
+        "距首购天数",
+        "当前数据月份",
+        "数据截止日",
+        "暂无数据",
+        "draftQuery",
+        "appliedQuery",
+        "submitQuery",
+        "goToPage",
+        "当前正式批次尚未发布新进终端结果",
+        "新进终端数据读取失败，请稍后重试",
+        "尚未形成跨月复购历史，不等于已经流失",
+    ]:
+        assert required in view
+
+    for forbidden in [
+        "高复购倾向",
+        "复购倾向",
+        "预计复购金额",
+        "复购促进优先级",
+        "repurchasePropensity",
+        "expectedRepurchaseAmount",
+        "evidenceReady",
+        "row.priority",
+        "row.reason",
+    ]:
+        assert forbidden not in view
+
+    for required in [
+        "ONESHOT_RESULT_NOT_AVAILABLE",
+        "page_size",
+        "sort_order",
+        "totalPages",
+        "resultBatchId",
+        "cutoffDate",
+        "status: 'error'",
+    ]:
+        assert required in adapter
+
+    assert "tryLoad(() => api(normalizedQuery).frontendOneshotTerminals" not in adapter
+    assert "evidenceReady" not in demo_adapter
+    for forbidden in ["highPropensityCount", "averageRepurchasePropensity", "expectedRepurchaseAmount"]:
+        assert forbidden not in demo_data
+    for forbidden in ["repurchase_propensity", "expected_repurchase_amount"]:
+        assert forbidden not in default_payloads
+    assert "oneshot_repurchase_h6" not in page_service

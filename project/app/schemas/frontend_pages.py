@@ -256,9 +256,6 @@ class OneshotSummary(FrontendPageModel):
     oneshot_count: int
     daily_new_terminal_count: int = 0
     monthly_new_terminal_count: int = 0
-    high_repurchase_propensity_count: int
-    average_repurchase_propensity: float = Field(ge=0, le=1)
-    expected_repurchase_amount: int
 
 
 class OneshotTerminalItem(FrontendPageModel):
@@ -271,21 +268,46 @@ class OneshotTerminalItem(FrontendPageModel):
     drug_group: str | None = None
     drug_name: str
     region: str
-    first_purchase_date: str
-    first_purchase_amount: int
-    days_since_first_purchase: int
-    repurchase_propensity: float = Field(ge=0, le=1)
-    expected_repurchase_amount: int
-    priority: str
-    reason: str
+    first_purchase_date: str | None = None
+    first_purchase_amount: int | None = None
+    days_since_first_purchase: int | None = None
+
+
+class OneshotPagination(FrontendPageModel):
+    page: int = Field(ge=1)
+    page_size: int = Field(ge=1)
+    total: int = Field(ge=0)
+    total_pages: int = Field(ge=0)
 
 
 class OneshotPayload(FrontendPageModel):
     ready: bool = True
+    status: str
     report_month: str
+    cutoff_date: str
+    result_batch_id: str
     summary: OneshotSummary
     items: list[OneshotTerminalItem]
-    total: int
+    pagination: OneshotPagination
+    sort_by: str
+    sort_order: str
+    report_context: dict[str, Any] = Field(default_factory=dict)
+    observation_date: str | None = None
+    effective_observation_date: str | None = None
+    probability_report_month: str | None = None
+    expected_probability_report_month: str | None = None
+    effective_probability_report_month: str | None = None
+    probability_batch_available: bool | None = None
+    detector_run_date: str | None = None
+    detector_run_available: bool | None = None
+    context_status: str | None = None
+    manual_selection_required: bool | None = None
+    partial_ready: bool = False
+    requested_report_month: str | None = None
+    effective_report_month: str | None = None
+    requested_run_date: str | None = None
+    effective_run_date: str | None = None
+    date_resolution_status: str | None = None
 
 
 class DailyReportOption(FrontendPageModel):
