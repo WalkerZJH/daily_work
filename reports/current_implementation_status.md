@@ -10,17 +10,17 @@
 
 当前业务语义已冻结为：完整查询参数 → 候选对象排序工作台（Top N）→ 候选对象排序列表（分页）→ 候选对象详情（月度结果与当前 observation_date detector 证据）。
 
-代码主链路已实现并通过定向测试；旧 `risk_entity`、`is_high_risk`、`high_risk_detector_evidence` 是历史技术命名，不代表候选对象经过固定高风险阈值准入。现有 `2025-12/formal-v2-raw` 的 1,229 行是历史截断结果，不能被视为完整 recurring 候选池。新的 `full-recurring-v1` Parquet 批次正在以冻结 artifact 物化，未训练模型、未覆盖旧批次。
+代码主链路已实现并通过定向测试；旧 `risk_entity`、`is_high_risk`、`high_risk_detector_evidence` 是历史技术命名，不代表候选对象经过固定高风险阈值准入。现有 `2025-12/formal-v2-raw` 的 1,229 行是历史截断结果，不能被视为完整 recurring 候选池。`full-recurring-v1` 已留下 88,515 行 Recurring 主干 Parquet 产物，但缺少正式 `manifest.json`，尚不能作为可发现、可验证的正式批次；未训练模型、未覆盖旧批次。
 
 ## 数据层
 
 | 产物 | 状态 | 证据 |
 |---|---|---|
 | 月度候选排序结果 | partially_implemented | `data/project_result_batches/.../formal-v2-raw/risk_entities.parquet` 是历史截断批次；`risk_algorithm_core/candidate_selector.py` 已改为全 recurring 持久化 |
-| 新 full-recurring 批次 | partially_implemented | `scripts/generate_multi_month_formal_batches.py --run-id full-recurring-v1` 写入版本化 batch；物化运行中 |
+| 新 full-recurring 批次 | blocked | `full-recurring-v1/risk_entities.parquet` 有 88,515 行且均为 `recurring`，但目录没有 `manifest.json`；因此无法核验双计数，`validate_result_batch` 失败，且 API 不会发现该批次 |
 | Parquet-only 结果契约 | implemented | `risk_result_contracts/validation.py`、`risk_model_core/repositories.py` |
 | 双计数校验 | implemented | manifest 的 `full_recurring_count`、`persisted_recurring_count` 与实际 Parquet recurring 行数必须一致 |
-| detector 证据 | partially_implemented | 现有正式 batch 有 quantity/frequency 证据；IPI 正式 evidence 缺失需在新 batch 后复核 |
+| detector 证据 | partially_implemented | Detector 是与主干预测分离的独立证据表；其当前可用性不作为 full-recurring 主干批次门禁。现有正式 batch 有 quantity/frequency 证据；IPI 正式 evidence 仍需独立复核 |
 
 ## Model 层
 
@@ -57,4 +57,4 @@
 
 ## 主链路完整性结论
 
-**基本完整但存在正式数据断点。** 代码、API、分页、工作台、列表、详情和 detector 边界均已接通；只有新的正式 full-recurring Parquet 批次完成并验证后，才能宣布数据层主链路完整。当前旧批次不得作为“全部合格 recurring 候选对象”使用。
+**基本完整但存在正式数据断点。** 代码、API、分页、工作台、列表、详情和 detector 边界均已接通；只有新的正式 full-recurring Parquet 批次完成并验证后，才能宣布数据层主链路完整。当前阻塞是主干批次缺少 manifest、双计数核验和 API 发现，不是 Detector 证据表缺失。当前旧批次不得作为“全部合格 recurring 候选对象”使用。
