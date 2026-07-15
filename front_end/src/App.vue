@@ -1,4 +1,5 @@
 ﻿<script setup>
+import { provideManufacturerScope } from './context/manufacturerScope'
 import Sidebar from './layout/Sidebar.vue'
 import Topbar from './layout/Topbar.vue'
 import MonthlyWorkbenchView from './modules/monthly-workbench/MonthlyWorkbenchView.vue'
@@ -11,6 +12,19 @@ import AlgoArchitectureView from './modules/algo-architecture/AlgoArchitectureVi
 import InternalPlaceholderView from './modules/internal/InternalPlaceholderView.vue'
 
 const pageName = window.location.pathname.split('/').pop() || 'index.html'
+const params = new URLSearchParams(window.location.search)
+provideManufacturerScope({
+  backendBaseUrl: params.get('backendBaseUrl'),
+  userId: params.get('user_id') || params.get('userId'),
+  demoMode: params.get('demoMode'),
+  manufacturerCode: params.get('manufacturer_code')
+})
+
+const detailTag = params.get('id') || params.get('riskEntityId')
+  ? '候选对象详情'
+  : params.get('clueId')
+    ? '规则线索详情'
+    : '详情'
 
 const routeMap = {
   'index.html': {
@@ -30,7 +44,7 @@ const routeMap = {
   },
   'clue-detail.html': {
     active: 'clues',
-    tag: '候选对象详情',
+    tag: detailTag,
     component: RiskEntityDetailView
   },
   'oneshot.html': {

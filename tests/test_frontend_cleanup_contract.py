@@ -252,7 +252,8 @@ def test_workbench_and_clues_share_manual_query_context_without_duplicate_date_c
         assert "async function submitQuery()" in page
         assert "function syncDraftContext()" in page
         assert "watch(draftQuery, syncDraftContext, { deep: true })" in page
-        assert "onMounted(loadOptions)" in page
+        assert "await manufacturerScope.initialize()" in page
+        assert "await loadOptions()" in page
 
     assert "refreshClues" not in clues_page
     assert '<label class="control-field">\n          <span>观察日期</span>\n          <SquareDatePicker' not in clues_page
@@ -261,6 +262,71 @@ def test_workbench_and_clues_share_manual_query_context_without_duplicate_date_c
     assert '@click.prevent="navigateWithCurrentContext($event, item.href)"' in sidebar
     assert "function navigateWithCurrentContext(event, href)" in topbar
     assert '@click.prevent="navigateWithCurrentContext($event, \'index.html\')"' in topbar
+
+
+def test_p175_topbar_owns_the_only_editable_manufacturer_selector() -> None:
+    context_path = FRONTEND / "src" / "context" / "manufacturerScope.js"
+    assert context_path.exists()
+
+    app = read(FRONTEND / "src" / "App.vue")
+    topbar = read(FRONTEND / "src" / "layout" / "Topbar.vue")
+    context = read(context_path)
+    workbench = read(FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue")
+    clues = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue")
+
+    assert "provideManufacturerScope" in app
+    assert "useManufacturerScope" in topbar
+    assert 'aria-label="全局生产企业"' in topbar
+    assert 'v-model="selectedManufacturerCode"' in topbar
+    assert "manufacturerOptions" in topbar
+    assert "loadManufacturerOptions" in context
+    assert "window.history.replaceState" in context
+
+    for page in [workbench, clues]:
+        assert "useManufacturerScope" in page
+        assert '<select v-model="draftQuery.manufacturerCode">' not in page
+        assert '<select v-model="query.manufacturerCode">' not in page
+
+    assert "pinia" not in (app + topbar + context).lower()
+
+
+def test_p175_manufacturer_changes_reload_scoped_pages_with_stale_response_guards() -> None:
+    workbench = read(FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue")
+    detail = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityDetailView.vue")
+    pages = [
+        workbench,
+        read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue"),
+        detail,
+        read(FRONTEND / "src" / "modules" / "oneshot-monitor" / "OneshotMonitorView.vue"),
+    ]
+
+    for page in pages:
+        assert "useManufacturerScope" in page
+        assert "requestSequence" in page
+        assert "sequence !== requestSequence" in page
+        assert "watch(manufacturerCode" in page
+
+    assert "manufacturerCode: manufacturerCode.value" in detail
+    assert "function cluesHref()" in workbench
+    assert "manufacturerCode: manufacturerCode.value" in workbench
+
+
+def test_p175_business_pages_share_one_shell_and_manufacturer_empty_scope_copy() -> None:
+    layout = read(FRONTEND / "src" / "styles" / "library" / "_layout.scss")
+    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+    views = [
+        read(FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue"),
+        read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue"),
+        read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityDetailView.vue"),
+        read(FRONTEND / "src" / "modules" / "oneshot-monitor" / "OneshotMonitorView.vue"),
+    ]
+
+    assert ".page-shell" in layout
+    assert "max-width: 1280px" in layout
+    assert all('class="page-shell' in view for view in views)
+    assert "当前生产企业在所选条件下暂无月度候选结果" in adapter
+    assert "当前生产企业在所选观察日期暂无规则线索" in adapter
+    assert "当前生产企业暂无新进终端记录" in adapter
 
 
 def test_frontend_does_not_depend_on_local_model_or_prototype_paths() -> None:

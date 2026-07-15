@@ -211,6 +211,7 @@ export function createEmptyWorkbenchData(query = {}, reportContext = createEmpty
 
 export function createEmptyRuleCluesData(query = {}, reportContext = createEmptyReportContext(query)) {
   const normalized = normalizeWorkbenchQuery(query)
+  const scopedNoData = Boolean(normalized.manufacturerCode) && reportContext.contextStatus !== 'interface_unavailable'
   return {
     ready: false,
     reportContext,
@@ -218,13 +219,14 @@ export function createEmptyRuleCluesData(query = {}, reportContext = createEmpty
     dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, runDate: reportContext.detectorRunDate || normalized.detectorRunDate },
     dailyDetectorClues: [],
     total: 0,
-    emptyTitle: reportContext.detectorRunAvailable === false ? '该观察日期暂无规则巡检结果' : reportContext.displayTitle || '接口未就绪',
+    emptyTitle: scopedNoData ? '当前生产企业在所选观察日期暂无规则线索' : reportContext.detectorRunAvailable === false ? '该观察日期暂无规则巡检结果' : reportContext.displayTitle || '接口未就绪',
     emptyMessage: reportContext.message || '当前没有可展示的规则线索'
   }
 }
 
 export function createEmptyClueDetailData({ clueId, riskEntityId, query, reportContext } = {}) {
   const normalized = normalizeWorkbenchQuery(query)
+  const hasManufacturerScope = Boolean(normalized.manufacturerCode)
   return {
     ready: false,
     reportContext: reportContext || createEmptyReportContext(normalized),
@@ -239,8 +241,8 @@ export function createEmptyClueDetailData({ clueId, riskEntityId, query, reportC
     probabilityTrend: [],
     probabilityTrendWarnings: [],
     horizonProfiles: {},
-    emptyTitle: '接口未就绪',
-    emptyMessage: '当前没有可展示的详情'
+    emptyTitle: hasManufacturerScope ? '当前生产企业下暂无候选对象详情' : '接口未就绪',
+    emptyMessage: hasManufacturerScope ? '该候选对象不属于当前生产企业，或当前范围内没有可展示的月度结果。' : '当前没有可展示的详情'
   }
 }
 
@@ -303,11 +305,34 @@ export function createEmptyProofCasesData() {
   }
 }
 
+export async function loadManufacturerOptions(query = {}, { allowDemo = false } = {}) {
+  const normalizedQuery = normalizeWorkbenchQuery(query)
+  if (allowDemo || normalizedQuery.demoMode) {
+    const demoOptions = await loadDemo('workbenchOptions', normalizedQuery)
+    return {
+      manufacturerOptions: demoOptions?.manufacturerOptions || [],
+      defaultManufacturerCode: demoOptions?.defaultManufacturerCode || normalizedQuery.manufacturerCode,
+      sourceLabel: '演示数据'
+    }
+  }
+
+  const manufacturers = await tryLoad(
+    () => api(normalizedQuery).getMyManufacturers(catalogQueryToApiParams(normalizedQuery)),
+    mapManufacturersPayload
+  )
+  const fallback = createEmptyWorkbenchOptions(normalizedQuery)
+  return {
+    manufacturerOptions: manufacturers?.manufacturerOptions?.length ? manufacturers.manufacturerOptions : fallback.manufacturerOptions,
+    defaultManufacturerCode: manufacturers?.defaultManufacturerCode || fallback.defaultManufacturerCode,
+    sourceLabel: manufacturers ? '后端数据' : fallback.sourceLabel
+  }
+}
+
 export async function loadWorkbenchOptions(query = {}, { allowDemo = false } = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
   if (allowDemo || normalizedQuery.demoMode) return loadDemo('workbenchOptions', normalizedQuery)
   const [manufacturers, context, catalog] = await Promise.all([
-    tryLoad(() => api(normalizedQuery).getMyManufacturers(catalogQueryToApiParams(normalizedQuery)), mapManufacturersPayload),
+    loadManufacturerOptions(normalizedQuery),
     tryLoad(() => api(normalizedQuery).getReportContext(queryToReportContextParams(normalizedQuery)), (payload) => mapReportContextPayload(payload, normalizedQuery)),
     tryLoad(() => api(normalizedQuery).getDetectorCatalog(), mapDetectorCatalogPayload)
   ])
@@ -373,15 +398,16 @@ export async function loadRuleCluesData(query = {}, { allowDemo = false } = {}) 
     tryLoad(() => api(normalizedQuery).getDailyDetectorClues({ ...params, sort_by: 'detector_score', page_size: normalizedQuery.topN }), mapDailyRuleCluesPayload)
   ])
   if (!status?.ready && !clues?.dailyDetectorClues?.length) return createEmptyRuleCluesData(normalizedQuery, context)
+  const items = clues?.dailyDetectorClues || []
   return {
     ready: true,
     reportContext: context,
     query: normalizedQuery,
     dailyDetectorStatus: status || { ...FORMAL_EMPTY_STATUS, runDate: context.detectorRunDate },
-    dailyDetectorClues: clues?.dailyDetectorClues || [],
-    total: clues?.total || clues?.dailyDetectorClues?.length || 0,
-    emptyTitle: '',
-    emptyMessage: ''
+    dailyDetectorClues: items,
+    total: clues?.total || items.length || 0,
+    emptyTitle: items.length ? '' : '当前生产企业在所选观察日期暂无规则线索',
+    emptyMessage: items.length ? '' : '该生产企业和观察日期范围内没有 detector 命中的实体。'
   }
 }
 
@@ -659,7 +685,7 @@ function mapScope(scope = {}, query) {
 function workbenchEmptyCopy(emptyReason) {
   if (emptyReason === 'NO_RISK_ENTITIES_IN_SELECTED_SCOPE' || emptyReason === 'NO_RISK_ENTITIES_IN_SELECTED_MANUFACTURER_SCOPE') {
     return {
-      title: '当前条件下暂无风险对象',
+      title: '当前生产企业在所选条件下暂无月度候选结果',
       message: '该生产企业、观察日期和预测窗口下没有可展示的重点风险对象。'
     }
   }
@@ -832,7 +858,7 @@ function mapOneshotPayload(payload) {
       priority: item.priority,
       reason: hasEvidence ? replaceHorizonCodes(item.ranking_basis || item.reason || item.evidence_text) : ''
     })),
-    emptyTitle: items.length ? '' : '当前条件下暂无新进终端记录',
+    emptyTitle: items.length ? '' : '当前生产企业暂无新进终端记录',
     emptyMessage: items.length ? '' : '该观察日期和生产企业范围内没有可展示的新进终端。'
   }
 }
@@ -1152,7 +1178,7 @@ function manufacturerDisplayName(item, index) {
     manufacturerCode: code,
     manufacturerDisplayName: name,
     manufacturerName: name,
-    fallbackLabel: `生产企业 ${index + 1}（名称未接入）`
+    fallbackLabel: code || `生产企业 ${index + 1}（名称未接入）`
   }).displayName
 }
 
@@ -1197,7 +1223,7 @@ function detectorFamilyLabel(family) {
 
 function currentManufacturerOption(query) {
   return query.manufacturerCode
-    ? [{ code: query.manufacturerCode, name: resolveManufacturerPresentation({ manufacturerCode: query.manufacturerCode }).displayName }]
+    ? [{ code: query.manufacturerCode, name: query.manufacturerCode }]
     : []
 }
 

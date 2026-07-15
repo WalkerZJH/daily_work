@@ -1,6 +1,7 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
+import { useManufacturerScope } from '../../context/manufacturerScope'
 import {
   applyReportContextToQuery,
   buildPersistentParams,
@@ -35,6 +36,10 @@ const candidateState = ref(createEmptyClueDetailData({ riskEntityId, query: appl
 const ruleOnlyState = ref(createEmptyRuleOnlyClueDetailData({ clueId, query: appliedQuery.value }))
 const reportContext = ref(candidateState.value.reportContext)
 const isLoading = ref(false)
+const manufacturerScope = useManufacturerScope()
+const manufacturerCode = manufacturerScope.manufacturerCode
+let requestSequence = 0
+let pageReady = false
 
 const entity = computed(() => candidateState.value.entity)
 const profiles = computed(() => Object.values(candidateState.value.horizonProfiles || {}))
@@ -147,7 +152,10 @@ function trendWarningText(warning) {
 }
 
 function backHref() {
-  const query = buildPersistentParams(appliedQuery.value)
+  const query = buildPersistentParams({
+    ...appliedQuery.value,
+    manufacturerCode: manufacturerCode.value
+  })
   return `${detailMode === 'rule-only' ? 'clues.html' : 'index.html'}?${query.toString()}`
 }
 
@@ -157,17 +165,21 @@ function updateUrl() {
 }
 
 async function refreshCandidateDetail() {
+  const sequence = ++requestSequence
   isLoading.value = true
   try {
     const context = await loadReportContext(draftQuery)
+    if (sequence !== requestSequence) return
     const effective = applyReportContextToQuery(draftQuery, context)
     appliedQuery.value = effective
     reportContext.value = context
-    candidateState.value = await loadRiskEntityDetailData(riskEntityId, effective)
-    reportContext.value = candidateState.value.reportContext || context
+    const loadedState = await loadRiskEntityDetailData(riskEntityId, effective)
+    if (sequence !== requestSequence) return
+    candidateState.value = loadedState
+    reportContext.value = loadedState.reportContext || context
     updateUrl()
   } finally {
-    isLoading.value = false
+    if (sequence === requestSequence) isLoading.value = false
   }
 }
 
@@ -178,11 +190,14 @@ async function selectHorizon(horizon) {
 }
 
 async function loadRuleOnlyDetail() {
+  const sequence = ++requestSequence
   isLoading.value = true
   try {
-    ruleOnlyState.value = await loadRuleOnlyClueDetailData(clueId, appliedQuery.value)
+    const loadedState = await loadRuleOnlyClueDetailData(clueId, appliedQuery.value)
+    if (sequence !== requestSequence) return
+    ruleOnlyState.value = loadedState
   } finally {
-    isLoading.value = false
+    if (sequence === requestSequence) isLoading.value = false
   }
 }
 
@@ -205,11 +220,23 @@ function flattenEvidence(value, prefix = '') {
 }
 
 onMounted(async () => {
+  await manufacturerScope.initialize()
+  draftQuery.manufacturerCode = manufacturerCode.value
+  appliedQuery.value = normalizeWorkbenchQuery(draftQuery)
+  pageReady = true
   if (detailMode === 'candidate') {
     await refreshCandidateDetail()
   } else if (detailMode === 'rule-only') {
     await loadRuleOnlyDetail()
   }
+})
+
+watch(manufacturerCode, async (nextCode) => {
+  if (!pageReady || !nextCode || nextCode === draftQuery.manufacturerCode) return
+  draftQuery.manufacturerCode = nextCode
+  appliedQuery.value = normalizeWorkbenchQuery(draftQuery)
+  if (detailMode === 'candidate') await refreshCandidateDetail()
+  if (detailMode === 'rule-only') await loadRuleOnlyDetail()
 })
 </script>
 

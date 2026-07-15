@@ -1,6 +1,17 @@
 ﻿<script setup>
+import { computed } from 'vue'
+import { useManufacturerScope } from '../context/manufacturerScope'
+
 defineProps({
   tag: { type: String, required: true }
+})
+
+const manufacturerScope = useManufacturerScope()
+const manufacturerOptions = manufacturerScope.manufacturerOptions
+const selectedManufacturer = manufacturerScope.selectedManufacturer
+const selectedManufacturerCode = computed({
+  get: () => manufacturerScope.manufacturerCode.value,
+  set: (value) => manufacturerScope.selectManufacturer(value)
 })
 
 function hrefWithCurrentContext(href) {
@@ -45,6 +56,13 @@ try {
       </div>
     </a>
     <div class="topbar-spacer"></div>
+    <label class="topbar-manufacturer">
+      <span>生产企业</span>
+      <select v-model="selectedManufacturerCode" aria-label="全局生产企业" :disabled="manufacturerScope.isLoading.value">
+        <option v-for="item in manufacturerOptions" :key="item.code" :value="item.code">{{ item.name }}</option>
+      </select>
+      <small v-if="selectedManufacturer.code && selectedManufacturer.name !== selectedManufacturer.code">编码 {{ selectedManufacturer.code }}</small>
+    </label>
     <span class="topbar-tag">{{ tag }}</span>
     <div class="topbar-user"><div class="avatar">陈</div>营销VP · 陈总</div>
   </header>

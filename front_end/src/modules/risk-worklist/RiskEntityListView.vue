@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
 import SquareDatePicker from '../../components/ui/SquareDatePicker.vue'
+import { useManufacturerScope } from '../../context/manufacturerScope'
 import {
   applyReportContextToQuery,
   buildPersistentParams,
@@ -36,14 +37,15 @@ const draftQuery = reactive(
 const query = draftQuery
 const appliedQuery = ref(normalizeWorkbenchQuery(draftQuery))
 const options = ref(createEmptyWorkbenchOptions(draftQuery))
-const manufacturerCatalog = ref([])
 const state = ref(createEmptyRuleCluesData(appliedQuery.value))
 const reportContext = ref(state.value.reportContext)
 const selectedDetectorFamily = ref(query.detectorFamily || 'all')
 const selectedDetectorId = ref(query.detectorId || 'all')
 const isLoading = ref(false)
+const manufacturerScope = useManufacturerScope()
+const manufacturerCode = manufacturerScope.manufacturerCode
 let requestSequence = 0
-let initializedManufacturer = Boolean(query.manufacturerCode)
+let pageReady = false
 
 const availableObservationDates = computed(() => options.value.dailyDetectorDateOptions?.map((item) => item.id).filter(Boolean) || [])
 const selectedRuleCategory = selectedDetectorFamily
@@ -76,20 +78,7 @@ function syncDraftContext() {
 }
 
 function applyLoadedOptions(loadedOptions, fallbackQuery = query) {
-  const nextOptions = loadedOptions || createEmptyWorkbenchOptions(fallbackQuery)
-  if (nextOptions.manufacturerOptions?.length) {
-    manufacturerCatalog.value = nextOptions.manufacturerOptions
-  }
-  options.value = {
-    ...nextOptions,
-    manufacturerOptions: manufacturerCatalog.value.length ? manufacturerCatalog.value : nextOptions.manufacturerOptions
-  }
-  const codes = (options.value.manufacturerOptions || []).map((item) => item.code).filter(Boolean)
-  if (!initializedManufacturer && !query.manufacturerCode && codes.length) {
-    const nextManufacturer = codes.includes(options.value.defaultManufacturerCode) ? options.value.defaultManufacturerCode : codes[0]
-    initializedManufacturer = true
-    query.manufacturerCode = nextManufacturer
-  }
+  options.value = loadedOptions || createEmptyWorkbenchOptions(fallbackQuery)
 }
 
 async function loadOptions() {
@@ -99,13 +88,23 @@ async function loadOptions() {
 
 async function submitQuery() {
   const sequence = ++requestSequence
+  const manufacturerChanged = appliedQuery.value.manufacturerCode !== draftQuery.manufacturerCode
   isLoading.value = true
+  if (manufacturerChanged) {
+    options.value = createEmptyWorkbenchOptions(draftQuery)
+    state.value = createEmptyRuleCluesData(draftQuery)
+  }
   try {
     draftQuery.detectorFamily = ''
     draftQuery.detectorId = selectedDetectorId.value === 'all' ? '' : selectedDetectorId.value
     if (draftQuery.demoMode) {
-      options.value = await loadWorkbenchOptions(draftQuery, { allowDemo: true })
-      state.value = await loadRuleCluesData(draftQuery, { allowDemo: true })
+      const [loadedOptions, loadedState] = await Promise.all([
+        loadWorkbenchOptions(draftQuery, { allowDemo: true }),
+        loadRuleCluesData(draftQuery, { allowDemo: true })
+      ])
+      if (sequence !== requestSequence) return
+      options.value = loadedOptions
+      state.value = loadedState
       appliedQuery.value = normalizeWorkbenchQuery(draftQuery)
       reportContext.value = state.value.reportContext
       updateUrl()
@@ -140,9 +139,24 @@ async function submitQuery() {
   }
 }
 
-onMounted(loadOptions)
+onMounted(async () => {
+  await manufacturerScope.initialize()
+  query.manufacturerCode = manufacturerCode.value
+  await loadOptions()
+  pageReady = true
+  if (manufacturerCode.value && manufacturerCode.value !== query.manufacturerCode) {
+    query.manufacturerCode = manufacturerCode.value
+    await submitQuery()
+  }
+})
 
 watch(draftQuery, syncDraftContext, { deep: true })
+
+watch(manufacturerCode, async (nextCode) => {
+  if (!pageReady || !nextCode || nextCode === query.manufacturerCode) return
+  query.manufacturerCode = nextCode
+  await submitQuery()
+})
 
 watch(selectedRuleCategory, () => {
   selectedDetectorId.value = 'all'
@@ -163,12 +177,6 @@ watch(selectedDetectorId, () => {
         <div class="subtitle">{{ query.observationDate }} · 规则巡检</div>
       </div>
       <div class="workbench-controls">
-        <label class="control-field">
-          <span>生产企业</span>
-          <select v-model="query.manufacturerCode">
-            <option v-for="item in options.manufacturerOptions" :key="item.code" :value="item.code">{{ item.name }}</option>
-          </select>
-        </label>
         <SquareDatePicker v-model="query.observationDate" label="观察日期" :available-dates="availableObservationDates" />
       </div>
     </div>

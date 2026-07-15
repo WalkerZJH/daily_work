@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import MetricCard from '../../components/MetricCard.vue'
 import SectionCard from '../../components/SectionCard.vue'
+import { useManufacturerScope } from '../../context/manufacturerScope'
 import { createEmptyOneshotData, loadOneshotData, normalizeWorkbenchQuery } from '../monthly-demo/pageDataAdapter'
 
 const params = new URLSearchParams(window.location.search)
@@ -24,14 +25,35 @@ const query = reactive(
 
 const state = ref(createEmptyOneshotData())
 const isLoading = ref(false)
+const manufacturerScope = useManufacturerScope()
+const manufacturerCode = manufacturerScope.manufacturerCode
+let requestSequence = 0
+let pageReady = false
+
+async function loadPage() {
+  const sequence = ++requestSequence
+  isLoading.value = true
+  state.value = createEmptyOneshotData()
+  try {
+    const loadedState = await loadOneshotData(query, { allowDemo: query.demoMode })
+    if (sequence !== requestSequence) return
+    state.value = loadedState
+  } finally {
+    if (sequence === requestSequence) isLoading.value = false
+  }
+}
 
 onMounted(async () => {
-  isLoading.value = true
-  try {
-    state.value = await loadOneshotData(query, { allowDemo: query.demoMode })
-  } finally {
-    isLoading.value = false
-  }
+  await manufacturerScope.initialize()
+  query.manufacturerCode = manufacturerCode.value
+  pageReady = true
+  await loadPage()
+})
+
+watch(manufacturerCode, async (nextCode) => {
+  if (!pageReady || !nextCode || nextCode === query.manufacturerCode) return
+  query.manufacturerCode = nextCode
+  await loadPage()
 })
 </script>
 

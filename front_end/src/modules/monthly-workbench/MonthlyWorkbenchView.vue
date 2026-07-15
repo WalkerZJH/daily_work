@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
 import SquareDatePicker from '../../components/ui/SquareDatePicker.vue'
+import { useManufacturerScope } from '../../context/manufacturerScope'
 import {
   applyReportContextToQuery,
   buildPersistentParams,
@@ -31,6 +32,10 @@ const options = ref(createEmptyWorkbenchOptions(draftQuery))
 const state = ref(createEmptyWorkbenchData(appliedQuery.value))
 const reportContext = ref(state.value.reportContext)
 const isLoading = ref(false)
+const manufacturerScope = useManufacturerScope()
+const manufacturerCode = manufacturerScope.manufacturerCode
+let requestSequence = 0
+let pageReady = false
 
 const rows = computed(() => state.value.workbenchDisplayRows || [])
 const selectedHorizonLabel = computed(() => options.value.horizonOptions.find((item) => item.id === appliedQuery.value.horizon)?.label || appliedQuery.value.horizon)
@@ -48,32 +53,61 @@ function detailHref(row) {
   return `clue-detail.html?${buildPersistentParams(appliedQuery.value, { id: row.entityId }).toString()}`
 }
 
+function cluesHref() {
+  return `clues.html?${buildPersistentParams({
+    ...appliedQuery.value,
+    manufacturerCode: manufacturerCode.value
+  }).toString()}`
+}
+
 async function loadOptions() {
   const loaded = await loadWorkbenchOptions(draftQuery)
   options.value = loaded || createEmptyWorkbenchOptions(draftQuery)
-  if (!draftQuery.manufacturerCode && options.value.manufacturerOptions?.length) {
-    draftQuery.manufacturerCode = options.value.defaultManufacturerCode || options.value.manufacturerOptions[0].code
-  }
 }
 
 async function submitQuery() {
+  const sequence = ++requestSequence
+  const manufacturerChanged = appliedQuery.value.manufacturerCode !== draftQuery.manufacturerCode
   isLoading.value = true
+  if (manufacturerChanged) options.value = createEmptyWorkbenchOptions(draftQuery)
   try {
-    const context = await loadReportContext(draftQuery)
+    const [context, refreshedOptions] = await Promise.all([
+      loadReportContext(draftQuery),
+      manufacturerChanged ? loadWorkbenchOptions(draftQuery) : Promise.resolve(null)
+    ])
+    if (sequence !== requestSequence) return
+    if (refreshedOptions) options.value = refreshedOptions
     const effective = applyReportContextToQuery(draftQuery, context)
     appliedQuery.value = effective
     reportContext.value = context
-    state.value = await loadWorkbenchData(effective)
-    reportContext.value = state.value.reportContext || context
+    const loadedState = await loadWorkbenchData(effective)
+    if (sequence !== requestSequence) return
+    state.value = loadedState
+    reportContext.value = loadedState.reportContext || context
     updateUrl()
   } finally {
-    isLoading.value = false
+    if (sequence === requestSequence) isLoading.value = false
   }
 }
 
-onMounted(loadOptions)
+onMounted(async () => {
+  await manufacturerScope.initialize()
+  draftQuery.manufacturerCode = manufacturerCode.value
+  await loadOptions()
+  pageReady = true
+  if (manufacturerCode.value && manufacturerCode.value !== draftQuery.manufacturerCode) {
+    draftQuery.manufacturerCode = manufacturerCode.value
+    await submitQuery()
+  }
+})
 
 watch(draftQuery, syncDraftContext, { deep: true })
+
+watch(manufacturerCode, async (nextCode) => {
+  if (!pageReady || !nextCode || nextCode === draftQuery.manufacturerCode) return
+  draftQuery.manufacturerCode = nextCode
+  await submitQuery()
+})
 </script>
 
 <template>
@@ -84,12 +118,6 @@ watch(draftQuery, syncDraftContext, { deep: true })
         <div class="subtitle">月度排序结果 Top N；规则证据仅在对象详情页展示</div>
       </div>
       <div class="workbench-controls">
-        <label class="control-field">
-          <span>生产企业</span>
-          <select v-model="draftQuery.manufacturerCode">
-            <option v-for="item in options.manufacturerOptions" :key="item.code" :value="item.code">{{ item.name }}</option>
-          </select>
-        </label>
         <SquareDatePicker v-model="draftQuery.observationDate" label="观察日期" :available-dates="availableObservationDates" />
       </div>
     </div>
@@ -144,7 +172,7 @@ watch(draftQuery, syncDraftContext, { deep: true })
           </tbody>
         </table>
       </div>
-      <a class="back-link" :href="`clues.html?${buildPersistentParams(appliedQuery).toString()}`">查看规则巡检结果</a>
+      <a class="back-link" :href="cluesHref()">查看规则巡检结果</a>
     </SectionCard>
   </div>
 </template>

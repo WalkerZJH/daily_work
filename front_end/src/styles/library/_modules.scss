@@ -1059,6 +1059,7 @@
 .control-field select,
 .control-field input {
   min-width: 150px;
+  min-height: 38px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: #fff;
@@ -1081,6 +1082,7 @@
 
 .square-date-picker input {
   min-width: 150px;
+  min-height: 38px;
   border: 1px solid var(--border);
   border-radius: 0;
   background: #fff;
@@ -1088,6 +1090,11 @@
   padding: 9px 10px;
   font: inherit;
   font-size: 13px;
+}
+
+.control-grid > .btn,
+.workbench-controls > .btn {
+  min-height: 38px;
 }
 
 .table-toolbar {
