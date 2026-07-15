@@ -1,17 +1,15 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
-import SquareDatePicker from '../../components/ui/SquareDatePicker.vue'
 import {
   applyReportContextToQuery,
   buildPersistentParams,
   createEmptyClueDetailData,
   createEmptyRuleOnlyClueDetailData,
-  createEmptyWorkbenchOptions,
+  horizonOptions,
   loadReportContext,
   loadRiskEntityDetailData,
   loadRuleOnlyClueDetailData,
-  loadWorkbenchOptions,
   normalizeWorkbenchQuery
 } from '../monthly-demo/pageDataAdapter'
 
@@ -33,7 +31,6 @@ const draftQuery = reactive(normalizeWorkbenchQuery({
   detectorRunDate: params.get('detector_run_date') || params.get('run_date')
 }))
 const appliedQuery = ref(normalizeWorkbenchQuery(draftQuery))
-const options = ref(createEmptyWorkbenchOptions(draftQuery))
 const candidateState = ref(createEmptyClueDetailData({ riskEntityId, query: appliedQuery.value }))
 const ruleOnlyState = ref(createEmptyRuleOnlyClueDetailData({ clueId, query: appliedQuery.value }))
 const reportContext = ref(candidateState.value.reportContext)
@@ -42,9 +39,21 @@ const isLoading = ref(false)
 const entity = computed(() => candidateState.value.entity)
 const profiles = computed(() => Object.values(candidateState.value.horizonProfiles || {}))
 const evidence = computed(() => candidateState.value.detectorEvidence || [])
+const probabilityTrend = computed(() => candidateState.value.probabilityTrend || [])
+const selectedHorizonProfile = computed(() => candidateState.value.horizonProfiles?.[appliedQuery.value.horizon] || null)
+const selectedHorizonLabel = computed(() => horizonOptions.find((item) => item.id === appliedQuery.value.horizon)?.label || appliedQuery.value.horizon)
 const ruleClue = computed(() => ruleOnlyState.value.clue)
-const availableObservationDates = computed(() => (options.value.dailyDetectorDateOptions || []).map((item) => item.runDate).filter(Boolean))
 const evidenceFields = computed(() => flattenEvidence(ruleClue.value?.evidencePayload))
+
+const trendPolyline = computed(() => {
+  const points = probabilityTrend.value
+  if (points.length < 2) return ''
+  return points.map((point, index) => {
+    const x = 24 + (index / (points.length - 1)) * 252
+    const y = 118 - Math.max(0.05, Math.min(0.95, Number(point.riskProbability || 0))) * 92
+    return `${x.toFixed(1)},${y.toFixed(1)}`
+  }).join(' ')
+})
 
 function backHref() {
   const query = buildPersistentParams(appliedQuery.value)
@@ -54,11 +63,6 @@ function backHref() {
 function updateUrl() {
   if (detailMode !== 'candidate') return
   window.history.replaceState({}, '', `${window.location.pathname}?${buildPersistentParams(appliedQuery.value, { id: riskEntityId, clueId }).toString()}`)
-}
-
-async function loadOptions() {
-  const loaded = await loadWorkbenchOptions(draftQuery)
-  options.value = loaded || createEmptyWorkbenchOptions(draftQuery)
 }
 
 async function refreshCandidateDetail() {
@@ -74,6 +78,12 @@ async function refreshCandidateDetail() {
   } finally {
     isLoading.value = false
   }
+}
+
+async function selectHorizon(horizon) {
+  if (horizon === appliedQuery.value.horizon || isLoading.value) return
+  draftQuery.horizon = horizon
+  await refreshCandidateDetail()
 }
 
 async function loadRuleOnlyDetail() {
@@ -105,12 +115,6 @@ function flattenEvidence(value, prefix = '') {
 
 onMounted(async () => {
   if (detailMode === 'candidate') {
-    isLoading.value = true
-    try {
-      await loadOptions()
-    } finally {
-      isLoading.value = false
-    }
     await refreshCandidateDetail()
   } else if (detailMode === 'rule-only') {
     await loadRuleOnlyDetail()
@@ -125,11 +129,20 @@ onMounted(async () => {
     <div v-if="detailMode === 'candidate'" class="page-header control-header">
       <div>
         <h1>候选对象详情</h1>
-        <div class="subtitle">月度模型结果与当前观察日期的规则证据</div>
+        <div class="subtitle">固定候选对象的月度模型结果与 detector 命中证据</div>
       </div>
       <div class="workbench-controls">
-        <label class="control-field"><span>生产企业</span><select v-model="draftQuery.manufacturerCode"><option v-for="item in options.manufacturerOptions" :key="item.code" :value="item.code">{{ item.name }}</option></select></label>
-        <SquareDatePicker v-model="draftQuery.observationDate" label="观察日期" :available-dates="availableObservationDates" />
+        <div class="segmented-control horizon-switcher" aria-label="风险窗口切换">
+          <button
+            v-for="item in horizonOptions"
+            :key="item.id"
+            type="button"
+            class="segment-btn"
+            :class="{ active: appliedQuery.horizon === item.id }"
+            :disabled="isLoading"
+            @click="selectHorizon(item.id)"
+          >{{ item.label }}</button>
+        </div>
         <button type="button" class="btn btn-primary" :disabled="isLoading" @click="refreshCandidateDetail">{{ isLoading ? '查询中…' : '刷新详情' }}</button>
       </div>
     </div>
@@ -178,9 +191,10 @@ onMounted(async () => {
       <section v-if="reportContext?.displayTitle" class="notice-strip context-notice"><strong>{{ reportContext.displayTitle }}</strong><span v-for="line in reportContext.displayLines" :key="line">{{ line }}</span></section>
       <div v-if="!entity" class="empty"><strong>{{ candidateState.emptyTitle }}</strong><p>{{ candidateState.emptyMessage }}</p></div>
       <template v-else>
-        <SectionCard title="对象与当前月度结果" subtitle="该结果来自月度候选排序，不由 detector 生成"><dl class="definition-grid"><dt>医院 × 药品</dt><dd>{{ entity.hospital }} × {{ entity.drug }}</dd><dt>生产企业</dt><dd>{{ entity.manufacturer }}</dd><dt>观察日期</dt><dd>{{ appliedQuery.observationDate }}</dd><dt>预测窗口</dt><dd>{{ entity.horizon }}</dd><dt>月度概率</dt><dd>{{ entity.probabilityDisplay }}</dd><dt>涉及金额</dt><dd>{{ entity.involvedAmountText }}</dd><dt>风险展示等级</dt><dd>{{ entity.riskLevel }}</dd></dl></SectionCard>
-        <SectionCard title="H3 / H6 / H12 月度结果" subtitle="不同预测窗口相互独立"><div class="data-table-wrap"><table><thead><tr><th>窗口</th><th>月度概率</th><th>涉及金额</th><th>展示等级</th></tr></thead><tbody><tr v-for="profile in profiles" :key="profile.horizon"><td>{{ profile.horizon }}</td><td>{{ profile.riskProbabilityText }}</td><td>{{ profile.involvedAmountText }}</td><td>{{ profile.riskLevel }}</td></tr></tbody></table></div></SectionCard>
-        <SectionCard title="当前日期命中的规则证据" subtitle="规则仅提供事实证据，不改变候选池、排序、概率或金额"><div v-if="!evidence.length" class="empty">当前 observation_date 没有该候选对象的 detector 命中。</div><div v-else class="definition-grid" v-for="item in evidence" :key="`${item.detectorId}-${item.detectorRunDate}`"><dt>规则名称</dt><dd>{{ item.detectorName }}</dd><dt>命中说明</dt><dd>{{ item.evidenceText || '-' }}</dd><dt>当前值</dt><dd>{{ item.currentValueText || '-' }}</dd><dt>历史基准</dt><dd>{{ item.baselineValueText || '-' }}</dd><dt>比较值 / 阈值</dt><dd>{{ item.comparisonText || '-' }}</dd><dt>备注</dt><dd>{{ item.caveat || '-' }}</dd></div></SectionCard>
+        <SectionCard title="对象与当前月度结果" subtitle="该结果来自月度候选排序，不由 detector 生成"><dl class="definition-grid"><dt>医院 × 药品</dt><dd>{{ entity.hospital }} × {{ entity.drug }}</dd><dt>生产企业</dt><dd>{{ entity.manufacturer }}</dd><dt>观察日期</dt><dd>{{ appliedQuery.observationDate }}</dd><dt>预测窗口</dt><dd>{{ selectedHorizonLabel }}</dd><dt>月度概率</dt><dd>{{ selectedHorizonProfile?.probabilityDisplay || entity.probabilityDisplay }}</dd><dt>涉及金额</dt><dd>{{ selectedHorizonProfile?.involvedAmountText || entity.involvedAmountText }}</dd><dt>风险展示等级</dt><dd>{{ selectedHorizonProfile?.riskLevel || entity.riskLevel }}</dd></dl></SectionCard>
+        <SectionCard title="H3 / H6 / H12 月度结果" subtitle="不同预测窗口相互独立"><div class="data-table-wrap"><table><thead><tr><th>窗口</th><th>月度概率</th><th>涉及金额</th><th>展示等级</th></tr></thead><tbody><tr v-for="profile in profiles" :key="profile.horizon"><td>{{ profile.horizon }}</td><td>{{ profile.probabilityDisplay }}</td><td>{{ profile.involvedAmountText }}</td><td>{{ profile.riskLevel }}</td></tr></tbody></table></div></SectionCard>
+        <SectionCard title="当前日期命中的规则证据" subtitle="规则仅提供事实证据，不改变候选池、排序、概率或金额"><div v-if="!evidence.length" class="empty">当前 observation_date 没有该候选对象的 detector 命中。</div><article v-else v-for="item in evidence" :key="`${item.detectorId}-${item.detectorRunDate}`" class="detector-result-card"><h3>{{ item.detectorName || item.detectorId }}</h3><dl class="definition-grid compact"><dt>Detector ID</dt><dd>{{ item.detectorId || '-' }}</dd><dt>规则巡检分数</dt><dd>{{ item.detectorScoreText || '-' }}</dd><dt>命中说明</dt><dd>{{ item.evidenceText || '-' }}</dd><dt>当前值</dt><dd>{{ item.currentValueText || '-' }}</dd><dt>历史基准</dt><dd>{{ item.baselineValueText || '-' }}</dd><dt>比较值 / 阈值</dt><dd>{{ item.comparisonText || '-' }}</dd><dt>备注</dt><dd>{{ item.caveat || '-' }}</dd></dl></article></SectionCard>
+        <SectionCard title="丢失概率趋势" subtitle="横轴为月报月份，纵轴为月度丢失概率，金额为同窗口涉及金额"><div v-if="probabilityTrend.length" class="probability-trend"><svg viewBox="0 0 300 136" role="img" aria-label="丢失概率趋势"><polyline class="trend-grid-line" points="24,26 276,26" /><polyline class="trend-grid-line" points="24,72 276,72" /><polyline class="trend-grid-line" points="24,118 276,118" /><polyline v-if="trendPolyline" class="trend-line" :points="trendPolyline" /><circle v-for="(point, index) in probabilityTrend" :key="point.reportMonth" class="trend-dot" :cx="24 + (index / Math.max(1, probabilityTrend.length - 1)) * 252" :cy="118 - Math.max(0.05, Math.min(0.95, Number(point.riskProbability || 0))) * 92" r="4" /></svg><div class="trend-legend"><span v-for="point in probabilityTrend" :key="point.reportMonth">{{ point.reportMonth }} · {{ point.riskProbabilityText }} · 涉及金额 {{ point.involvedAmountText }}</span></div></div><div v-else class="empty">暂无趋势数据</div></SectionCard>
       </template>
     </template>
   </div>

@@ -784,6 +784,7 @@ function mapHorizonProfile(profile) {
     horizonLabel: formatHorizonLabel(profile.horizon),
     riskProbability: firstNumber(profile.risk_probability),
     probabilityDisplay: formatPercent(firstNumber(profile.risk_probability)),
+    riskLevel: profile.risk_band || profile.riskLevel || '-',
     involvedAmount,
     involvedAmountText: formatMoney(involvedAmount),
     lossValue,

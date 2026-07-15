@@ -137,14 +137,30 @@ def test_clue_detail_has_strict_rule_only_data_path() -> None:
     assert "仅规则命中不会创建 Recurring 风险候选对象" in detail
 
 
+def test_candidate_clue_detail_retains_horizon_evidence_and_probability_trend() -> None:
+    detail = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityDetailView.vue")
+    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+
+    assert "getRiskEntityDetectorEvidence" in adapter
+    assert "getRiskEntityProbabilityTrend" in adapter
+    assert "selectedHorizonProfile" in detail
+    assert "async function selectHorizon" in detail
+    assert "profile.probabilityDisplay" in detail
+    assert 'aria-label="丢失概率趋势"' in detail
+    assert "trendPolyline" in detail
+    assert "candidateState.value.detectorEvidence" in detail
+    assert "SquareDatePicker" not in detail
+    assert 'v-model="draftQuery.manufacturerCode"' not in detail
+
+
 def test_frontend_rule_clues_exposes_detector_filters() -> None:
     clues_page = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue")
     adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
 
     assert "selectedDetectorFamily" in clues_page
     assert "selectedDetectorId" in clues_page
-    assert "detectorFamilyOptions" in clues_page
-    assert "detectorIdOptions" in clues_page
+    assert "ruleCategoryOptions" in clues_page
+    assert "ruleSubtypeOptions" in clues_page
     assert "getDetectorCatalog" in adapter
     assert "detector_family" in adapter
     assert "detector_id" in adapter
