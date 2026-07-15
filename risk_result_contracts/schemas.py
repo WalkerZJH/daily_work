@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-STANDARD_TABLES = [
+CORE_RESULT_TABLES = [
     "risk_entities",
     "risk_entity_horizon_profiles",
     "risk_cards",
@@ -15,11 +15,16 @@ STANDARD_TABLES = [
     "proof_cases",
     "work_order_reserved",
     "entity_display_lookup",
+]
+
+DETECTOR_RESULT_TABLES = [
     "detector_catalog",
     "daily_detector_runs",
     "daily_detector_clues",
     "high_risk_detector_evidence",
 ]
+
+STANDARD_TABLES = [*CORE_RESULT_TABLES, *DETECTOR_RESULT_TABLES]
 
 RISK_ENTITY_HORIZON_PROFILE_REQUIRED_COLUMNS = [
     "risk_entity_id",

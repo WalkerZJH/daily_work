@@ -20,16 +20,36 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(args.batch_root)
     observation_rows: list[dict[str, Any]] = []
     manufacturer_rows: list[dict[str, Any]] = []
+    batches_by_month: dict[str, list[dict[str, Any]]] = {}
     for batch_dir in batch_dirs(root):
         manifest = read_manifest(batch_dir)
         report_month = str(manifest["report_month"])
-        detector_runs = read_parquet_table(batch_dir, "daily_detector_runs")
-        risk_entities = read_parquet_table(batch_dir, "risk_entities")
-        lookup = read_parquet_table(batch_dir, "entity_display_lookup")
+        batches_by_month.setdefault(report_month, []).append(
+            {
+                "batch_dir": batch_dir,
+                "manifest": manifest,
+                "risk_entities": read_parquet_table(batch_dir, "risk_entities"),
+                "lookup": read_parquet_table(batch_dir, "entity_display_lookup"),
+                "detector_runs": _optional_parquet_table(batch_dir, "daily_detector_runs"),
+            }
+        )
+
+    for report_month, batches in batches_by_month.items():
+        monthly = max(batches, key=lambda item: item["batch_dir"].name)
+        detector_sources = [item for item in batches if not item["detector_runs"].empty]
+        detector = max(detector_sources, key=lambda item: item["batch_dir"].name) if detector_sources else None
+        manifest = monthly["manifest"]
+        batch_dir = monthly["batch_dir"]
+        detector_runs = detector["detector_runs"] if detector is not None else pd.DataFrame()
         available_horizons = ";".join(str(item) for item in manifest.get("available_horizons", []))
-        detector_dates = sorted(detector_runs["run_date"].astype(str).dropna().unique().tolist())
-        manufacturers = manufacturer_catalog(risk_entities, lookup)
+        detector_dates = sorted(detector_runs.get("run_date", pd.Series(dtype=str)).astype(str).dropna().unique().tolist())
+        if not detector_dates:
+            detector_dates = [str(manifest.get("run_date") or manifest.get("report_date") or report_month)]
+        manufacturers = manufacturer_catalog(monthly["risk_entities"], monthly["lookup"])
         for run_date in detector_dates:
+            detector_available = detector is not None
+            detector_manifest = detector["manifest"] if detector is not None else {}
+            detector_batch_dir = detector["batch_dir"] if detector is not None else None
             observation_rows.append(
                 {
                     "observation_date": run_date,
@@ -39,9 +59,11 @@ def main(argv: list[str] | None = None) -> int:
                     "probability_batch_available": True,
                     "detector_run_date": run_date,
                     "detector_run_id": detector_run_id(detector_runs, run_date),
-                    "detector_run_available": True,
-                    "context_status": "ready",
-                    "manual_selection_required": False,
+                    "detector_batch_id": detector_manifest.get("result_batch_id") or detector_manifest.get("batch_id") or "",
+                    "detector_batch_dir": str(detector_batch_dir).replace("\\", "/") if detector_batch_dir else "",
+                    "detector_run_available": detector_available,
+                    "context_status": "ready" if detector_available else "detector_run_unavailable",
+                    "manual_selection_required": not detector_available,
                     "available_report_months": "",
                     "available_detector_run_dates": "",
                     "primary_horizon": manifest.get("primary_horizon"),
@@ -58,9 +80,11 @@ def main(argv: list[str] | None = None) -> int:
                         "probability_batch_id": manifest.get("result_batch_id") or manifest.get("batch_id"),
                         "probability_batch_available": True,
                         "detector_run_date": run_date,
-                        "detector_run_available": True,
+                        "detector_batch_id": detector_manifest.get("result_batch_id") or detector_manifest.get("batch_id") or "",
+                        "detector_batch_dir": str(detector_batch_dir).replace("\\", "/") if detector_batch_dir else "",
+                        "detector_run_available": detector_available,
                         "available_horizons": available_horizons,
-                        "context_status": "ready",
+                        "context_status": "ready" if detector_available else "detector_run_unavailable",
                         "display_lookup_status": display_lookup_status(manufacturer),
                     }
                 )
@@ -100,6 +124,11 @@ def detector_run_id(detector_runs: pd.DataFrame, run_date: str) -> str:
     if rows.empty:
         return ""
     return str(rows.iloc[0].get("detector_run_id") or "")
+
+
+def _optional_parquet_table(batch_dir: Path, table: str) -> pd.DataFrame:
+    path = batch_dir / f"{table}.parquet"
+    return read_parquet_table(batch_dir, table) if path.exists() else pd.DataFrame()
 
 
 def manufacturer_catalog(risk_entities: pd.DataFrame, lookup: pd.DataFrame) -> list[dict[str, str]]:

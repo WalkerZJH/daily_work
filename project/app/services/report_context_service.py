@@ -10,6 +10,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from risk_model_core import ParquetRiskResultRepository, RiskResultRepository  # noqa: E402
+from app.services.result_batch_discovery import latest_monthly_batch
 
 
 class ReportContextService:
@@ -76,9 +77,15 @@ class ReportContextService:
         return ParquetRiskResultRepository(path)
 
     def detector_repository(self, context: dict[str, Any]) -> RiskResultRepository | None:
+        if not context.get("detector_run_available"):
+            return None
         if self.batch_root is None:
             return self.repository
-        return self.probability_repository(context)
+        path_text = context.get("detector_batch_dir") or context.get("probability_batch_dir")
+        if not path_text:
+            return None
+        path = _resolve_batch_path(path_text)
+        return ParquetRiskResultRepository(path) if path.exists() else None
 
     def _resolve_observation_context(
         self,
@@ -304,6 +311,8 @@ def _normalize_observation_context(
             "expected_probability_report_month": expected_probability_report_month,
             "effective_probability_report_month": effective_probability_report_month,
             "detector_run_date": detector_run_date,
+            "detector_batch_id": _none_if_blank(context.get("detector_batch_id")),
+            "detector_batch_dir": _none_if_blank(context.get("detector_batch_dir")),
             "context_status": status,
             "context_mode": context_mode,
             "manual_report_month": bool(context.get("manual_report_month", manual_report_month)),
@@ -348,6 +357,8 @@ def _unavailable_context(
         "probability_batch_available": False,
         "detector_run_date": observation_date or run_date,
         "detector_run_id": None,
+        "detector_batch_id": None,
+        "detector_batch_dir": None,
         "detector_run_available": False,
         "context_status": "no_available_context",
         "context_mode": "unavailable",
@@ -370,12 +381,7 @@ def _unavailable_context(
 
 
 def _default_batch_dir_from_root(root: Path) -> Path | None:
-    if not root.exists():
-        return None
-    candidates = sorted(root.glob("report_month=*/batch_id=*/manifest.json"))
-    if not candidates:
-        return None
-    return candidates[-1].parent
+    return latest_monthly_batch(root)
 
 
 def _resolve_batch_path(path_text: Any) -> Path:

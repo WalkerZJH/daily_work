@@ -14,7 +14,7 @@ def test_detector_clues_api_returns_non_high_risk_rule_clues_without_creating_ri
     with override_detector_service():
         clues_response = TestClient(app).get(
             "/api/v1/detectors/clues",
-            params={"only_monthly_high_risk": False, "page_size": 10},
+            params={"page_size": 10},
         )
         risk_entities_response = TestClient(app).get("/api/v1/risk-entities")
 
@@ -35,14 +35,11 @@ def test_detector_clues_api_returns_non_high_risk_rule_clues_without_creating_ri
     assert "" not in risk_entity_ids
 
 
-def test_detector_clues_api_can_filter_to_monthly_high_risk_only() -> None:
+def test_detector_clues_api_does_not_filter_by_monthly_candidate_state() -> None:
     with override_detector_service():
-        response = TestClient(app).get(
-            "/api/v1/detectors/clues",
-            params={"only_monthly_high_risk": True},
-        )
+        response = TestClient(app).get("/api/v1/detectors/clues")
 
     assert response.status_code == 200
     items = response.json()["items"]
     assert items
-    assert all(item["is_monthly_high_risk_entity"] is True for item in items)
+    assert {item["detector_clue_id"] for item in items} >= {"clue_non_high"}

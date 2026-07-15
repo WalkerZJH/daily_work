@@ -28,7 +28,7 @@ from risk_algorithm_core.entity_builder import build_monthly_entities
 from risk_algorithm_core.entity_display_lookup import build_entity_display_lookup
 from risk_algorithm_core.evidence_builder import build_risk_card_evidence, build_risk_cards
 from risk_algorithm_core.feature_engineering import engineer_features, engineer_features_from_facts
-from risk_algorithm_core.monthly_runner import MonthlyRiskRunner
+from risk_algorithm_core.monthly_runner import MonthlyRiskRunner, _empty_detector_outputs
 from risk_algorithm_core.normalization import normalize_raw_tables
 from risk_algorithm_core.production_feature_builder import build_model_feature_frame
 from risk_algorithm_core.raw_input import read_raw_input_batch
@@ -52,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--report-root", default=str(REPORT_ROOT))
     parser.add_argument("--months", nargs="*", default=TARGET_COMPLETE_MONTHS)
     parser.add_argument("--run-id", default="full-recurring-v1")
+    parser.add_argument("--without-detector-evidence", action="store_true")
     parser.add_argument("--clean-output", action="store_true")
     args = parser.parse_args(argv)
 
@@ -71,7 +72,11 @@ def main(argv: list[str] | None = None) -> int:
 
     for month in args.months:
         cfg = config_for_month(base_cfg, month, output_root, args.run_id)
-        result = run_profiled_month(cfg, default_observation_date(month))
+        result = run_profiled_month(
+            cfg,
+            default_observation_date(month),
+            include_detector_evidence=not args.without_detector_evidence,
+        )
         monthly_profiles.append(result["monthly_profile"])
         detector_profiles.append(result["detector_profile"])
         end_to_end_profiles.append(result["end_to_end_profile"])
@@ -101,7 +106,12 @@ def config_for_month(base_cfg: MonthlyRiskRunConfig, month: str, output_root: Pa
     )
 
 
-def run_profiled_month(cfg: MonthlyRiskRunConfig, observation_date: str) -> dict[str, Any]:
+def run_profiled_month(
+    cfg: MonthlyRiskRunConfig,
+    observation_date: str,
+    *,
+    include_detector_evidence: bool = True,
+) -> dict[str, Any]:
     e2e_start = time.perf_counter()
     report_month = cfg.resolved_report_month
     cutoff_date = cfg.resolved_cutoff_date
@@ -147,7 +157,7 @@ def run_profiled_month(cfg: MonthlyRiskRunConfig, observation_date: str) -> dict
     ranking_start = time.perf_counter()
     gate = DetectorQualityGate(cfg.detectors)
     gate_decisions = gate.evaluate(features, normalized)
-    detector_outputs = runner._run_detectors(selected, features, gate_decisions)
+    detector_outputs = runner._run_detectors(selected, features, gate_decisions) if include_detector_evidence else _empty_detector_outputs()
     disabled_notes = DisabledDetectorNoteBuilder().build(gate_decisions)
     status = StatusDecider().decide(selected, features, detector_outputs)
     risk_cards = build_risk_cards(status, detector_outputs)
@@ -172,6 +182,7 @@ def run_profiled_month(cfg: MonthlyRiskRunConfig, observation_date: str) -> dict
         score_frame=score_frame,
         normalized_tables=normalized,
         artifact_metadata=artifact.manifest.raw,
+        include_detector_evidence=include_detector_evidence,
         write_parquet=True,
     )
     result_write_seconds = elapsed(write_start)
@@ -181,19 +192,23 @@ def run_profiled_month(cfg: MonthlyRiskRunConfig, observation_date: str) -> dict
     _ = build_entity_display_lookup(risk_entities, normalized, report_month, raw_batch.manifest.raw_batch_id)
     display_seconds = elapsed(display_start)
 
-    detector_compute_start = time.perf_counter()
-    detector_tables = build_daily_detector_tables(
-        risk_entities=risk_entities,
-        scan_features=features,
-        report_month=report_month,
-        run_date=observation_date,
-        source_raw_batch_id=raw_batch.manifest.raw_batch_id,
-        source_result_batch_id=f"{report_month}-monthly-risk-algorithm-{cfg.run_id}",
-    )
-    detector_compute_seconds = elapsed(detector_compute_start)
-    detector_write_start = time.perf_counter()
-    write_detector_tables(batch_dir, detector_tables, data_backend="parquet")
-    detector_write_seconds = elapsed(detector_write_start)
+    detector_tables: dict[str, pd.DataFrame] = {}
+    detector_compute_seconds = 0.0
+    detector_write_seconds = 0.0
+    if include_detector_evidence:
+        detector_compute_start = time.perf_counter()
+        detector_tables = build_daily_detector_tables(
+            risk_entities=risk_entities,
+            scan_features=features,
+            report_month=report_month,
+            run_date=observation_date,
+            source_raw_batch_id=raw_batch.manifest.raw_batch_id,
+            source_result_batch_id=f"{report_month}-monthly-risk-algorithm-{cfg.run_id}",
+        )
+        detector_compute_seconds = elapsed(detector_compute_start)
+        detector_write_start = time.perf_counter()
+        write_detector_tables(batch_dir, detector_tables, data_backend="parquet")
+        detector_write_seconds = elapsed(detector_write_start)
     detector_total_seconds = detector_compute_seconds + detector_write_seconds
 
     validation_start = time.perf_counter()
@@ -249,9 +264,9 @@ def run_profiled_month(cfg: MonthlyRiskRunConfig, observation_date: str) -> dict
     detector_profile = {
         "observation_date": observation_date,
         "probability_report_month": report_month,
-        "scanned_entity_count": int(detector_tables["daily_detector_runs"].iloc[0]["scanned_entity_count"]),
-        "enabled_detector_count": len(str(detector_tables["daily_detector_runs"].iloc[0]["enabled_detectors"]).split(",")),
-        "detector_clue_count": int(len(detector_tables["daily_detector_clues"])),
+        "scanned_entity_count": int(detector_tables["daily_detector_runs"].iloc[0]["scanned_entity_count"]) if detector_tables else 0,
+        "enabled_detector_count": len(str(detector_tables["daily_detector_runs"].iloc[0]["enabled_detectors"]).split(",")) if detector_tables else 0,
+        "detector_clue_count": int(len(detector_tables["daily_detector_clues"])) if detector_tables else 0,
         "detector_compute_seconds": round(detector_compute_seconds, 6),
         "detector_table_write_seconds": round(detector_write_seconds, 6),
         "detector_total_seconds": round(detector_total_seconds, 6),
@@ -279,9 +294,9 @@ def run_profiled_month(cfg: MonthlyRiskRunConfig, observation_date: str) -> dict
         "report_month": report_month,
         "batch_dir": str(batch_dir),
         "risk_entities": int(len(risk_entities)),
-        "detector_runs": int(len(detector_tables["daily_detector_runs"])),
-        "detector_clues": int(len(detector_tables["daily_detector_clues"])),
-        "high_risk_detector_evidence": int(len(detector_tables["high_risk_detector_evidence"])),
+        "detector_runs": int(len(detector_tables["daily_detector_runs"])) if detector_tables else 0,
+        "detector_clues": int(len(detector_tables["daily_detector_clues"])) if detector_tables else 0,
+        "high_risk_detector_evidence": int(len(detector_tables["high_risk_detector_evidence"])) if detector_tables else 0,
         "end_to_end_seconds": end_to_end_profile["end_to_end_seconds"],
     }
     return {
@@ -327,6 +342,8 @@ def read_table(batch_dir: Path, name: str) -> pd.DataFrame:
 def update_manifest_and_context(batch_dir: Path, observation_date: str, runtime_profile_summary: dict[str, Any]) -> None:
     manifest_path = batch_dir / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    risk_entities = read_table(batch_dir, "risk_entities")
+    detector_tables_available = bool(manifest.get("detector_tables"))
     manifest["result_batch_id"] = manifest.get("result_batch_id") or manifest.get("batch_id")
     manifest["run_date"] = observation_date
     manifest["report_date"] = observation_date
@@ -340,18 +357,22 @@ def update_manifest_and_context(batch_dir: Path, observation_date: str, runtime_
         "business_score": "not emitted by model-core customer payloads; downstream display must use horizon profile involved_amount and probability fields",
         "fill_policy": "removed from model-core payloads; user-scope selection is a backend responsibility",
     }
-    manifest["detector_tables"] = {
-        "detector_catalog": "detector_catalog.parquet",
-        "daily_detector_runs": "daily_detector_runs.parquet",
-        "daily_detector_clues": "daily_detector_clues.parquet",
-        "high_risk_detector_evidence": "high_risk_detector_evidence.parquet",
-    }
+    manifest["detector_tables"] = (
+        {
+            "detector_catalog": "detector_catalog.parquet",
+            "daily_detector_runs": "daily_detector_runs.parquet",
+            "daily_detector_clues": "daily_detector_clues.parquet",
+            "high_risk_detector_evidence": "high_risk_detector_evidence.parquet",
+        }
+        if detector_tables_available
+        else {}
+    )
     manifest["detector_score_probability_interpretation"] = "detector_score_is_not_probability"
     recurring = risk_entities.get("candidate_type", pd.Series("recurring", index=risk_entities.index)).astype(str).eq("recurring")
     manifest["candidate_pool_policy"] = "full_recurring_universe"
     manifest["full_recurring_count"] = int(recurring.sum())
     manifest["persisted_recurring_count"] = int(recurring.sum())
-    manifest["detector_default_scope"] = "recurring_candidates"
+    manifest["detector_default_scope"] = "recurring_candidates" if detector_tables_available else "independent_detector_batch"
     manifest["result_table_row_counts"] = table_counts(batch_dir)
     caveats = list(manifest.get("caveats") or [])
     caveat = "multi_month_context_ready; default_observation_date is not a fabricated detector clue"
@@ -376,7 +397,8 @@ def table_counts(batch_dir: Path) -> dict[str, int]:
 
 
 def report_context_for_manifest(batch_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
-    daily_runs = read_table(batch_dir, "daily_detector_runs")
+    detector_tables_available = bool(manifest.get("detector_tables"))
+    daily_runs = read_table(batch_dir, "daily_detector_runs") if detector_tables_available else pd.DataFrame()
     detector_run_dates = sorted({str(value) for value in daily_runs.get("run_date", pd.Series(dtype=str)).dropna()})
     return {
         "batch_id": manifest.get("batch_id"),
@@ -394,6 +416,8 @@ def report_context_for_manifest(batch_dir: Path, manifest: dict[str, Any]) -> di
         "risk_entity_count": table_counts(batch_dir).get("risk_entities", 0),
         "daily_detector_clue_count": table_counts(batch_dir).get("daily_detector_clues", 0),
         "high_risk_detector_evidence_count": table_counts(batch_dir).get("high_risk_detector_evidence", 0),
+        "monthly_candidate_batch_available": True,
+        "detector_tables_available": detector_tables_available,
         "fact_mode_ready": manifest.get("fact_mode_ready", False),
         "raw_orders_mode_ready": manifest.get("raw_orders_mode_ready", False),
         "conditional_fact_mode_ready": manifest.get("conditional_fact_mode_ready", False),
@@ -404,7 +428,7 @@ def report_context_for_manifest(batch_dir: Path, manifest: dict[str, Any]) -> di
 
 def observation_context_for_batch(batch_dir: Path, observation_date: str) -> dict[str, Any]:
     context = json.loads((batch_dir / "report_context.json").read_text(encoding="utf-8"))
-    daily_runs = read_table(batch_dir, "daily_detector_runs")
+    daily_runs = read_table(batch_dir, "daily_detector_runs") if context.get("detector_tables_available") else pd.DataFrame()
     detector_run_id = ""
     detector_available = False
     if not daily_runs.empty and "run_date" in daily_runs:

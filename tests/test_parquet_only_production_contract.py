@@ -10,6 +10,7 @@ from production_pipeline.refresh_entity_display_lookup import main as refresh_lo
 from production_pipeline.rebuild_observation_registry import main as rebuild_registry_main
 from production_pipeline.run_daily_detector import main as run_daily_detector_main
 from risk_model_core.repositories import ParquetRiskResultRepository
+from risk_model_core.repositories import resolve_observation_context_from_rows
 from risk_result_contracts import ProductionParquetWriteError, write_production_parquet
 
 
@@ -42,6 +43,24 @@ def test_writer_failure_does_not_create_csv_or_half_file(tmp_path, monkeypatch) 
     assert not target.exists()
     assert list(tmp_path.glob("*.csv")) == []
     assert list(tmp_path.glob("*.tmp")) == []
+
+
+def test_writer_persists_mixed_blank_and_numeric_evidence_values(tmp_path) -> None:
+    target = tmp_path / "risk_card_evidence.parquet"
+    frame = pd.DataFrame(
+        {
+            "business_metric_value": ["", 1.25],
+            "source_feature_value": ["", 1.25],
+        }
+    )
+
+    write_production_parquet(frame, target)
+
+    persisted = pd.read_parquet(target)
+    assert pd.isna(persisted["business_metric_value"].iloc[0])
+    assert persisted["business_metric_value"].iloc[1] == 1.25
+    assert pd.isna(persisted["source_feature_value"].iloc[0])
+    assert persisted["source_feature_value"].iloc[1] == 1.25
 
 
 def test_repository_does_not_fallback_to_csv(tmp_path) -> None:
@@ -79,6 +98,51 @@ def test_registry_rebuild_uses_existing_parquet_batches(tmp_path) -> None:
     registry = pd.read_parquet(root / "manufacturer_observation_registry.parquet")
     assert registry["manufacturer_code"].tolist() == ["m1"]
     assert registry["observation_date"].tolist() == ["2025-12-05"]
+
+
+def test_registry_pairs_separate_monthly_and_detector_batches(tmp_path) -> None:
+    root = tmp_path / "result_batches"
+    detector_batch = root / "report_month=2025-12" / "batch_id=formal-v2"
+    make_minimal_stage_batch(detector_batch)
+    monthly_batch = root / "report_month=2025-12" / "batch_id=full-recurring-v2"
+    make_minimal_stage_batch(monthly_batch)
+    for name in ["daily_detector_runs", "daily_detector_clues"]:
+        (monthly_batch / f"{name}.parquet").unlink()
+
+    assert rebuild_registry_main(["--batch-root", str(root)]) == 0
+
+    context = pd.read_parquet(root / "available_observation_contexts.parquet").iloc[0]
+    assert context["probability_batch_dir"].endswith("batch_id=full-recurring-v2")
+    assert context["detector_batch_dir"].endswith("batch_id=formal-v2")
+    assert bool(context["probability_batch_available"]) is True
+    assert bool(context["detector_run_available"]) is True
+
+
+def test_observation_context_preserves_separate_detector_batch_path() -> None:
+    context = resolve_observation_context_from_rows(
+        pd.DataFrame(
+            [
+                {
+                    "observation_date": "2026-01-01",
+                    "probability_report_month": "2025-12",
+                    "probability_batch_id": "full-recurring-v2",
+                    "probability_batch_dir": "monthly-batch",
+                    "probability_batch_available": True,
+                    "detector_run_date": "2026-01-01",
+                    "detector_run_id": "daily-detector-v1",
+                    "detector_batch_id": "formal-v2",
+                    "detector_batch_dir": "detector-batch",
+                    "detector_run_available": True,
+                    "primary_horizon": "H6",
+                    "available_horizons": "H3;H6;H12",
+                }
+            ]
+        ),
+        observation_date="2026-01-01",
+    )
+
+    assert context["probability_batch_dir"] == "monthly-batch"
+    assert context["detector_batch_dir"] == "detector-batch"
 
 
 def make_minimal_stage_batch(path: Path) -> Path:

@@ -42,7 +42,7 @@ class MonthlyRiskRunner:
     def from_config_file(cls, config_path: str | Path) -> "MonthlyRiskRunner":
         return cls(load_run_config(config_path))
 
-    def run(self, use_rule_baseline: bool = False) -> dict[str, Any]:
+    def run(self, use_rule_baseline: bool = False, include_detector_evidence: bool = True) -> dict[str, Any]:
         cfg = self.config
         if cfg.report_type != "monthly":
             raise ValueError("risk_algorithm_core only supports monthly report_type.")
@@ -88,7 +88,7 @@ class MonthlyRiskRunner:
         selected, selection_report = BoundedCandidateSelector(cfg.worklist).select(score_frame, features)
         gate = DetectorQualityGate(cfg.detectors)
         gate_decisions = gate.evaluate(features, normalized)
-        detector_outputs = self._run_detectors(selected, features, gate_decisions)
+        detector_outputs = self._run_detectors(selected, features, gate_decisions) if include_detector_evidence else _empty_detector_outputs()
         disabled_notes = DisabledDetectorNoteBuilder().build(gate_decisions)
         status = StatusDecider().decide(selected, features, detector_outputs)
         risk_cards = build_risk_cards(status, detector_outputs)
@@ -112,6 +112,7 @@ class MonthlyRiskRunner:
             normalized_tables=normalized,
             artifact_metadata=artifact_metadata,
             detector_run_dates=_detector_run_dates(cfg),
+            include_detector_evidence=include_detector_evidence,
             write_parquet=write_parquet,
         )
         validate_result_batch(batch_dir)
@@ -204,6 +205,15 @@ def _detector_run_dates(cfg: MonthlyRiskRunConfig) -> list[str]:
     if configured:
         return [str(item) for item in configured]
     return [cfg.run_date]
+
+
+def _empty_detector_outputs() -> pd.DataFrame:
+    return pd.DataFrame(
+        columns=[
+            "candidate_id", "detector_name", "hit_flag", "severity", "confidence", "evidence_type",
+            "reason_code", "metric_name", "metric_value", "visibility_level", "caveat", "forbidden_claims",
+        ]
+    )
 
 
 def _recurring_features(features: pd.DataFrame) -> pd.DataFrame:

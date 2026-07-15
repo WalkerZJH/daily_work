@@ -22,6 +22,7 @@ from risk_model_core import (
     RiskResultRepository,
 )  # noqa: E402
 from risk_model_core.manifest import RiskResultManifest  # noqa: E402
+from app.services.result_batch_discovery import latest_monthly_batch
 
 USER_MANUFACTURER_SCOPE_PATH = PROJECT_ROOT / "config" / "user_manufacturer_scope.example.csv"
 
@@ -805,10 +806,7 @@ def build_default_top_entity_service() -> TopEntityService:
 def _default_batch_dir() -> str | Path | None:
     batch_root = os.getenv("RISK_RESULT_BATCH_ROOT")
     if batch_root:
-        manifests = sorted(Path(batch_root).glob("report_month=*/batch_id=*/manifest.json"))
-        if manifests:
-            return manifests[-1].parent
-        return None
+        return latest_monthly_batch(batch_root)
     return os.getenv("RISK_RESULT_BATCH_DIR")
 
 

@@ -19,6 +19,7 @@ from risk_model_core import (  # noqa: E402
     RiskResultRepository,
 )
 from risk_model_core.manifest import RiskResultManifest  # noqa: E402
+from app.services.result_batch_discovery import latest_detector_batch
 
 SOURCE = "risk_model_core"
 MISSING_WARNING = "DAILY_DETECTOR_RESULTS_NOT_AVAILABLE"
@@ -167,7 +168,6 @@ class DetectorResultService:
         drug_group: str | None = None,
         horizon: str | None = None,
         sort_by: str = "detector_score",
-        only_monthly_high_risk: bool | None = None,
         page: int = 1,
         page_size: int = 50,
     ) -> dict[str, Any]:
@@ -185,11 +185,8 @@ class DetectorResultService:
             "drug_group": drug_group,
         }
         clues = self._read_frame("list_daily_detector_clues", **filters)
-        if only_monthly_high_risk is not None and not clues.empty:
-            mask = clues.get(
-                "is_monthly_high_risk_entity", pd.Series(False, index=clues.index)
-            ).map(_bool)
-            clues = clues[mask.eq(bool(only_monthly_high_risk))]
+        if not clues.empty:
+            clues = clues[clues.get("hit_flag", pd.Series(False, index=clues.index)).map(_bool)]
         clues = _merge_entity_display_lookup(clues, self.repository)
         clues = _sort_clues(clues, sort_by)
         total = int(len(clues))
@@ -338,10 +335,7 @@ def build_default_detector_result_service() -> DetectorResultService:
 def _default_batch_dir() -> str | Path | None:
     batch_root = os.getenv("RISK_RESULT_BATCH_ROOT")
     if batch_root:
-        manifests = sorted(Path(batch_root).glob("report_month=*/batch_id=*/manifest.json"))
-        if manifests:
-            return manifests[-1].parent
-        return None
+        return latest_detector_batch(batch_root)
     return os.getenv("RISK_RESULT_BATCH_DIR")
 
 

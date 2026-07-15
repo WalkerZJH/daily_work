@@ -10,7 +10,7 @@ def test_daily_detector_clues_use_result_batch_display_lookup() -> None:
     with override_frontend_result_repository():
         response = TestClient(app).get(
             "/api/v1/daily-detector/clues",
-            params={"only_monthly_high_risk": False, "sort_by": "detector_score"},
+            params={"sort_by": "detector_score"},
         )
 
     assert response.status_code == 200

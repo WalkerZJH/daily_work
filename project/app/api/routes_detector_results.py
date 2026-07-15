@@ -102,7 +102,6 @@ def detector_clues(
     manufacturer_code: str | None = None,
     hospital_code: str | None = None,
     drug_group: str | None = None,
-    only_monthly_high_risk: bool | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
 ) -> dict:
@@ -114,7 +113,6 @@ def detector_clues(
         manufacturer_code=manufacturer_code,
         hospital_code=hospital_code,
         drug_group=drug_group,
-        only_monthly_high_risk=only_monthly_high_risk,
         page=page,
         page_size=page_size,
     )
@@ -134,7 +132,6 @@ def daily_detector_clues(
     sort_by: str = Query(default="detector_score"),
     detector_id: str | None = None,
     detector_family: str | None = None,
-    only_monthly_high_risk: bool | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
     limit: int | None = Query(default=None, ge=1, le=200),
@@ -161,7 +158,6 @@ def daily_detector_clues(
         sort_by=sort_by,
         detector_id=detector_id,
         detector_family=detector_family,
-        only_monthly_high_risk=only_monthly_high_risk,
         page=page,
         page_size=top_n or limit or page_size,
     ), context)

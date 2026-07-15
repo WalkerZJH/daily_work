@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import os
+from numbers import Number
 from pathlib import Path
 from typing import Any
 
@@ -73,14 +74,44 @@ def _normalize_frame_for_arrow(frame: pd.DataFrame) -> pd.DataFrame:
         series = out[column]
         if series.dtype != "object":
             continue
-        if not _contains_json_like_value(series):
+        if _contains_json_like_value(series):
+            out[column] = series.map(_stable_json_or_null)
             continue
-        out[column] = series.map(_stable_json_or_null)
+        out[column] = _normalize_mixed_scalar_series(series)
     return out
 
 
 def _contains_json_like_value(series: pd.Series) -> bool:
     return any(isinstance(value, (dict, list, tuple)) for value in series.dropna().head(1000))
+
+
+def _normalize_mixed_scalar_series(series: pd.Series) -> pd.Series:
+    """Keep numeric evidence numeric when its only text values are blank."""
+
+    values = [value for value in series.tolist() if not _is_missing(value)]
+    has_numeric = any(isinstance(value, Number) and not isinstance(value, bool) for value in values)
+    text_values = [value for value in values if isinstance(value, str)]
+    if not has_numeric or not text_values:
+        return series
+    if any(value.strip() for value in text_values):
+        return series.map(_stable_scalar_text_or_null)
+    return pd.to_numeric(series.map(lambda value: None if isinstance(value, str) and not value.strip() else value), errors="raise")
+
+
+def _is_missing(value: Any) -> bool:
+    if value is None or value is pd.NA:
+        return True
+    return isinstance(value, float) and pd.isna(value)
+
+
+def _stable_scalar_text_or_null(value: Any) -> str | None:
+    if _is_missing(value):
+        return None
+    if isinstance(value, str) and not value.strip():
+        return None
+    if isinstance(value, (dt.date, dt.datetime, pd.Timestamp)):
+        return value.isoformat()
+    return str(value)
 
 
 def _stable_json_or_null(value: Any) -> str | None:

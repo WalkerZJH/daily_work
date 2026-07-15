@@ -167,6 +167,21 @@ def test_clues_page_is_reserved_for_detector_inspection() -> None:
     assert "reserved exclusively for displaying entities hit by detector rules" in boundary
 
 
+def test_clues_page_does_not_expose_monthly_candidate_state() -> None:
+    clues_page = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue")
+
+    for forbidden in [
+        "only_monthly_high_risk",
+        "isMonthlyHighRiskEntity",
+        "monthlyRiskProbability",
+        "involvedAmount",
+        "filterTabs",
+        "next.set('id', clue.riskEntityId)",
+    ]:
+        assert forbidden not in clues_page
+    assert "clue-detail.html?${next.toString()}" in clues_page
+
+
 def test_workbench_and_clues_share_manual_query_context_without_duplicate_date_control() -> None:
     workbench = read(FRONTEND / "src" / "modules" / "monthly-workbench" / "MonthlyWorkbenchView.vue")
     clues_page = read(FRONTEND / "src" / "modules" / "risk-worklist" / "RiskEntityListView.vue")

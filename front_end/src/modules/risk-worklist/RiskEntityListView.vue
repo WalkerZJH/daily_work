@@ -37,20 +37,12 @@ const options = ref(createEmptyWorkbenchOptions(draftQuery))
 const manufacturerCatalog = ref([])
 const state = ref(createEmptyRuleCluesData(appliedQuery.value))
 const reportContext = ref(state.value.reportContext)
-const activeFilter = ref('all')
 const selectedDetectorFamily = ref(query.detectorFamily || 'all')
 const selectedDetectorId = ref(query.detectorId || 'all')
 const isLoading = ref(false)
 let requestSequence = 0
 let initializedManufacturer = Boolean(query.manufacturerCode)
 
-const filterTabs = [
-  { id: 'all', label: '全部规则线索' },
-  { id: 'monthly', label: '月报高风险' },
-  { id: 'rule_only', label: '仅规则命中' }
-]
-
-const selectedHorizonLabel = computed(() => options.value.horizonOptions.find((item) => item.id === query.horizon)?.label || query.horizon)
 const availableObservationDates = computed(() => options.value.dailyDetectorDateOptions?.map((item) => item.id).filter(Boolean) || [])
 const detectorFamilyOptions = computed(() => {
   const families = [...new Map((options.value.detectorCatalog || []).map((item) => [
@@ -65,16 +57,10 @@ const detectorIdOptions = computed(() => {
     : (options.value.detectorCatalog || []).filter((item) => item.detectorFamily === selectedDetectorFamily.value)
   return [{ id: 'all', label: '全部小类' }, ...catalog.map((item) => ({ id: item.detectorId, label: item.detectorName || item.detectorId }))]
 })
-const filteredClues = computed(() => {
-  const items = state.value.dailyDetectorClues || []
-  if (activeFilter.value === 'monthly') return items.filter((item) => item.isMonthlyHighRiskEntity)
-  if (activeFilter.value === 'rule_only') return items.filter((item) => !item.isMonthlyHighRiskEntity)
-  return items
-})
+const displayedClues = computed(() => state.value.dailyDetectorClues || [])
 
 function detailHref(clue) {
   const next = buildPersistentParams(appliedQuery.value, { clueId: clue.id })
-  if (clue.riskEntityId) next.set('id', clue.riskEntityId)
   return `clue-detail.html?${next.toString()}`
 }
 
@@ -171,7 +157,7 @@ watch(selectedDetectorId, () => {
     <div class="page-header control-header">
       <div>
         <h1>规则巡检结果</h1>
-        <div class="subtitle">{{ query.observationDate }} · 规则巡检 · {{ selectedHorizonLabel }}</div>
+        <div class="subtitle">{{ query.observationDate }} · 规则巡检</div>
       </div>
       <div class="workbench-controls">
         <label class="control-field">
@@ -193,35 +179,17 @@ watch(selectedDetectorId, () => {
       <div>
         <span class="eyebrow">规则巡检结果</span>
         <h2>全部规则线索</h2>
-        <p>
-          月报高风险对象上的规则命中会附着到风险卡；未进入月报高风险清单但被规则命中的对象，仅作为规则巡检结果展示。
-        </p>
+        <p>展示不同 detector 在指定观察上下文中命中的实体及其规则证据。</p>
       </div>
       <div class="batch-card">
         <div class="batch-row"><span>观察日期</span><strong>{{ query.observationDate }}</strong></div>
         <div class="batch-row"><span>规则命中数</span><strong>{{ state.dailyDetectorStatus.clueCount }}</strong></div>
-        <div class="batch-row"><span>已附着证据</span><strong>{{ state.dailyDetectorStatus.attachedHighRiskCount }}</strong></div>
         <div class="batch-row"><span>数据状态</span><strong>{{ state.dailyDetectorStatus.sourceLabel }}</strong></div>
       </div>
     </section>
 
     <SectionCard title="线索筛选" subtitle="按规则大类、小类与命中来源查看巡检结果">
       <div class="control-grid">
-        <div class="control-group">
-          <span class="control-label">预测窗口</span>
-          <div class="segmented-control">
-            <button
-              v-for="item in options.horizonOptions"
-              :key="item.id"
-              type="button"
-              class="segment-btn"
-              :class="{ active: query.horizon === item.id }"
-              @click="query.horizon = item.id"
-            >
-              {{ item.label }}
-            </button>
-          </div>
-        </div>
         <label class="control-field">
           <span>规则大类</span>
           <select v-model="selectedDetectorFamily">
@@ -234,25 +202,13 @@ watch(selectedDetectorId, () => {
             <option v-for="item in detectorIdOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
           </select>
         </label>
-        <div class="segmented-control">
-          <button
-            v-for="tab in filterTabs"
-            :key="tab.id"
-            type="button"
-            class="segment-btn"
-            :class="{ active: activeFilter === tab.id }"
-            @click="activeFilter = tab.id"
-          >
-            <strong>{{ tab.label }}</strong>
-          </button>
-        </div>
         <button type="button" class="btn btn-primary" :disabled="isLoading" @click="submitQuery">{{ isLoading ? '查询中…' : '查询' }}</button>
       </div>
     </SectionCard>
 
-    <SectionCard title="规则巡检结果" subtitle="展示 detector 命中的 entity；区分月报高风险与仅规则命中对象">
+    <SectionCard title="规则巡检结果" subtitle="展示 detector 命中的 entity 与规则证据">
       <div v-if="isLoading" class="empty">刷新中</div>
-      <div v-else-if="!filteredClues.length" class="empty">
+      <div v-else-if="!displayedClues.length" class="empty">
         <strong>{{ state.emptyTitle }}</strong>
         <p>{{ state.emptyMessage }}</p>
       </div>
@@ -260,22 +216,15 @@ watch(selectedDetectorId, () => {
         <table>
           <thead>
             <tr>
-              <th>线索类型</th>
               <th>医院 × 药品</th>
               <th>规则</th>
               <th>规则巡检分</th>
-              <th>月报信息</th>
               <th>证据摘要</th>
               <th>动作</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="clue in filteredClues" :key="clue.id">
-              <td>
-                <span class="status-badge" :class="clue.isMonthlyHighRiskEntity ? 'status-badge-error' : 'status-badge-neutral'">
-                  {{ clue.sourceTypeLabel }}
-                </span>
-              </td>
+            <tr v-for="clue in displayedClues" :key="clue.id">
               <td>
                 <strong>{{ clue.hospital }} × {{ clue.drug }}</strong>
                 <div class="muted">{{ clue.region }} · {{ clue.manufacturer }}</div>
@@ -287,13 +236,6 @@ watch(selectedDetectorId, () => {
               <td>
                 <strong>{{ clue.detectorScoreText }}</strong>
                 <div class="muted">{{ clue.detectorScoreLabel }}</div>
-              </td>
-              <td>
-                <template v-if="clue.isMonthlyHighRiskEntity">
-                  <span>丢失概率 {{ clue.monthlyRiskProbabilityText }}</span>
-                  <div class="muted">涉及金额 {{ clue.involvedAmountText }}</div>
-                </template>
-                <span v-else class="muted">仅规则命中，按 detector 证据单独观察</span>
               </td>
               <td class="narrative-cell">
                 <strong>{{ clue.rootCauseLabel }}</strong>

@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 import datetime as dt
+import os
+import uuid
 
 import pandas as pd
 
@@ -31,11 +33,15 @@ def assemble_result_batch(
     normalized_tables: dict[str, pd.DataFrame] | None = None,
     artifact_metadata: dict[str, Any] | None = None,
     detector_run_dates: list[str] | None = None,
+    include_detector_evidence: bool = True,
     write_parquet: bool = True,
 ) -> Path:
     batch_id = f"{report_month}-monthly-risk-algorithm-{run_id}"
-    batch_dir = Path(output_root) / f"report_month={report_month}" / f"batch_id={batch_id}"
-    batch_dir.mkdir(parents=True, exist_ok=True)
+    final_batch_dir = Path(output_root) / f"report_month={report_month}" / f"batch_id={batch_id}"
+    if final_batch_dir.exists():
+        raise FileExistsError(f"Refusing to overwrite existing formal result batch: {final_batch_dir}")
+    batch_dir = final_batch_dir.parent / f".{final_batch_dir.name}.staging-{uuid.uuid4().hex}"
+    batch_dir.mkdir(parents=True, exist_ok=False)
 
     risk_entities = _build_risk_entities(candidate_status, report_month)
     full_recurring_count = int(
@@ -64,13 +70,17 @@ def assemble_result_batch(
         raw_batch_id,
         additional_entities=feature_frame,
     )
-    detector_tables = _build_detector_tables_for_dates(
-        risk_entities=risk_entities,
-        scan_features=feature_frame,
-        report_month=report_month,
-        run_dates=detector_run_dates or [dt.date.today().isoformat()],
-        source_raw_batch_id=raw_batch_id,
-        source_result_batch_id=batch_id,
+    detector_tables = (
+        _build_detector_tables_for_dates(
+            risk_entities=risk_entities,
+            scan_features=feature_frame,
+            report_month=report_month,
+            run_dates=detector_run_dates or [dt.date.today().isoformat()],
+            source_raw_batch_id=raw_batch_id,
+            source_result_batch_id=batch_id,
+        )
+        if include_detector_evidence
+        else {}
     )
     horizon_profiles = _build_risk_entity_horizon_profiles(
         risk_entities,
@@ -135,7 +145,8 @@ def assemble_result_batch(
             "daily_detector_runs": f"daily_detector_runs.{data_backend}",
             "daily_detector_clues": f"daily_detector_clues.{data_backend}",
             "high_risk_detector_evidence": f"high_risk_detector_evidence.{data_backend}",
-        },
+        } if include_detector_evidence else {},
+        "detector_evidence_available": bool(include_detector_evidence),
         "detector_score_probability_interpretation": "detector_score_is_not_probability",
         "detector_default_scope": "recurring_candidates",
         "candidate_pool_policy": "full_recurring_universe",
@@ -182,12 +193,13 @@ def assemble_result_batch(
             "Top N is a presentation limit, not a candidate admission rule",
             "business review required",
             "raw_orders_mode_ready=false; current formal readiness is conditional_fact_mode_ready",
-            "daily detector tables are materialized for recurring candidate detail evidence only",
+            "daily detector tables are materialized for recurring candidate detail evidence only" if include_detector_evidence else "daily detector evidence is published independently and does not gate monthly candidates",
         ],
     }
     write_manifest(batch_dir, manifest)
     validate_result_batch(batch_dir)
-    return batch_dir
+    os.replace(batch_dir, final_batch_dir)
+    return final_batch_dir
 
 
 def _build_detector_tables_for_dates(

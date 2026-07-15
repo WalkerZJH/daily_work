@@ -376,7 +376,7 @@ class ParquetRiskResultRepository(RiskResultRepository):
     def open_detector_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
         if not context.get("detector_run_available"):
             raise FileNotFoundError("Detector run is unavailable for this observation context.")
-        return ParquetRiskResultRepository(str(context["probability_batch_dir"]))
+        return ParquetRiskResultRepository(str(context.get("detector_batch_dir") or context["probability_batch_dir"]))
 
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         clean = page_name[:-5] if page_name.endswith(".json") else page_name
@@ -910,6 +910,8 @@ def resolve_observation_context_from_rows(
             "probability_batch_available": False,
             "detector_run_date": detector_run_date,
             "detector_run_id": None,
+            "detector_batch_id": None,
+            "detector_batch_dir": None,
             "detector_run_available": False,
             "context_status": "no_available_context",
             "manual_selection_required": True,
@@ -999,6 +1001,8 @@ def resolve_observation_context_from_rows(
         "probability_batch_available": probability_available,
         "detector_run_date": detector_run_date,
         "detector_run_id": str(source.get("detector_run_id") or ""),
+        "detector_batch_id": str(source.get("detector_batch_id") or "") if detector_available else None,
+        "detector_batch_dir": str(source.get("detector_batch_dir") or "") if detector_available else None,
         "detector_run_available": detector_available,
         "context_status": status,
         "manual_selection_required": manual,
