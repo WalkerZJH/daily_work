@@ -8,6 +8,7 @@ config_update_semantics:
   trigger_new_detector_run_for_immediate_effect: true
 detectors:
   purchase_interval_ipi:
+    version: purchase_interval_ipi_v1
     enabled: true
     status: implemented
     method: median_mad_robust_z_v1
@@ -17,6 +18,7 @@ detectors:
     min_purchase_count: 4
     confidence_n: 12
   purchase_quantity_trend:
+    version: purchase_quantity_trend_v1
     enabled: true
     status: implemented
     method: simplified_ratio_v1
@@ -26,6 +28,7 @@ detectors:
     min_baseline_quantity: 1
     confidence_n: 6
   purchase_frequency_drop:
+    version: purchase_frequency_drop_v1
     enabled: true
     status: implemented
     method: recent_base_rate_ratio_v1
@@ -35,12 +38,14 @@ detectors:
     min_base_rate: 1.0
     confidence_base_rate: 2.0
   sku_shrink:
+    version: sku_shrink_v1
     enabled: false
     status: blocked_by_missing_domain_concept
     method: not_applicable_without_product_line_domain
     sku_shrink_ratio: 0.34
     min_baseline_sku_count: 2
   fulfillment_gap:
+    version: fulfillment_gap_v1
     enabled: false
     status: blocked_by_data
     reject_days: 7
@@ -48,8 +53,10 @@ detectors:
     fill_ok: 0.8
     sys_min_hospital: 5
   price_competition:
+    version: price_competition_v1
     enabled: false
     status: not_implemented
   peer_contrast:
+    version: peer_contrast_v1
     enabled: false
     status: reserved

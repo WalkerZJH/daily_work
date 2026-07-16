@@ -21,12 +21,13 @@ def monthly_batch_dirs(batch_root: str | Path = DEFAULT_BATCH_ROOT) -> list[Path
 
 
 def detector_batch_dirs(batch_root: str | Path = DEFAULT_BATCH_ROOT) -> list[Path]:
-    """Return only published independent, date-partitioned Detector batches."""
+    """Return published aggregate and detector_id component batches."""
     root = Path(batch_root)
-    return [
-        manifest.parent
-        for manifest in sorted(root.glob("detector_run_date=*/batch_id=*/manifest.json"))
+    manifests = [
+        *root.glob("detector_run_date=*/batch_id=*/manifest.json"),
+        *root.glob("detector_run_date=*/detector_id=*/batch_id=*/manifest.json"),
     ]
+    return [manifest.parent for manifest in sorted(manifests)]
 
 
 def read_manifest(batch_dir: str | Path) -> dict[str, Any]:

@@ -9,7 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from risk_model_core import ParquetRiskResultRepository, RiskResultRepository  # noqa: E402
+from risk_model_core import ParquetRiskResultRepository, RiskResultRepository, open_detector_result_repository  # noqa: E402
 from app.services.result_batch_discovery import latest_monthly_batch
 
 
@@ -85,7 +85,7 @@ class ReportContextService:
         if not path_text:
             return None
         path = _resolve_batch_path(path_text)
-        return ParquetRiskResultRepository(path) if path.exists() else None
+        return open_detector_result_repository(path) if path.exists() else None
 
     def _resolve_observation_context(
         self,

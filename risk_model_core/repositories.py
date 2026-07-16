@@ -397,7 +397,7 @@ class ParquetRiskResultRepository(RiskResultRepository):
     def open_detector_repository(self, context: dict[str, Any]) -> "ParquetRiskResultRepository":
         if not context.get("detector_run_available"):
             raise FileNotFoundError("Detector run is unavailable for this observation context.")
-        return ParquetRiskResultRepository(str(context.get("detector_batch_dir") or context["probability_batch_dir"]))
+        return open_detector_result_repository(str(context.get("detector_batch_dir") or context["probability_batch_dir"]))
 
     def get_page_payload(self, page_name: str) -> dict[str, Any]:
         clean = page_name[:-5] if page_name.endswith(".json") else page_name
@@ -410,6 +410,52 @@ class ParquetRiskResultRepository(RiskResultRepository):
                 with open(long_path(path), encoding="utf-8") as fh:
                     return json.load(fh)
         raise FileNotFoundError(f"Page payload not found: {page_name}")
+
+
+class CompositeDetectorResultRepository(ParquetRiskResultRepository):
+    """Present the latest immutable component of each detector_id as one date view."""
+
+    def __init__(self, date_partition: str | Path):
+        self.date_partition = Path(date_partition)
+        selected: dict[str, Path] = {}
+        for manifest_path in sorted(
+            self.date_partition.glob("detector_id=*/batch_id=*/manifest.json"), reverse=True
+        ):
+            detector_id = manifest_path.parent.parent.name.removeprefix("detector_id=")
+            selected.setdefault(detector_id, manifest_path.parent)
+        if not selected:
+            raise FileNotFoundError(f"No Detector component batches found: {self.date_partition}")
+        self.component_batch_dirs = [selected[key] for key in sorted(selected)]
+        super().__init__(self.component_batch_dirs[0])
+
+    def load_table(self, name: str) -> pd.DataFrame:
+        if name not in {"detector_catalog", "daily_detector_runs", "daily_detector_clues", "high_risk_detector_evidence"}:
+            return super().load_table(name)
+        frames = [pd.read_parquet(batch / f"{name}.parquet") for batch in self.component_batch_dirs]
+        return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+    def get_daily_detector_clue_by_id(
+        self, detector_clue_id: str, *, columns: list[str] | None = None
+    ) -> dict[str, Any] | None:
+        found = []
+        for batch in self.component_batch_dirs:
+            repository = ParquetRiskResultRepository(batch)
+            row = repository.get_daily_detector_clue_by_id(detector_clue_id, columns=columns)
+            if row is not None:
+                found.append(row)
+        if len(found) > 1:
+            raise ValueError(f"Duplicate detector_clue_id across components: {detector_clue_id}")
+        return found[0] if found else None
+
+    def load_entity_display_lookup(self, **filters: Any) -> pd.DataFrame:
+        return pd.DataFrame()
+
+
+def open_detector_result_repository(path: str | Path) -> ParquetRiskResultRepository:
+    candidate = Path(path)
+    if (candidate / "manifest.json").is_file():
+        return ParquetRiskResultRepository(candidate)
+    return CompositeDetectorResultRepository(candidate)
 
 
 class InMemoryRiskResultRepository(RiskResultRepository):

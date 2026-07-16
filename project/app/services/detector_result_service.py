@@ -17,6 +17,7 @@ from risk_model_core import (  # noqa: E402
     InMemoryRiskResultRepository,
     ParquetRiskResultRepository,
     RiskResultRepository,
+    open_detector_result_repository,
 )
 from risk_model_core.manifest import RiskResultManifest  # noqa: E402
 from app.services.result_batch_discovery import latest_detector_batch
@@ -74,20 +75,31 @@ class DetectorResultService:
                 "warnings": [MISSING_WARNING],
             }
         latest = _latest_run(runs)
+        latest_date = _text(latest.get("run_date"))
+        latest_runs = runs[
+            runs.get("run_date", pd.Series("", index=runs.index)).astype(str).eq(latest_date)
+        ]
         clues = self._read_frame(
             "list_daily_detector_clues",
-            detector_run_id=_text(latest.get("detector_run_id")) or None,
+            run_date=latest_date or None,
             manufacturer_code=manufacturer_code,
         )
+        run_ids = [_text(value) for value in latest_runs.get("detector_run_id", pd.Series(dtype=str)) if _text(value)]
+        config_versions = sorted({_text(value) for value in latest_runs.get("detector_config_version", pd.Series(dtype=str)) if _text(value)})
+        enabled = []
+        for value in latest_runs.get("enabled_detectors", pd.Series(dtype=str)):
+            enabled.extend(item for item in _text(value).split(",") if item)
         return {
             "ready": True,
-            "run_date": _text(latest.get("run_date")),
-            "detector_run_id": _text(latest.get("detector_run_id")) or None,
-            "detector_config_version": _text(latest.get("detector_config_version")) or None,
-            "clue_count": int(len(clues)) if manufacturer_code else _int(latest.get("clue_count")),
-            "attached_high_risk_count": _int(latest.get("attached_high_risk_count")),
+            "run_date": latest_date,
+            "detector_run_id": ";".join(run_ids) or None,
+            "detector_config_version": ";".join(config_versions) or None,
+            "clue_count": int(len(clues)),
+            "attached_high_risk_count": int(
+                pd.to_numeric(latest_runs.get("attached_high_risk_count", pd.Series(dtype=float)), errors="coerce").fillna(0).sum()
+            ),
             "highest_detector_score": _highest_detector_score(clues),
-            "enabled_detectors": _clean_value(latest.get("enabled_detectors")),
+            "enabled_detectors": ",".join(dict.fromkeys(enabled)) or None,
             "config_effective_note": CONFIG_EDIT_SEMANTICS,
             "source": SOURCE,
             "warnings": [],
@@ -329,7 +341,7 @@ class DetectorResultService:
 def build_default_detector_result_service() -> DetectorResultService:
     batch_dir = _default_batch_dir()
     if batch_dir:
-        return DetectorResultService(ParquetRiskResultRepository(batch_dir))
+        return DetectorResultService(open_detector_result_repository(batch_dir))
     return DetectorResultService(_empty_repository())
 
 

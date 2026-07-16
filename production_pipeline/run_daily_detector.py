@@ -13,6 +13,7 @@ import pandas as pd
 
 from risk_algorithm_core.raw_input import read_raw_orders_from_batch
 from risk_algorithm_core.daily_detector_runner import build_daily_detector_tables
+from risk_algorithm_core.detector_config import load_daily_detector_config
 from risk_result_contracts import write_production_parquet
 
 from .detector_input_snapshot import build_detector_input_snapshot_from_prepared, prepare_detector_orders
@@ -35,11 +36,35 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--observation-date", required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--schema-mapping-path")
+    parser.add_argument(
+        "--detector-id",
+        action="append",
+        dest="detector_ids",
+        help="Publish only this Detector component; repeat to publish multiple independent components.",
+    )
+    parser.add_argument("--detector-config", default="configs/risk_algorithm_core/daily_detector_rules.yaml")
     args = parser.parse_args(argv)
     observation_date = _normalize_observation_date(args.observation_date)
     raw_manifest, orders = read_raw_orders_from_batch(args.raw_batch_dir, args.schema_mapping_path)
+    prepared_orders = prepare_detector_orders(orders)
+    if args.detector_ids:
+        snapshot = build_detector_input_snapshot_from_prepared(prepared_orders, observation_date)
+        results = [
+            materialize_detector_component_batch(
+                snapshot_frame=snapshot,
+                output_root=args.output_root,
+                observation_date=observation_date,
+                detector_id=detector_id,
+                run_id=args.run_id,
+                raw_batch_id=raw_manifest.raw_batch_id,
+                detector_config_path=args.detector_config,
+            )
+            for detector_id in args.detector_ids
+        ]
+        print(json.dumps({"stage": "daily_detector_components", "status": "completed", "results": results}, ensure_ascii=False))
+        return 0
     result = materialize_daily_detector_batch(
-        prepared_orders=prepare_detector_orders(orders),
+        prepared_orders=prepared_orders,
         output_root=args.output_root,
         observation_date=observation_date,
         run_id=args.run_id,
@@ -47,6 +72,75 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(json.dumps(result, ensure_ascii=False))
     return 0
+
+
+def materialize_detector_component_batch(
+    *,
+    snapshot_frame: pd.DataFrame,
+    output_root: str | Path,
+    observation_date: str,
+    detector_id: str,
+    run_id: str,
+    raw_batch_id: str,
+    detector_config_path: str | Path | None = None,
+) -> dict[str, object]:
+    """Publish one immutable Detector component without touching its peers."""
+    config = load_daily_detector_config(detector_config_path)
+    detector_version = config.detector_version(detector_id)
+    batch_dir = _published_component_batch_dir(
+        output_root, observation_date, detector_id, detector_version, run_id
+    )
+    if batch_dir.exists():
+        raise FileExistsError(f"Refusing to overwrite published Detector component: {batch_dir}")
+    batch_dir.parent.mkdir(parents=True, exist_ok=True)
+    staging_dir = Path(output_root) / ".detector_staging" / uuid.uuid4().hex
+    try:
+        staging_dir.mkdir(parents=True, exist_ok=False)
+        tables = build_daily_detector_tables(
+            risk_entities=pd.DataFrame(),
+            scan_features=snapshot_frame,
+            report_month=_expected_probability_report_month(observation_date),
+            run_date=observation_date,
+            source_raw_batch_id=raw_batch_id,
+            source_result_batch_id="",
+            detector_config=config,
+            detector_ids=[detector_id],
+        )
+        for table_name in DETECTOR_TABLE_NAMES:
+            write_production_parquet(tables[table_name], staging_dir / f"{table_name}.parquet")
+        batch_id = batch_dir.name.removeprefix("batch_id=")
+        payload = {
+            "batch_id": batch_id,
+            "result_batch_id": batch_id,
+            "report_type": "daily_detector_component",
+            "schema_version": "daily_detector_component_v1",
+            "data_backend": "parquet",
+            "observation_date": observation_date,
+            "detector_run_date": observation_date,
+            "expected_probability_report_month": _expected_probability_report_month(observation_date),
+            "detector_id": detector_id,
+            "detector_version": detector_version,
+            "detector_run_id": str(tables["daily_detector_runs"].iloc[0]["detector_run_id"]),
+            "source_raw_batch_id": raw_batch_id,
+            "detector_tables": {name: f"{name}.parquet" for name in DETECTOR_TABLE_NAMES},
+            "detector_score_probability_interpretation": "detector_score_is_not_probability",
+            "caveats": ["detector_score_is_not_probability", "daily_detector_uses_raw_purchase_facts_only"],
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        (staging_dir / "manifest.json").write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+        _publish_staging_directory(staging_dir, batch_dir)
+    except Exception:
+        shutil.rmtree(staging_dir, ignore_errors=True)
+        raise
+    return {
+        "detector_id": detector_id,
+        "detector_version": detector_version,
+        "observation_date": observation_date,
+        "batch_dir": str(batch_dir).replace("\\", "/"),
+        "clue_count": len(tables["daily_detector_clues"]),
+    }
 
 
 def materialize_daily_detector_batch(
@@ -128,6 +222,25 @@ def _published_batch_dir(output_root: str | Path, observation_date: str, run_id:
         raise ValueError("--run-id must be a non-empty path-safe identifier")
     batch_id = f"{observation_date}-daily-detector-fact-{normalized_run_id}"
     return Path(output_root) / f"detector_run_date={observation_date}" / f"batch_id={batch_id}"
+
+
+def _published_component_batch_dir(
+    output_root: str | Path,
+    observation_date: str,
+    detector_id: str,
+    detector_version: str,
+    run_id: str,
+) -> Path:
+    for label, value in {"detector_id": detector_id, "detector_version": detector_version, "run_id": run_id}.items():
+        if not str(value).strip() or any(character in str(value) for character in "\\/:"):
+            raise ValueError(f"{label} must be a non-empty path-safe identifier")
+    batch_id = f"{observation_date}-{run_id}"
+    return (
+        Path(output_root)
+        / f"detector_run_date={observation_date}"
+        / f"detector_id={detector_id}"
+        / f"batch_id={batch_id}"
+    )
 
 
 def _write_manifest(

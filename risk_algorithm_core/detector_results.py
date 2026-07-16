@@ -18,6 +18,8 @@ DETECTOR_CATALOG_COLUMNS = [
 
 DAILY_DETECTOR_RUN_COLUMNS = [
     "detector_run_id",
+    "detector_id",
+    "detector_version",
     "run_date",
     "report_month",
     "source_raw_batch_id",

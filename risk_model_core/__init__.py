@@ -13,12 +13,13 @@ from .domain import (
     WorkOrderReserved,
 )
 from .manifest import RiskResultManifest, load_manifest, validate_manifest
-from .repositories import ClickHouseRiskResultRepository, InMemoryRiskResultRepository, ParquetRiskResultRepository, RiskResultRepository
+from .repositories import ClickHouseRiskResultRepository, CompositeDetectorResultRepository, InMemoryRiskResultRepository, ParquetRiskResultRepository, RiskResultRepository, open_detector_result_repository
 from .services import DetectorResultService, PermissionScopeService, ProofCaseService, ReportService, RiskCardService, RiskQueryService
 
 __all__ = [
     "BusinessCopyRenderer",
     "ClickHouseRiskResultRepository",
+    "CompositeDetectorResultRepository",
     "DrugAggregate",
     "HospitalAggregate",
     "InMemoryRiskResultRepository",
@@ -41,4 +42,5 @@ __all__ = [
     "load_manifest",
     "validate_manifest",
     "validate_no_forbidden_claims",
+    "open_detector_result_repository",
 ]

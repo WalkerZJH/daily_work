@@ -19,6 +19,19 @@ class DailyDetectorConfig:
     detectors: dict[str, dict[str, Any]]
     raw: dict[str, Any]
 
+    def detector_version(self, detector_id: str) -> str:
+        detector = self.detectors.get(detector_id)
+        if detector is None:
+            raise KeyError(f"Unknown detector_id: {detector_id}")
+        return str(detector.get("version") or f"{detector_id}_v1")
+
+    def runnable_detector_ids(self) -> list[str]:
+        return [
+            detector_id
+            for detector_id, detector in self.detectors.items()
+            if bool(detector.get("enabled")) and str(detector.get("status")) == "implemented"
+        ]
+
 
 def load_daily_detector_config(path: str | Path | None = None) -> DailyDetectorConfig:
     config_path = Path(path or DEFAULT_DAILY_DETECTOR_CONFIG)

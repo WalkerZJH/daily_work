@@ -35,16 +35,21 @@ def build_daily_detector_tables(
     source_raw_batch_id: str = "",
     source_result_batch_id: str = "",
     detector_config: DailyDetectorConfig | None = None,
+    detector_ids: list[str] | None = None,
 ) -> dict[str, pd.DataFrame]:
     config = detector_config or load_daily_detector_config()
     run_date = run_date or dt.date.today().isoformat()
     created_at = dt.datetime.now(dt.UTC).isoformat()
-    detector_run_id = f"{report_month}-{config.config_version}-{run_date}"
+    selected_ids = detector_ids or config.runnable_detector_ids()
+    unknown = sorted(set(selected_ids) - set(config.detectors))
+    if unknown:
+        raise ValueError(f"Unknown detector_id values: {unknown}")
+    detector_run_id = _detector_run_id(report_month, run_date, config, selected_ids)
     catalog = build_detector_catalog(config)
     enabled_catalog = catalog[
         catalog["enabled_by_default"].astype(bool)
         & catalog["status"].isin(["implemented"])
-        & catalog["detector_id"].isin(["purchase_interval_ipi", "purchase_quantity_trend", "purchase_frequency_drop"])
+        & catalog["detector_id"].isin(selected_ids)
     ].copy()
 
     monthly_map = _monthly_entity_map(risk_entities)
@@ -86,11 +91,13 @@ def build_daily_detector_tables(
         [
             {
                 "detector_run_id": detector_run_id,
+                "detector_id": selected_ids[0] if len(selected_ids) == 1 else "",
+                "detector_version": config.detector_version(selected_ids[0]) if len(selected_ids) == 1 else config.config_version,
                 "run_date": run_date,
                 "report_month": report_month,
                 "source_raw_batch_id": source_raw_batch_id,
                 "source_result_batch_id": source_result_batch_id,
-                "detector_config_version": config.config_version,
+                "detector_config_version": config.detector_version(selected_ids[0]) if len(selected_ids) == 1 else config.config_version,
                 "enabled_detectors": ",".join(enabled_catalog["detector_id"].astype(str).tolist()),
                 "scanned_entity_count": int(_scan_entity_count(scan_features)),
                 "clue_count": int(len(clues)),
@@ -101,8 +108,9 @@ def build_daily_detector_tables(
             }
         ]
     )
+    output_catalog = catalog[catalog["detector_id"].isin(selected_ids)].copy() if detector_ids is not None else catalog
     return {
-        "detector_catalog": _ensure_columns(catalog, DETECTOR_CATALOG_COLUMNS),
+        "detector_catalog": _ensure_columns(output_catalog, DETECTOR_CATALOG_COLUMNS),
         "daily_detector_runs": _ensure_columns(runs, DAILY_DETECTOR_RUN_COLUMNS),
         "daily_detector_clues": clues,
         "high_risk_detector_evidence": evidence,
@@ -122,20 +130,32 @@ def _build_clues(
         return pd.DataFrame(columns=DAILY_DETECTOR_CLUE_COLUMNS)
     rows: list[dict[str, Any]] = []
     enabled_ids = set(enabled_catalog["detector_id"].astype(str))
+    evaluators = {
+        "purchase_interval_ipi": _interval_result,
+        "purchase_quantity_trend": _quantity_result,
+        "purchase_frequency_drop": _frequency_result,
+    }
+    missing = sorted(enabled_ids - set(evaluators))
+    if missing:
+        raise ValueError(f"Enabled detectors have no registered evaluator: {missing}")
     for row in scan_features.to_dict(orient="records"):
-        if "purchase_interval_ipi" in enabled_ids:
-            result = _interval_result(row, config.detectors.get("purchase_interval_ipi", {}))
-            if result["detector_score"] > 0:
-                rows.append(_clue_row(row, monthly_map, result, detector_run_id, run_date, created_at))
-        if "purchase_quantity_trend" in enabled_ids:
-            result = _quantity_result(row, config.detectors.get("purchase_quantity_trend", {}))
-            if result["detector_score"] > 0:
-                rows.append(_clue_row(row, monthly_map, result, detector_run_id, run_date, created_at))
-        if "purchase_frequency_drop" in enabled_ids:
-            result = _frequency_result(row, config.detectors.get("purchase_frequency_drop", {}))
+        for detector_id in enabled_catalog["detector_id"].astype(str):
+            result = evaluators[detector_id](row, config.detectors[detector_id])
             if result["detector_score"] > 0:
                 rows.append(_clue_row(row, monthly_map, result, detector_run_id, run_date, created_at))
     return pd.DataFrame(rows)
+
+
+def _detector_run_id(
+    report_month: str,
+    run_date: str,
+    config: DailyDetectorConfig,
+    detector_ids: list[str],
+) -> str:
+    if len(detector_ids) == 1:
+        detector_id = detector_ids[0]
+        return f"{report_month}-{detector_id}-{config.detector_version(detector_id)}-{run_date}"
+    return f"{report_month}-{config.config_version}-{run_date}"
 
 
 def _interval_result(row: dict[str, Any], cfg: dict[str, Any]) -> dict[str, Any]:

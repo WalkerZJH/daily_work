@@ -26,6 +26,15 @@ def latest_detector_batch(root: str | Path) -> Path | None:
     root_path = Path(root)
     if not root_path.exists():
         return None
+    for date_partition in sorted(root_path.glob("detector_run_date=*"), reverse=True):
+        component_manifests = list(date_partition.glob("detector_id=*/batch_id=*/manifest.json"))
+        if any(
+            (manifest := _read_manifest(path)) is not None
+            and manifest.get("report_type") == "daily_detector_component"
+            and _has_detector_tables(path.parent, manifest)
+            for path in component_manifests
+        ):
+            return date_partition
     for manifest_path in sorted(
         root_path.glob("detector_run_date=*/batch_id=*/manifest.json"), reverse=True
     ):

@@ -68,14 +68,16 @@ They are internal or deprecated for customer pages and should not be required by
 
 ## Detector Semantics
 
-Detector tables remain read-only result-batch tables:
+Detector tables remain read-only serving tables, but they are not embedded in monthly result batches. They are
+published independently under the exact observation date and `detector_id` component:
 
 ```text
-detector_catalog
-daily_detector_runs
-daily_detector_clues
-high_risk_detector_evidence
+detector_run_date=YYYY-MM-DD/detector_id=<detector_id>/batch_id=...
 ```
+
+`risk_model_core` composes the latest immutable component for each `detector_id` into one exact-date view.
+Updating a Detector must not trigger monthly prediction or rerun unrelated Detectors. Operational commands and
+safety rules live only in `risk_model_core/DETECTOR_PRODUCTION_BOUNDARY.md`.
 
 `detector_score` is a rule inspection score. It is not a churn probability, not a model probability, and not a replacement for monthly `risk_probability`.
 

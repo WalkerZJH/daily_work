@@ -114,6 +114,7 @@ def _discover_monthly_batches(root: Path) -> dict[str, dict[str, Any]]:
 
 def _discover_detector_batches(root: Path) -> dict[str, dict[str, Any]]:
     selected: dict[str, dict[str, Any]] = {}
+    components: dict[str, dict[str, dict[str, Any]]] = {}
     for batch_dir in detector_batch_dirs(root):
         manifest = read_manifest(batch_dir)
         declared = manifest.get("detector_tables")
@@ -123,6 +124,16 @@ def _discover_detector_batches(root: Path) -> dict[str, dict[str, Any]]:
         if runs.empty:
             continue
         for run_date, rows in runs.groupby(runs["run_date"].astype(str), sort=False):
+            if manifest.get("report_type") == "daily_detector_component":
+                detector_id = str(manifest.get("detector_id") or "")
+                if not detector_id:
+                    continue
+                by_detector = components.setdefault(run_date, {})
+                item = {"batch_dir": batch_dir, "manifest": manifest,
+                        "detector_run_id": str(rows.iloc[0].get("detector_run_id") or "")}
+                if detector_id not in by_detector or batch_dir.name > by_detector[detector_id]["batch_dir"].name:
+                    by_detector[detector_id] = item
+                continue
             item = {
                 "batch_dir": batch_dir,
                 "manifest": manifest,
@@ -130,6 +141,20 @@ def _discover_detector_batches(root: Path) -> dict[str, dict[str, Any]]:
             }
             if run_date not in selected or batch_dir.name > selected[run_date]["batch_dir"].name:
                 selected[run_date] = item
+    for run_date, by_detector in components.items():
+        items = [by_detector[key] for key in sorted(by_detector)]
+        date_partition = items[0]["batch_dir"].parent.parent
+        selected[run_date] = {
+            "batch_dir": date_partition,
+            "component_batch_dirs": [item["batch_dir"] for item in items],
+            "manifest": {
+                "batch_id": f"detector-components-{run_date}",
+                "result_batch_id": f"detector-components-{run_date}",
+                "report_type": "daily_detector_components",
+                "caveats": sorted({c for item in items for c in item["manifest"].get("caveats", [])}),
+            },
+            "detector_run_id": ";".join(item["detector_run_id"] for item in items),
+        }
     return selected
 
 
@@ -204,6 +229,16 @@ def _monthly_manufacturers(monthly: dict[str, Any]) -> list[dict[str, str]]:
 
 
 def _detector_manufacturers(detector: dict[str, Any]) -> list[dict[str, str]]:
+    if detector.get("component_batch_dirs"):
+        frames = [
+            _read_columns(batch_dir / "daily_detector_clues.parquet", ["manufacturer_code"])
+            for batch_dir in detector["component_batch_dirs"]
+        ]
+        clues = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=["manufacturer_code"])
+        return [
+            {"manufacturer_code": code, "manufacturer_display_name": ""}
+            for code in sorted(set(clues.get("manufacturer_code", pd.Series(dtype=str)).dropna().astype(str)))
+        ]
     declared = detector["manifest"]["detector_tables"]
     clues = _read_columns(detector["batch_dir"] / declared["daily_detector_clues"], ["manufacturer_code"])
     return [
