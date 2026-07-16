@@ -120,6 +120,28 @@ def read_raw_input_batch(raw_batch_dir: str | Path, schema_mapping_path: str | P
     return RawInputBatch(manifest=manifest, tables=tables)
 
 
+def read_raw_orders_from_batch(
+    raw_batch_dir: str | Path,
+    schema_mapping_path: str | Path | None = None,
+) -> tuple[RawInputManifest, pd.DataFrame]:
+    """Read and validate only the purchase facts needed by the daily Detector.
+
+    This deliberately avoids loading optional raw tables used by monthly feature
+    engineering.  It is not a monthly-runner shortcut and has no monthly batch
+    dependency.
+    """
+    manifest = load_raw_manifest(raw_batch_dir)
+    mapping = load_schema_mapping(schema_mapping_path)
+    reader: RawTableReader
+    if manifest.source_system.lower() == "clickhouse" or manifest.table_format.lower() == "clickhouse":
+        reader = ClickHouseRawTableReader()
+    else:
+        reader = LocalRawTableReader(raw_batch_dir)
+    orders = apply_schema_mapping(reader.read(manifest, "orders"), "orders", mapping)
+    validate_raw_tables({"orders": orders})
+    return manifest, orders
+
+
 def _clickhouse_query_for_table(manifest: RawInputManifest, table_name: str) -> str:
     queries = manifest.raw.get("table_queries", {})
     template = queries.get(table_name)

@@ -46,17 +46,18 @@ def test_frontend_risk_entities_and_detail_expose_horizons_detectors_and_explana
       assert profile["detector_narrative"]
 
 
-def test_frontend_oneshot_returns_repurchase_propensity_payload() -> None:
+def test_frontend_oneshot_never_exposes_prediction_fields() -> None:
     response = TestClient(app).get("/api/v1/oneshot-terminals")
 
     assert response.status_code == 200
     payload = response.json()
 
-    assert payload["summary"]["oneshot_count"] == len(payload["items"])
-    assert payload["items"]
-    first = payload["items"][0]
-    assert 0 <= first["repurchase_propensity"] <= 1
-    assert "expected_repurchase_amount" in first
+    assert payload["summary"]["oneshot_count"] == payload["total"]
+    forbidden = {"repurchase_propensity", "expected_repurchase_amount", "priority", "ranking_basis"}
+    assert all(forbidden.isdisjoint(item) for item in payload["items"])
+    if payload["ready"] is False:
+        assert payload["error_code"] == "ONESHOT_RESULT_NOT_AVAILABLE"
+        assert payload["items"] == []
 
 
 def test_removed_watchlist_page_api_is_not_exposed() -> None:

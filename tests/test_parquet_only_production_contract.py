@@ -78,18 +78,20 @@ def test_display_lookup_refresh_keeps_core_hashes_unchanged(tmp_path) -> None:
     assert status["immutable_hashes_unchanged"] is True
 
 
-def test_daily_detector_requires_snapshot_without_monthly_fallback(tmp_path, capsys) -> None:
+def test_daily_detector_rejects_the_removed_monthly_batch_output_parameter(tmp_path, capsys) -> None:
     batch = make_minimal_stage_batch(tmp_path)
-    code = run_daily_detector_main(["--batch-dir", str(batch), "--observation-date", "2025-12-05"])
-    assert code == 2
-    payload = json.loads(capsys.readouterr().out)
-    assert payload["reason"] == "DETECTOR_INPUT_SNAPSHOT_MISSING"
-    assert "load_current_model_artifact" in payload["forbidden_calls"]
+    with pytest.raises(SystemExit) as exc_info:
+        run_daily_detector_main([
+            "--batch-dir", str(batch), "--raw-batch-dir", str(tmp_path / "raw"),
+            "--observation-date", "2025-12-05", "--run-id", "fixture",
+        ])
+    assert exc_info.value.code == 2
+    assert "unrecognized arguments: --batch-dir" in capsys.readouterr().err
 
 
 def test_registry_rebuild_uses_existing_parquet_batches(tmp_path) -> None:
     root = tmp_path / "result_batches"
-    batch = root / "report_month=2025-12" / "batch_id=test"
+    batch = root / "report_month=2025-11" / "batch_id=test"
     make_minimal_stage_batch(batch)
     assert rebuild_registry_main(["--batch-root", str(root)]) == 0
     assert (root / "available_observation_contexts.parquet").exists()
@@ -102,9 +104,19 @@ def test_registry_rebuild_uses_existing_parquet_batches(tmp_path) -> None:
 
 def test_registry_pairs_separate_monthly_and_detector_batches(tmp_path) -> None:
     root = tmp_path / "result_batches"
-    detector_batch = root / "report_month=2025-12" / "batch_id=formal-v2"
+    detector_batch = root / "detector_run_date=2025-12-05" / "batch_id=daily-detector-fact-v1"
     make_minimal_stage_batch(detector_batch)
-    monthly_batch = root / "report_month=2025-12" / "batch_id=full-recurring-v2"
+    detector_manifest_path = detector_batch / "manifest.json"
+    detector_manifest = json.loads(detector_manifest_path.read_text(encoding="utf-8"))
+    detector_manifest.update(
+        {
+            "report_type": "daily_detector",
+            "observation_date": "2025-12-05",
+            "detector_run_date": "2025-12-05",
+        }
+    )
+    detector_manifest_path.write_text(json.dumps(detector_manifest), encoding="utf-8")
+    monthly_batch = root / "report_month=2025-11" / "batch_id=full-recurring-v2"
     make_minimal_stage_batch(monthly_batch)
     for name in ["daily_detector_runs", "daily_detector_clues"]:
         (monthly_batch / f"{name}.parquet").unlink()
@@ -113,7 +125,7 @@ def test_registry_pairs_separate_monthly_and_detector_batches(tmp_path) -> None:
 
     context = pd.read_parquet(root / "available_observation_contexts.parquet").iloc[0]
     assert context["probability_batch_dir"].endswith("batch_id=full-recurring-v2")
-    assert context["detector_batch_dir"].endswith("batch_id=formal-v2")
+    assert context["detector_batch_dir"].endswith("batch_id=daily-detector-fact-v1")
     assert bool(context["probability_batch_available"]) is True
     assert bool(context["detector_run_available"]) is True
 
@@ -153,6 +165,8 @@ def make_minimal_stage_batch(path: Path) -> Path:
     write_production_parquet(pd.DataFrame([{"monthly_report_id": "mr1"}]), path / "monthly_reports.parquet")
     write_production_parquet(pd.DataFrame([{"detector_run_id": "dr1", "run_date": "2025-12-05"}]), path / "daily_detector_runs.parquet")
     write_production_parquet(pd.DataFrame([{"detector_clue_id": "dc1", "run_date": "2025-12-05"}]), path / "daily_detector_clues.parquet")
+    write_production_parquet(pd.DataFrame([{"detector_id": "purchase_interval_ipi"}]), path / "detector_catalog.parquet")
+    write_production_parquet(pd.DataFrame([{"risk_entity_id": "r1"}]), path / "high_risk_detector_evidence.parquet")
     write_production_parquet(
         pd.DataFrame([{"manufacturer_code": "m1", "manufacturer_display_name": "Manufacturer One"}]),
         path / "entity_display_lookup.parquet",
@@ -164,9 +178,9 @@ def write_manifest(path: Path) -> None:
     manifest = {
         "batch_id": "test",
         "report_type": "monthly",
-        "report_month": "2025-12",
+        "report_month": "2025-11",
         "report_date": "2025-12-05",
-        "score_cutoff_month": "2025-12",
+        "score_cutoff_month": "2025-11",
         "primary_horizon": "H3",
         "available_horizons": ["H3"],
         "schema_version": "risk_result_batch_monthly_v2",
@@ -177,6 +191,12 @@ def write_manifest(path: Path) -> None:
         "auto_dispatch_allowed": False,
         "proof_case_report_allowed": False,
         "caveats": [],
+        "detector_tables": {
+            "detector_catalog": "detector_catalog.parquet",
+            "daily_detector_runs": "daily_detector_runs.parquet",
+            "daily_detector_clues": "daily_detector_clues.parquet",
+            "high_risk_detector_evidence": "high_risk_detector_evidence.parquet",
+        },
     }
     path.mkdir(parents=True, exist_ok=True)
     (path / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")

@@ -153,14 +153,18 @@ export function createStaticClueDetailData({ clueId, riskEntityId, query } = {})
 export function createStaticOneshotData() {
   return {
     ready: true,
+    status: oneshotTerminals.length ? 'ready' : 'empty',
+    errorCode: '',
+    reportMonth: oneshotSummary.reportMonth,
+    scoreCutoffDate: '2025-12-31',
+    resultBatchId: 'demo-oneshot-facts',
     displayLookupStatus: { ready: false, label: '演示模式', message: '' },
-    oneshotSummary: {
-      ...oneshotSummary,
-      evidenceReady: false
-    },
-    oneshotTerminals: oneshotTerminals.map(({ reason, ...item }) => item),
-    emptyTitle: '',
-    emptyMessage: ''
+    oneshotSummary,
+    oneshotTerminals: oneshotTerminals.map((item) => ({ ...item })),
+    pagination: { page: 1, pageSize: 50, total: oneshotTerminals.length, totalPages: oneshotTerminals.length ? 1 : 0 },
+    sort: { sortBy: 'first_purchase_date', sortOrder: 'desc' },
+    emptyTitle: oneshotTerminals.length ? '' : '当前生产企业暂无新进终端记录',
+    emptyMessage: oneshotTerminals.length ? '' : '演示数据中没有新进终端事实。'
   }
 }
 

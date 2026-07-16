@@ -334,6 +334,36 @@ def test_p175_business_pages_share_one_shell_and_manufacturer_empty_scope_copy()
     assert "当前生产企业暂无新进终端记录" in adapter
 
 
+def test_p201_oneshot_workbench_is_fact_only_and_server_paginated() -> None:
+    view = read(FRONTEND / "src" / "modules" / "oneshot-monitor" / "OneshotMonitorView.vue")
+    adapter = read(FRONTEND / "src" / "modules" / "monthly-demo" / "pageDataAdapter.js")
+    combined = view + adapter
+
+    for required in [
+        "新进终端工作台",
+        "首次采购日期",
+        "首次采购时点金额",
+        "距首购天数",
+        "page_size",
+        "sort_order",
+        "ONESHOT_RESULT_NOT_AVAILABLE",
+        "status: 'error'",
+    ]:
+        assert required in combined
+    for forbidden in [
+        "repurchase_propensity",
+        "expected_repurchase_amount",
+        "high_repurchase_propensity_count",
+        "ranking_basis",
+        "复购倾向",
+        "预计复购金额",
+        "复购促进优先级",
+    ]:
+        assert forbidden not in combined
+    assert "不等于已经流失" in view
+    assert "未使用 Recurring 或其他候选数据替代" in adapter
+
+
 def test_frontend_does_not_depend_on_local_model_or_prototype_paths() -> None:
     scanned_files = [
         *FRONTEND.glob("*.html"),

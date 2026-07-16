@@ -26,6 +26,17 @@ REQUIRED_MANIFEST_FIELDS = [
     "caveats",
 ]
 
+DAILY_DETECTOR_REQUIRED_MANIFEST_FIELDS = [
+    "batch_id",
+    "report_type",
+    "schema_version",
+    "data_backend",
+    "observation_date",
+    "detector_run_date",
+    "detector_tables",
+    "caveats",
+]
+
 
 @dataclass(frozen=True, slots=True)
 class RiskResultManifest:
@@ -54,30 +65,36 @@ def load_manifest(batch_dir: str | Path) -> RiskResultManifest:
     return RiskResultManifest(
         batch_id=str(data["batch_id"]),
         report_type=str(data["report_type"]),
-        report_month=str(data["report_month"]),
-        report_date=str(data["report_date"]),
-        score_cutoff_month=str(data["score_cutoff_month"]),
-        primary_horizon=str(data["primary_horizon"]),
-        available_horizons=[str(x) for x in data["available_horizons"]],
+        report_month=str(data.get("report_month") or data.get("expected_probability_report_month") or ""),
+        report_date=str(data.get("report_date") or data.get("observation_date") or ""),
+        score_cutoff_month=str(data.get("score_cutoff_month") or data.get("expected_probability_report_month") or ""),
+        primary_horizon=str(data.get("primary_horizon") or ""),
+        available_horizons=[str(x) for x in data.get("available_horizons", [])],
         schema_version=str(data["schema_version"]),
         data_backend=str(data["data_backend"]),
-        allowed_usage=[str(x) for x in data["allowed_usage"]],
-        forbidden_usage=[str(x) for x in data["forbidden_usage"]],
-        customer_facing_probability_service_allowed=bool(data["customer_facing_probability_service_allowed"]),
-        auto_dispatch_allowed=bool(data["auto_dispatch_allowed"]),
-        proof_case_report_allowed=bool(data["proof_case_report_allowed"]),
+        allowed_usage=[str(x) for x in data.get("allowed_usage", [])],
+        forbidden_usage=[str(x) for x in data.get("forbidden_usage", [])],
+        customer_facing_probability_service_allowed=bool(data.get("customer_facing_probability_service_allowed", False)),
+        auto_dispatch_allowed=bool(data.get("auto_dispatch_allowed", False)),
+        proof_case_report_allowed=bool(data.get("proof_case_report_allowed", False)),
         caveats=[str(x) for x in data["caveats"]],
         raw=data,
     )
 
 
 def validate_manifest(manifest: dict[str, Any]) -> None:
-    missing = [field for field in REQUIRED_MANIFEST_FIELDS if field not in manifest]
+    report_type = manifest.get("report_type")
+    required = (
+        DAILY_DETECTOR_REQUIRED_MANIFEST_FIELDS
+        if report_type == "daily_detector"
+        else REQUIRED_MANIFEST_FIELDS
+    )
+    missing = [field for field in required if field not in manifest]
     if missing:
         raise ValueError(f"Manifest missing required fields: {missing}")
     if manifest.get("data_backend") != "parquet":
         raise ValueError("Production risk result repository requires data_backend=parquet.")
-    if manifest.get("auto_dispatch_allowed") is not False:
+    if report_type != "daily_detector" and manifest.get("auto_dispatch_allowed") is not False:
         raise ValueError("auto_dispatch_allowed must be false for this risk model core stage.")
-    if manifest.get("customer_facing_probability_service_allowed") is not False:
+    if report_type != "daily_detector" and manifest.get("customer_facing_probability_service_allowed") is not False:
         raise ValueError("customer_facing_probability_service_allowed must be false for this stage.")

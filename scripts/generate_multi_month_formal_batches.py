@@ -21,7 +21,6 @@ if str(REPO_ROOT) not in sys.path:
 from risk_algorithm_core.artifact_loader import load_current_model_artifact
 from risk_algorithm_core.candidate_selector import BoundedCandidateSelector
 from risk_algorithm_core.config import MonthlyRiskRunConfig, load_run_config
-from risk_algorithm_core.daily_detector_runner import build_daily_detector_tables
 from risk_algorithm_core.detector_quality_gate import DetectorQualityGate
 from risk_algorithm_core.detectors import DisabledDetectorNoteBuilder
 from risk_algorithm_core.entity_builder import build_monthly_entities
@@ -193,24 +192,12 @@ def run_profiled_month(
     _ = build_entity_display_lookup(risk_entities, normalized, report_month, raw_batch.manifest.raw_batch_id)
     display_seconds = elapsed(display_start)
 
+    # Daily Detector output is independently materialized from raw purchase
+    # facts. The monthly generator never invokes or writes it.
     detector_tables: dict[str, pd.DataFrame] = {}
     detector_compute_seconds = 0.0
     detector_write_seconds = 0.0
-    if include_detector_evidence:
-        detector_compute_start = time.perf_counter()
-        detector_tables = build_daily_detector_tables(
-            risk_entities=risk_entities,
-            scan_features=features,
-            report_month=report_month,
-            run_date=observation_date,
-            source_raw_batch_id=raw_batch.manifest.raw_batch_id,
-            source_result_batch_id=f"{report_month}-monthly-risk-algorithm-{cfg.run_id}",
-        )
-        detector_compute_seconds = elapsed(detector_compute_start)
-        detector_write_start = time.perf_counter()
-        write_detector_tables(batch_dir, detector_tables, data_backend="parquet")
-        detector_write_seconds = elapsed(detector_write_start)
-    detector_total_seconds = detector_compute_seconds + detector_write_seconds
+    detector_total_seconds = 0.0
 
     validation_start = time.perf_counter()
     update_manifest_and_context(
@@ -320,17 +307,6 @@ def previous_complete_month(observation_date: str) -> str:
     current = dt.date.fromisoformat(observation_date).replace(day=1)
     previous = current - dt.timedelta(days=1)
     return previous.strftime("%Y-%m")
-
-
-def write_detector_tables(batch_dir: Path, tables: dict[str, pd.DataFrame], data_backend: str) -> None:
-    if data_backend != "parquet":
-        raise ValueError("Production detector tables must be written as Parquet.")
-    for name, frame in tables.items():
-        for ext in ["parquet", "csv"]:
-            path = batch_dir / f"{name}.{ext}"
-            if path.exists():
-                path.unlink()
-        write_production_parquet(frame, batch_dir / f"{name}.parquet")
 
 
 def read_table(batch_dir: Path, name: str) -> pd.DataFrame:

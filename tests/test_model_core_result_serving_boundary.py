@@ -30,7 +30,15 @@ def make_manifest() -> RiskResultManifest:
         auto_dispatch_allowed=False,
         proof_case_report_allowed=False,
         caveats=[],
-        raw={"batch_id": "dynamic-test-batch"},
+        raw={
+            "batch_id": "dynamic-test-batch",
+            "oneshot_terminals": {
+                "table_name": "oneshot_terminals",
+                "schema_version": "oneshot_terminal_v1",
+                "path": "oneshot_terminals.parquet",
+                "row_count": 1,
+            },
+        },
     )
 
 
@@ -153,6 +161,24 @@ def make_repository_without_page_payloads() -> InMemoryRiskResultRepository:
             ]
         ),
         "risk_entity_timeline": pd.DataFrame(),
+        "oneshot_terminals": pd.DataFrame(
+            [
+                {
+                    "oneshot_id": "oneshot-1",
+                    "tenant_id": "tenant",
+                    "manufacturer_code": "M1",
+                    "hospital_code": "H2",
+                    "hospital_display_name": "Hospital Two",
+                    "drug_group": "D2",
+                    "drug_display_name": "Drug Two",
+                    "region_display_name": "East",
+                    "report_month": "2025-12",
+                    "first_purchase_date": "2025-12-01",
+                    "first_purchase_amount": 100,
+                    "days_since_first_purchase": 30,
+                }
+            ]
+        ),
         "monthly_reports": pd.DataFrame(
             [
                 {

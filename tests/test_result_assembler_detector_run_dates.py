@@ -1,20 +1,21 @@
 from __future__ import annotations
 
-from risk_algorithm_core.result_assembler import _build_detector_tables_for_dates
-from tests.test_daily_detector_contract_utils import build_detector_fixture
+import json
+from pathlib import Path
+
+from risk_algorithm_core.monthly_runner import MonthlyRiskRunner
+from tests.risk_algorithm_core_test_utils import RUN_CONFIG
 
 
-def test_result_assembler_materializes_configured_daily_detector_run_dates() -> None:
-    fixture = build_detector_fixture()
-    tables = _build_detector_tables_for_dates(
-        risk_entities=fixture["risk_entities"],
-        scan_features=fixture["scan_features"],
-        report_month="2025-11",
-        run_dates=["2025-12-01", "2025-12-02"],
-        source_raw_batch_id="raw",
-        source_result_batch_id="batch",
-    )
+def test_monthly_result_assembler_does_not_publish_daily_detector_tables(tmp_path) -> None:
+    runner = MonthlyRiskRunner.from_config_file(RUN_CONFIG)
+    runner.config.output_root = str(tmp_path)
 
-    assert set(tables["daily_detector_runs"]["run_date"].astype(str)) == {"2025-12-01", "2025-12-02"}
-    assert set(tables["daily_detector_clues"]["run_date"].astype(str)) == {"2025-12-01", "2025-12-02"}
-    assert "采购" in str(tables["daily_detector_clues"].iloc[0]["root_cause_label"])
+    summary = runner.run(use_rule_baseline=False, include_detector_evidence=True)
+    batch = Path(summary["batch_dir"])
+    manifest = json.loads((batch / "manifest.json").read_text(encoding="utf-8"))
+
+    assert manifest["detector_tables"] == {}
+    assert manifest["detector_default_scope"] == "independent_detector_batch"
+    assert not (batch / "daily_detector_runs.parquet").exists()
+    assert not (batch / "daily_detector_clues.parquet").exists()

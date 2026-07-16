@@ -49,7 +49,7 @@ const routeMap = {
   },
   'oneshot.html': {
     active: 'oneshot',
-    tag: '新进终端监测 · 首采记录',
+    tag: '新进终端工作台 · 正式事实',
     component: OneshotMonitorView
   },
   'backtest.html': {

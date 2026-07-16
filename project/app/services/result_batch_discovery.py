@@ -21,9 +21,23 @@ def latest_monthly_batch(root: str | Path) -> Path | None:
 
 
 def latest_detector_batch(root: str | Path) -> Path | None:
-    """Return the newest published batch that declares and contains all Detector tables."""
+    """Return the newest independent date-partitioned Detector batch."""
 
-    return _latest(root, _has_detector_tables)
+    root_path = Path(root)
+    if not root_path.exists():
+        return None
+    for manifest_path in sorted(
+        root_path.glob("detector_run_date=*/batch_id=*/manifest.json"), reverse=True
+    ):
+        batch = manifest_path.parent
+        manifest = _read_manifest(manifest_path)
+        if (
+            manifest is not None
+            and manifest.get("report_type") == "daily_detector"
+            and _has_detector_tables(batch, manifest)
+        ):
+            return batch
+    return None
 
 
 def published_monthly_profile_batches(
@@ -54,7 +68,13 @@ def _latest(root: str | Path, predicate) -> Path | None:
     root_path = Path(root)
     if not root_path.exists():
         return None
-    candidates = sorted(root_path.glob("report_month=*/batch_id=*/manifest.json"), reverse=True)
+    candidates = sorted(
+        {
+            *root_path.glob("report_month=*/batch_id=*/manifest.json"),
+            *root_path.glob("detector_run_date=*/batch_id=*/manifest.json"),
+        },
+        reverse=True,
+    )
     for manifest_path in candidates:
         batch = manifest_path.parent
         manifest = _read_manifest(manifest_path)

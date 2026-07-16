@@ -63,11 +63,8 @@ export const riskEntities = []
 export const riskCardHorizonProfiles = {}
 
 export const oneshotSummary = {
-  count: 0,
-  highPropensityCount: 0,
-  averageRepurchasePropensity: '-',
-  expectedRepurchaseAmount: '-',
-  evidenceReady: false
+  reportMonth: '2025-12',
+  count: 0
 }
 
 export const oneshotTerminals = []

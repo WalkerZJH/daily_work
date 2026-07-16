@@ -150,16 +150,21 @@ class PagePayloadBuilder:
         manufacturer_codes: list[str] | None = None,
         report_month: str | None = None,
         observation_date: str | None = None,
-        top_n: int | None = None,
+        page: int = 1,
+        page_size: int = 50,
+        sort_by: str = "first_purchase_date",
+        sort_order: str = "desc",
     ) -> dict[str, Any]:
-        return self._payload_or_build(
-            "frontend_oneshot_payload",
-            lambda: self._build_frontend_oneshot_payload(
-                manufacturer_codes=manufacturer_codes,
-                report_month=report_month,
-                observation_date=observation_date,
-                top_n=top_n,
-            ),
+        # One-shot is a formal fact table.  Do not serve a cached legacy page
+        # payload because older payloads contain prediction-like semantics.
+        return self._build_frontend_oneshot_payload(
+            manufacturer_codes=manufacturer_codes,
+            report_month=report_month,
+            observation_date=observation_date,
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_order=sort_order,
         )
 
     def build_frontend_monthly_reports_payload(self) -> dict[str, Any]:
@@ -274,19 +279,28 @@ class PagePayloadBuilder:
         manufacturer_codes: list[str] | None,
         report_month: str | None,
         observation_date: str | None,
-        top_n: int | None,
+        page: int,
+        page_size: int,
+        sort_by: str,
+        sort_order: str,
     ) -> dict[str, Any]:
-        rows = self._oneshot_terminal_rows(manufacturer_codes=manufacturer_codes, report_month=report_month)
+        manifest = self.repository.manifest()
+        declaration = manifest.raw.get("oneshot_terminals")
+        if not isinstance(declaration, dict) or declaration.get("table_name") != "oneshot_terminals":
+            return _oneshot_unavailable_payload(manifest, page=page, page_size=page_size)
+        try:
+            rows = self._oneshot_terminal_rows(manufacturer_codes=manufacturer_codes, report_month=report_month)
+        except (FileNotFoundError, NotImplementedError, ValueError, AttributeError):
+            return _oneshot_unavailable_payload(manifest, page=page, page_size=page_size)
         rows = _merge_entity_display_lookup(rows, self.repository, report_month or self.repository.manifest().report_month)
+        rows = _sort_oneshot_facts(rows, sort_by=sort_by, sort_order=sort_order)
         total_rows = len(rows)
-        summary = _oneshot_summary(rows, observation_date, self.repository.manifest().score_cutoff_month)
-        if top_n is not None:
-            rows = rows.head(max(int(top_n), 0))
+        total_pages = math.ceil(total_rows / page_size) if total_rows else 0
+        start = (page - 1) * page_size
+        rows = rows.iloc[start : start + page_size]
         items = []
         for _, row in rows.iterrows():
-            propensity = _probability(row.get("repurchase_propensity", row.get("risk_score_display", row.get("risk_score", 0))))
             first_purchase_date = _first_purchase_date(row)
-            observation_day = _parse_date(observation_date) or _parse_date(self.repository.manifest().score_cutoff_month)
             items.append(
                 {
                     "oneshot_id": _text(row.get("oneshot_id")) or _text(row.get("risk_entity_id")) or _text(row.get("entity_id")),
@@ -302,50 +316,39 @@ class PagePayloadBuilder:
                     "drug_group": _text(row.get("drug_group")),
                     "drug_name": _display_name(row, "drug_display_name", "drug_group", "Drug"),
                     "region": _text(row.get("region_display_name")) or _text(row.get("region_code")) or "Unknown region",
-                    "first_purchase_date": first_purchase_date or str(self.repository.manifest().score_cutoff_month),
+                    "first_purchase_date": first_purchase_date or "",
                     "first_purchase_amount": int(_number(row.get("first_purchase_amount"), 0)),
-                    "days_since_first_purchase": _days_between(first_purchase_date, observation_day),
-                    "repurchase_propensity": propensity,
-                    "expected_repurchase_amount": int(_number(row.get("expected_repurchase_amount"), 0)),
-                    "priority": "high" if propensity >= 0.75 else "medium",
-                    "reason": _text(row.get("ranking_basis")) or "New terminal attention score indicates a follow-up opportunity for a second purchase.",
+                    "days_since_first_purchase": int(_number(row.get("days_since_first_purchase"), 0)),
                 }
             )
         return {
             "ready": True,
-            "report_month": self.repository.manifest().report_month,
-            "summary": {
-                "oneshot_count": total_rows,
-                "daily_new_terminal_count": summary["daily_new_terminal_count"],
-                "monthly_new_terminal_count": summary["monthly_new_terminal_count"],
-                "high_repurchase_propensity_count": sum(1 for item in items if item["repurchase_propensity"] >= 0.75),
-                "average_repurchase_propensity": round(sum(item["repurchase_propensity"] for item in items) / len(items), 4) if items else 0.0,
-                "expected_repurchase_amount": 0,
-            },
+            "availability_status": "available",
+            "report_month": manifest.report_month,
+            "score_cutoff_date": manifest.score_cutoff_month,
+            "result_batch_id": manifest.batch_id,
+            "source_table": "oneshot_terminals",
+            "source_schema_version": str(declaration.get("schema_version") or "oneshot_terminal_v1"),
+            "summary": {"oneshot_count": total_rows},
             "items": items,
             "total": total_rows,
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total": total_rows,
+                "total_pages": total_pages,
+            },
+            "sort": {"sort_by": sort_by, "sort_order": sort_order},
         }
 
     def _oneshot_terminal_rows(self, *, manufacturer_codes: list[str] | None, report_month: str | None) -> pd.DataFrame:
-        try:
-            rows = self.repository.load_table("oneshot_terminals")
-        except (FileNotFoundError, NotImplementedError, ValueError, AttributeError):
-            rows = pd.DataFrame()
+        rows = self.repository.load_table("oneshot_terminals")
         if not rows.empty:
             if manufacturer_codes is not None:
                 rows = rows[rows["manufacturer_code"].astype(str).isin({str(code) for code in manufacturer_codes})]
             if report_month is not None and "report_month" in rows:
                 rows = rows[rows["report_month"].astype(str).eq(str(report_month))]
-            sort_fields = [field for field in ["repurchase_propensity", "first_purchase_date"] if field in rows]
-            if sort_fields:
-                rows = rows.sort_values(sort_fields, ascending=[False] * len(sort_fields), na_position="last", kind="mergesort")
-            return rows.reset_index(drop=True)
-        return self.repository.list_rankable_entities(
-            manufacturer_codes=manufacturer_codes,
-            report_month=report_month,
-            candidate_type="one_shot",
-            sort_by=["risk_score_display", "risk_score"],
-        )
+        return rows.reset_index(drop=True)
 
     def _build_frontend_monthly_reports_payload(self) -> dict[str, Any]:
         reports = self.repository.list_monthly_reports()
@@ -650,6 +653,48 @@ def _merge_entity_display_lookup(rows: pd.DataFrame, repository: RiskResultRepos
         joined[col] = lookup_values.where(lookup_values.str.len().gt(0), current_values)
         joined = joined.drop(columns=[lookup_col])
     return joined
+
+
+def _sort_oneshot_facts(rows: pd.DataFrame, *, sort_by: str, sort_order: str) -> pd.DataFrame:
+    if rows.empty:
+        return rows.reset_index(drop=True)
+    allowed = {"first_purchase_date", "first_purchase_amount", "days_since_first_purchase"}
+    if sort_by not in allowed:
+        raise ValueError(f"Unsupported One-shot fact sort: {sort_by}")
+    if sort_order not in {"asc", "desc"}:
+        raise ValueError(f"Unsupported One-shot sort order: {sort_order}")
+    sortable = rows.copy()
+    if sort_by == "first_purchase_date":
+        sortable["__oneshot_sort_value"] = pd.to_datetime(sortable.get(sort_by), errors="coerce")
+    else:
+        sortable["__oneshot_sort_value"] = pd.to_numeric(sortable.get(sort_by), errors="coerce")
+    by = ["__oneshot_sort_value"]
+    ascending = [sort_order == "asc"]
+    if "oneshot_id" in sortable:
+        by.append("oneshot_id")
+        ascending.append(True)
+    return (
+        sortable.sort_values(by, ascending=ascending, na_position="last", kind="mergesort")
+        .drop(columns=["__oneshot_sort_value"])
+        .reset_index(drop=True)
+    )
+
+
+def _oneshot_unavailable_payload(manifest: Any, *, page: int, page_size: int) -> dict[str, Any]:
+    return {
+        "ready": False,
+        "availability_status": "unavailable",
+        "error_code": "ONESHOT_RESULT_NOT_AVAILABLE",
+        "message": "The current formal batch has not published One-shot terminal facts.",
+        "report_month": manifest.report_month,
+        "score_cutoff_date": manifest.score_cutoff_month,
+        "result_batch_id": manifest.batch_id,
+        "source_table": "oneshot_terminals",
+        "summary": {"oneshot_count": 0},
+        "items": [],
+        "total": 0,
+        "pagination": {"page": page, "page_size": page_size, "total": 0, "total_pages": 0},
+    }
 
 
 def _matching_primary_profile(row: pd.Series, profiles: pd.DataFrame) -> dict[str, Any] | None:

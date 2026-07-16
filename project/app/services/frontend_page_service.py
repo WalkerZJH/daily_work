@@ -105,22 +105,6 @@ DEFAULT_MODEL_METRICS: list[dict[str, Any]] = [
         "updated_at": "2026-07-08",
     },
     {
-        "model_id": "oneshot_repurchase_h6",
-        "model_name": "新进终端复购倾向 H6",
-        "model_role": "oneshot_repurchase_propensity",
-        "horizon": "H6",
-        "evaluation_window": "first-purchase cohort backtest",
-        "auc": 0.307,
-        "prauc": 0.264,
-        "pr_auc_lift": 0.725,
-        "ece": 0.321,
-        "brier": 0.352,
-        "topk_recall": [],
-        "sample_count": 83824,
-        "positive_count": 30478,
-        "updated_at": "2026-07-08",
-    },
-    {
         "model_id": "frequency_detector_evidence",
         "model_name": "采购频次证据模块",
         "model_role": "detector_evidence",
@@ -340,16 +324,37 @@ class FrontendPageService:
         manufacturer_codes: list[str] | None = None,
         report_month: str | None = None,
         observation_date: str | None = None,
-        top_n: int | None = None,
+        page: int = 1,
+        page_size: int = 50,
+        sort_by: str = "first_purchase_date",
+        sort_order: str = "desc",
     ) -> dict[str, Any]:
         if self._builder:
             return self._builder.build_frontend_oneshot_payload(
                 manufacturer_codes=manufacturer_codes,
                 report_month=report_month,
                 observation_date=observation_date,
-                top_n=top_n,
+                page=page,
+                page_size=page_size,
+                sort_by=sort_by,
+                sort_order=sort_order,
             )
-        return self._default_payloads["oneshot_terminals"]
+        if self._mock_allowed:
+            return self._default_payloads["oneshot_terminals"]
+        return {
+            "ready": False,
+            "availability_status": "unavailable",
+            "error_code": "ONESHOT_RESULT_NOT_AVAILABLE",
+            "message": "The current formal batch has not published One-shot terminal facts.",
+            "report_month": report_month or "",
+            "score_cutoff_date": None,
+            "result_batch_id": "",
+            "source_table": "oneshot_terminals",
+            "summary": {"oneshot_count": 0},
+            "items": [],
+            "total": 0,
+            "pagination": {"page": page, "page_size": page_size, "total": 0, "total_pages": 0},
+        }
 
     def monthly_reports(self) -> dict[str, Any]:
         if self._builder:

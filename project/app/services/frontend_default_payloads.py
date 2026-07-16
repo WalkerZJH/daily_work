@@ -135,21 +135,20 @@ def _oneshot_payload() -> dict[str, Any]:
             "first_purchase_date": "2025-12-01",
             "first_purchase_amount": 1200,
             "days_since_first_purchase": 30,
-            "repurchase_propensity": 0.72,
-            "expected_repurchase_amount": 860,
-            "priority": "medium",
-            "reason": "New terminal attention score indicates a follow-up opportunity.",
         }
     ]
     return {
+        "ready": True,
+        "availability_status": "demo",
         "report_month": "2025-12",
-        "summary": {
-            "oneshot_count": len(items),
-            "high_repurchase_propensity_count": 0,
-            "average_repurchase_propensity": 0.72,
-            "expected_repurchase_amount": 860,
-        },
+        "score_cutoff_date": "2025-12-31",
+        "result_batch_id": "demo-oneshot-facts",
+        "source_table": "demo",
+        "summary": {"oneshot_count": len(items)},
         "items": items,
+        "total": len(items),
+        "pagination": {"page": 1, "page_size": 50, "total": len(items), "total_pages": 1},
+        "sort": {"sort_by": "first_purchase_date", "sort_order": "desc"},
     }
 
 

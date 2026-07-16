@@ -11,8 +11,22 @@ DEFAULT_BATCH_ROOT = Path("data/project_result_batches")
 
 
 def batch_dirs(batch_root: str | Path = DEFAULT_BATCH_ROOT) -> list[Path]:
+    """Return published monthly batches (legacy public helper)."""
+    return monthly_batch_dirs(batch_root)
+
+
+def monthly_batch_dirs(batch_root: str | Path = DEFAULT_BATCH_ROOT) -> list[Path]:
     root = Path(batch_root)
     return [manifest.parent for manifest in sorted(root.glob("report_month=*/batch_id=*/manifest.json"))]
+
+
+def detector_batch_dirs(batch_root: str | Path = DEFAULT_BATCH_ROOT) -> list[Path]:
+    """Return only published independent, date-partitioned Detector batches."""
+    root = Path(batch_root)
+    return [
+        manifest.parent
+        for manifest in sorted(root.glob("detector_run_date=*/batch_id=*/manifest.json"))
+    ]
 
 
 def read_manifest(batch_dir: str | Path) -> dict[str, Any]:

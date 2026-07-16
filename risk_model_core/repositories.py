@@ -234,6 +234,11 @@ class ParquetRiskResultRepository(RiskResultRepository):
             path = declared.get("path") if isinstance(declared, dict) else None
             if isinstance(path, str) and path:
                 return self.batch_dir / path
+        if name == "oneshot_terminals":
+            declared = self._manifest.raw.get("oneshot_terminals")
+            path = declared.get("path") if isinstance(declared, dict) else None
+            if isinstance(path, str) and path:
+                return self.batch_dir / path
         return self.batch_dir / f"{name}.parquet"
 
     def get_risk_entity(self, risk_entity_id: str) -> dict[str, Any] | None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+
 import pandas as pd
 from risk_result_contracts import write_production_parquet
 
@@ -30,17 +31,67 @@ def test_daily_detector_snapshot_uses_only_orders_as_of_observation_date() -> No
     assert "churn_probability_H" not in snapshot.columns
 
 
-def test_daily_detector_stage_reads_snapshot_without_monthly_runner(tmp_path) -> None:
+def test_daily_detector_stage_publishes_independent_batch_without_monthly_runner(tmp_path) -> None:
     from production_pipeline.run_daily_detector import main
+    from risk_model_core.repositories import ParquetRiskResultRepository
 
-    snapshot = pd.DataFrame(
-        [{"entity_id": "m1|h1|d1", "tenant_id": "default_tenant", "manufacturer_code": "m1", "hospital_code": "h1", "drug_group": "d1", "days_since_last_purchase": 80, "historical_interval_median": 30, "historical_interval_mad": 10, "purchase_count_total": 12, "quantity_ratio": 0.4, "frequency_ratio": 0.4, "purchase_frequency_baseline": 2.0}]
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    (raw / "manifest.json").write_text('{"raw_batch_id":"raw-fixture","table_format":"parquet"}', encoding="utf-8")
+    orders = pd.DataFrame(
+        [
+            {"order_date": "2024-11-01", "manufacturer_code": "m1", "hospital_code": "h1", "drug_code": "d1", "order_quantity": 10, "order_amount": 100},
+            {"order_date": "2024-12-01", "manufacturer_code": "m1", "hospital_code": "h1", "drug_code": "d1", "order_quantity": 10, "order_amount": 100},
+            {"order_date": "2025-01-01", "manufacturer_code": "m1", "hospital_code": "h1", "drug_code": "d1", "order_quantity": 10, "order_amount": 100},
+        ]
     )
-    write_production_parquet(snapshot, tmp_path / "detector_input_snapshot.parquet")
-    (tmp_path / "manifest.json").write_text(json.dumps({"batch_id": "fixture", "detector_tables": {}}), encoding="utf-8")
+    write_production_parquet(orders, raw / "orders.parquet")
 
-    assert main(["--batch-dir", str(tmp_path), "--observation-date", "2025-02-01"]) == 0
-    clues = pd.read_parquet(tmp_path / "daily_detector_clues.parquet")
+    assert main(["--output-root", str(tmp_path / "results"), "--raw-batch-dir", str(raw), "--observation-date", "2025-02-20", "--run-id", "fixture"]) == 0
+    batch = tmp_path / "results" / "detector_run_date=2025-02-20" / "batch_id=2025-02-20-daily-detector-fact-fixture"
+    clues = pd.read_parquet(batch / "daily_detector_clues.parquet")
     assert not clues.empty
     assert clues["risk_entity_id"].isna().all()
     assert clues["monthly_risk_probability"].isna().all()
+    assert not (batch / "risk_entities.parquet").exists()
+    repository = ParquetRiskResultRepository(batch)
+    assert repository.manifest().report_type == "daily_detector"
+    assert len(repository.list_daily_detector_runs()) == 1
+
+
+def test_independent_detector_run_is_available_without_monthly_batch_and_never_date_falls_back(tmp_path) -> None:
+    from production_pipeline.rebuild_observation_registry import main as rebuild_registry
+    from risk_model_core.repositories import resolve_observation_context_from_rows
+
+    batch = tmp_path / "results" / "detector_run_date=2025-12-05" / "batch_id=2025-12-05-daily-detector-fact-fixture"
+    batch.mkdir(parents=True)
+    (batch / "manifest.json").write_text(
+        json.dumps(
+            {
+                "batch_id": "2025-12-05-daily-detector-fact-fixture",
+                "report_type": "daily_detector",
+                "detector_tables": {
+                    "detector_catalog": "detector_catalog.parquet",
+                    "daily_detector_runs": "daily_detector_runs.parquet",
+                    "daily_detector_clues": "daily_detector_clues.parquet",
+                    "high_risk_detector_evidence": "high_risk_detector_evidence.parquet",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    write_production_parquet(pd.DataFrame([{"detector_id": "purchase_interval_ipi"}]), batch / "detector_catalog.parquet")
+    write_production_parquet(pd.DataFrame([{"detector_run_id": "dr-2025-12-05", "run_date": "2025-12-05"}]), batch / "daily_detector_runs.parquet")
+    write_production_parquet(pd.DataFrame([{"detector_clue_id": "dc-1", "run_date": "2025-12-05", "manufacturer_code": "m1"}]), batch / "daily_detector_clues.parquet")
+    write_production_parquet(pd.DataFrame([{"risk_entity_id": None}]), batch / "high_risk_detector_evidence.parquet")
+
+    assert rebuild_registry(["--batch-root", str(tmp_path / "results")]) == 0
+    contexts = pd.read_parquet(tmp_path / "results" / "observation_registry.parquet")
+    exact = resolve_observation_context_from_rows(contexts, observation_date="2025-12-05")
+    assert exact["probability_batch_available"] is False
+    assert exact["detector_run_available"] is True
+    assert exact["detector_batch_dir"].endswith("detector_run_date=2025-12-05/batch_id=2025-12-05-daily-detector-fact-fixture")
+
+    unavailable = resolve_observation_context_from_rows(contexts, observation_date="2025-12-06")
+    assert unavailable["detector_run_available"] is False
+    assert unavailable["detector_batch_dir"] is None

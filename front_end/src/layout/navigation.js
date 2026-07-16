@@ -4,7 +4,7 @@ export const customerNavSections = [
     items: [
       { key: 'index', href: 'index.html', icon: '▦', text: '风险工作台' },
       { key: 'clues', href: 'clues.html', icon: '◈', text: '规则巡检结果', badgeClass: 'orange' },
-      { key: 'oneshot', href: 'oneshot.html', icon: '+', text: '新进终端监测', badgeClass: 'green' }
+      { key: 'oneshot', href: 'oneshot.html', icon: '+', text: '新进终端工作台', badgeClass: 'green' }
     ]
   }
 ]

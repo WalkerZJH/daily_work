@@ -50,6 +50,7 @@ def make_frontend_repository(
         _manifest(),
         {
             "risk_entities": _risk_entities(),
+            "oneshot_terminals": _oneshot_terminals(),
             "entity_display_lookup": _entity_display_lookup(),
             "detector_catalog": _detector_catalog(),
             "daily_detector_runs": _daily_detector_runs(
@@ -142,6 +143,12 @@ def _manifest() -> RiskResultManifest:
             "primary_horizon": "H6",
             "detector_config_version": "daily_detector_rules_v1",
             "conditional_fact_mode_ready": True,
+            "oneshot_terminals": {
+                "table_name": "oneshot_terminals",
+                "schema_version": "oneshot_terminal_v1",
+                "path": "oneshot_terminals.parquet",
+                "row_count": 3,
+            },
             "caveats": ["detector_score is not probability"],
         },
     )
@@ -156,6 +163,50 @@ def _risk_entities() -> pd.DataFrame:
             _entity("entity_3", "M2", "H6", 0.9, 0),
         ]
     )
+
+
+def _oneshot_terminals() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            _oneshot("oneshot_1", "M1", "entity_1", "2025-12-31", 1200, 0),
+            _oneshot("oneshot_2", "M1", "entity_2", "2025-12-05", 800, 26),
+            _oneshot("oneshot_3", "M2", "entity_3", "2025-11-20", 500, 41),
+        ]
+    )
+
+
+def _oneshot(
+    oneshot_id: str,
+    manufacturer_code: str,
+    entity_key: str,
+    first_purchase_date: str,
+    first_purchase_amount: int,
+    days_since_first_purchase: int,
+) -> dict[str, object]:
+    return {
+        "oneshot_id": oneshot_id,
+        "tenant_id": "tenant",
+        "enterprise_id": "enterprise",
+        "manufacturer_code": manufacturer_code,
+        "manufacturer_display_name": f"{manufacturer_code} display",
+        "hospital_code": f"{entity_key}_hospital",
+        "hospital_display_name": f"{entity_key} hospital",
+        "drug_group": f"{entity_key}_drug",
+        "drug_display_name": f"{entity_key} drug",
+        "region_code": "R1",
+        "region_display_name": "region",
+        "report_month": "2025-12",
+        "candidate_type": "one_shot",
+        "first_purchase_date": first_purchase_date,
+        "first_purchase_amount": first_purchase_amount,
+        "days_since_first_purchase": days_since_first_purchase,
+        # Legacy physical columns deliberately remain in the fixture. The API
+        # contract must never expose or sort by them.
+        "repurchase_propensity": 0.99,
+        "expected_repurchase_amount": 9999,
+        "priority": "high",
+        "ranking_basis": "internal attention score",
+    }
 
 
 def _entity(

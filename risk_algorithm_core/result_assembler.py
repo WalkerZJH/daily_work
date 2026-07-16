@@ -11,7 +11,6 @@ import uuid
 import pandas as pd
 
 from risk_result_contracts import validate_result_batch, write_manifest, write_production_parquet
-from .daily_detector_runner import build_daily_detector_tables
 from .entity_display_lookup import ENTITY_DISPLAY_LOOKUP_SCHEMA_VERSION, build_entity_display_lookup
 
 
@@ -70,18 +69,9 @@ def assemble_result_batch(
         raw_batch_id,
         additional_entities=feature_frame,
     )
-    detector_tables = (
-        _build_detector_tables_for_dates(
-            risk_entities=risk_entities,
-            scan_features=feature_frame,
-            report_month=report_month,
-            run_dates=detector_run_dates or [dt.date.today().isoformat()],
-            source_raw_batch_id=raw_batch_id,
-            source_result_batch_id=batch_id,
-        )
-        if include_detector_evidence
-        else {}
-    )
+    # Daily Detector facts are published only by production_pipeline.run_daily_detector.
+    # A monthly batch must never derive or embed them from its feature frame.
+    detector_tables: dict[str, pd.DataFrame] = {}
     horizon_profiles = _build_risk_entity_horizon_profiles(
         risk_entities,
         candidate_status,
@@ -89,7 +79,7 @@ def assemble_result_batch(
         report_month,
         available_horizons,
         score_frame=score_frame,
-        high_risk_detector_evidence=detector_tables.get("high_risk_detector_evidence"),
+        high_risk_detector_evidence=None,
     )
 
     tables = {
@@ -140,15 +130,10 @@ def assemble_result_batch(
         },
         "feature_schema_version": artifact_metadata.get("feature_schema_version", "production_features_v1"),
         "detector_config_version": "daily_detector_rules_v1",
-        "detector_tables": {
-            "detector_catalog": f"detector_catalog.{data_backend}",
-            "daily_detector_runs": f"daily_detector_runs.{data_backend}",
-            "daily_detector_clues": f"daily_detector_clues.{data_backend}",
-            "high_risk_detector_evidence": f"high_risk_detector_evidence.{data_backend}",
-        } if include_detector_evidence else {},
-        "detector_evidence_available": bool(include_detector_evidence),
+        "detector_tables": {},
+        "detector_evidence_available": False,
         "detector_score_probability_interpretation": "detector_score_is_not_probability",
-        "detector_default_scope": "recurring_candidates",
+        "detector_default_scope": "independent_detector_batch",
         "candidate_pool_policy": "full_recurring_universe",
         "full_recurring_count": full_recurring_count,
         "persisted_recurring_count": persisted_recurring_count,
@@ -193,45 +178,13 @@ def assemble_result_batch(
             "Top N is a presentation limit, not a candidate admission rule",
             "business review required",
             "raw_orders_mode_ready=false; current formal readiness is conditional_fact_mode_ready",
-            "daily detector tables are materialized for recurring candidate detail evidence only" if include_detector_evidence else "daily detector evidence is published independently and does not gate monthly candidates",
+            "daily detector evidence is published independently and does not gate monthly candidates",
         ],
     }
     write_manifest(batch_dir, manifest)
     validate_result_batch(batch_dir)
     os.replace(batch_dir, final_batch_dir)
     return final_batch_dir
-
-
-def _build_detector_tables_for_dates(
-    *,
-    risk_entities: pd.DataFrame,
-    scan_features: pd.DataFrame,
-    report_month: str,
-    run_dates: list[str],
-    source_raw_batch_id: str,
-    source_result_batch_id: str,
-) -> dict[str, pd.DataFrame]:
-    normalized_dates = list(dict.fromkeys(str(item) for item in run_dates if str(item).strip()))
-    if not normalized_dates:
-        normalized_dates = [dt.date.today().isoformat()]
-    tables_by_date = [
-        build_daily_detector_tables(
-            risk_entities=risk_entities,
-            scan_features=scan_features,
-            report_month=report_month,
-            run_date=run_date,
-            source_raw_batch_id=source_raw_batch_id,
-            source_result_batch_id=source_result_batch_id,
-        )
-        for run_date in normalized_dates
-    ]
-    first = tables_by_date[0]
-    return {
-        "detector_catalog": first["detector_catalog"],
-        "daily_detector_runs": pd.concat([tables["daily_detector_runs"] for tables in tables_by_date], ignore_index=True),
-        "daily_detector_clues": pd.concat([tables["daily_detector_clues"] for tables in tables_by_date], ignore_index=True),
-        "high_risk_detector_evidence": pd.concat([tables["high_risk_detector_evidence"] for tables in tables_by_date], ignore_index=True),
-    }
 
 
 def _first_run_date(run_dates: list[str] | None) -> str | None:

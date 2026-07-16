@@ -11,6 +11,7 @@ from app.api.routes_report_context import get_report_context_service
 from app.api.routes_user_top_entities import get_user_top_entity_service
 from app.schemas.frontend_pages import (
     MonthlyReportsPayload,
+    OneshotPayload,
     ProofCasesPayload,
     RiskEntitiesPayload,
     RiskEntityDetailPayload,
@@ -29,6 +30,7 @@ from app.services.user_top_entity_service import HorizonNotAvailable, SortMetric
 router = APIRouter(prefix="/api/v1", tags=["frontend-pages"])
 ALLOWED_CANDIDATE_SORT_FIELDS = {"loss_value", "risk_probability", "involved_amount"}
 ALLOWED_SORT_ORDERS = {"asc", "desc"}
+ALLOWED_ONESHOT_SORT_FIELDS = {"first_purchase_date", "first_purchase_amount", "days_since_first_purchase"}
 
 
 @router.get("/workbench", response_model=WorkbenchPayload)
@@ -348,10 +350,12 @@ def my_manufacturers(
     return _with_report_context(payload, context)
 
 
-@router.get("/oneshot-terminals")
+@router.get("/oneshot-terminals", response_model=OneshotPayload)
 def frontend_oneshot_terminals(
     service: FrontendPageService = Depends(get_frontend_page_service),
+    top_entity_service: TopEntityService = Depends(get_user_top_entity_service),
     report_context_service: ReportContextService = Depends(get_report_context_service),
+    x_user_id: Annotated[str | None, Header()] = None,
     observation_date: str | None = Query(default=None),
     report_month: str | None = Query(default=None),
     run_date: str | None = Query(default=None),
@@ -359,23 +363,53 @@ def frontend_oneshot_terminals(
     manufacturer_code: Annotated[list[str] | None, Query()] = None,
     user_id: str | None = Query(default=None),
     horizon: str = Query(default="H6"),
-    top_n: int = Query(default=20, ge=1, le=100),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+    sort_by: str = Query(default="first_purchase_date"),
+    sort_order: str = Query(default="desc"),
 ) -> dict:
+    if sort_by not in ALLOWED_ONESHOT_SORT_FIELDS:
+        raise HTTPException(
+            status_code=422,
+            detail={"error_code": "ONESHOT_SORT_NOT_ALLOWED", "requested_sort_by": sort_by},
+        )
+    if sort_order not in ALLOWED_SORT_ORDERS:
+        raise HTTPException(
+            status_code=422,
+            detail={"error_code": "SORT_ORDER_NOT_ALLOWED", "requested_sort_order": sort_order},
+        )
     context = report_context_service.resolve(
         observation_date=observation_date,
         report_month=report_month,
         run_date=run_date,
         horizon=horizon,
         manufacturer_code=_first_query_value(manufacturer_code),
-        user_id=user_id,
+        user_id=user_id or x_user_id,
         manual_report_month=manual_report_month,
     )
     contextual_page_service = _frontend_page_service_for_context(service, report_context_service, context)
+    contextual_top_entity_service = _top_entity_service_for_context(
+        top_entity_service,
+        report_context_service,
+        context,
+    )
+    try:
+        effective_manufacturer_codes = _effective_requested_manufacturer_codes(
+            contextual_top_entity_service,
+            user_id=user_id or x_user_id or "admin",
+            report_month=context.get("effective_report_month") or report_month,
+            requested_manufacturer_codes=manufacturer_code,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail={"error_code": str(exc)}) from exc
     payload = contextual_page_service.oneshot_terminals(
-        manufacturer_codes=manufacturer_code,
+        manufacturer_codes=effective_manufacturer_codes,
         report_month=context.get("effective_report_month") or report_month,
         observation_date=context.get("observation_date") or context.get("effective_observation_date"),
-        top_n=top_n,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
     return _with_report_context(payload, context)
 
