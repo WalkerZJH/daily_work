@@ -1,0 +1,118 @@
+{
+  "stage": "daily_detector_backfill_validation",
+  "status": "passed",
+  "start_date": "2025-01-01",
+  "end_date": "2025-12-31",
+  "observation_date_count": 365,
+  "detector_count": 10,
+  "expected_component_count": 3650,
+  "selected_component_count": 3650,
+  "total_result_count": 148299910,
+  "total_clue_count": 8333310,
+  "source_cleaned_input_batch_id": "cleaned-detector-facts-v2-20260716",
+  "required_run_prefix": "zz-2025-admin-full-v1",
+  "detectors": [
+    {
+      "detector_id": "purchase_interval_ipi",
+      "expected_dates": 365,
+      "published_dates": 365,
+      "result_count": 14829991,
+      "clue_count": 3480197,
+      "min_daily_clue_count": 8127,
+      "max_daily_clue_count": 11201,
+      "config_missing_count": 0
+    },
+    {
+      "detector_id": "purchase_quantity_trend",
+      "expected_dates": 365,
+      "published_dates": 365,
+      "result_count": 14829991,
+      "clue_count": 4051670,
+      "min_daily_clue_count": 9021,
+      "max_daily_clue_count": 12895,
+      "config_missing_count": 0
+    },
+    {
+      "detector_id": "purchase_quantity_spike",
+      "expected_dates": 365,
+      "published_dates": 365,
+      "result_count": 14829991,
+      "clue_count": 592506,
+      "min_daily_clue_count": 1245,
+      "max_daily_clue_count": 2204,
+      "config_missing_count": 0
+    },
+    {
+      "detector_id": "purchase_frequency_drop",
+      "expected_dates": 365,
+      "published_dates": 365,
+      "result_count": 14829991,
+      "clue_count": 159305,
+      "min_daily_clue_count": 252,
+      "max_daily_clue_count": 723,
+      "config_missing_count": 0
+    },
+    {
+      "detector_id": "purchase_frequency_spike",
+      "expected_dates": 365,
+      "published_dates": 365,
+      "result_count": 14829991,
+      "clue_count": 12366,
+      "min_daily_clue_count": 16,
+      "max_daily_clue_count": 59,
+      "config_missing_count": 0
+    },
+    {
+      "detector_id": "low_price_warning",
+      "expected_dates": 365,
+      "published_dates": 365,
+      "result_count": 14829991,
+      "clue_count": 178,
+      "min_daily_clue_count": 0,
+      "max_daily_clue_count": 10,
+      "config_missing_count": 0
+    },
+    {
+      "detector_id": "order_price_spread_warning",
+      "expected_dates": 365,
+      "published_dates": 365,
+      "result_count": 14829991,
+      "clue_count": 860,
+      "min_daily_clue_count": 0,
+      "max_daily_clue_count": 28,
+      "config_missing_count": 0
+    },
+    {
+      "detector_id": "purchase_price_level_shift",
+      "expected_dates": 365,
+      "published_dates": 365,
+      "result_count": 14829991,
+      "clue_count": 18217,
+      "min_daily_clue_count": 10,
+      "max_daily_clue_count": 75,
+      "config_missing_count": 0
+    },
+    {
+      "detector_id": "first_purchase_fact",
+      "expected_dates": 365,
+      "published_dates": 365,
+      "result_count": 14829991,
+      "clue_count": 9571,
+      "min_daily_clue_count": 0,
+      "max_daily_clue_count": 88,
+      "config_missing_count": 0
+    },
+    {
+      "detector_id": "reactivated_purchase_fact",
+      "expected_dates": 365,
+      "published_dates": 365,
+      "result_count": 14829991,
+      "clue_count": 8440,
+      "min_daily_clue_count": 0,
+      "max_daily_clue_count": 76,
+      "config_missing_count": 0
+    }
+  ],
+  "issues": [],
+  "generated_at": "2026-07-16T09:58:45.636834+00:00"
+}
