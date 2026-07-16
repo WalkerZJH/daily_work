@@ -39,7 +39,7 @@ _CLUE_DETAIL_COLUMNS = [
     "evidence_text", "evidence_payload", "is_monthly_high_risk_entity", "risk_entity_id",
     "monthly_risk_probability", "monthly_loss_value", "display_rank", "caveat", "created_at",
 ]
-CONFIG_EDIT_SEMANTICS = "当前阶段仅使用只读管理员参数表；不提供用户参数修改入口。"
+CONFIG_EDIT_SEMANTICS = "当前阶段仅使用只读管理员参数表，不提供用户参数修改入口；管理员参数变更在下一次巡检运行后生效，历史结果不改写。"
 
 
 class DetectorResultService:
@@ -277,6 +277,61 @@ class DetectorResultService:
             "warnings": [] if total else [MISSING_WARNING],
         }
 
+    def event_aggregates(
+        self,
+        *,
+        observation_date: str,
+        manufacturer_code: str | None = None,
+        hospital_code: str | None = None,
+        drug_code: str | None = None,
+        historical_detector_id: str | None = None,
+        sort_by: str = "current_detector_count",
+        sort_order: str = "desc",
+        page: int = 1,
+        page_size: int = 50,
+    ) -> dict[str, Any]:
+        frame = self._read_frame(
+            "list_detector_event_aggregates",
+            observation_date=observation_date,
+            manufacturer_code=manufacturer_code,
+            hospital_code=hospital_code,
+            drug_code=drug_code,
+        )
+        if historical_detector_id and not frame.empty:
+            frame = frame.loc[
+                frame["historical_detector_ids"].map(
+                    lambda value: historical_detector_id in _split_detector_id_text(value)
+                )
+            ]
+        allowed_sort = {
+            "current_detector_count",
+            "cumulative_hit_count",
+            "cumulative_hit_day_count",
+            "first_hit_date",
+            "last_hit_date",
+        }
+        effective_sort = sort_by if sort_by in allowed_sort else "current_detector_count"
+        frame = _sort_frame(frame, [effective_sort, "hospital_code", "drug_code"], ascending=sort_order == "asc")
+        total = int(len(frame))
+        current_page = max(int(page), 1)
+        current_size = min(max(int(page_size), 1), 200)
+        start = (current_page - 1) * current_size
+        items = [_event_aggregate_item(row) for _, row in frame.iloc[start : start + current_size].iterrows()]
+        return {
+            "ready": bool(total),
+            "source": SOURCE,
+            "items": items,
+            "total": total,
+            "pagination": {
+                "page": current_page,
+                "page_size": current_size,
+                "total": total,
+                "total_pages": math.ceil(total / current_size) if total else 0,
+            },
+            "sort": {"sort_by": effective_sort, "sort_order": sort_order},
+            "warnings": [] if total else ["DETECTOR_EVENT_AGGREGATES_NOT_AVAILABLE"],
+        }
+
     def clue_detail(
         self,
         *,
@@ -424,6 +479,31 @@ def _catalog_item(row: pd.Series) -> dict[str, Any]:
         "output_schema_version": _text(row.get("output_schema_version")),
         "caveat": _text(row.get("caveat")) or None,
     }
+
+
+def _event_aggregate_item(row: pd.Series) -> dict[str, Any]:
+    return {
+        "detector_event_aggregate_id": _text(row.get("detector_event_aggregate_id")),
+        "observation_date": _text(row.get("observation_date")),
+        "manufacturer_code": _text(row.get("manufacturer_code")),
+        "hospital_code": _text(row.get("hospital_code")),
+        "drug_code": _text(row.get("drug_code")),
+        "current_detector_count": _int(row.get("current_detector_count")),
+        "current_detector_ids": sorted(_split_detector_id_text(row.get("current_detector_ids"))),
+        "cumulative_hit_count": _int(row.get("cumulative_hit_count")),
+        "cumulative_hit_day_count": _int(row.get("cumulative_hit_day_count")),
+        "historical_detector_ids": sorted(_split_detector_id_text(row.get("historical_detector_ids"))),
+        "first_hit_date": _text(row.get("first_hit_date")),
+        "last_hit_date": _text(row.get("last_hit_date")),
+        "aggregation_schema_version": _text(row.get("aggregation_schema_version")),
+        "generated_at": _text(row.get("generated_at")) or None,
+    }
+
+
+def _split_detector_id_text(value: Any) -> set[str]:
+    if isinstance(value, (list, tuple, set)):
+        return {str(item) for item in value if str(item)}
+    return {item for item in _text(value).split("|") if item}
 
 
 def _run_item(row: pd.Series) -> dict[str, Any]:

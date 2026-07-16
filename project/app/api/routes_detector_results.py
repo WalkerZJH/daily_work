@@ -13,6 +13,7 @@ from app.schemas.detector_results import (
     DailyDetectorStatusResponse,
     DetectorCatalogResponse,
     DetectorConfigStatusResponse,
+    DetectorEventAggregatesResponse,
     RiskEntityDetectorEvidenceResponse,
 )
 from app.services.detector_result_service import (
@@ -150,6 +151,32 @@ def detector_results(
         drug_code=drug_code,
         eligibility_status=eligibility_status,
         hit_flag=hit_flag,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/detectors/event-aggregates", response_model=DetectorEventAggregatesResponse)
+def detector_event_aggregates(
+    service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
+    observation_date: str,
+    manufacturer_code: str | None = None,
+    hospital_code: str | None = None,
+    drug_code: str | None = None,
+    historical_detector_id: str | None = None,
+    sort_by: str = Query(default="current_detector_count"),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+) -> dict:
+    return service.event_aggregates(
+        observation_date=observation_date,
+        manufacturer_code=manufacturer_code,
+        hospital_code=hospital_code,
+        drug_code=drug_code,
+        historical_detector_id=historical_detector_id,
+        sort_by=sort_by,
+        sort_order=sort_order,
         page=page,
         page_size=page_size,
     )

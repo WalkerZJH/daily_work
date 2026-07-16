@@ -106,6 +106,9 @@ class RiskResultRepository(ABC):
     def list_daily_detector_results(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("daily_detector_results"), filters)
 
+    def list_detector_event_aggregates(self, **filters: Any) -> pd.DataFrame:
+        raise NotImplementedError
+
     def list_detector_config_profiles(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("detector_config_profiles"), filters)
 
@@ -294,6 +297,44 @@ class ParquetRiskResultRepository(RiskResultRepository):
 
     def list_daily_detector_clues(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("daily_detector_clues"), filters)
+
+    def list_detector_event_aggregates(self, **filters: Any) -> pd.DataFrame:
+        root = detector_batch_root(self.batch_dir)
+        manifests = sorted(
+            root.glob("detector_event_aggregates/batch_id=*/manifest.json"),
+            reverse=True,
+        )
+        observation_date = str(filters.get("observation_date") or "")
+        table_path: Path | None = None
+        for manifest_path in manifests:
+            try:
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if manifest.get("report_type") != "detector_event_aggregation":
+                continue
+            if observation_date and not (
+                str(manifest.get("start_date") or "") <= observation_date
+                <= str(manifest.get("end_date") or "")
+            ):
+                continue
+            candidate = manifest_path.parent / str(
+                manifest.get("aggregate_table") or "detector_event_aggregates.parquet"
+            )
+            if candidate.is_file():
+                table_path = candidate
+                break
+        if table_path is None:
+            return pd.DataFrame()
+        parquet_filters = [
+            (name, "==", value)
+            for name, value in filters.items()
+            if value is not None and name in {
+                "observation_date", "manufacturer_code", "hospital_code", "drug_code"
+            }
+        ]
+        frame = pd.read_parquet(table_path, filters=parquet_filters or None)
+        return apply_filters(frame, filters)
 
     def get_daily_detector_clue_by_id(
         self,
@@ -569,6 +610,9 @@ class InMemoryRiskResultRepository(RiskResultRepository):
 
     def list_daily_detector_clues(self, **filters: Any) -> pd.DataFrame:
         return apply_filters(self.load_table("daily_detector_clues"), filters)
+
+    def list_detector_event_aggregates(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("detector_event_aggregates"), filters)
 
     def get_daily_detector_clue_by_id(
         self,
@@ -870,6 +914,17 @@ def infer_batch_root(batch_dir: Path) -> Path:
     if batch_dir.parent.name.startswith("report_month="):
         return batch_dir.parent.parent
     return batch_dir
+
+
+def detector_batch_root(batch_dir: Path) -> Path:
+    """Resolve the shared result root from a monthly, Detector, or aggregate batch."""
+    candidate = Path(batch_dir)
+    for path in [candidate, *candidate.parents]:
+        if path.name.startswith(("detector_run_date=", "report_month=")):
+            return path.parent
+        if path.name == "detector_event_aggregates":
+            return path.parent
+    return infer_batch_root(candidate)
 
 
 def resolve_report_context_from_rows(

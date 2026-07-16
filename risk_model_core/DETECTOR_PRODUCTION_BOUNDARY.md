@@ -95,6 +95,25 @@ python -m production_pipeline.run_monthly_prediction <monthly arguments>
 
 Do not append Detector execution to the monthly command and do not add monthly scoring to Detector execution.
 
+## Cross-day event aggregation
+
+The optional cross-day aggregate is a read-only Detector derivative. It reads hit facts from the explicit
+`daily_detector_results.parquet` `drug_code`; it must not infer `drug_code` from the separately reserved
+`drug_group` display/domain field. It never rewrites a date component and never invokes monthly prediction.
+
+```powershell
+python -m production_pipeline.materialize_detector_event_aggregates `
+  --batch-root data/project_result_batches `
+  --start-date YYYY-MM-DD `
+  --end-date YYYY-MM-DD `
+  --run-id <new_versioned_run_id> `
+  --detector-id <detector_id>
+```
+
+The immutable output lives under `detector_event_aggregates/batch_id=...`. The query API is
+`GET /api/v1/detectors/event-aggregates`; request filters do not trigger either Detector evaluation or
+aggregate rematerialization. See `reports/detector_event_aggregation_design.md` for count semantics and gates.
+
 ## Migration and registry
 
 Legacy date-wide Detector Parquet can be split without recomputation when its clue and evidence tables contain

@@ -199,6 +199,33 @@ class DailyDetectorResultsResponse(DetectorResultModel):
     warnings: list[str]
 
 
+class DetectorEventAggregateItem(DetectorResultModel):
+    detector_event_aggregate_id: str
+    observation_date: str
+    manufacturer_code: str
+    hospital_code: str
+    drug_code: str
+    current_detector_count: int = Field(ge=1)
+    current_detector_ids: list[str]
+    cumulative_hit_count: int = Field(ge=1)
+    cumulative_hit_day_count: int = Field(ge=1)
+    historical_detector_ids: list[str]
+    first_hit_date: str
+    last_hit_date: str
+    aggregation_schema_version: str
+    generated_at: str | None = None
+
+
+class DetectorEventAggregatesResponse(DetectorResultModel):
+    ready: bool
+    source: str
+    items: list[DetectorEventAggregateItem]
+    total: int = Field(ge=0)
+    pagination: dict[str, int]
+    sort: dict[str, str]
+    warnings: list[str]
+
+
 class DailyDetectorClueDetailResponse(DetectorResultModel):
     ready: bool
     source: str
