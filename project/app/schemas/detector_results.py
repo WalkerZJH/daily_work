@@ -13,6 +13,10 @@ class DetectorCatalogItem(DetectorResultModel):
     detector_id: str
     detector_family: str
     detector_name: str
+    detector_name_en: str | None = None
+    detector_name_zh: str | None = None
+    detector_description_zh: str | None = None
+    detector_family_name_zh: str | None = None
     status: str
     enabled_by_default: bool
     method: str
@@ -95,6 +99,7 @@ class DailyDetectorClueItem(DetectorResultModel):
     hospital_display_name: str | None = None
     hospital_name: str | None = None
     drug_group: str | None = None
+    drug_code: str | None = None
     drug_display_name: str | None = None
     drug_name: str | None = None
     region_display_name: str | None = None
@@ -103,6 +108,9 @@ class DailyDetectorClueItem(DetectorResultModel):
     detector_family: str
     detector_family_label: str | None = None
     detector_name_label: str | None = None
+    detector_name_en: str | None = None
+    detector_name_zh: str | None = None
+    detector_description_zh: str | None = None
     detector_score: float | None = None
     detector_score_label: str | None = None
     detector_level: str | None = None
@@ -197,6 +205,57 @@ class DailyDetectorResultsResponse(DetectorResultModel):
     pagination: dict[str, int]
     semantic_caveats: list[str]
     warnings: list[str]
+
+
+class DetectorEntitySummary(DetectorResultModel):
+    manufacturer_code: str
+    manufacturer_name: str
+    hospital_code: str
+    hospital_name: str
+    drug_code: str
+    drug_name: str
+    region_display_name: str | None = None
+    product_line_name: str | None = None
+
+
+class DetectorEntityHitItem(DailyDetectorResultItem):
+    detector_name_en: str | None = None
+    detector_name_zh: str
+    detector_description_zh: str | None = None
+    detector_family_name_zh: str | None = None
+    monitoring_logic: dict[str, Any] = Field(default_factory=dict)
+    observed_values: dict[str, Any] = Field(default_factory=dict)
+    decision: dict[str, Any] = Field(default_factory=dict)
+
+
+class DetectorEntityDetailResponse(DetectorResultModel):
+    ready: bool
+    source: str
+    observation_date: str
+    clue_id: str | None = None
+    entity: DetectorEntitySummary
+    detector_hit_count: int = Field(ge=0)
+    detector_hits: list[DetectorEntityHitItem]
+    monthly_prediction: dict[str, Any] | None = None
+    probability_trend: list[dict[str, Any]] = Field(default_factory=list)
+    semantic_caveats: list[str]
+    warnings: list[str]
+    report_context: dict[str, Any] = Field(default_factory=dict)
+    effective_observation_date: str | None = None
+    probability_report_month: str | None = None
+    expected_probability_report_month: str | None = None
+    effective_probability_report_month: str | None = None
+    probability_batch_available: bool | None = None
+    detector_run_date: str | None = None
+    detector_run_available: bool | None = None
+    context_status: str | None = None
+    manual_selection_required: bool | None = None
+    partial_ready: bool = False
+    requested_report_month: str | None = None
+    effective_report_month: str | None = None
+    requested_run_date: str | None = None
+    effective_run_date: str | None = None
+    date_resolution_status: str | None = None
 
 
 class DetectorEventAggregateItem(DetectorResultModel):

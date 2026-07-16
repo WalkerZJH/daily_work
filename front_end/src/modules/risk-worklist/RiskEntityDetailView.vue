@@ -6,8 +6,10 @@ import {
   applyReportContextToQuery,
   buildPersistentParams,
   createEmptyClueDetailData,
+  createEmptyDetectorEntityDetailData,
   createEmptyRuleOnlyClueDetailData,
   horizonOptions,
+  loadDetectorEntityDetailData,
   loadReportContext,
   loadRiskEntityDetailData,
   loadRuleOnlyClueDetailData,
@@ -17,8 +19,13 @@ import {
 const params = new URLSearchParams(window.location.search)
 const riskEntityId = params.get('id') || params.get('riskEntityId')
 const clueId = params.get('clueId')
+const entityManufacturerCode = params.get('manufacturer_code') || params.get('manufacturerCode')
+const entityHospitalCode = params.get('hospital_code') || params.get('hospitalCode')
+const entityDrugCode = params.get('drug_code') || params.get('drugCode')
+const entityObservationDate = params.get('observation_date') || params.get('observationDate') || params.get('run_date')
 // Candidate links may retain clueId for source traceability; candidate mode wins for compatibility.
-const detailMode = riskEntityId ? 'candidate' : clueId ? 'rule-only' : 'invalid'
+const hasDetectorEntityKey = Boolean(entityManufacturerCode && entityHospitalCode && entityDrugCode && entityObservationDate)
+const detailMode = riskEntityId ? 'candidate' : hasDetectorEntityKey || clueId ? 'entity-detector' : 'invalid'
 const draftQuery = reactive(normalizeWorkbenchQuery({
   backendBaseUrl: params.get('backendBaseUrl'),
   userId: params.get('user_id') || params.get('userId'),
@@ -34,6 +41,7 @@ const draftQuery = reactive(normalizeWorkbenchQuery({
 const appliedQuery = ref(normalizeWorkbenchQuery(draftQuery))
 const candidateState = ref(createEmptyClueDetailData({ riskEntityId, query: appliedQuery.value }))
 const ruleOnlyState = ref(createEmptyRuleOnlyClueDetailData({ clueId, query: appliedQuery.value }))
+const detectorEntityState = ref(createEmptyDetectorEntityDetailData({ clueId, query: appliedQuery.value }))
 const reportContext = ref(candidateState.value.reportContext)
 const isLoading = ref(false)
 const manufacturerScope = useManufacturerScope()
@@ -44,12 +52,18 @@ let pageReady = false
 const entity = computed(() => candidateState.value.entity)
 const profiles = computed(() => Object.values(candidateState.value.horizonProfiles || {}))
 const evidence = computed(() => candidateState.value.detectorEvidence || [])
-const probabilityTrend = computed(() => candidateState.value.probabilityTrend || [])
-const probabilityTrendWarnings = computed(() => candidateState.value.probabilityTrendWarnings || [])
+const probabilityTrend = computed(() => detailMode === 'entity-detector'
+  ? detectorEntityState.value.probabilityTrend || []
+  : candidateState.value.probabilityTrend || [])
+const probabilityTrendWarnings = computed(() => detailMode === 'entity-detector'
+  ? detectorEntityState.value.probabilityTrendWarnings || []
+  : candidateState.value.probabilityTrendWarnings || [])
 const selectedHorizonProfile = computed(() => candidateState.value.horizonProfiles?.[appliedQuery.value.horizon] || null)
 const selectedHorizonLabel = computed(() => horizonOptions.find((item) => item.id === appliedQuery.value.horizon)?.label || appliedQuery.value.horizon)
 const ruleClue = computed(() => ruleOnlyState.value.clue)
 const evidenceFields = computed(() => flattenEvidence(ruleClue.value?.evidencePayload))
+const detectorEntity = computed(() => detectorEntityState.value.entity)
+const detectorEntityHits = computed(() => detectorEntityState.value.detectorHits || [])
 
 const TREND_PLOT = Object.freeze({ left: 72, right: 648, top: 28, bottom: 218 })
 
@@ -156,7 +170,7 @@ function backHref() {
     ...appliedQuery.value,
     manufacturerCode: manufacturerCode.value
   })
-  return `${detailMode === 'rule-only' ? 'clues.html' : 'index.html'}?${query.toString()}`
+  return `${detailMode === 'candidate' ? 'index.html' : 'clues.html'}?${query.toString()}`
 }
 
 function updateUrl() {
@@ -201,6 +215,26 @@ async function loadRuleOnlyDetail() {
   }
 }
 
+async function loadDetectorEntityDetail() {
+  const sequence = ++requestSequence
+  isLoading.value = true
+  try {
+    const loadedState = await loadDetectorEntityDetailData({
+      clueId,
+      manufacturerCode: entityManufacturerCode || manufacturerCode.value,
+      hospitalCode: entityHospitalCode,
+      drugCode: entityDrugCode,
+      observationDate: entityObservationDate,
+      query: appliedQuery.value
+    })
+    if (sequence !== requestSequence) return
+    detectorEntityState.value = loadedState
+    reportContext.value = loadedState.reportContext || reportContext.value
+  } finally {
+    if (sequence === requestSequence) isLoading.value = false
+  }
+}
+
 function formatEvidenceValue(value) {
   if (value === null || value === undefined || value === '') return '暂无数据'
   if (typeof value === 'object') return JSON.stringify(value)
@@ -226,6 +260,8 @@ onMounted(async () => {
   pageReady = true
   if (detailMode === 'candidate') {
     await refreshCandidateDetail()
+  } else if (detailMode === 'entity-detector') {
+    await loadDetectorEntityDetail()
   } else if (detailMode === 'rule-only') {
     await loadRuleOnlyDetail()
   }
@@ -236,13 +272,14 @@ watch(manufacturerCode, async (nextCode) => {
   draftQuery.manufacturerCode = nextCode
   appliedQuery.value = normalizeWorkbenchQuery(draftQuery)
   if (detailMode === 'candidate') await refreshCandidateDetail()
+  if (detailMode === 'entity-detector') await loadDetectorEntityDetail()
   if (detailMode === 'rule-only') await loadRuleOnlyDetail()
 })
 </script>
 
 <template>
   <div class="page-shell">
-    <a class="back-link" :href="backHref()">{{ detailMode === 'rule-only' ? '返回规则巡检结果' : '返回月度候选工作台' }}</a>
+    <a class="back-link" :href="backHref()">{{ detailMode === 'candidate' ? '返回月度候选工作台' : '返回规则巡检结果' }}</a>
 
     <div v-if="detailMode === 'candidate'" class="page-header control-header">
       <div>
@@ -267,6 +304,11 @@ watch(manufacturerCode, async (nextCode) => {
 
     <div v-else-if="detailMode === 'rule-only'" class="page-header">
       <div><h1>规则线索详情</h1><div class="subtitle">Daily Detector 的事实型规则巡检记录</div></div>
+    </div>
+
+    <div v-else-if="detailMode === 'entity-detector'" class="page-header control-header">
+      <div><h1>实体规则证据详情</h1><div class="subtitle">同一医院—药品在当前观察日期命中的全部 Detector 事实</div></div>
+      <button type="button" class="btn btn-primary" :disabled="isLoading" @click="loadDetectorEntityDetail">{{ isLoading ? '查询中…' : '刷新详情' }}</button>
     </div>
 
     <div v-if="detailMode === 'invalid'" class="empty"><strong>缺少详情标识</strong><p>请从月度候选工作台或规则巡检结果打开详情。</p></div>
@@ -325,6 +367,87 @@ watch(manufacturerCode, async (nextCode) => {
           <dl v-else class="definition-grid"><template v-for="field in evidenceFields" :key="field.key"><dt>{{ field.key }}</dt><dd>{{ formatEvidenceValue(field.value) }}</dd></template></dl>
         </SectionCard>
         <section class="notice-strip context-notice"><strong>口径说明</strong><span>规则巡检分数不是月度风险概率。</span><span>仅规则命中不会创建 Recurring 风险候选对象。</span></section>
+      </template>
+    </template>
+
+    <template v-else-if="detailMode === 'entity-detector'">
+      <div v-if="!detectorEntity" class="empty"><strong>{{ detectorEntityState.emptyTitle }}</strong><p>{{ detectorEntityState.emptyMessage }}</p></div>
+      <template v-else>
+        <section v-if="reportContext?.displayTitle" class="notice-strip context-notice"><strong>{{ reportContext.displayTitle }}</strong><span v-for="line in reportContext.displayLines" :key="line">{{ line }}</span></section>
+        <SectionCard title="对象与观测上下文" subtitle="名称优先、编码作为辅助核验字段">
+          <dl class="definition-grid">
+            <dt>医院</dt><dd>{{ detectorEntity.hospital }} <span class="muted">{{ detectorEntity.hospitalCode }}</span></dd>
+            <dt>药品</dt><dd>{{ detectorEntity.drug }} <span class="muted">{{ detectorEntity.drugCode }}</span></dd>
+            <dt>生产企业</dt><dd>{{ detectorEntity.manufacturer }} <span class="muted">{{ detectorEntity.manufacturerCode }}</span></dd>
+            <dt>观测日期</dt><dd>{{ detectorEntityState.observationDate }}</dd>
+            <dt>当日规则命中记录</dt><dd>{{ detectorEntityState.detectorHitCount }}</dd>
+          </dl>
+        </SectionCard>
+
+        <SectionCard title="当前 Detector 汇总" subtitle="按规则命中记录展示，不聚合为跨日事件">
+          <dl class="definition-grid">
+            <dt>当前命中 Detector 数</dt><dd>{{ detectorEntityState.detectorHitCount }}</dd>
+            <dt>命中规则名称</dt><dd>{{ detectorEntityHits.length ? detectorEntityHits.map((hit) => hit.detectorName).join('、') : '--' }}</dd>
+            <dt>命中等级</dt><dd>{{ detectorEntityHits.length ? detectorEntityHits.map((hit) => `${hit.detectorName}：${hit.severity || '--'}`).join('；') : '--' }}</dd>
+          </dl>
+        </SectionCard>
+
+        <SectionCard title="当日命中的全部规则" subtitle="同一实体可能同时命中多条规则；规则巡检分不是概率">
+          <div v-if="!detectorEntityHits.length" class="empty">当前实体在该观察日期没有规则命中记录。</div>
+          <article v-for="hit in detectorEntityHits" v-else :key="hit.detector_result_id" class="detector-result-card">
+            <h3>{{ hit.detectorName }}</h3>
+            <p v-if="hit.detectorDescription" class="muted">{{ hit.detectorDescription }}</p>
+            <dl class="definition-grid compact">
+              <dt>规则大类</dt><dd>{{ hit.detectorFamilyLabel || '-' }}</dd>
+              <dt>Detector ID</dt><dd>{{ hit.detectorId }}</dd>
+              <dt>命中等级</dt><dd>{{ hit.severity || '暂无数据' }}</dd>
+              <dt>监测逻辑摘要</dt><dd>{{ hit.detectorDescription || '当前 Catalog 未提供监测逻辑摘要' }}</dd>
+              <dt>证据说明</dt><dd>{{ hit.evidenceText || '-' }}</dd>
+              <dt>当前值</dt><dd>{{ formatEvidenceValue(hit.currentValue) }}</dd>
+              <dt>历史基准</dt><dd>{{ formatEvidenceValue(hit.baselineValue) }}</dd>
+              <dt>比较结果</dt><dd>{{ formatEvidenceValue(hit.comparisonValue) }}</dd>
+              <dt>命中阈值</dt><dd>{{ hit.thresholdOperator || '' }} {{ formatEvidenceValue(hit.thresholdValue) }}</dd>
+              <dt>为什么命中</dt><dd>{{ hit.hitReason || '当前规则未提供命中原因' }}</dd>
+              <dt>业务边界说明</dt><dd>{{ hit.caveat || '当前规则未提供业务边界说明' }}</dd>
+            </dl>
+            <details>
+              <summary>计算说明</summary>
+              <dl class="definition-grid compact">
+                <dt>Detector 版本</dt><dd>{{ hit.detector_version || '暂无数据' }}</dd>
+                <dt>配置 ID / 哈希</dt><dd>{{ hit.config_id || '暂无数据' }} / {{ hit.config_hash || '暂无数据' }}</dd>
+                <dt>公式</dt><dd>{{ hit.monitoringLogic?.formula || '暂无数据' }}</dd>
+                <dt>计算窗口</dt><dd>{{ hit.evidence_window_start || '暂无数据' }} 至 {{ hit.evidence_window_end || '暂无数据' }}</dd>
+                <dt>当前 / 基准窗口</dt><dd>{{ formatEvidenceValue(hit.monitoringLogic?.current_window) }} / {{ formatEvidenceValue(hit.monitoringLogic?.baseline_window) }}</dd>
+                <dt>最低样本要求</dt><dd>{{ formatEvidenceValue(hit.monitoringLogic?.eligibility) }}</dd>
+                <dt>Demand-shape 调整</dt><dd>{{ hit.demand_shape_label || '暂无数据' }}</dd>
+                <dt>订单 eligibility</dt><dd>{{ hit.eligibility_status || '暂无数据' }}</dd>
+                <dt>参数来源</dt><dd>{{ hit.config_id ? `不可变 Detector 运行配置 ${hit.config_id}` : '暂无数据' }}</dd>
+                <dt>判定条件</dt><dd>{{ hit.monitoringLogic?.hit_condition || '暂无数据' }}</dd>
+              </dl>
+              <pre v-if="hit.evidencePayload">{{ formatEvidenceValue(hit.evidencePayload) }}</pre>
+            </details>
+          </article>
+        </SectionCard>
+
+        <SectionCard title="精确关联的月报上下文" subtitle="月报结果可为空；不会使用其他月份、其他日期或最新批次替代">
+          <dl class="definition-grid">
+            <dt>报告月份</dt><dd>{{ detectorEntityState.monthlyPrediction?.report_month || '--' }}</dd>
+            <dt>预测窗口</dt><dd>{{ detectorEntityState.monthlyPrediction?.horizon || appliedQuery.horizon || '--' }}</dd>
+            <dt>月度风险概率</dt><dd>{{ detectorEntityState.monthlyPrediction?.riskProbabilityText || '--' }}</dd>
+            <dt>涉及金额</dt><dd>{{ detectorEntityState.monthlyPrediction?.involvedAmountText || '--' }}</dd>
+            <dt>风险展示等级</dt><dd>{{ detectorEntityState.monthlyPrediction?.risk_level || '--' }}</dd>
+          </dl>
+          <div v-if="!detectorEntityState.monthlyPrediction" class="empty">未纳入当前月度概率预测集；Detector 事实仍可独立查看。</div>
+        </SectionCard>
+
+        <SectionCard title="月度滚动概率趋势" subtitle="仅在精确匹配到月度实体时展示">
+          <div v-if="probabilityTrend.length" class="data-table-wrap">
+            <table><thead><tr><th>报告月份</th><th>预测窗口</th><th>月度概率</th><th>涉及金额</th></tr></thead><tbody><tr v-for="point in probabilityTrend" :key="point.reportMonth"><td>{{ point.reportMonth }}</td><td>{{ detectorEntityState.monthlyPrediction?.horizon || appliedQuery.horizon }}</td><td>{{ point.riskProbabilityText }}</td><td>{{ point.involvedAmountText }}</td></tr></tbody></table>
+          </div>
+          <div v-else class="empty">趋势：未纳入当前月度概率预测集。</div>
+          <div v-if="probabilityTrendWarnings.length" class="notice-strip context-notice"><span v-for="warning in probabilityTrendWarnings" :key="warning">{{ trendWarningText(warning) }}</span></div>
+        </SectionCard>
+        <section class="notice-strip context-notice"><strong>口径说明</strong><span>Detector Score 是规则巡检分，不是月度风险概率。</span><span>规则命中不会创建月度候选对象，也不会改变概率、排序或金额。</span></section>
       </template>
     </template>
 

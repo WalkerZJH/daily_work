@@ -239,6 +239,10 @@ export class BackendApi {
     )
   }
 
+  async getDetectorEntityDetail(params = {}) {
+    return getJson(this.baseUrl, '/api/v1/detectors/entity-detail', params, this.userOptions())
+  }
+
   async getMyManufacturers(params = {}) {
     return getJson(this.baseUrl, '/api/v1/my/manufacturers', params, this.userOptions())
   }

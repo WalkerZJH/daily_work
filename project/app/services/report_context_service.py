@@ -85,7 +85,14 @@ class ReportContextService:
         if not path_text:
             return None
         path = _resolve_batch_path(path_text)
-        return open_detector_result_repository(path) if path.exists() else None
+        return (
+            open_detector_result_repository(
+                path,
+                display_lookup_repository=self.probability_repository(context),
+            )
+            if path.exists()
+            else None
+        )
 
     def _resolve_observation_context(
         self,

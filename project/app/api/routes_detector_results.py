@@ -13,6 +13,7 @@ from app.schemas.detector_results import (
     DailyDetectorStatusResponse,
     DetectorCatalogResponse,
     DetectorConfigStatusResponse,
+    DetectorEntityDetailResponse,
     DetectorEventAggregatesResponse,
     RiskEntityDetectorEvidenceResponse,
 )
@@ -231,6 +232,47 @@ def daily_detector_clues(
         page_size=top_n or limit or page_size,
         sort_order=sort_order,
     ), context)
+
+
+@router.get(
+    "/detectors/entity-detail",
+    response_model=DetectorEntityDetailResponse,
+)
+def detector_entity_detail(
+    service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
+    report_context_service: Annotated[ReportContextService, Depends(get_report_context_service)],
+    observation_date: str,
+    manufacturer_code: str,
+    hospital_code: str,
+    drug_code: str,
+    clue_id: str | None = None,
+    report_month: str | None = None,
+    manual_report_month: bool = False,
+    horizon: str = "H6",
+) -> dict:
+    context = report_context_service.resolve(
+        observation_date=observation_date,
+        report_month=report_month,
+        run_date=observation_date,
+        horizon=horizon,
+        manufacturer_code=manufacturer_code,
+        user_id=None,
+        manual_report_month=manual_report_month,
+    )
+    if not context.get("detector_run_available"):
+        raise HTTPException(status_code=404, detail="Detector run is unavailable for this observation date")
+    contextual_service = _detector_service_for_context(service, report_context_service, context)
+    payload = contextual_service.entity_detail(
+        observation_date=context.get("effective_run_date") or observation_date,
+        manufacturer_code=manufacturer_code,
+        hospital_code=hospital_code,
+        drug_code=drug_code,
+        clue_id=clue_id,
+        probability_repository=report_context_service.probability_repository(context),
+        probability_batch_root=report_context_service.batch_root,
+        horizon=context.get("effective_horizon") or horizon,
+    )
+    return _with_report_context(payload, context)
 
 
 @router.get(

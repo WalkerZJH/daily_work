@@ -13,6 +13,35 @@ DETECTOR_CATALOG_SCHEMA_VERSION = "daily_detector_catalog_v1"
 DETECTOR_OUTPUT_SCHEMA_VERSION = "daily_detector_clue_v1"
 
 
+DETECTOR_RELEASE_B_LABELS = {
+    "purchase_interval_ipi": ("采购间隔异常", "当前采购间隔明显超过对象自身历史正常间隔。"),
+    "purchase_quantity_trend": ("采购量下降", "简单比例规则 v1：近期采购量 ÷ 历史基准采购量低于阈值。"),
+    "purchase_frequency_drop": ("采购频次下降", "近期采购次数明显低于对象自身历史频次基准。"),
+    "purchase_quantity_spike": ("采购量异常上升", "近期采购数量明显高于对象自身历史采购水平。"),
+    "purchase_frequency_spike": ("采购频次异常上升", "近期采购次数明显高于对象自身历史频次基准。"),
+    "low_price_warning": ("低价预警", "当前采购单价低于配置阈值或历史市场低位参考。"),
+    "order_price_spread_warning": ("订单价格离散预警", "近期可比采购单价的高低差异超过规则阈值。"),
+    "purchase_price_level_shift": ("采购价格水平漂移", "近期采购价格中位水平偏离历史基准。"),
+    "first_purchase_fact": ("首次采购事实", "记录对象首次发生正常完成采购的事实。"),
+    "reactivated_purchase_fact": ("恢复采购事实", "记录对象在较长静默期后恢复正常采购的事实。"),
+    "sku_shrink": ("SKU 收缩", "当前缺少正式产品线领域概念，暂不可执行。"),
+    "fulfillment_gap": ("履约缺口", "当前交付与到货时间字段不足，暂不可执行。"),
+    "price_competition": ("价格竞争", "当前缺少可靠的可比单价与价格参考，暂不可执行。"),
+    "peer_contrast": ("同群对比", "当前同群样本稳定性尚未完成业务验证，暂不可执行。"),
+}
+
+DETECTOR_FAMILY_NAMES_ZH = {
+    "interval": "采购间隔异常",
+    "quantity": "采购数量异常",
+    "frequency": "采购频次异常",
+    "price": "采购价格异常",
+    "purchase_fact": "采购事实",
+    "assortment": "SKU 结构",
+    "fulfillment": "履约交付",
+    "peer": "同群对比",
+}
+
+
 CAPABILITY_ROWS = [
     {
         "detector_family": "interval",
@@ -297,11 +326,21 @@ def build_detector_catalog(config: DailyDetectorConfig | None = None) -> pd.Data
     rows = []
     for row in CAPABILITY_ROWS:
         detector_cfg = cfg.detectors.get(row["detector_id"], {})
+        detector_name_zh, detector_description_zh = DETECTOR_RELEASE_B_LABELS.get(
+            row["detector_id"],
+            (row["detector_name"], row["reason"]),
+        )
         rows.append(
             {
                 "detector_id": row["detector_id"],
                 "detector_family": row["detector_family"],
                 "detector_name": row["detector_name"],
+                "detector_name_en": row["detector_name"],
+                "detector_name_zh": detector_name_zh,
+                "detector_description_zh": detector_description_zh,
+                "detector_family_name_zh": DETECTOR_FAMILY_NAMES_ZH.get(
+                    row["detector_family"], row["detector_family"]
+                ),
                 "status": str(detector_cfg.get("status") or row["status"]),
                 "enabled_by_default": bool(detector_cfg.get("enabled", row["enabled_by_default"])),
                 "method": str(detector_cfg.get("method") or row["method"]),

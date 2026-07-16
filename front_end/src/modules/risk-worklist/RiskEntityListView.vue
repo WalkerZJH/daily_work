@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import SectionCard from '../../components/SectionCard.vue'
 import SquareDatePicker from '../../components/ui/SquareDatePicker.vue'
+import DetectorCardFilterPanel from './DetectorCardFilterPanel.vue'
 import { useManufacturerScope } from '../../context/manufacturerScope'
 import {
   applyReportContextToQuery,
@@ -88,15 +89,36 @@ const ruleSubtypeOptions = computed(() => {
     : (options.value.detectorCatalog || []).filter((item) => ruleCategoryForDetectorFamily(item.detectorFamily) === selectedRuleCategory.value)
   return [{ id: 'all', label: '全部小类' }, ...catalog.map((item) => ({ id: item.detectorId, label: item.detectorName || item.detectorId }))]
 })
+const detectorFamilies = computed(() => {
+  const summaries = {
+    price: '识别采购价格低位、离散或相对历史水平发生明显变化的规则事实。',
+    fulfillment: '识别配送和到货过程中的异常事实；当前受正式数据可用性约束。',
+    terminal: '识别采购间隔、首次采购、恢复采购及终端结构变化事实。',
+    sales: '识别采购数量与采购频次相对对象自身历史基准的变化。'
+  }
+  return RULE_CATEGORY_DEFINITIONS.map((definition) => ({
+    ...definition,
+    summary: summaries[definition.id],
+    detectors: (options.value.detectorCatalog || []).filter(
+      (item) => ruleCategoryForDetectorFamily(item.detectorFamily) === definition.id
+    )
+  }))
+})
 const displayedClues = computed(() => state.value.dailyDetectorClues || [])
 const pagination = computed(() => state.value.pagination || { page: 1, pageSize: 20, total: 0, totalPages: 0 })
 const appliedFilterSummary = computed(() => {
   if (!hasSubmittedQuery.value) return '尚未应用筛选条件'
   const labels = []
-  if (appliedFilters.value.detectorCategory) labels.push(ruleCategoryOptions.value.find((item) => item.id === appliedFilters.value.detectorCategory)?.label || appliedFilters.value.detectorCategory)
-  if (appliedFilters.value.detectorId) labels.push(ruleSubtypeOptions.value.find((item) => item.id === appliedFilters.value.detectorId)?.label || appliedFilters.value.detectorId)
+  if (appliedFilters.value.detectorCategory) {
+    labels.push(ruleCategoryOptions.value.find((item) => item.id === appliedFilters.value.detectorCategory)?.label || appliedFilters.value.detectorCategory)
+    labels.push(appliedFilters.value.detectorId
+      ? (options.value.detectorCatalog || []).find((item) => item.detectorId === appliedFilters.value.detectorId)?.detectorName || appliedFilters.value.detectorId
+      : '全部 Detector')
+  } else {
+    labels.push('全部规则')
+  }
   if (appliedFilters.value.detectorLevel) labels.push(`命中等级 ${appliedFilters.value.detectorLevel}`)
-  labels.push(`${pagination.value.total} 条结果`)
+  labels.push(`${formatCount(pagination.value.total)} 条结果`)
   return labels.join(' · ')
 })
 const emptyTitle = computed(() => hasSubmittedQuery.value ? state.value.emptyTitle : '请设置查询条件并点击查询')
@@ -104,8 +126,36 @@ const emptyMessage = computed(() => hasSubmittedQuery.value ? state.value.emptyM
 const showContextNotice = computed(() => hasSubmittedQuery.value && Boolean(reportContext.value?.displayTitle))
 
 function detailHref(clue) {
-  const next = buildPersistentParams(appliedQuery.value, { clueId: clue.id })
+  const next = buildPersistentParams(appliedQuery.value, {
+    clueId: clue.id,
+    manufacturerCode: clue.manufacturerCode || appliedQuery.value.manufacturerCode,
+    hospitalCode: clue.hospitalCode,
+    drugCode: clue.drugCode,
+    observationDate: clue.detectorRunDate || appliedQuery.value.observationDate
+  })
   return `clue-detail.html?${next.toString()}`
+}
+
+function formatCount(value) {
+  return new Intl.NumberFormat('zh-CN').format(Number(value) || 0)
+}
+
+async function queryAllRules() {
+  selectedRuleCategory.value = 'all'
+  selectedDetectorId.value = 'all'
+  await submitQuery(1)
+}
+
+async function queryRuleFamily(familyId) {
+  selectedRuleCategory.value = familyId
+  selectedDetectorId.value = 'all'
+  await submitQuery(1)
+}
+
+async function queryDetector(familyId, detectorId) {
+  selectedRuleCategory.value = familyId
+  selectedDetectorId.value = detectorId
+  await submitQuery(1)
 }
 
 function updateUrl() {
@@ -243,25 +293,22 @@ watch(selectedDetectorId, () => {
       </div>
       <div class="batch-card">
         <div class="batch-row"><span>观察日期</span><strong>{{ query.observationDate }}</strong></div>
-        <div class="batch-row"><span>规则命中数</span><strong>{{ state.dailyDetectorStatus.clueCount }}</strong></div>
+        <div class="batch-row"><span>当日规则命中记录</span><strong>{{ formatCount(state.dailyDetectorStatus.clueCount) }}</strong></div>
         <div class="batch-row"><span>数据状态</span><strong>{{ state.dailyDetectorStatus.sourceLabel }}</strong></div>
       </div>
     </section>
 
-    <SectionCard title="线索筛选" subtitle="按规则大类、小类与命中来源查看巡检结果">
+    <SectionCard title="线索筛选" subtitle="浏览大类不会请求；点击查询按钮后才会应用到下方结果">
+      <DetectorCardFilterPanel
+        :families="detectorFamilies"
+        :applied-family="appliedFilters.detectorCategory"
+        :applied-detector="appliedFilters.detectorId"
+        :loading="isLoading"
+        @query-all="queryAllRules"
+        @query-family="queryRuleFamily"
+        @query-detector="queryDetector"
+      />
       <div class="control-grid">
-        <label class="control-field">
-          <span>规则大类</span>
-          <select v-model="selectedRuleCategory">
-            <option v-for="item in ruleCategoryOptions" :key="item.id" :value="item.id" :disabled="item.disabled">{{ item.label }}</option>
-          </select>
-        </label>
-        <label class="control-field">
-          <span>规则小类</span>
-          <select v-model="selectedDetectorId">
-            <option v-for="item in ruleSubtypeOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
-          </select>
-        </label>
         <label class="control-field">
           <span>命中等级</span>
           <select v-model="selectedDetectorLevel">
@@ -287,13 +334,18 @@ watch(selectedDetectorId, () => {
           <span>每页条数</span>
           <select v-model.number="draftQuery.pageSize"><option :value="20">20</option><option :value="50">50</option><option :value="100">100</option></select>
         </label>
-        <button type="button" class="btn btn-primary" :disabled="isLoading" @click="submitQuery(1)">{{ isLoading ? '查询中…' : '应用筛选' }}</button>
+        <button type="button" class="btn btn-primary" :disabled="isLoading" @click="submitQuery(1)">{{ isLoading ? '查询中…' : '应用辅助条件' }}</button>
         <button type="button" class="btn" :disabled="isLoading" @click="resetFilters">重置</button>
       </div>
-      <p class="muted">已应用：{{ appliedFilterSummary }}</p>
+      <div class="detector-filter-summary">
+        <strong>当前结果范围</strong>
+        <span>生产企业：{{ manufacturerCode || '-' }}</span>
+        <span>观察日期：{{ appliedQuery.observationDate || '-' }}</span>
+        <span>规则范围：{{ appliedFilterSummary }}</span>
+      </div>
     </SectionCard>
 
-    <SectionCard title="规则巡检结果" subtitle="展示 detector 命中的 entity 与规则证据">
+    <SectionCard title="当前筛选结果" subtitle="同一医院—药品可能命中多条规则，因此规则命中记录数不等于实体数。">
       <div v-if="isLoading" class="empty">刷新中</div>
       <div v-else-if="!displayedClues.length" class="empty">
         <strong>{{ emptyTitle }}</strong>
@@ -304,9 +356,10 @@ watch(selectedDetectorId, () => {
           <thead>
             <tr>
               <th>医院 × 药品</th>
-              <th>规则</th>
-              <th>规则巡检分</th>
-              <th>证据摘要</th>
+              <th>命中规则</th>
+              <th>命中等级</th>
+              <th>关键证据</th>
+              <th>观察日期</th>
               <th>动作</th>
             </tr>
           </thead>
@@ -314,30 +367,40 @@ watch(selectedDetectorId, () => {
             <tr v-for="clue in displayedClues" :key="clue.id">
               <td>
                 <strong>{{ clue.hospital }} × {{ clue.drug }}</strong>
-                <div class="muted">{{ clue.region }} · {{ clue.manufacturer }}</div>
+                <div class="muted">{{ clue.hospitalCode }} · {{ clue.drugCode }}</div>
+                <div v-if="clue.manufacturerNameAvailable" class="muted">{{ clue.region }} · {{ clue.manufacturer }} · {{ clue.manufacturerCode }}</div>
+                <div v-else class="muted">生产企业编码：{{ clue.manufacturerCode }} · 名称：--</div>
               </td>
               <td>
                 <strong>{{ clue.detectorName }}</strong>
-                <div class="muted">{{ clue.detectorFamilyLabel }} · {{ clue.detectorLevel }}</div>
+                <div class="muted">{{ clue.detectorFamilyLabel }} · {{ clue.detectorId }}</div>
+                <div class="muted">规则巡检分 {{ clue.detectorScoreText }}（非概率）</div>
               </td>
               <td>
-                <strong>{{ clue.detectorScoreText }}</strong>
-                <div class="muted">{{ clue.detectorScoreLabel }}</div>
+                <strong>{{ clue.detectorLevel }}</strong>
               </td>
               <td class="narrative-cell">
                 <strong>{{ clue.rootCauseLabel }}</strong>
                 <div class="muted">{{ clue.evidenceText }}</div>
               </td>
-              <td><a class="btn btn-primary btn-sm" :href="detailHref(clue)">{{ clue.actionText }}</a></td>
+              <td>{{ clue.detectorRunDate || appliedQuery.observationDate }}</td>
+              <td><a class="btn btn-sm" :href="detailHref(clue)">查看实体证据</a></td>
             </tr>
           </tbody>
         </table>
         <div class="pagination-row">
           <button type="button" class="btn btn-sm" :disabled="pagination.page <= 1 || isLoading" @click="goToPage(pagination.page - 1)">上一页</button>
-          <span>第 {{ pagination.page }} / {{ pagination.totalPages || 1 }} 页，共 {{ pagination.total }} 条</span>
+          <span>第 {{ pagination.page }} / {{ pagination.totalPages || 1 }} 页，共 {{ formatCount(pagination.total) }} 条</span>
           <button type="button" class="btn btn-sm" :disabled="pagination.page >= pagination.totalPages || isLoading" @click="goToPage(pagination.page + 1)">下一页</button>
         </div>
       </div>
     </SectionCard>
   </div>
 </template>
+
+<style scoped>
+.detector-filter-summary { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 18px; padding: 14px 16px; border-left: 3px solid #3b82f6; background: #f6f8fb; }
+.detector-filter-summary strong { flex-basis: 100%; }
+.clue-hero { align-items: center; padding-block: 20px; }
+.narrative-cell { min-width: 260px; }
+</style>

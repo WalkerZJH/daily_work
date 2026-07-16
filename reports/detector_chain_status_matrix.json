@@ -1,0 +1,171 @@
+[
+  {
+    "layer": "model",
+    "module": "ten_non_delivery_detectors",
+    "status": "complete",
+    "evidence": [
+      "risk_algorithm_core/detector_catalog.py: 10 target detectors are implemented and enabled",
+      "configs/risk_algorithm_core/daily_detector_rules.yaml: versioned defaults and manufacturer_specific scope",
+      "tests/test_detector_release_a_rules.py: targeted suite passed"
+    ],
+    "blocking_reason": null,
+    "affected_release": "A"
+  },
+  {
+    "layer": "materialization",
+    "module": "single_detector_range_and_isolation",
+    "status": "complete",
+    "evidence": [
+      "production_pipeline/materialize_daily_detector_range.py accepts repeatable detector-id, date range and manufacturer",
+      "tests/test_detector_component_incremental.py passed using an isolated temporary root",
+      "monthly scoring and candidate selection are absent from the call chain"
+    ],
+    "blocking_reason": null,
+    "affected_release": "A"
+  },
+  {
+    "layer": "materialization",
+    "module": "2025_full_year_runs",
+    "status": "partial",
+    "evidence": [
+      "8 materialize_daily_detector_range processes started 2026-07-16 15:46:40+08:00 and later exited without audit intervention",
+      "run ids zz-2025-admin-full-v1-q1 through q4b",
+      "all 8 range status files report completed=false; completed date counts are 27, 10, 25, 9, 23, 8, 22, 8",
+      "active or newly written parquet files were not opened"
+    ],
+    "blocking_reason": "materialization_incomplete_and_no_live_matching_process",
+    "affected_release": "A"
+  },
+  {
+    "layer": "publish",
+    "module": "component_validate_and_atomic_publish",
+    "status": "complete",
+    "evidence": [
+      "production_pipeline/run_daily_detector.py validates before atomic publish and refuses overwrite",
+      "component validation tests passed",
+      "2026-01-01 has 10 stable ready component runs"
+    ],
+    "blocking_reason": null,
+    "affected_release": "A"
+  },
+  {
+    "layer": "registry",
+    "module": "observation_date_resolution",
+    "status": "complete",
+    "evidence": [
+      "temporary registry rebuild test passed",
+      "GET /api/v1/daily-detector/dates reports all 10 components for 2026-01-01",
+      "report context resolves exact date without fallback"
+    ],
+    "blocking_reason": null,
+    "affected_release": "A"
+  },
+  {
+    "layer": "api",
+    "module": "daily_detector_clues_list",
+    "status": "partial",
+    "evidence": [
+      "stable GET returns paginated real clues and total",
+      "manufacturer/date/family/id/level/sort/page parameters are wired",
+      "severity alias is absent and names remain code fallbacks"
+    ],
+    "blocking_reason": "display_lookup_and_parameter_contract_incomplete",
+    "affected_release": "B"
+  },
+  {
+    "layer": "api",
+    "module": "live_server_version",
+    "status": "partial",
+    "evidence": [
+      "uvicorn PID 18160 started before current source changes",
+      "live OpenAPI omits source routes /detectors/results and /detectors/event-aggregates",
+      "server was not restarted by this audit"
+    ],
+    "blocking_reason": "running_service_not_loaded_from_current_head",
+    "affected_release": "B"
+  },
+  {
+    "layer": "view",
+    "module": "entity_display_lookup_for_detector_clues",
+    "status": "failed",
+    "evidence": [
+      "stable 2025-12 lookup contains master names for YL221606 and ZA12AAN0014010203711",
+      "CompositeDetectorResultRepository.load_entity_display_lookup returns an empty DataFrame",
+      "live clue API returns hospital/drug/manufacturer codes as names"
+    ],
+    "blocking_reason": "composite_detector_repository_does_not_expose_monthly_display_lookup",
+    "affected_release": "B"
+  },
+  {
+    "layer": "view",
+    "module": "detector_chinese_labels",
+    "status": "failed",
+    "evidence": [
+      "catalog detector_name values are English",
+      "DetectorResultService uses catalog detector_name as detector_name_label",
+      "frontend mapper faithfully displays detector_name_label"
+    ],
+    "blocking_reason": "no_stable_zh_label_contract_for_all_ten_detectors",
+    "affected_release": "B"
+  },
+  {
+    "layer": "view",
+    "module": "clues_filters_pagination_states",
+    "status": "complete",
+    "evidence": [
+      "RiskEntityListView.vue implements draft/applied filters, apply, reset and pagination",
+      "pageDataAdapter sends filter/sort/page parameters",
+      "frontend build succeeded"
+    ],
+    "blocking_reason": null,
+    "affected_release": "B"
+  },
+  {
+    "layer": "view",
+    "module": "entity_all_current_detector_hits_detail",
+    "status": "failed",
+    "evidence": [
+      "list builds clue-detail.html with clueId only",
+      "rule-only detail calls one GET /detectors/clues/{clueId}",
+      "example entity has 3 current hits but one clue detail renders only one"
+    ],
+    "blocking_reason": "entity_key_detail_route_and_api_are_missing_for_detector_only_entities",
+    "affected_release": "B"
+  },
+  {
+    "layer": "view",
+    "module": "count_semantics",
+    "status": "partial",
+    "evidence": [
+      "status clue_count is unfiltered raw clue row count",
+      "list total is filtered hit-only and detector_clue_id-deduplicated",
+      "stable no-filter sample returns 4488 for both"
+    ],
+    "blocking_reason": "expected_semantic_difference_but_ui_label_is_ambiguous",
+    "affected_release": "B"
+  },
+  {
+    "layer": "view",
+    "module": "clues_visual_strategy",
+    "status": "partial",
+    "evidence": [
+      "responsive layout, hierarchy, filters and states exist in current Vue/SCSS",
+      "requested notes/new_ver design document is absent from the repository",
+      "frontend build succeeded"
+    ],
+    "blocking_reason": "visual_acceptance_source_missing_and_cosmetic_work_remains",
+    "affected_release": "B"
+  },
+  {
+    "layer": "model",
+    "module": "cross_day_detector_event_aggregation",
+    "status": "partial",
+    "evidence": [
+      "a5d49b8 and f8658cc add event aggregation code",
+      "tests exist",
+      "live server does not expose the source event-aggregates route"
+    ],
+    "blocking_reason": "implemented_ahead_of_release_b_but_not_live_served",
+    "affected_release": "C"
+  }
+]

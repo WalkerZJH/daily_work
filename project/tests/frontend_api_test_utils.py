@@ -363,6 +363,7 @@ def _clue(
         "manufacturer_code": manufacturer_code,
         "hospital_code": f"{clue_id}_hospital",
         "drug_group": f"{clue_id}_drug",
+        "drug_code": f"{clue_id}_drug",
         "detector_id": "purchase_interval_ipi",
         "detector_family": "interval",
         "detector_score": score,

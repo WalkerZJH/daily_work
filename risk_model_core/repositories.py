@@ -465,8 +465,14 @@ class ParquetRiskResultRepository(RiskResultRepository):
 class CompositeDetectorResultRepository(ParquetRiskResultRepository):
     """Present the latest immutable component of each detector_id as one date view."""
 
-    def __init__(self, date_partition: str | Path):
+    def __init__(
+        self,
+        date_partition: str | Path,
+        *,
+        display_lookup_repository: RiskResultRepository | None = None,
+    ):
         self.date_partition = Path(date_partition)
+        self.display_lookup_repository = display_lookup_repository
         selected: dict[str, Path] = {}
         for manifest_path in sorted(
             self.date_partition.glob("detector_id=*/batch_id=*/manifest.json"), reverse=True
@@ -502,14 +508,44 @@ class CompositeDetectorResultRepository(ParquetRiskResultRepository):
         return found[0] if found else None
 
     def load_entity_display_lookup(self, **filters: Any) -> pd.DataFrame:
-        return pd.DataFrame()
+        if self.display_lookup_repository is None:
+            return pd.DataFrame()
+        return self.display_lookup_repository.load_entity_display_lookup(**filters)
 
 
-def open_detector_result_repository(path: str | Path) -> ParquetRiskResultRepository:
+class DetectorComponentResultRepository(ParquetRiskResultRepository):
+    """Read one immutable Detector component with an exact external name lookup."""
+
+    def __init__(
+        self,
+        batch_dir: str | Path,
+        *,
+        display_lookup_repository: RiskResultRepository | None = None,
+    ):
+        self.display_lookup_repository = display_lookup_repository
+        super().__init__(batch_dir)
+
+    def load_entity_display_lookup(self, **filters: Any) -> pd.DataFrame:
+        if self.display_lookup_repository is None:
+            return super().load_entity_display_lookup(**filters)
+        return self.display_lookup_repository.load_entity_display_lookup(**filters)
+
+
+def open_detector_result_repository(
+    path: str | Path,
+    *,
+    display_lookup_repository: RiskResultRepository | None = None,
+) -> ParquetRiskResultRepository:
     candidate = Path(path)
     if (candidate / "manifest.json").is_file():
-        return ParquetRiskResultRepository(candidate)
-    return CompositeDetectorResultRepository(candidate)
+        return DetectorComponentResultRepository(
+            candidate,
+            display_lookup_repository=display_lookup_repository,
+        )
+    return CompositeDetectorResultRepository(
+        candidate,
+        display_lookup_repository=display_lookup_repository,
+    )
 
 
 class InMemoryRiskResultRepository(RiskResultRepository):

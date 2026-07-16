@@ -204,6 +204,7 @@ class DetectorResultService:
             clues = clues.loc[families.map(_detector_category).eq(detector_category)]
         if not clues.empty:
             clues = clues[clues.get("hit_flag", pd.Series(False, index=clues.index)).map(_bool)]
+        clues = _merge_clue_result_identity(clues, self.repository)
         clues = _merge_entity_display_lookup(clues, self.repository)
         clues = _sort_clues(clues, sort_by, sort_order)
         clues = _deduplicate_clues(clues)
@@ -352,15 +353,20 @@ class DetectorResultService:
             manufacturer_code=manufacturer_code,
         ):
             raise KeyError(detector_clue_id)
-        catalog = {item["detector_id"]: item for item in self.catalog()["items"]}
-        item = _clue_item(row, catalog)
-        item["evidence_payload"] = _safe_evidence_payload(row.get("evidence_payload"))
         result_rows = self._read_frame(
             "list_daily_detector_results",
             detector_result_id=detector_clue_id,
         )
         if len(result_rows) > 1:
             raise ValueError(f"Duplicate Detector result id: {detector_clue_id}")
+        row_frame = pd.DataFrame([row])
+        if len(result_rows) == 1:
+            row_frame["drug_code"] = _text(result_rows.iloc[0].get("drug_code")) or None
+        row_frame = _merge_entity_display_lookup(row_frame, self.repository)
+        row = row_frame.iloc[0].to_dict()
+        catalog = {item["detector_id"]: item for item in self.catalog()["items"]}
+        item = _clue_item(row, catalog)
+        item["evidence_payload"] = _safe_evidence_payload(row.get("evidence_payload"))
         item["evaluation"] = _result_item(result_rows.iloc[0]) if len(result_rows) == 1 else None
         return {
             "ready": True,
@@ -407,6 +413,83 @@ class DetectorResultService:
             "catalog_by_detector_id": catalog,
             "semantic_caveats": SEMANTIC_CAVEATS,
             "warnings": [] if not evidence.empty else ["NO_HIGH_RISK_DETECTOR_EVIDENCE"],
+        }
+
+    def entity_detail(
+        self,
+        *,
+        observation_date: str,
+        manufacturer_code: str,
+        hospital_code: str,
+        drug_code: str,
+        clue_id: str | None = None,
+        probability_repository: RiskResultRepository | None = None,
+        probability_batch_root: str | Path | None = None,
+        horizon: str = "H6",
+    ) -> dict[str, Any]:
+        """Return all hit facts for one exact daily entity identity."""
+        hits = self._read_frame(
+            "list_daily_detector_results",
+            observation_date=observation_date,
+            manufacturer_code=manufacturer_code,
+            hospital_code=hospital_code,
+            drug_code=drug_code,
+            hit_flag=True,
+        )
+        hits = _sort_frame(hits, ["severity", "confidence", "detector_id"], ascending=False)
+        catalog = {item["detector_id"]: item for item in self.catalog()["items"]}
+        hit_items = []
+        for _, row in hits.iterrows():
+            item = _result_item(row)
+            catalog_item = catalog.get(_text(row.get("detector_id")), {})
+            item.update(
+                {
+                    "detector_name_zh": _text(catalog_item.get("detector_name_zh"))
+                    or _text(row.get("detector_name")),
+                    "detector_name_en": _text(catalog_item.get("detector_name_en"))
+                    or _text(row.get("detector_name")),
+                    "detector_description_zh": _text(catalog_item.get("detector_description_zh"))
+                    or None,
+                    "detector_family_name_zh": _text(catalog_item.get("detector_family_name_zh"))
+                    or _detector_family_label(_text(row.get("detector_family"))),
+                    **_evidence_contract(
+                        _text(row.get("detector_id")),
+                        catalog_item,
+                        _json_object(row.get("evidence_payload")),
+                    ),
+                }
+            )
+            hit_items.append(item)
+
+        entity = _entity_display_summary(
+            self.repository,
+            manufacturer_code=manufacturer_code,
+            hospital_code=hospital_code,
+            drug_code=drug_code,
+        )
+        monthly_prediction, probability_trend, monthly_warnings = _monthly_probability_context(
+            probability_repository,
+            manufacturer_code=manufacturer_code,
+            hospital_code=hospital_code,
+            drug_code=drug_code,
+            horizon=horizon,
+            batch_root=probability_batch_root,
+        )
+        warnings = list(monthly_warnings)
+        if hits.empty:
+            warnings.append("NO_DETECTOR_HITS_FOR_ENTITY")
+        return {
+            "ready": True,
+            "source": SOURCE,
+            "observation_date": observation_date,
+            "clue_id": clue_id,
+            "entity": entity,
+            "detector_hit_count": len(hit_items),
+            "detector_hits": hit_items,
+            "monthly_prediction": monthly_prediction,
+            "probability_trend": probability_trend,
+            "semantic_caveats": SEMANTIC_CAVEATS,
+            "warnings": warnings,
         }
 
     def config_status(self) -> dict[str, Any]:
@@ -471,6 +554,11 @@ def _catalog_item(row: pd.Series) -> dict[str, Any]:
         "detector_id": _text(row.get("detector_id")),
         "detector_family": _text(row.get("detector_family")),
         "detector_name": _text(row.get("detector_name")),
+        "detector_name_en": _text(row.get("detector_name_en")) or _text(row.get("detector_name")),
+        "detector_name_zh": _text(row.get("detector_name_zh")) or _text(row.get("detector_name")),
+        "detector_description_zh": _text(row.get("detector_description_zh")) or None,
+        "detector_family_name_zh": _text(row.get("detector_family_name_zh"))
+        or _detector_family_label(_text(row.get("detector_family"))),
         "status": _text(row.get("status")),
         "enabled_by_default": _bool(row.get("enabled_by_default")),
         "method": _text(row.get("method")),
@@ -530,6 +618,7 @@ def _clue_item(row: pd.Series, catalog: dict[str, dict[str, Any]] | None = None)
     hospital_code = _text(row.get("hospital_code")) or None
     hospital_display_name = _text(row.get("hospital_display_name")) or None
     drug_group = _text(row.get("drug_group")) or None
+    drug_code = _text(row.get("drug_code")) or None
     drug_display_name = _text(row.get("drug_display_name")) or None
     return {
         "clue_id": _text(row.get("detector_clue_id")),
@@ -544,14 +633,21 @@ def _clue_item(row: pd.Series, catalog: dict[str, dict[str, Any]] | None = None)
         "hospital_display_name": hospital_display_name,
         "hospital_name": hospital_display_name or hospital_code,
         "drug_group": drug_group,
+        "drug_code": drug_code,
         "drug_display_name": drug_display_name,
-        "drug_name": drug_display_name or drug_group,
+        "drug_name": drug_display_name or drug_code,
         "region_display_name": _text(row.get("region_display_name")) or None,
         "product_line_name": _text(row.get("product_line_name")) or None,
         "detector_id": detector_id,
         "detector_family": _text(row.get("detector_family")),
-        "detector_family_label": _detector_family_label(_text(row.get("detector_family"))),
-        "detector_name_label": _text(catalog_item.get("detector_name") or detector_id),
+        "detector_family_label": _text(catalog_item.get("detector_family_name_zh"))
+        or _detector_family_label(_text(row.get("detector_family"))),
+        "detector_name_label": _text(
+            catalog_item.get("detector_name_zh") or catalog_item.get("detector_name") or detector_id
+        ),
+        "detector_name_zh": _text(catalog_item.get("detector_name_zh")) or None,
+        "detector_name_en": _text(catalog_item.get("detector_name_en")) or None,
+        "detector_description_zh": _text(catalog_item.get("detector_description_zh")) or None,
         "detector_score": _number_or_none(row.get("detector_score")),
         "detector_score_label": "规则巡检分",
         "detector_level": _text(row.get("detector_level")) or None,
@@ -753,6 +849,36 @@ def _detector_family_label(family: str | None) -> str | None:
     return labels.get(str(family), str(family))
 
 
+def _merge_clue_result_identity(frame: pd.DataFrame, repository: RiskResultRepository) -> pd.DataFrame:
+    """Attach the formal result drug_code without treating legacy drug_group as its alias."""
+    if frame.empty or "detector_clue_id" not in frame.columns:
+        return frame
+    out = frame.copy()
+    if "drug_code" in out.columns and out["drug_code"].map(_text).str.len().gt(0).all():
+        return out
+    run_dates = out.get("run_date", pd.Series(dtype=str)).dropna().map(_text).unique().tolist()
+    filters = {"observation_date": run_dates[0]} if len(run_dates) == 1 else {}
+    try:
+        results = repository.list_daily_detector_results(**filters)
+    except (FileNotFoundError, NotImplementedError, ValueError, AttributeError, KeyError):
+        return out
+    required = {"detector_result_id", "drug_code"}
+    if results.empty or not required.issubset(results.columns):
+        return out
+    identity = results[["detector_result_id", "drug_code"]].copy()
+    identity["detector_result_id"] = identity["detector_result_id"].map(_text)
+    identity["drug_code"] = identity["drug_code"].map(_text)
+    identity = identity.drop_duplicates("detector_result_id", keep="first").rename(
+        columns={"detector_result_id": "detector_clue_id", "drug_code": "drug_code__result"}
+    )
+    out["detector_clue_id"] = out["detector_clue_id"].map(_text)
+    joined = out.merge(identity, on="detector_clue_id", how="left")
+    current = joined.get("drug_code", pd.Series("", index=joined.index)).map(_text)
+    resolved = joined["drug_code__result"].map(_text)
+    joined["drug_code"] = resolved.where(resolved.str.len().gt(0), current)
+    return joined.drop(columns=["drug_code__result"])
+
+
 def _merge_entity_display_lookup(frame: pd.DataFrame, repository: RiskResultRepository) -> pd.DataFrame:
     if frame.empty:
         return frame
@@ -761,12 +887,20 @@ def _merge_entity_display_lookup(frame: pd.DataFrame, repository: RiskResultRepo
         lookup = repository.load_entity_display_lookup(report_month=report_month)
     except (FileNotFoundError, NotImplementedError, ValueError, AttributeError, KeyError):
         return frame
-    join_cols = ["tenant_id", "report_month", "manufacturer_code", "hospital_code", "drug_group"]
     out = frame.copy()
     if "report_month" not in out.columns:
         out["report_month"] = report_month
-    if lookup.empty or not set(join_cols).issubset(out.columns) or not set(join_cols).issubset(lookup.columns):
+    core_join_cols = ["manufacturer_code", "hospital_code", "drug_code"]
+    join_cols = [
+        column
+        for column in ["tenant_id", "report_month", *core_join_cols]
+        if column in out.columns and column in lookup.columns
+    ]
+    if lookup.empty or not set(core_join_cols).issubset(join_cols):
         return frame
+    for column in join_cols:
+        out[column] = out[column].map(_text)
+        lookup[column] = lookup[column].map(_text)
     display_cols = [
         "manufacturer_display_name",
         "hospital_display_name",
@@ -789,6 +923,115 @@ def _merge_entity_display_lookup(frame: pd.DataFrame, repository: RiskResultRepo
         joined[col] = lookup_values.where(lookup_values.str.len().gt(0), current_values)
         joined = joined.drop(columns=[lookup_col])
     return joined
+
+
+def _entity_display_summary(
+    repository: RiskResultRepository,
+    *,
+    manufacturer_code: str,
+    hospital_code: str,
+    drug_code: str,
+) -> dict[str, Any]:
+    lookup = pd.DataFrame()
+    try:
+        lookup = repository.load_entity_display_lookup(
+            manufacturer_code=manufacturer_code,
+            hospital_code=hospital_code,
+        )
+    except (FileNotFoundError, NotImplementedError, ValueError, AttributeError, KeyError):
+        pass
+    if not lookup.empty:
+        lookup = lookup.copy()
+        lookup_drug = (
+            lookup["drug_code"]
+            if "drug_code" in lookup.columns
+            else lookup.get("drug_group", pd.Series("", index=lookup.index))
+        )
+        lookup = lookup.loc[lookup_drug.map(_text).eq(_text(drug_code))]
+    row = lookup.iloc[0] if not lookup.empty else pd.Series(dtype=object)
+    manufacturer_name = _text(row.get("manufacturer_display_name")) or manufacturer_code
+    hospital_name = _text(row.get("hospital_display_name")) or hospital_code
+    drug_name = _text(row.get("drug_display_name")) or drug_code
+    return {
+        "manufacturer_code": manufacturer_code,
+        "manufacturer_name": manufacturer_name,
+        "hospital_code": hospital_code,
+        "hospital_name": hospital_name,
+        "drug_code": drug_code,
+        "drug_name": drug_name,
+        "region_display_name": _text(row.get("region_display_name")) or None,
+        "product_line_name": _text(row.get("product_line_name")) or None,
+    }
+
+
+def _monthly_probability_context(
+    repository: RiskResultRepository | None,
+    *,
+    manufacturer_code: str,
+    hospital_code: str,
+    drug_code: str,
+    horizon: str,
+    batch_root: str | Path | None,
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]], list[str]]:
+    if repository is None:
+        return None, [], ["MONTHLY_PROBABILITY_BATCH_NOT_AVAILABLE"]
+    try:
+        entities = repository.list_risk_entities(
+            manufacturer_code=manufacturer_code,
+            hospital_code=hospital_code,
+        )
+    except (FileNotFoundError, NotImplementedError, ValueError, AttributeError, KeyError):
+        return None, [], ["MONTHLY_PROBABILITY_NOT_AVAILABLE"]
+    if not entities.empty:
+        drug_column = "drug_group" if "drug_group" in entities.columns else "drug_code"
+        if drug_column in entities.columns:
+            entities = entities.loc[entities[drug_column].map(_text).eq(_text(drug_code))]
+    if len(entities) != 1:
+        warning = "MONTHLY_ENTITY_NOT_FOUND" if entities.empty else "MONTHLY_ENTITY_NOT_UNIQUE"
+        return None, [], [warning]
+    entity = entities.iloc[0]
+    risk_entity_id = _text(entity.get("risk_entity_id"))
+    profiles = pd.DataFrame()
+    try:
+        profiles = repository.list_risk_entity_horizon_profiles(
+            risk_entity_id=risk_entity_id,
+            horizon=horizon,
+        )
+    except (FileNotFoundError, NotImplementedError, ValueError, AttributeError, KeyError):
+        pass
+    profile = profiles.iloc[0] if len(profiles) == 1 else pd.Series(dtype=object)
+    prediction = {
+        "risk_entity_id": risk_entity_id,
+        "report_month": _text(profile.get("report_month")) or _text(entity.get("report_month")) or None,
+        "horizon": _text(profile.get("horizon")) or _text(horizon),
+        "risk_probability": _first_number(
+            profile if not profile.empty else entity,
+            ["risk_probability", "risk_probability_value", "monthly_risk_probability", "churn_probability_H"],
+        ),
+        "risk_level": _text(entity.get("risk_level")) or None,
+        "involved_amount": _first_number(
+            profile if not profile.empty else entity,
+            ["involved_amount", "average_consumption_in_window", "monthly_involved_amount"],
+        ),
+        "monthly_loss_value": _first_number(
+            entity,
+            ["monthly_loss_value", "loss_value", "value_at_risk_H", "value_at_risk_proxy"],
+        ),
+    }
+    trend: list[dict[str, Any]] = []
+    warnings: list[str] = []
+    try:
+        from app.services.frontend_page_service import FrontendPageService
+
+        trend_payload = FrontendPageService(
+            repository=repository,
+            batch_root=batch_root,
+        ).probability_trend(risk_entity_id, horizon=horizon)
+        trend = list(trend_payload.get("items") or [])
+        warnings.extend(trend_payload.get("warnings") or [])
+    except (FileNotFoundError, NotImplementedError, ValueError, AttributeError, KeyError):
+        warnings.append("MONTHLY_PROBABILITY_TREND_NOT_AVAILABLE")
+    return prediction, trend, warnings
 
 
 def _latest_run(runs: pd.DataFrame) -> dict[str, Any]:

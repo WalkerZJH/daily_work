@@ -275,6 +275,24 @@ export function createEmptyRuleOnlyClueDetailData({ clueId, query } = {}) {
   }
 }
 
+export function createEmptyDetectorEntityDetailData({ clueId, query } = {}) {
+  return {
+    ready: false,
+    query: normalizeWorkbenchQuery(query),
+    clueId,
+    entity: null,
+    observationDate: '',
+    detectorHitCount: 0,
+    detectorHits: [],
+    monthlyPrediction: null,
+    probabilityTrend: [],
+    probabilityTrendWarnings: [],
+    semanticCaveats: [],
+    emptyTitle: '实体规则证据不可用',
+    emptyMessage: '当前实体键和观察日期下没有可展示的 Detector 详情'
+  }
+}
+
 export function createEmptyOneshotData() {
   return {
     ready: false,
@@ -466,6 +484,95 @@ export async function loadRuleOnlyClueDetailData(clueId, query = {}) {
     query: normalizedQuery,
     clueId,
     clue: mapRuleOnlyClueDetail(payload.item),
+    semanticCaveats: Array.isArray(payload.semantic_caveats) ? payload.semantic_caveats : [],
+    emptyTitle: '',
+    emptyMessage: ''
+  }
+}
+
+export async function loadDetectorEntityDetailData({ clueId, manufacturerCode, hospitalCode, drugCode, observationDate, query } = {}) {
+  let resolvedKey = { manufacturerCode, hospitalCode, drugCode, observationDate }
+  let normalizedQuery = normalizeWorkbenchQuery({ ...query, manufacturerCode, observationDate })
+  if (clueId && (!manufacturerCode || !hospitalCode || !drugCode || !observationDate) && !normalizedQuery.demoMode) {
+    const cluePayload = await tryLoad(
+      () => api(normalizedQuery).getDetectorClueDetail(clueId, queryToClueDetailParams(normalizedQuery)),
+      (result) => result
+    )
+    const clue = cluePayload?.item || {}
+    resolvedKey = {
+      manufacturerCode: clue.manufacturer_code || manufacturerCode,
+      hospitalCode: clue.hospital_code || hospitalCode,
+      drugCode: clue.drug_code || clue.evaluation?.drug_code || drugCode,
+      observationDate: clue.run_date || clue.evaluation?.observation_date || observationDate
+    }
+    normalizedQuery = normalizeWorkbenchQuery({
+      ...normalizedQuery,
+      manufacturerCode: resolvedKey.manufacturerCode,
+      observationDate: resolvedKey.observationDate
+    })
+  }
+  if (!resolvedKey.manufacturerCode || !resolvedKey.hospitalCode || !resolvedKey.drugCode || !resolvedKey.observationDate || normalizedQuery.demoMode) {
+    return createEmptyDetectorEntityDetailData({ clueId, query: normalizedQuery })
+  }
+  const payload = await tryLoad(
+    () => api(normalizedQuery).getDetectorEntityDetail({
+      clue_id: clueId || undefined,
+      observation_date: resolvedKey.observationDate,
+      manufacturer_code: resolvedKey.manufacturerCode,
+      hospital_code: resolvedKey.hospitalCode,
+      drug_code: resolvedKey.drugCode,
+      report_month: normalizedQuery.probabilityReportMonth || normalizedQuery.reportMonth || undefined,
+      horizon: normalizedQuery.horizon
+    }),
+    (result) => result
+  )
+  if (!payload?.entity) return createEmptyDetectorEntityDetailData({ clueId, query: normalizedQuery })
+  const trend = mapProbabilityTrendPayload({ items: payload.probability_trend || [], warnings: payload.warnings || [] })
+  const prediction = payload.monthly_prediction
+  return {
+    ready: true,
+    query: normalizedQuery,
+    clueId,
+    reportContext: mapReportContextPayload(payload.report_context, normalizedQuery),
+    observationDate: payload.observation_date || resolvedKey.observationDate,
+    entity: {
+      manufacturer: payload.entity.manufacturer_name || payload.entity.manufacturer_code,
+      manufacturerCode: payload.entity.manufacturer_code,
+      hospital: payload.entity.hospital_name || payload.entity.hospital_code,
+      hospitalCode: payload.entity.hospital_code,
+      drug: payload.entity.drug_name || payload.entity.drug_code,
+      drugCode: payload.entity.drug_code,
+      region: payload.entity.region_display_name || '',
+      productLine: payload.entity.product_line_name || ''
+    },
+    detectorHitCount: Number(payload.detector_hit_count || 0),
+    detectorHits: (payload.detector_hits || []).map((item) => ({
+      ...item,
+      detectorId: item.detector_id,
+      detectorName: item.detector_name_zh || item.detector_name || item.detector_id,
+      detectorNameEn: item.detector_name_en || item.detector_name || '',
+      detectorDescription: item.detector_description_zh || '',
+      detectorFamilyLabel: item.detector_family_name_zh || detectorFamilyLabel(item.detector_family),
+      currentValue: item.current_value,
+      baselineValue: item.baseline_value,
+      comparisonValue: item.comparison_value,
+      thresholdValue: item.threshold_value,
+      thresholdOperator: item.threshold_operator || '',
+      evidenceText: item.evidence_text || '',
+      hitReason: item.hit_reason || '',
+      evidencePayload: normalizeEvidencePayload(item.evidence_payload),
+      monitoringLogic: item.monitoring_logic || {},
+      observedValues: item.observed_values || {},
+      decision: item.decision || {}
+    })),
+    monthlyPrediction: prediction ? {
+      ...prediction,
+      riskProbabilityText: prediction.risk_probability === null || prediction.risk_probability === undefined ? '-' : formatPercent(prediction.risk_probability),
+      involvedAmountText: prediction.involved_amount === null || prediction.involved_amount === undefined ? '-' : formatMoney(prediction.involved_amount),
+      monthlyLossValueText: prediction.monthly_loss_value === null || prediction.monthly_loss_value === undefined ? '-' : formatMoney(prediction.monthly_loss_value)
+    } : null,
+    probabilityTrend: trend.probabilityTrend,
+    probabilityTrendWarnings: trend.probabilityTrendWarnings,
     semanticCaveats: Array.isArray(payload.semantic_caveats) ? payload.semantic_caveats : [],
     emptyTitle: '',
     emptyMessage: ''
@@ -1005,14 +1112,20 @@ function mapDailyRuleClue(item, index = 0) {
     sourceTypeLabel: isMonthly ? '月报高风险' : '仅规则命中',
     isMonthlyHighRiskEntity: isMonthly,
     hospital: firstDisplayText(item.hospital_display_name, item.hospital_name, title),
-    drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_group, '规则线索'),
+    hospitalCode: item.hospital_code || '',
+    drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_code, '规则线索'),
+    drugCode: item.drug_code || '',
+    manufacturerCode: item.manufacturer_code || '',
+    manufacturerNameAvailable: Boolean(item.manufacturer_display_name || (item.manufacturer_name && item.manufacturer_name !== item.manufacturer_code)),
     manufacturer: resolveManufacturerPresentation({
       manufacturerCode: item.manufacturer_code,
       manufacturerDisplayName: item.manufacturer_display_name,
       manufacturerName: item.manufacturer_name
     }).displayName,
     region: firstDisplayText(item.region_display_name, item.region_code),
-    detectorName: item.detector_name_label || item.detector_name || item.detector_id || '规则',
+    detectorName: item.detector_name_zh || item.detector_name_label || item.detector_name || item.detector_id || '规则',
+    detectorNameEn: item.detector_name_en || item.detector_name || '',
+    detectorDescription: item.detector_description_zh || '',
     detectorFamily: item.detector_family || '',
     detectorFamilyLabel: item.detector_family_label || detectorFamilyLabel(item.detector_family),
     detectorId: item.detector_id || '',
@@ -1065,7 +1178,7 @@ function mapRuleOnlyClueDetail(item) {
     observationDate: item.run_date || '',
     manufacturer: firstDisplayText(item.manufacturer_display_name, item.manufacturer_name, item.manufacturer_code),
     hospital: firstDisplayText(item.hospital_display_name, item.hospital_name, item.hospital_code),
-    drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_group),
+    drug: firstDisplayText(item.drug_display_name, item.drug_name, item.drug_code),
     relationshipLabel: '未关联月度风险候选'
   }
 }
@@ -1239,8 +1352,12 @@ function mapDetectorCatalogPayload(payload) {
     detectorCatalog: items.map((item) => ({
       detectorId: item.detector_id,
       detectorFamily: item.detector_family,
-      detectorFamilyLabel: detectorFamilyLabel(item.detector_family),
-      detectorName: item.detector_name || item.detector_id,
+      detectorFamilyLabel: item.detector_family_name_zh || detectorFamilyLabel(item.detector_family),
+      detectorName: item.detector_name_zh || item.detector_name || item.detector_id,
+      detectorNameEn: item.detector_name_en || item.detector_name || '',
+      description: item.detector_description_zh || '',
+      caveat: item.caveat || '',
+      enabled: item.enabled_by_default !== false,
       status: item.status
     }))
   }

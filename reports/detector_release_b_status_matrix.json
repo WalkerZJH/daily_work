@@ -1,0 +1,64 @@
+{
+  "release": "Detector Release B",
+  "checked_at": "2026-07-16",
+  "status": "partial",
+  "modules": [
+    {
+      "module": "active_materialization_isolation",
+      "status": "partial",
+      "evidence": ["reports/release_b_active_materialization_boundary.md"],
+      "blocking_reason": "An earlier full-suite run performed read-only queries against the active formal batch root; no write or process control occurred, but the strict no-read completion condition cannot be restored retroactively.",
+      "affected_release": "B"
+    },
+    {
+      "module": "entity_display_lookup",
+      "status": "complete",
+      "evidence": ["risk_model_core/repositories.py", "project/app/services/detector_result_service.py", "project/tests/test_detector_release_b_entity_detail.py"],
+      "blocking_reason": null,
+      "affected_release": "B"
+    },
+    {
+      "module": "detector_catalog_localization",
+      "status": "complete",
+      "evidence": ["risk_algorithm_core/detector_catalog.py", "project/tests/test_detector_release_b_entity_detail.py"],
+      "blocking_reason": null,
+      "affected_release": "B"
+    },
+    {
+      "module": "clues_filter_and_visual_design",
+      "status": "complete",
+      "evidence": ["front_end/src/modules/risk-worklist/DetectorCardFilterPanel.vue", "front_end/src/modules/risk-worklist/RiskEntityListView.vue", "project/tests/test_detector_release_b_frontend_contract.py"],
+      "blocking_reason": null,
+      "affected_release": "B"
+    },
+    {
+      "module": "entity_level_clue_detail",
+      "status": "complete",
+      "evidence": ["project/app/api/routes_detector_results.py", "project/app/services/detector_result_service.py", "front_end/src/modules/risk-worklist/RiskEntityDetailView.vue"],
+      "blocking_reason": null,
+      "affected_release": "B"
+    },
+    {
+      "module": "optional_monthly_probability_context",
+      "status": "complete",
+      "evidence": ["project/app/services/report_context_service.py", "project/app/services/detector_result_service.py", "front_end/src/modules/monthly-demo/pageDataAdapter.js"],
+      "blocking_reason": null,
+      "affected_release": "B"
+    },
+    {
+      "module": "release_b_verification",
+      "status": "complete",
+      "evidence": ["28 targeted tests passed", "Vite production build passed", "reports/detector_release_b_test_report.md"],
+      "blocking_reason": null,
+      "affected_release": "B"
+    }
+  ],
+  "verification": {
+    "release_b_tests": {"passed": 28, "failed": 0},
+    "frontend_build": "passed",
+    "full_project_suite_rerun": false
+  },
+  "materialization_files_committed": false,
+  "release_a_chain_changed": false,
+  "release_c_scope_added": false
+}
