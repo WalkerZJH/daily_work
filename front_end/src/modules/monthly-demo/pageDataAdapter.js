@@ -11,7 +11,7 @@ export const topNOptions = [10, 20, 50, 100]
 export const RULE_CATEGORY_DEFINITIONS = [
   { id: 'price', label: '价格异常', families: ['price'] },
   { id: 'fulfillment', label: '配送异常', families: ['fulfillment'], unavailable: true },
-  { id: 'terminal', label: '终端变动', families: ['interval', 'assortment'] },
+  { id: 'terminal', label: '终端变动', families: ['interval', 'assortment', 'purchase_fact'] },
   { id: 'sales', label: '销量波动', families: ['quantity', 'frequency'] }
 ]
 
@@ -34,10 +34,15 @@ export const defaultWorkbenchQuery = {
   probabilityReportMonth: '',
   detectorRunDate: '',
   detectorFamily: '',
+  detectorCategory: '',
   detectorId: '',
+  detectorLevel: '',
   horizon: 'H6',
   topN: 20,
-  sortBy: 'risk_probability'
+  sortBy: 'risk_probability',
+  sortOrder: 'desc',
+  page: 1,
+  pageSize: 20
 }
 
 const FORMAL_EMPTY_STATUS = {
@@ -80,10 +85,15 @@ export function normalizeWorkbenchQuery(query = {}) {
     probabilityReportMonth,
     detectorRunDate,
     detectorFamily: firstText(query.detectorFamily, query.detector_family, ''),
+    detectorCategory: firstText(query.detectorCategory, query.detector_category, ''),
     detectorId: firstText(query.detectorId, query.detector_id, ''),
+    detectorLevel: firstText(query.detectorLevel, query.detector_level, ''),
     horizon,
     topN,
-    sortBy
+    sortBy,
+    sortOrder: firstText(query.sortOrder, query.sort_order, 'desc') === 'asc' ? 'asc' : 'desc',
+    page: Math.max(Number(query.page) || 1, 1),
+    pageSize: Math.min(Math.max(Number(query.pageSize ?? query.page_size) || topN, 1), 200)
   }
 }
 
@@ -99,10 +109,15 @@ export function buildPersistentParams(query = {}, extra = {}) {
   setParam(params, 'detector_run_date', normalized.detectorRunDate || normalized.observationDate)
   setParam(params, 'manufacturer_code', normalized.manufacturerCode)
   setParam(params, 'detector_family', normalized.detectorFamily)
+  setParam(params, 'detector_category', normalized.detectorCategory)
   setParam(params, 'detector_id', normalized.detectorId)
+  setParam(params, 'detector_level', normalized.detectorLevel)
   setParam(params, 'horizon', normalized.horizon)
   setParam(params, 'top_n', normalized.topN)
   setParam(params, 'sort_by', normalized.sortBy)
+  setParam(params, 'sort_order', normalized.sortOrder)
+  setParam(params, 'page', normalized.page)
+  setParam(params, 'page_size', normalized.pageSize)
   if (normalized.demoMode || normalized.demoModeParam !== undefined) {
     setParam(params, 'demoMode', normalized.demoMode ? 'true' : normalized.demoModeParam || 'false')
   }
@@ -219,6 +234,8 @@ export function createEmptyRuleCluesData(query = {}, reportContext = createEmpty
     dailyDetectorStatus: { ...FORMAL_EMPTY_STATUS, runDate: reportContext.detectorRunDate || normalized.detectorRunDate },
     dailyDetectorClues: [],
     total: 0,
+    pagination: { page: normalized.page, pageSize: normalized.pageSize, total: 0, totalPages: 0 },
+    sort: { sortBy: normalized.sortBy, sortOrder: normalized.sortOrder },
     emptyTitle: scopedNoData ? '当前生产企业在所选观察日期暂无规则线索' : reportContext.detectorRunAvailable === false ? '该观察日期暂无规则巡检结果' : reportContext.displayTitle || '接口未就绪',
     emptyMessage: reportContext.message || '当前没有可展示的规则线索'
   }
@@ -389,14 +406,20 @@ export function createEmptyCandidateRankingData(query = {}) {
   }
 }
 
-export async function loadRuleCluesData(query = {}, { allowDemo = false } = {}) {
+export async function loadRuleCluesData(query = {}, { allowDemo = false, page, pageSize } = {}) {
   const normalizedQuery = normalizeWorkbenchQuery(query)
   if (allowDemo || normalizedQuery.demoMode) return loadDemo('ruleCluesData', normalizedQuery)
   const params = queryToApiParams(normalizedQuery)
   const [context, status, clues] = await Promise.all([
     loadReportContext(normalizedQuery),
     tryLoad(() => api(normalizedQuery).getDailyDetectorStatus(params), normalizeDailyRuleStatus),
-    tryLoad(() => api(normalizedQuery).getDailyDetectorClues({ ...params, sort_by: 'detector_score', page_size: normalizedQuery.topN }), mapDailyRuleCluesPayload)
+    tryLoad(() => api(normalizedQuery).getDailyDetectorClues({
+      ...params,
+      page: page || normalizedQuery.page,
+      page_size: pageSize || normalizedQuery.pageSize,
+      sort_by: normalizedQuery.sortBy === 'risk_probability' ? 'detector_score' : normalizedQuery.sortBy,
+      sort_order: normalizedQuery.sortOrder
+    }), mapDailyRuleCluesPayload)
   ])
   if (!status?.ready && !clues?.dailyDetectorClues?.length) return createEmptyRuleCluesData(normalizedQuery, context)
   const items = clues?.dailyDetectorClues || []
@@ -407,6 +430,8 @@ export async function loadRuleCluesData(query = {}, { allowDemo = false } = {}) 
     dailyDetectorStatus: status || { ...FORMAL_EMPTY_STATUS, runDate: context.detectorRunDate },
     dailyDetectorClues: items,
     total: clues?.total || items.length || 0,
+    pagination: clues?.pagination || { page: normalizedQuery.page, pageSize: normalizedQuery.pageSize, total: items.length, totalPages: items.length ? 1 : 0 },
+    sort: clues?.sort || { sortBy: normalizedQuery.sortBy, sortOrder: normalizedQuery.sortOrder },
     emptyTitle: items.length ? '' : '当前生产企业在所选观察日期暂无规则线索',
     emptyMessage: items.length ? '' : '该生产企业和观察日期范围内没有 detector 命中的实体。'
   }
@@ -949,11 +974,22 @@ function mapProofCasesPayload(payload) {
 }
 
 function mapDailyRuleCluesPayload(payload) {
-  if (payload?.ready === false) return { dailyDetectorClues: [], total: 0 }
+  if (payload?.ready === false) return { dailyDetectorClues: [], total: 0, pagination: { page: 1, pageSize: 50, total: 0, totalPages: 0 } }
   const items = payload.items || payload.rows || payload.clues || []
+  const pagination = payload.pagination || {}
   return {
     dailyDetectorClues: items.map(mapDailyRuleClue),
-    total: payload.total ?? items.length
+    total: payload.total ?? items.length,
+    pagination: {
+      page: Number(pagination.page || 1),
+      pageSize: Number(pagination.page_size || 50),
+      total: Number(pagination.total ?? payload.total ?? items.length),
+      totalPages: Number(pagination.total_pages || 0)
+    },
+    sort: {
+      sortBy: payload.sort?.sort_by || 'detector_score',
+      sortOrder: payload.sort?.sort_order || 'desc'
+    }
   }
 }
 
@@ -1006,12 +1042,26 @@ function mapDailyRuleClue(item, index = 0) {
 
 function mapRuleOnlyClueDetail(item) {
   const clue = mapDailyRuleClue(item)
+  const evaluation = item.evaluation || {}
   return {
     ...clue,
     confidence: item.confidence,
     hitFlag: item.hit_flag === true,
     rootCause: item.root_cause_label || '',
     evidencePayload: normalizeEvidencePayload(item.evidence_payload),
+    currentValue: evaluation.current_value,
+    baselineValue: evaluation.baseline_value,
+    comparisonValue: evaluation.comparison_value,
+    thresholdValue: evaluation.threshold_value,
+    thresholdOperator: evaluation.threshold_operator || '',
+    windowStart: evaluation.evidence_window_start || '',
+    windowEnd: evaluation.evidence_window_end || '',
+    demandShape: evaluation.demand_shape_label || '',
+    configId: evaluation.config_id || '',
+    configHash: evaluation.config_hash || '',
+    detectorVersion: evaluation.detector_version || '',
+    eligibilityStatus: evaluation.eligibility_status || '',
+    hitReason: evaluation.hit_reason || '',
     observationDate: item.run_date || '',
     manufacturer: firstDisplayText(item.manufacturer_display_name, item.manufacturer_name, item.manufacturer_code),
     hospital: firstDisplayText(item.hospital_display_name, item.hospital_name, item.hospital_code),
@@ -1133,10 +1183,15 @@ function queryToApiParams(query) {
     detector_run_date: query.detectorRunDate || query.observationDate,
     manufacturer_code: query.manufacturerCode,
     detector_family: query.detectorFamily,
+    detector_category: query.detectorCategory,
     detector_id: query.detectorId,
+    detector_level: query.detectorLevel,
     horizon: query.horizon,
     top_n: query.topN,
     sort_by: query.sortBy,
+    sort_order: query.sortOrder,
+    page: query.page,
+    page_size: query.pageSize,
     user_id: query.userId
   }
 }

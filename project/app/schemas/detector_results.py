@@ -119,6 +119,7 @@ class DailyDetectorClueItem(DetectorResultModel):
     display_rank: int | None = None
     caveat: str | None = None
     created_at: str | None = None
+    evaluation: DailyDetectorResultItem | None = None
 
 
 class DailyDetectorCluesResponse(DetectorResultModel):
@@ -131,6 +132,7 @@ class DailyDetectorCluesResponse(DetectorResultModel):
     run_date: str | None = None
     detector_run_id: str | None = None
     pagination: dict[str, int]
+    sort: dict[str, str] = Field(default_factory=dict)
     semantic_caveats: list[str]
     warnings: list[str]
     report_context: dict[str, Any] = Field(default_factory=dict)

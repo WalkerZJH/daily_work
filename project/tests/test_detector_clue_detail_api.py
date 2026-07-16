@@ -23,6 +23,10 @@ def test_rule_only_clue_detail_returns_rule_facts_without_candidate_fields() -> 
     assert item["monthly_risk_probability"] is None
     assert item["evidence_text"]
     assert item["evidence_payload"] == {}
+    assert item["evaluation"]["current_value"] == 1.0
+    assert item["evaluation"]["baseline_value"] == 4.0
+    assert item["evaluation"]["threshold_value"] == 0.6
+    assert item["evaluation"]["config_id"] == "cfg-2"
     assert "detector_score is rule inspection score, not probability" in payload["semantic_caveats"]
     assert "daily detector clues do not create risk_entities" in payload["semantic_caveats"]
 

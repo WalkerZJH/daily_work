@@ -1097,6 +1097,24 @@
   min-height: 38px;
 }
 
+.pagination-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+}
+
+.definition-grid + details,
+details > .definition-grid {
+  margin-top: 12px;
+}
+
+details > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
 .table-toolbar {
   display: flex;
   align-items: center;

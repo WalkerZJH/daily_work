@@ -28,9 +28,15 @@ const draftQuery = reactive(
     runDate: params.get('run_date'),
     probabilityReportMonth: params.get('probability_report_month'),
     detectorRunDate: params.get('detector_run_date'),
+    detectorCategory: params.get('detector_category'),
+    detectorId: params.get('detector_id'),
+    detectorLevel: params.get('detector_level'),
     horizon: params.get('horizon') || params.get('h'),
     topN: Number(params.get('top_n')),
-    sortBy: params.get('sort_by')
+    sortBy: params.get('sort_by'),
+    sortOrder: params.get('sort_order'),
+    page: Number(params.get('page')),
+    pageSize: Number(params.get('page_size'))
   })
 )
 
@@ -39,8 +45,28 @@ const appliedQuery = ref(normalizeWorkbenchQuery(draftQuery))
 const options = ref(createEmptyWorkbenchOptions(draftQuery))
 const state = ref(createEmptyRuleCluesData(appliedQuery.value))
 const reportContext = ref(state.value.reportContext)
-const selectedDetectorFamily = ref(query.detectorFamily || 'all')
+const selectedDetectorFamily = ref(query.detectorCategory || 'all')
 const selectedDetectorId = ref(query.detectorId || 'all')
+const selectedDetectorLevel = ref(query.detectorLevel || 'all')
+const selectedSortBy = ref(query.sortBy === 'risk_probability' ? 'detector_score' : query.sortBy)
+const selectedSortOrder = ref(query.sortOrder || 'desc')
+const selectedRuleCategory = selectedDetectorFamily
+const draftFilters = computed(() => ({
+  detectorCategory: selectedRuleCategory.value === 'all' ? '' : selectedRuleCategory.value,
+  detectorId: selectedDetectorId.value === 'all' ? '' : selectedDetectorId.value,
+  detectorLevel: selectedDetectorLevel.value === 'all' ? '' : selectedDetectorLevel.value,
+  sortBy: selectedSortBy.value,
+  sortOrder: selectedSortOrder.value,
+  pageSize: draftQuery.pageSize
+}))
+const appliedFilters = computed(() => ({
+  detectorCategory: appliedQuery.value.detectorCategory,
+  detectorId: appliedQuery.value.detectorId,
+  detectorLevel: appliedQuery.value.detectorLevel,
+  sortBy: appliedQuery.value.sortBy,
+  sortOrder: appliedQuery.value.sortOrder,
+  pageSize: appliedQuery.value.pageSize
+}))
 const isLoading = ref(false)
 const hasSubmittedQuery = ref(false)
 const manufacturerScope = useManufacturerScope()
@@ -48,8 +74,7 @@ const manufacturerCode = manufacturerScope.manufacturerCode
 let requestSequence = 0
 let pageReady = false
 
-const availableObservationDates = computed(() => options.value.dailyDetectorDateOptions?.map((item) => item.id).filter(Boolean) || [])
-const selectedRuleCategory = selectedDetectorFamily
+const availableObservationDates = computed(() => options.value.dailyDetectorDateOptions?.map((item) => item.id || item.runDate).filter(Boolean) || [])
 if (selectedRuleCategory.value === 'all') selectedDetectorId.value = 'all'
 const ruleCategoryOptions = computed(() => [{ id: 'all', label: '全部大类' }, ...RULE_CATEGORY_DEFINITIONS.map((item) => ({
   id: item.id,
@@ -63,7 +88,17 @@ const ruleSubtypeOptions = computed(() => {
     : (options.value.detectorCatalog || []).filter((item) => ruleCategoryForDetectorFamily(item.detectorFamily) === selectedRuleCategory.value)
   return [{ id: 'all', label: '全部小类' }, ...catalog.map((item) => ({ id: item.detectorId, label: item.detectorName || item.detectorId }))]
 })
-const displayedClues = computed(() => (state.value.dailyDetectorClues || []).filter((item) => selectedRuleCategory.value === 'all' || ruleCategoryForDetectorFamily(item.detectorFamily) === selectedRuleCategory.value))
+const displayedClues = computed(() => state.value.dailyDetectorClues || [])
+const pagination = computed(() => state.value.pagination || { page: 1, pageSize: 20, total: 0, totalPages: 0 })
+const appliedFilterSummary = computed(() => {
+  if (!hasSubmittedQuery.value) return '尚未应用筛选条件'
+  const labels = []
+  if (appliedFilters.value.detectorCategory) labels.push(ruleCategoryOptions.value.find((item) => item.id === appliedFilters.value.detectorCategory)?.label || appliedFilters.value.detectorCategory)
+  if (appliedFilters.value.detectorId) labels.push(ruleSubtypeOptions.value.find((item) => item.id === appliedFilters.value.detectorId)?.label || appliedFilters.value.detectorId)
+  if (appliedFilters.value.detectorLevel) labels.push(`命中等级 ${appliedFilters.value.detectorLevel}`)
+  labels.push(`${pagination.value.total} 条结果`)
+  return labels.join(' · ')
+})
 const emptyTitle = computed(() => hasSubmittedQuery.value ? state.value.emptyTitle : '请设置查询条件并点击查询')
 const emptyMessage = computed(() => hasSubmittedQuery.value ? state.value.emptyMessage : '查询完成后将在此展示规则巡检结果。')
 const showContextNotice = computed(() => hasSubmittedQuery.value && Boolean(reportContext.value?.displayTitle))
@@ -77,10 +112,6 @@ function updateUrl() {
   window.history.replaceState({}, '', `${window.location.pathname}?${buildPersistentParams(appliedQuery.value).toString()}`)
 }
 
-function syncDraftContext() {
-  window.history.replaceState({}, '', `${window.location.pathname}?${buildPersistentParams(draftQuery).toString()}`)
-}
-
 function applyLoadedOptions(loadedOptions, fallbackQuery = query) {
   options.value = loadedOptions || createEmptyWorkbenchOptions(fallbackQuery)
 }
@@ -90,7 +121,7 @@ async function loadOptions() {
   applyLoadedOptions(loadedOptions, draftQuery)
 }
 
-async function submitQuery() {
+async function submitQuery(targetPage = 1) {
   const sequence = ++requestSequence
   const manufacturerChanged = appliedQuery.value.manufacturerCode !== draftQuery.manufacturerCode
   hasSubmittedQuery.value = true
@@ -101,7 +132,8 @@ async function submitQuery() {
   }
   try {
     draftQuery.detectorFamily = ''
-    draftQuery.detectorId = selectedDetectorId.value === 'all' ? '' : selectedDetectorId.value
+    Object.assign(draftQuery, draftFilters.value)
+    draftQuery.page = targetPage
     if (draftQuery.demoMode) {
       const [loadedOptions, loadedState] = await Promise.all([
         loadWorkbenchOptions(draftQuery, { allowDemo: true }),
@@ -137,11 +169,25 @@ async function submitQuery() {
     applyLoadedOptions(refreshedOptions, effectiveQuery)
     state.value = loadedData || createEmptyRuleCluesData(effectiveQuery, context)
     reportContext.value = state.value.reportContext || context
+    updateUrl()
   } finally {
     if (sequence === requestSequence) {
       isLoading.value = false
     }
   }
+}
+
+function resetFilters() {
+  selectedRuleCategory.value = 'all'
+  selectedDetectorId.value = 'all'
+  selectedDetectorLevel.value = 'all'
+  selectedSortBy.value = 'detector_score'
+  selectedSortOrder.value = 'desc'
+}
+
+async function goToPage(page) {
+  if (isLoading.value || page < 1 || page > pagination.value.totalPages) return
+  await submitQuery(page)
 }
 
 onMounted(async () => {
@@ -155,8 +201,6 @@ onMounted(async () => {
   }
 })
 
-watch(draftQuery, syncDraftContext, { deep: true })
-
 watch(manufacturerCode, async (nextCode) => {
   if (!pageReady || !nextCode || nextCode === query.manufacturerCode) return
   query.manufacturerCode = nextCode
@@ -165,7 +209,7 @@ watch(manufacturerCode, async (nextCode) => {
 
 watch(selectedRuleCategory, () => {
   selectedDetectorId.value = 'all'
-  draftQuery.detectorFamily = selectedDetectorFamily.value === 'all' ? '' : selectedDetectorFamily.value
+  draftQuery.detectorCategory = selectedDetectorFamily.value === 'all' ? '' : selectedDetectorFamily.value
   draftQuery.detectorId = ''
 })
 
@@ -218,8 +262,35 @@ watch(selectedDetectorId, () => {
             <option v-for="item in ruleSubtypeOptions" :key="item.id" :value="item.id">{{ item.label }}</option>
           </select>
         </label>
-        <button type="button" class="btn btn-primary" :disabled="isLoading" @click="submitQuery">{{ isLoading ? '查询中…' : '查询' }}</button>
+        <label class="control-field">
+          <span>命中等级</span>
+          <select v-model="selectedDetectorLevel">
+            <option value="all">全部等级</option>
+            <option value="high">高</option>
+            <option value="medium">中</option>
+            <option value="low">低</option>
+          </select>
+        </label>
+        <label class="control-field">
+          <span>排序字段</span>
+          <select v-model="selectedSortBy">
+            <option value="detector_score">规则巡检分</option>
+            <option value="confidence">置信度</option>
+            <option value="created_at">生成时间</option>
+          </select>
+        </label>
+        <label class="control-field">
+          <span>排序方向</span>
+          <select v-model="selectedSortOrder"><option value="desc">降序</option><option value="asc">升序</option></select>
+        </label>
+        <label class="control-field">
+          <span>每页条数</span>
+          <select v-model.number="draftQuery.pageSize"><option :value="20">20</option><option :value="50">50</option><option :value="100">100</option></select>
+        </label>
+        <button type="button" class="btn btn-primary" :disabled="isLoading" @click="submitQuery(1)">{{ isLoading ? '查询中…' : '应用筛选' }}</button>
+        <button type="button" class="btn" :disabled="isLoading" @click="resetFilters">重置</button>
       </div>
+      <p class="muted">已应用：{{ appliedFilterSummary }}</p>
     </SectionCard>
 
     <SectionCard title="规则巡检结果" subtitle="展示 detector 命中的 entity 与规则证据">
@@ -261,6 +332,11 @@ watch(selectedDetectorId, () => {
             </tr>
           </tbody>
         </table>
+        <div class="pagination-row">
+          <button type="button" class="btn btn-sm" :disabled="pagination.page <= 1 || isLoading" @click="goToPage(pagination.page - 1)">上一页</button>
+          <span>第 {{ pagination.page }} / {{ pagination.totalPages || 1 }} 页，共 {{ pagination.total }} 条</span>
+          <button type="button" class="btn btn-sm" :disabled="pagination.page >= pagination.totalPages || isLoading" @click="goToPage(pagination.page + 1)">下一页</button>
+        </div>
       </div>
     </SectionCard>
   </div>

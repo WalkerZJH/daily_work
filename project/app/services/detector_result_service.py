@@ -173,11 +173,14 @@ class DetectorResultService:
         run_date: str | None = None,
         detector_id: str | None = None,
         detector_family: str | None = None,
+        detector_category: str | None = None,
+        detector_level: str | None = None,
         manufacturer_code: str | None = None,
         hospital_code: str | None = None,
         drug_group: str | None = None,
         horizon: str | None = None,
         sort_by: str = "detector_score",
+        sort_order: str = "desc",
         page: int = 1,
         page_size: int = 50,
     ) -> dict[str, Any]:
@@ -190,15 +193,19 @@ class DetectorResultService:
             "run_date": effective_run_date,
             "detector_id": detector_id,
             "detector_family": detector_family,
+            "detector_level": detector_level,
             "manufacturer_code": manufacturer_code,
             "hospital_code": hospital_code,
             "drug_group": drug_group,
         }
         clues = self._read_frame("list_daily_detector_clues", **filters)
+        if detector_category and not clues.empty:
+            families = clues.get("detector_family", pd.Series("", index=clues.index)).astype(str)
+            clues = clues.loc[families.map(_detector_category).eq(detector_category)]
         if not clues.empty:
             clues = clues[clues.get("hit_flag", pd.Series(False, index=clues.index)).map(_bool)]
         clues = _merge_entity_display_lookup(clues, self.repository)
-        clues = _sort_clues(clues, sort_by)
+        clues = _sort_clues(clues, sort_by, sort_order)
         clues = _deduplicate_clues(clues)
         total = int(len(clues))
         current_page = max(int(page), 1)
@@ -222,7 +229,9 @@ class DetectorResultService:
                 "page": current_page,
                 "page_size": current_size,
                 "total": total,
+                "total_pages": math.ceil(total / current_size) if total else 0,
             },
+            "sort": {"sort_by": sort_by, "sort_order": sort_order},
             "semantic_caveats": SEMANTIC_CAVEATS,
             "warnings": [] if ready else [MISSING_WARNING],
         }
@@ -291,6 +300,13 @@ class DetectorResultService:
         catalog = {item["detector_id"]: item for item in self.catalog()["items"]}
         item = _clue_item(row, catalog)
         item["evidence_payload"] = _safe_evidence_payload(row.get("evidence_payload"))
+        result_rows = self._read_frame(
+            "list_daily_detector_results",
+            detector_result_id=detector_clue_id,
+        )
+        if len(result_rows) > 1:
+            raise ValueError(f"Duplicate Detector result id: {detector_clue_id}")
+        item["evaluation"] = _result_item(result_rows.iloc[0]) if len(result_rows) == 1 else None
         return {
             "ready": True,
             "source": SOURCE,
@@ -709,16 +725,34 @@ def _sort_frame(frame: pd.DataFrame, columns: list[str], *, ascending: bool) -> 
     return frame.sort_values(available, ascending=ascending, na_position="last", kind="mergesort")
 
 
-def _sort_clues(frame: pd.DataFrame, sort_by: str) -> pd.DataFrame:
+def _sort_clues(frame: pd.DataFrame, sort_by: str, sort_order: str = "desc") -> pd.DataFrame:
     if frame.empty:
         return frame
-    if sort_by == "detector_score" and "detector_score" in frame:
-        return frame.sort_values("detector_score", ascending=False, na_position="last", kind="mergesort")
-    if sort_by == "risk_probability" and "monthly_risk_probability" in frame:
-        return frame.sort_values("monthly_risk_probability", ascending=False, na_position="last", kind="mergesort")
-    if sort_by == "loss_value" and "monthly_loss_value" in frame:
-        return frame.sort_values("monthly_loss_value", ascending=False, na_position="last", kind="mergesort")
+    ascending = sort_order == "asc"
+    sort_columns = {
+        "detector_score": "detector_score",
+        "confidence": "confidence",
+        "risk_probability": "monthly_risk_probability",
+        "loss_value": "monthly_loss_value",
+        "created_at": "created_at",
+    }
+    column = sort_columns.get(sort_by)
+    if column and column in frame:
+        return frame.sort_values(column, ascending=ascending, na_position="last", kind="mergesort")
     return _sort_frame(frame, ["display_rank", "created_at"], ascending=True)
+
+
+def _detector_category(detector_family: str) -> str:
+    value = detector_family.strip().lower()
+    if "price" in value:
+        return "price"
+    if "fulfillment" in value or "delivery" in value:
+        return "fulfillment"
+    if "quantity" in value or "frequency" in value:
+        return "sales"
+    if "interval" in value or "assortment" in value or "purchase" in value:
+        return "terminal"
+    return ""
 
 
 def _deduplicate_clues(frame: pd.DataFrame) -> pd.DataFrame:

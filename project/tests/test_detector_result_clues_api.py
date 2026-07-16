@@ -43,3 +43,23 @@ def test_detector_clues_api_does_not_filter_by_monthly_candidate_state() -> None
     items = response.json()["items"]
     assert items
     assert {item["detector_clue_id"] for item in items} >= {"clue_non_high"}
+
+
+def test_detector_clues_supports_request_filters_sorting_and_pagination() -> None:
+    with override_detector_service():
+        filtered = TestClient(app).get(
+            "/api/v1/detectors/clues",
+            params={"detector_category": "sales", "detector_level": "watch"},
+        )
+        paged = TestClient(app).get(
+            "/api/v1/detectors/clues",
+            params={"sort_by": "detector_score", "sort_order": "asc", "page_size": 1},
+        )
+
+    assert filtered.status_code == 200
+    assert [item["detector_clue_id"] for item in filtered.json()["items"]] == ["clue_non_high"]
+    assert paged.status_code == 200
+    payload = paged.json()
+    assert payload["items"][0]["detector_clue_id"] == "clue_non_high"
+    assert payload["pagination"] == {"page": 1, "page_size": 1, "total": 2, "total_pages": 2}
+    assert payload["sort"] == {"sort_by": "detector_score", "sort_order": "asc"}

@@ -100,22 +100,30 @@ def detector_clues(
     run_date: str | None = None,
     detector_id: str | None = None,
     detector_family: str | None = None,
+    detector_category: str | None = None,
+    detector_level: str | None = None,
     manufacturer_code: str | None = None,
     hospital_code: str | None = None,
     drug_group: str | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
+    sort_by: str = Query(default="detector_score"),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
 ) -> dict:
     return service.clues(
         detector_run_id=detector_run_id,
         run_date=run_date,
         detector_id=detector_id,
         detector_family=detector_family,
+        detector_category=detector_category,
+        detector_level=detector_level,
         manufacturer_code=manufacturer_code,
         hospital_code=hospital_code,
         drug_group=drug_group,
         page=page,
         page_size=page_size,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
 
 
@@ -161,9 +169,12 @@ def daily_detector_clues(
     sort_by: str = Query(default="detector_score"),
     detector_id: str | None = None,
     detector_family: str | None = None,
+    detector_category: str | None = None,
+    detector_level: str | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
     limit: int | None = Query(default=None, ge=1, le=200),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
 ) -> dict:
     context = report_context_service.resolve(
         observation_date=observation_date,
@@ -187,8 +198,11 @@ def daily_detector_clues(
         sort_by=sort_by,
         detector_id=detector_id,
         detector_family=detector_family,
+        detector_category=detector_category,
+        detector_level=detector_level,
         page=page,
         page_size=top_n or limit or page_size,
+        sort_order=sort_order,
     ), context)
 
 

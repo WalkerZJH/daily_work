@@ -297,6 +297,29 @@ watch(manufacturerCode, async (nextCode) => {
         <SectionCard title="命中说明">
           <dl class="definition-grid"><dt>证据说明</dt><dd>{{ ruleClue.evidenceText || '当前规则未提供该字段' }}</dd><dt>规则原因</dt><dd>{{ ruleClue.rootCause || '当前规则未提供该字段' }}</dd></dl>
         </SectionCard>
+        <SectionCard title="规则判定值" subtitle="展示本次不可变运行实际使用的比较值，不代表月度风险概率">
+          <dl class="definition-grid">
+            <dt>当前值</dt><dd>{{ formatEvidenceValue(ruleClue.currentValue) }}</dd>
+            <dt>历史基准</dt><dd>{{ formatEvidenceValue(ruleClue.baselineValue) }}</dd>
+            <dt>比较值</dt><dd>{{ formatEvidenceValue(ruleClue.comparisonValue) }}</dd>
+            <dt>阈值</dt><dd>{{ ruleClue.thresholdOperator || '' }} {{ formatEvidenceValue(ruleClue.thresholdValue) }}</dd>
+            <dt>命中原因</dt><dd>{{ ruleClue.hitReason || '当前规则未提供该字段' }}</dd>
+          </dl>
+        </SectionCard>
+        <SectionCard title="运行与口径">
+          <details>
+            <summary>查看公式上下文、窗口、配置版本和订单过滤说明</summary>
+            <dl class="definition-grid compact">
+              <dt>证据窗口</dt><dd>{{ ruleClue.windowStart || '-' }} 至 {{ ruleClue.windowEnd || '-' }}</dd>
+              <dt>Demand shape</dt><dd>{{ ruleClue.demandShape || '-' }}</dd>
+              <dt>Detector 版本</dt><dd>{{ ruleClue.detectorVersion || '-' }}</dd>
+              <dt>管理员配置 ID</dt><dd>{{ ruleClue.configId || '-' }}</dd>
+              <dt>配置哈希</dt><dd>{{ ruleClue.configHash || '-' }}</dd>
+              <dt>可评估状态</dt><dd>{{ ruleClue.eligibilityStatus || '-' }}</dd>
+              <dt>订单过滤</dt><dd>仅使用清洗后正常完成订单：phase 60/70/80、terminal=1、failure=0、无需人工复核。</dd>
+            </dl>
+          </details>
+        </SectionCard>
         <SectionCard title="证据详情">
           <div v-if="!evidenceFields.length" class="empty">当前规则未提供证据 payload。</div>
           <dl v-else class="definition-grid"><template v-for="field in evidenceFields" :key="field.key"><dt>{{ field.key }}</dt><dd>{{ formatEvidenceValue(field.value) }}</dd></template></dl>
