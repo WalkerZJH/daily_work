@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from alg.cleaning.bs_agent_dingdan import (
+    map_unique_text_values_to_frame,
     map_status_lifecycle_value,
     order_status_lifecycle_map_dataframe,
 )
@@ -36,6 +37,7 @@ def _raw_sample() -> pd.DataFrame:
                 "药品医保编码": "drug-a",
                 "通用名": "药品A",
                 "商品名": "商品A",
+                "采购单位": " 盒 ",
                 "采购价(元)": 10,
                 "采购数量": 100,
                 "采购金额(元)": 1000,
@@ -68,6 +70,7 @@ def _raw_sample() -> pd.DataFrame:
                 "药品医保编码": "drug-b",
                 "通用名": "药品A",
                 "商品名": "",
+                "采购单位": "盒",
                 "采购价(元)": 10,
                 "采购数量": 100,
                 "采购金额(元)": 1000,
@@ -231,6 +234,7 @@ def test_pipeline_model_and_audit_columns(tmp_path):
         "drug_category_raw",
     }
     assert not forbidden.intersection(model.columns)
+    assert "purchase_unit" not in model.columns
     audit = pd.read_csv(result["output_paths"]["review_outputs"]["audit_sample"])
     for column in [
         "raw_city_code",
@@ -245,6 +249,20 @@ def test_pipeline_model_and_audit_columns(tmp_path):
         assert column in audit.columns
 
 
+def test_cleaned_output_retains_normalized_purchase_unit_without_adding_it_to_model_base(tmp_path):
+    raw_path = _write_raw(tmp_path)
+    result = run_bs_agent_dingdan_cleaning_pipeline(
+        raw_cache_path=raw_path,
+        output_dir=tmp_path / "exports",
+        max_rows=2,
+        generate_clean=True,
+    )
+    clean = pd.read_csv(result["output_paths"]["review_outputs"]["clean_sample_v2"])
+    model = pd.read_parquet(result["output_paths"]["model_base"]["parquet"])
+    assert clean["purchase_unit"].tolist() == ["盒", "盒"]
+    assert "purchase_unit" not in model.columns
+
+
 def test_frozen_status_mapping_updates():
     mapping = order_status_lifecycle_map_dataframe()
     delivered = map_status_lifecycle_value("配送完成", mapping)
@@ -257,6 +275,21 @@ def test_frozen_status_mapping_updates():
     assert proof["delivery_state_code"] == 1
     assert proof["order_terminal_flag"] == 0
     assert bool(proof["needs_manual_review"]) is False
+
+
+def test_large_cleaning_mapping_evaluates_only_distinct_text_values():
+    values = pd.Series(["配送完成"] * 50_000 + ["已下发网采证明"] * 50_000)
+    calls: list[str] = []
+
+    def mapper(value):
+        calls.append(value)
+        return pd.Series({"mapped": value})
+
+    mapped = map_unique_text_values_to_frame(values, mapper)
+    assert calls == ["配送完成", "已下发网采证明"]
+    assert len(mapped) == 100_000
+    assert mapped.iloc[0]["mapped"] == "配送完成"
+    assert mapped.iloc[-1]["mapped"] == "已下发网采证明"
 
 
 def test_numeric_report_has_no_unit_price_or_purchase_price_consistency(tmp_path):

@@ -83,6 +83,8 @@ temp/
 *.csv
 *.parquet
 data/project_result_batches/
+data/detector_release_a/
+algo_main/reports/entity_complete_v2_coverage_expansion/02_extraction/cleaning_audit/
 
 project/artifacts/models/**
 !project/artifacts/models/

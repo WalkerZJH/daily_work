@@ -9,6 +9,7 @@ from app.schemas.detector_results import (
     DailyDetectorCluesResponse,
     DailyDetectorClueDetailResponse,
     DailyDetectorRunsResponse,
+    DailyDetectorResultsResponse,
     DailyDetectorStatusResponse,
     DetectorCatalogResponse,
     DetectorConfigStatusResponse,
@@ -113,6 +114,34 @@ def detector_clues(
         manufacturer_code=manufacturer_code,
         hospital_code=hospital_code,
         drug_group=drug_group,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/detectors/results", response_model=DailyDetectorResultsResponse)
+def detector_results(
+    service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
+    observation_date: str | None = None,
+    detector_id: str | None = None,
+    detector_family: str | None = None,
+    manufacturer_code: str | None = None,
+    hospital_code: str | None = None,
+    drug_code: str | None = None,
+    eligibility_status: str | None = None,
+    hit_flag: bool | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+) -> dict:
+    return service.results(
+        observation_date=observation_date,
+        detector_id=detector_id,
+        detector_family=detector_family,
+        manufacturer_code=manufacturer_code,
+        hospital_code=hospital_code,
+        drug_code=drug_code,
+        eligibility_status=eligibility_status,
+        hit_flag=hit_flag,
         page=page,
         page_size=page_size,
     )

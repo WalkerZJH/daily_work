@@ -32,6 +32,7 @@ def make_detector_repository() -> InMemoryRiskResultRepository:
             "risk_entities": _risk_entities(),
             "detector_catalog": _detector_catalog(),
             "daily_detector_runs": _daily_detector_runs(),
+            "daily_detector_results": _daily_detector_results(),
             "daily_detector_clues": _daily_detector_clues(),
             "high_risk_detector_evidence": _high_risk_detector_evidence(),
         },
@@ -161,6 +162,29 @@ def _daily_detector_clues() -> pd.DataFrame:
                 "caveat": "daily detector clue, not model high risk",
                 "created_at": "2025-12-31T09:06:00+08:00",
             },
+        ]
+    )
+
+
+def _daily_detector_results() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "detector_result_id": "result-1", "run_id": "run_2025_12_31",
+                "source_raw_batch_id": "clean-input", "observation_date": "2025-12-31",
+                "manufacturer_code": "m1", "hospital_code": "h1", "drug_code": "d1",
+                "purchase_unit": "盒", "detector_family": "purchase_interval",
+                "detector_id": "purchase_interval_ipi", "detector_name": "Purchase interval IPI",
+                "detector_version": "purchase_interval_ipi_v1", "config_id": "cfg-1",
+                "config_hash": "a" * 64, "hit_flag": True, "severity": "high", "confidence": 0.8,
+                "eligibility_status": "applicable", "inapplicable_reason": pd.NA,
+                "demand_shape_label": "smooth", "evidence_window_start": "2025-01-01",
+                "evidence_window_end": "2025-12-31", "current_value": 60.0,
+                "baseline_value": 20.0, "comparison_value": 4.0, "threshold_value": 1.5,
+                "threshold_operator": ">=", "evidence_payload": "{}",
+                "evidence_text": "采购节奏异常", "hit_reason": "采购节奏异常",
+                "caveat": "fact only", "created_at": "2025-12-31T09:05:00+08:00",
+            }
         ]
     )
 

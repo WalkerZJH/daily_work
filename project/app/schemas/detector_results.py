@@ -152,6 +152,51 @@ class DailyDetectorCluesResponse(DetectorResultModel):
     date_resolution_status: str | None = None
 
 
+class DailyDetectorResultItem(DetectorResultModel):
+    detector_result_id: str
+    run_id: str
+    source_raw_batch_id: str | None = None
+    observation_date: str
+    manufacturer_code: str
+    hospital_code: str
+    drug_code: str
+    purchase_unit: str | None = None
+    detector_family: str
+    detector_id: str
+    detector_name: str
+    detector_version: str
+    config_id: str
+    config_hash: str
+    hit_flag: bool
+    severity: str
+    confidence: float | None = None
+    eligibility_status: str
+    inapplicable_reason: str | None = None
+    demand_shape_label: str | None = None
+    evidence_window_start: str | None = None
+    evidence_window_end: str | None = None
+    current_value: float | str | None = None
+    baseline_value: float | str | None = None
+    comparison_value: float | str | None = None
+    threshold_value: float | str | None = None
+    threshold_operator: str | None = None
+    evidence_payload: Any = None
+    evidence_text: str
+    hit_reason: str
+    caveat: str
+    created_at: str | None = None
+
+
+class DailyDetectorResultsResponse(DetectorResultModel):
+    ready: bool
+    source: str
+    items: list[DailyDetectorResultItem]
+    total: int = Field(ge=0)
+    pagination: dict[str, int]
+    semantic_caveats: list[str]
+    warnings: list[str]
+
+
 class DailyDetectorClueDetailResponse(DetectorResultModel):
     ready: bool
     source: str

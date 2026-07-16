@@ -34,7 +34,12 @@ def test_today_observation_does_not_claim_today_report() -> None:
     context = repo.resolve_observation_context(observation_date=date.today().isoformat(), batch_root=ROOT)
 
     assert context["observation_date"] == date.today().isoformat()
-    assert context["context_status"] in {"probability_month_unavailable", "detector_run_unavailable", "manual_selection_required"}
+    assert context["context_status"] in {
+        "EXPECTED_MONTH_BATCH_UNAVAILABLE",
+        "probability_month_unavailable",
+        "detector_run_unavailable",
+        "manual_selection_required",
+    }
     assert context["detector_run_date"] == date.today().isoformat()
     assert context["detector_run_available"] is False
 

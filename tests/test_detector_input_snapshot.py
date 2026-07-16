@@ -33,29 +33,58 @@ def test_daily_detector_snapshot_uses_only_orders_as_of_observation_date() -> No
 
 def test_daily_detector_stage_publishes_independent_batch_without_monthly_runner(tmp_path) -> None:
     from production_pipeline.run_daily_detector import main
+    from risk_algorithm_core.detector_config import load_daily_detector_config
+    from risk_algorithm_core.detector_config_profiles import build_manufacturer_config_profiles
     from risk_model_core.repositories import ParquetRiskResultRepository
 
     raw = tmp_path / "raw"
     raw.mkdir()
-    (raw / "manifest.json").write_text('{"raw_batch_id":"raw-fixture","table_format":"parquet"}', encoding="utf-8")
+    (raw / "manifest.json").write_text(
+        json.dumps(
+            {
+                "input_batch_id": "clean-fixture",
+                "input_stage": "cleaned_detector_facts",
+                "source_system": "test_cleaning_chain",
+                "table_format": "parquet",
+                "table_paths": {"orders": "orders.parquet"},
+                "cleaning_contract": {
+                    "version": "fixture_v1",
+                    "canonical_status_mapping_applied": True,
+                    "direct_purchase_unit_price_only": True,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
     orders = pd.DataFrame(
         [
-            {"order_date": "2024-11-01", "manufacturer_code": "m1", "hospital_code": "h1", "drug_code": "d1", "order_quantity": 10, "order_amount": 100},
-            {"order_date": "2024-12-01", "manufacturer_code": "m1", "hospital_code": "h1", "drug_code": "d1", "order_quantity": 10, "order_amount": 100},
-            {"order_date": "2025-01-01", "manufacturer_code": "m1", "hospital_code": "h1", "drug_code": "d1", "order_quantity": 10, "order_amount": 100},
+            {"row_uid": "r0", "order_id": "o0", "order_date": "2024-10-01", "manufacturer_code": "m1", "hospital_code": "h1", "drug_code": "d1", "order_quantity": 10, "order_amount": 100, "purchase_unit": "盒", "purchase_unit_price": 10, "order_phase_code": 60, "order_terminal_flag": 1, "order_failure_flag": 0, "needs_manual_review": False},
+            {"row_uid": "r1", "order_id": "o1", "order_date": "2024-11-01", "manufacturer_code": "m1", "hospital_code": "h1", "drug_code": "d1", "order_quantity": 10, "order_amount": 100, "purchase_unit": "盒", "purchase_unit_price": 10, "order_phase_code": 60, "order_terminal_flag": 1, "order_failure_flag": 0, "needs_manual_review": False},
+            {"row_uid": "r2", "order_id": "o2", "order_date": "2024-12-01", "manufacturer_code": "m1", "hospital_code": "h1", "drug_code": "d1", "order_quantity": 10, "order_amount": 100, "purchase_unit": "盒", "purchase_unit_price": 10, "order_phase_code": 70, "order_terminal_flag": 1, "order_failure_flag": 0, "needs_manual_review": False},
+            {"row_uid": "r3", "order_id": "o3", "order_date": "2025-01-01", "manufacturer_code": "m1", "hospital_code": "h1", "drug_code": "d1", "order_quantity": 10, "order_amount": 100, "purchase_unit": "盒", "purchase_unit_price": 10, "order_phase_code": 80, "order_terminal_flag": 1, "order_failure_flag": 0, "needs_manual_review": False},
         ]
     )
     write_production_parquet(orders, raw / "orders.parquet")
+    profiles = build_manufacturer_config_profiles(
+        ["m1"], load_daily_detector_config(), detector_ids=["purchase_interval_ipi"]
+    )
+    profiles["effective_from"] = "1900-01-01"
+    profile_path = tmp_path / "profiles.parquet"
+    write_production_parquet(profiles, profile_path)
 
-    assert main(["--output-root", str(tmp_path / "results"), "--raw-batch-dir", str(raw), "--observation-date", "2025-02-20", "--run-id", "fixture"]) == 0
-    batch = tmp_path / "results" / "detector_run_date=2025-02-20" / "batch_id=2025-02-20-daily-detector-fact-fixture"
+    assert main([
+        "--output-root", str(tmp_path / "results"), "--raw-batch-dir", str(raw),
+        "--observation-date", "2025-02-20", "--run-id", "fixture",
+        "--detector-id", "purchase_interval_ipi", "--detector-config-profiles", str(profile_path),
+    ]) == 0
+    batch = tmp_path / "results" / "detector_run_date=2025-02-20" / "detector_id=purchase_interval_ipi" / "batch_id=2025-02-20-fixture"
     clues = pd.read_parquet(batch / "daily_detector_clues.parquet")
     assert not clues.empty
     assert clues["risk_entity_id"].isna().all()
     assert clues["monthly_risk_probability"].isna().all()
     assert not (batch / "risk_entities.parquet").exists()
     repository = ParquetRiskResultRepository(batch)
-    assert repository.manifest().report_type == "daily_detector"
+    assert repository.manifest().report_type == "daily_detector_component"
     assert len(repository.list_daily_detector_runs()) == 1
 
 

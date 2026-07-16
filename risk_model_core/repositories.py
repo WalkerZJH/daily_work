@@ -103,6 +103,15 @@ class RiskResultRepository(ABC):
     def list_daily_detector_clues(self, **filters: Any) -> pd.DataFrame:
         raise NotImplementedError
 
+    def list_daily_detector_results(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("daily_detector_results"), filters)
+
+    def list_detector_config_profiles(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("detector_config_profiles"), filters)
+
+    def list_detector_run_config_snapshot(self, **filters: Any) -> pd.DataFrame:
+        return apply_filters(self.load_table("detector_run_config_snapshot"), filters)
+
     @abstractmethod
     def get_daily_detector_clue_by_id(
         self,
@@ -429,7 +438,11 @@ class CompositeDetectorResultRepository(ParquetRiskResultRepository):
         super().__init__(self.component_batch_dirs[0])
 
     def load_table(self, name: str) -> pd.DataFrame:
-        if name not in {"detector_catalog", "daily_detector_runs", "daily_detector_clues", "high_risk_detector_evidence"}:
+        if name not in {
+            "detector_catalog", "detector_config_profiles", "detector_run_config_snapshot",
+            "daily_detector_runs", "daily_detector_results", "daily_detector_clues",
+            "high_risk_detector_evidence",
+        }:
             return super().load_table(name)
         frames = [pd.read_parquet(batch / f"{name}.parquet") for batch in self.component_batch_dirs]
         return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()

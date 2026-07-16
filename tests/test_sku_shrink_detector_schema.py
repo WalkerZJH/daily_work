@@ -10,7 +10,7 @@ def test_sku_shrink_detector_schema() -> None:
     catalog = tables["detector_catalog"].set_index("detector_id")
     clues = tables["daily_detector_clues"]
 
-    assert catalog.loc["sku_shrink", "status"] in {"interface_only", "missing_fields"}
+    assert catalog.loc["sku_shrink", "status"] == "blocked_by_missing_domain_concept"
     assert bool(catalog.loc["sku_shrink", "enabled_by_default"]) is False
     assert not clues["detector_id"].eq("sku_shrink").any()
     assert "竞品替代已确认" not in clues.to_csv(index=False)

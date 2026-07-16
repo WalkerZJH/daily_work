@@ -6,6 +6,7 @@ import json
 import pandas as pd
 
 from risk_algorithm_core.daily_detector_runner import build_daily_detector_tables
+from risk_result_contracts import write_production_parquet
 
 
 def build_detector_fixture(include_non_high_risk_scan: bool = False) -> dict:
@@ -168,7 +169,7 @@ def write_minimal_detector_batch(tmp_path: Path) -> Path:
     }
     all_tables = {"risk_entities": risk_entities, **standard_empty, **tables}
     for name, frame in all_tables.items():
-        frame.to_csv(batch / f"{name}.csv", index=False)
+        write_production_parquet(frame, batch / f"{name}.parquet")
     manifest = {
         "batch_id": "batch_fixture",
         "report_type": "monthly",
@@ -178,17 +179,20 @@ def write_minimal_detector_batch(tmp_path: Path) -> Path:
         "primary_horizon": "H6",
         "available_horizons": ["H6"],
         "schema_version": "risk_result_batch_monthly_v1",
-        "data_backend": "csv",
+        "data_backend": "parquet",
         "allowed_usage": ["internal_diagnostic"],
         "forbidden_usage": ["auto_dispatch"],
         "customer_facing_probability_service_allowed": False,
         "auto_dispatch_allowed": False,
         "proof_case_report_allowed": False,
         "detector_tables": {
-            "detector_catalog": "detector_catalog.csv",
-            "daily_detector_runs": "daily_detector_runs.csv",
-            "daily_detector_clues": "daily_detector_clues.csv",
-            "high_risk_detector_evidence": "high_risk_detector_evidence.csv",
+            "detector_catalog": "detector_catalog.parquet",
+            "detector_config_profiles": "detector_config_profiles.parquet",
+            "detector_run_config_snapshot": "detector_run_config_snapshot.parquet",
+            "daily_detector_runs": "daily_detector_runs.parquet",
+            "daily_detector_results": "daily_detector_results.parquet",
+            "daily_detector_clues": "daily_detector_clues.parquet",
+            "high_risk_detector_evidence": "high_risk_detector_evidence.parquet",
         },
         "detector_config_version": "daily_detector_rules_v1",
         "detector_score_probability_interpretation": "detector_score_is_not_probability",

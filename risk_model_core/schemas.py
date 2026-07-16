@@ -52,7 +52,10 @@ STANDARD_TABLES = [
     "oneshot_terminals",
     "entity_display_lookup",
     "detector_catalog",
+    "detector_config_profiles",
+    "detector_run_config_snapshot",
     "daily_detector_runs",
+    "daily_detector_results",
     "daily_detector_clues",
     "high_risk_detector_evidence",
 ]
@@ -144,6 +147,17 @@ DAILY_DETECTOR_CLUE_REQUIRED_COLUMNS = [
     "display_rank",
     "caveat",
     "created_at",
+]
+
+DAILY_DETECTOR_RESULT_REQUIRED_COLUMNS = [
+    "detector_result_id", "run_id", "source_raw_batch_id", "observation_date",
+    "manufacturer_code", "hospital_code", "drug_code", "purchase_unit",
+    "detector_family", "detector_id", "detector_name", "detector_version",
+    "config_id", "config_hash", "hit_flag", "severity", "confidence",
+    "eligibility_status", "inapplicable_reason", "demand_shape_label",
+    "evidence_window_start", "evidence_window_end", "current_value", "baseline_value",
+    "comparison_value", "threshold_value", "threshold_operator", "evidence_payload",
+    "evidence_text", "hit_reason", "caveat", "created_at",
 ]
 
 HIGH_RISK_DETECTOR_EVIDENCE_REQUIRED_COLUMNS = [

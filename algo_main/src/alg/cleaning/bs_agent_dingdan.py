@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -694,6 +694,25 @@ def normalize_status_text(value: Any) -> str:
     return "" if pd.isna(value) else str(value).strip()
 
 
+def map_unique_text_values_to_frame(
+    values: pd.Series,
+    mapper: Callable[[Any], pd.Series],
+) -> pd.DataFrame:
+    """Evaluate a text mapping once per distinct value, then vectorize expansion.
+
+    Status and grade vocabularies are small while order tables can contain
+    millions of rows. Returning a Series from ``Series.apply`` for every order
+    creates avoidable row-count-proportional Python work before any output is
+    written.
+    """
+    keys = values.map(normalize_status_text)
+    unique_keys = pd.Index(keys.drop_duplicates().tolist(), dtype="object")
+    mapped_unique = pd.DataFrame([mapper(value).to_dict() for value in unique_keys], index=unique_keys)
+    mapped = mapped_unique.reindex(keys.to_numpy()).reset_index(drop=True)
+    mapped.index = values.index
+    return mapped
+
+
 def map_status_lifecycle_value(value: Any, lifecycle_map: pd.DataFrame) -> pd.Series:
     text_value = normalize_status_text(value)
     if text_value == "":
@@ -735,8 +754,9 @@ def apply_order_status_lifecycle(
     df: pd.DataFrame, export_eda: Path, export_mappings: Path
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     lifecycle_map = build_order_status_lifecycle_map(export_mappings)
-    mapped = df.get("order_status_raw", pd.Series(index=df.index, dtype="object")).apply(
-        lambda value: map_status_lifecycle_value(value, lifecycle_map)
+    mapped = map_unique_text_values_to_frame(
+        df.get("order_status_raw", pd.Series(index=df.index, dtype="object")),
+        lambda value: map_status_lifecycle_value(value, lifecycle_map),
     )
     out = df.copy()
     for column in mapped.columns:
@@ -1074,6 +1094,7 @@ def build_alias_table_from_raw(df_raw: pd.DataFrame, raw_to_alias: dict[str, str
 def add_v2_derived_fields(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     for column in [
+        "raw_sensitive_purchase_price",
         "raw_sensitive_purchase_quantity",
         "raw_sensitive_delivery_quantity",
         "raw_sensitive_arrival_quantity",
@@ -1084,6 +1105,9 @@ def add_v2_derived_fields(df: pd.DataFrame) -> pd.DataFrame:
     ]:
         if column in out:
             out[column] = pd.to_numeric(out[column], errors="coerce")
+    if "purchase_unit" in out:
+        unit = out["purchase_unit"].astype("string").str.strip().str.replace(r"\s+", "", regex=True)
+        out["purchase_unit"] = unit.mask(unit.eq(""), pd.NA)
     if "county_code" in out:
         county = normalize_code(out["county_code"]).str.zfill(6)
         derived_province = county.str.slice(0, 2) + "0000"
@@ -1157,8 +1181,9 @@ def build_clean_model_audit_v2(
         aliased["purchase_time"] = pd.to_datetime(aliased["purchase_time"], errors="coerce")
     if "hospital_level_raw" in aliased.columns:
         aliased = aliased.join(
-            aliased["hospital_level_raw"].apply(
-                lambda value: map_hospital_level_value(value, hospital_level_map)
+            map_unique_text_values_to_frame(
+                aliased["hospital_level_raw"],
+                lambda value: map_hospital_level_value(value, hospital_level_map),
             )
         )
     if "drug_category_raw" in aliased.columns:

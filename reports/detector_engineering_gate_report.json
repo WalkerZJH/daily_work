@@ -1,0 +1,14 @@
+{
+  "release": "A",
+  "status": "passed",
+  "observation_date": "2026-07-16",
+  "component_count": 10,
+  "result_count": 479820,
+  "clue_count": 38593,
+  "manufacturer_count": 14,
+  "config_profile_count": 140,
+  "config_snapshot_count": 140,
+  "config_missing_count": 0,
+  "forbidden_causal_claim_count": 0,
+  "generated_at": "2026-07-16T04:44:30.187157+00:00"
+}

@@ -138,6 +138,9 @@ class DetectorResultService:
     def list_clues(self, **filters: Any) -> list[dict[str, Any]]:
         return self.repository.list_daily_detector_clues(**filters).to_dict("records")
 
+    def list_results(self, **filters: Any) -> list[dict[str, Any]]:
+        return self.repository.list_daily_detector_results(**filters).to_dict("records")
+
     def list_high_risk_evidence(self, risk_entity_id: str | None = None, detector_run_id: str | None = None, **filters: Any) -> list[dict[str, Any]]:
         return self.repository.list_high_risk_detector_evidence(risk_entity_id=risk_entity_id, detector_run_id=detector_run_id, **filters).to_dict("records")
 

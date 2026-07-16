@@ -137,9 +137,10 @@ columns:
 - raw_name: 采购单位
   alias: purchase_unit
   field_type: drug
-  include_in_clean: false
+  include_in_clean: true
   algorithm_usable: false
-  clean_rule: 保留在 raw/audit，不进入算法。
+  clean_rule: 去除首尾及内部空白，保留在 clean 供 Detector 按药品和单位进行价格可比性分组；暂不进入月度 model_base。
+  usable_scope: detector_price_grouping_only
 - raw_name: 材质
   alias: material
   field_type: drug
@@ -330,6 +331,7 @@ clean_columns:
   - county_code
   drug:
   - drug_code
+  - purchase_unit
   - drug_name
   - product_name
   - drug_category_code

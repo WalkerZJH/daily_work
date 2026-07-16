@@ -229,6 +229,47 @@ class DetectorResultService:
             "warnings": [] if ready else [MISSING_WARNING],
         }
 
+    def results(
+        self,
+        *,
+        observation_date: str | None = None,
+        detector_id: str | None = None,
+        detector_family: str | None = None,
+        manufacturer_code: str | None = None,
+        hospital_code: str | None = None,
+        drug_code: str | None = None,
+        eligibility_status: str | None = None,
+        hit_flag: bool | None = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> dict[str, Any]:
+        frame = self._read_frame(
+            "list_daily_detector_results",
+            observation_date=observation_date,
+            detector_id=detector_id,
+            detector_family=detector_family,
+            manufacturer_code=manufacturer_code,
+            hospital_code=hospital_code,
+            drug_code=drug_code,
+            eligibility_status=eligibility_status,
+            hit_flag=hit_flag,
+        )
+        frame = _sort_frame(frame, ["observation_date", "created_at"], ascending=False)
+        total = int(len(frame))
+        current_page = max(int(page), 1)
+        current_size = min(max(int(page_size), 1), 200)
+        start = (current_page - 1) * current_size
+        items = [_result_item(row) for _, row in frame.iloc[start : start + current_size].iterrows()]
+        return {
+            "ready": bool(total),
+            "source": SOURCE,
+            "items": items,
+            "total": total,
+            "pagination": {"page": current_page, "page_size": current_size, "total": total},
+            "semantic_caveats": SEMANTIC_CAVEATS,
+            "warnings": [] if total else [MISSING_WARNING],
+        }
+
     def clue_detail(
         self,
         *,
@@ -301,14 +342,18 @@ class DetectorResultService:
 
     def config_status(self) -> dict[str, Any]:
         runs = self._read_frame("list_daily_detector_runs")
+        profiles = self._read_frame("list_detector_config_profiles")
         latest = _latest_run(runs) if not runs.empty else {}
+        pending = profiles.loc[
+            ~profiles.get("business_approval_status", pd.Series("", index=profiles.index)).astype(str).eq("approved")
+        ] if not profiles.empty else profiles
         return {
             "effective_config_version": _text(latest.get("detector_config_version")) or None,
             "latest_run_id": _text(latest.get("detector_run_id")) or None,
             "latest_run_date": _text(latest.get("run_date")) or None,
-            "pending_config_version": None,
-            "pending_config_exists": False,
-            "pending_config_supported": False,
+            "pending_config_version": "manufacturer_profiles_pending_business_approval" if not pending.empty else None,
+            "pending_config_exists": not pending.empty,
+            "pending_config_supported": not profiles.empty,
             "next_run_required": False,
             "history_rewrite_allowed": False,
             "config_edit_semantics": CONFIG_EDIT_SEMANTICS,
@@ -430,6 +475,23 @@ def _clue_item(row: pd.Series, catalog: dict[str, dict[str, Any]] | None = None)
         "caveat": _text(row.get("caveat")) or None,
         "created_at": _text(row.get("created_at")) or None,
     }
+
+
+def _result_item(row: pd.Series) -> dict[str, Any]:
+    keys = [
+        "detector_result_id", "run_id", "source_raw_batch_id", "observation_date",
+        "manufacturer_code", "hospital_code", "drug_code", "purchase_unit", "detector_family",
+        "detector_id", "detector_name", "detector_version", "config_id", "config_hash",
+        "hit_flag", "severity", "confidence", "eligibility_status", "inapplicable_reason",
+        "demand_shape_label", "evidence_window_start", "evidence_window_end", "current_value",
+        "baseline_value", "comparison_value", "threshold_value", "threshold_operator",
+        "evidence_payload", "evidence_text", "hit_reason", "caveat", "created_at",
+    ]
+    item = {key: _clean_value(row.get(key)) for key in keys}
+    item["hit_flag"] = _bool(row.get("hit_flag"))
+    item["confidence"] = _number_or_none(row.get("confidence"))
+    item["evidence_payload"] = _safe_evidence_payload(row.get("evidence_payload"))
+    return item
 
 
 def _evidence_item(row: pd.Series, catalog: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:

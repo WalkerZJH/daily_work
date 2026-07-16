@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 from pathlib import Path
 
 from production_pipeline.run_daily_detector import materialize_detector_component_batch
+from production_pipeline.run_daily_detector import _validate_windows_readable_publish_path
 from production_pipeline.rebuild_observation_registry import main as rebuild_observation_registry
 from risk_model_core.repositories import CompositeDetectorResultRepository
 
@@ -94,3 +96,12 @@ def test_model_core_keeps_detector_and_monthly_production_runbook() -> None:
         "reports/parquet_and_pipeline_boundary_completion.md",
     ]:
         assert not Path(obsolete).exists()
+
+
+def test_windows_publish_path_gate_rejects_unreadable_final_path(monkeypatch, tmp_path) -> None:
+    import production_pipeline.run_daily_detector as module
+
+    monkeypatch.setattr(module.os, "name", "nt")
+    too_long = tmp_path.joinpath(*(["very-long-detector-segment"] * 12))
+    with pytest.raises(ValueError, match="too long"):
+        _validate_windows_readable_publish_path(too_long)

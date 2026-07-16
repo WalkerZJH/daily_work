@@ -1,0 +1,12 @@
+{
+  "release": "A",
+  "status": "pending",
+  "approved_profile_count": 0,
+  "pending_profile_count": 140,
+  "blockers": [
+    "manufacturer-specific thresholds require business approval",
+    "price semantics and thresholds require business review",
+    "same-day fact detectors require a date with complete same-day cleaned orders for acceptance"
+  ],
+  "generated_at": "2026-07-16T04:44:30.187157+00:00"
+}

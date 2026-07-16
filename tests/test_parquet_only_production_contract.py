@@ -84,6 +84,8 @@ def test_daily_detector_rejects_the_removed_monthly_batch_output_parameter(tmp_p
         run_daily_detector_main([
             "--batch-dir", str(batch), "--raw-batch-dir", str(tmp_path / "raw"),
             "--observation-date", "2025-12-05", "--run-id", "fixture",
+            "--detector-id", "purchase_interval_ipi",
+            "--detector-config-profiles", str(tmp_path / "profiles.parquet"),
         ])
     assert exc_info.value.code == 2
     assert "unrecognized arguments: --batch-dir" in capsys.readouterr().err

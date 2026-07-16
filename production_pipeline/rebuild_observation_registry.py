@@ -230,17 +230,19 @@ def _monthly_manufacturers(monthly: dict[str, Any]) -> list[dict[str, str]]:
 
 def _detector_manufacturers(detector: dict[str, Any]) -> list[dict[str, str]]:
     if detector.get("component_batch_dirs"):
-        frames = [
-            _read_columns(batch_dir / "daily_detector_clues.parquet", ["manufacturer_code"])
-            for batch_dir in detector["component_batch_dirs"]
-        ]
+        frames = []
+        for batch_dir in detector["component_batch_dirs"]:
+            result_path = batch_dir / "daily_detector_results.parquet"
+            fallback_path = batch_dir / "daily_detector_clues.parquet"
+            frames.append(_read_columns(result_path if result_path.is_file() else fallback_path, ["manufacturer_code"]))
         clues = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=["manufacturer_code"])
         return [
             {"manufacturer_code": code, "manufacturer_display_name": ""}
             for code in sorted(set(clues.get("manufacturer_code", pd.Series(dtype=str)).dropna().astype(str)))
         ]
     declared = detector["manifest"]["detector_tables"]
-    clues = _read_columns(detector["batch_dir"] / declared["daily_detector_clues"], ["manufacturer_code"])
+    result_name = declared.get("daily_detector_results") or declared["daily_detector_clues"]
+    clues = _read_columns(detector["batch_dir"] / result_name, ["manufacturer_code"])
     return [
         {"manufacturer_code": code, "manufacturer_display_name": ""}
         for code in sorted(set(clues.get("manufacturer_code", pd.Series(dtype=str)).dropna().astype(str)))

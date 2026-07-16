@@ -7,7 +7,9 @@ Read it before changing a Detector, adding a Detector, or starting a historical 
 
 - Monthly prediction and Detector are separate production pipelines.
 - Monthly prediction publishes only `report_month=YYYY-MM/batch_id=...` result batches.
-- Detector reads raw purchase facts and publishes only `detector_run_date=YYYY-MM-DD/...` batches.
+- Detector reads only the explicit cleaned purchase-fact input contract and publishes only
+  `detector_run_date=YYYY-MM-DD/...` batches. ClickHouse/raw extraction is upstream of cleaning and is never a
+  Detector runtime input.
 - Updating a Detector does not require rerunning monthly prediction.
 - Updating monthly prediction does not require rerunning any Detector.
 - Never run every Detector for every date merely because one Detector implementation or configuration changed.
@@ -27,7 +29,10 @@ data/project_result_batches/
       batch_id=YYYY-MM-DD-<run_id>/
         manifest.json
         detector_catalog.parquet
+        detector_config_profiles.parquet
+        detector_run_config_snapshot.parquet
         daily_detector_runs.parquet
+        daily_detector_results.parquet
         daily_detector_clues.parquet
         high_risk_detector_evidence.parquet
 ```
@@ -37,10 +42,26 @@ published `batch_id` independently for every `detector_id`, then presents those 
 Detector view to Project APIs and the frontend. Publishing a new version of one Detector therefore leaves
 all peer Detector selections unchanged.
 
-Detector parameters and per-Detector versions live in
-`configs/risk_algorithm_core/daily_detector_rules.yaml`. Increment the changed Detector's `version` when its
-logic or output meaning changes. A new implemented Detector must have a config entry and a registered
+Detector parameter schemas and per-Detector versions live in
+`configs/risk_algorithm_core/daily_detector_rules.yaml`. Effective values live in the versioned
+`detector_config_profiles` table and resolve exactly by Detector, manufacturer, and observation date. There is
+no cross-manufacturer or implicit global fallback. Increment the changed Detector's `version` when its logic or
+output meaning changes. A new implemented Detector must have a config entry, explicit profiles, and a registered
 evaluator in `risk_algorithm_core.daily_detector_runner` before production execution.
+
+Build the cleaned input first. The exporter accepts one self-contained cleaned Parquet and never re-joins raw
+lineage at Detector runtime:
+
+```powershell
+python -m production_pipeline.export_cleaned_detector_input `
+  --cleaned-orders <bs_agent_dingdan_clean.parquet> `
+  --output-dir <new_immutable_cleaned_input_batch> `
+  --input-batch-id <new_input_batch_id>
+
+python -m production_pipeline.generate_detector_config_profiles `
+  --cleaned-input-batch <cleaned_input_batch> `
+  --output-path <new_detector_config_profiles.parquet>
+```
 
 ## Run only what changed
 
@@ -48,21 +69,23 @@ One Detector for one date:
 
 ```powershell
 python -m production_pipeline.run_daily_detector `
-  --raw-batch-dir <raw_batch> `
+  --raw-batch-dir <cleaned_detector_input_batch> `
   --observation-date YYYY-MM-DD `
   --run-id <new_versioned_run_id> `
-  --detector-id <detector_id>
+  --detector-id <detector_id> `
+  --detector-config-profiles <detector_config_profiles.parquet>
 ```
 
 One Detector for an affected date range:
 
 ```powershell
 python -m production_pipeline.materialize_daily_detector_range `
-  --raw-batch-dir <raw_batch> `
+  --raw-batch-dir <cleaned_detector_input_batch> `
   --start-date YYYY-MM-DD `
   --end-date YYYY-MM-DD `
   --run-id <new_versioned_run_id> `
-  --detector-id <detector_id>
+  --detector-id <detector_id> `
+  --detector-config-profiles <detector_config_profiles.parquet>
 ```
 
 Repeat `--detector-id` only when multiple Detectors genuinely changed. Use `--resume-existing` to resume the
