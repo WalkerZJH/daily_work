@@ -13,9 +13,9 @@
 
 | demand_shape | entity_count |
 | --- | --- |
-| intermittent | 37812 |
-| lumpy | 9060 |
-| smooth | 930 |
-| erratic | 180 |
+| intermittent | 35256 |
+| lumpy | 8393 |
+| smooth | 1196 |
+| erratic | 229 |
 
 这些 modifier 已版本化进入企业 profile，但业务验收前不得宣称为优化阈值。

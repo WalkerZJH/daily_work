@@ -13,7 +13,6 @@ import pandas as pd
 
 from risk_algorithm_core.daily_detector_runner import build_daily_detector_tables
 from risk_algorithm_core.detector_config import load_daily_detector_config
-from risk_algorithm_core.detector_config_profiles import load_detector_config_profiles
 from risk_algorithm_core.detector_component_validation import validate_detector_component_tables
 from risk_algorithm_core.detector_input import filter_detector_eligible_orders, load_cleaned_detector_orders
 from risk_result_contracts import write_production_parquet
@@ -48,7 +47,6 @@ def main(argv: list[str] | None = None) -> int:
         help="Publish only this Detector component; repeat to publish multiple independent components.",
     )
     parser.add_argument("--detector-config", default="configs/risk_algorithm_core/daily_detector_rules.yaml")
-    parser.add_argument("--detector-config-profiles", required=True)
     parser.add_argument("--manufacturer-code", action="append", dest="manufacturer_codes")
     args = parser.parse_args(argv)
     observation_date = _normalize_observation_date(args.observation_date)
@@ -64,7 +62,6 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError(f"Requested manufacturer codes have no eligible cleaned orders: {missing}")
     prepared_orders = prepare_detector_orders(eligible_orders)
     snapshot = build_detector_input_snapshot_from_prepared(prepared_orders, observation_date)
-    config_profiles = load_detector_config_profiles(args.detector_config_profiles)
     results = [
         materialize_detector_component_batch(
             snapshot_frame=snapshot,
@@ -74,7 +71,6 @@ def main(argv: list[str] | None = None) -> int:
             run_id=args.run_id,
             raw_batch_id=input_manifest.input_batch_id,
             detector_config_path=args.detector_config,
-            config_profiles=config_profiles,
         )
         for detector_id in args.detector_ids
     ]
@@ -91,7 +87,6 @@ def materialize_detector_component_batch(
     run_id: str,
     raw_batch_id: str,
     detector_config_path: str | Path | None = None,
-    config_profiles: pd.DataFrame | None = None,
 ) -> dict[str, object]:
     """Publish one immutable Detector component without touching its peers."""
     config = load_daily_detector_config(detector_config_path)
@@ -115,7 +110,6 @@ def materialize_detector_component_batch(
             source_result_batch_id="",
             detector_config=config,
             detector_ids=[detector_id],
-            config_profiles=config_profiles,
         )
         if tables["daily_detector_results"]["eligibility_status"].astype(str).eq("config_missing").any():
             missing = sorted(
@@ -155,12 +149,18 @@ def materialize_detector_component_batch(
             "detector_tables": {name: f"{name}.parquet" for name in DETECTOR_TABLE_NAMES},
             "detector_validation_report": "detector_validation_report.json",
             "engineering_gate_status": validation["engineering_gate_status"],
-            "business_gate_status": validation["business_gate_status"],
+            "config_policy_status": validation["config_policy_status"],
+            "parameter_source": "admin_parameter_table",
+            "parameter_source_version": config.config_version,
+            "parameter_editable": False,
+            "personalized_parameter_profiles": "deferred_not_implemented",
+            "display_filter_policy": "request_only_no_persistence",
             "detector_score_probability_interpretation": "detector_score_is_not_probability",
             "caveats": [
                 "detector_score_is_not_probability",
                 "daily_detector_uses_cleaned_purchase_facts_only",
                 "no_monthly_model_dependency",
+                "admin_parameters_are_read_only_for_current_stage",
             ],
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }

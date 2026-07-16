@@ -1,8 +1,8 @@
 {
   "release": "A",
-  "observation_date": "2026-07-16",
+  "observation_date": "2026-01-01",
   "source_cleaned_input_batch_id": "cleaned-detector-facts-v2-20260716",
-  "generated_at": "2026-07-16T04:44:30.187157+00:00",
+  "generated_at": "2026-07-16T06:08:15.383183+00:00",
   "detectors": [
     {
       "detector_id": "purchase_interval_ipi",
@@ -12,12 +12,13 @@
       "parameter_scope": "manufacturer_specific",
       "implementation_status": "implemented",
       "engineering_gate_status": "passed",
-      "business_gate_status": "pending",
-      "result_count": 47982,
-      "applicable_count": 24465,
-      "clue_count": 18320,
+      "config_policy_status": "admin_only_read_only",
+      "result_count": 45074,
+      "applicable_count": 22702,
+      "clue_count": 11244,
       "config_missing_count": 0,
-      "business_blocker": "manufacturer profiles pending business approval"
+      "parameter_source": "admin_parameter_table",
+      "parameter_editable": false
     },
     {
       "detector_id": "purchase_quantity_trend",
@@ -27,12 +28,13 @@
       "parameter_scope": "manufacturer_specific",
       "implementation_status": "implemented",
       "engineering_gate_status": "passed",
-      "business_gate_status": "pending",
-      "result_count": 47982,
-      "applicable_count": 23577,
-      "clue_count": 18161,
+      "config_policy_status": "admin_only_read_only",
+      "result_count": 45074,
+      "applicable_count": 23612,
+      "clue_count": 12657,
       "config_missing_count": 0,
-      "business_blocker": "manufacturer profiles pending business approval"
+      "parameter_source": "admin_parameter_table",
+      "parameter_editable": false
     },
     {
       "detector_id": "purchase_quantity_spike",
@@ -42,12 +44,13 @@
       "parameter_scope": "manufacturer_specific",
       "implementation_status": "implemented",
       "engineering_gate_status": "passed",
-      "business_gate_status": "pending",
-      "result_count": 47982,
-      "applicable_count": 23577,
-      "clue_count": 460,
+      "config_policy_status": "admin_only_read_only",
+      "result_count": 45074,
+      "applicable_count": 23612,
+      "clue_count": 1720,
       "config_missing_count": 0,
-      "business_blocker": "manufacturer profiles pending business approval"
+      "parameter_source": "admin_parameter_table",
+      "parameter_editable": false
     },
     {
       "detector_id": "purchase_frequency_drop",
@@ -57,12 +60,13 @@
       "parameter_scope": "manufacturer_specific",
       "implementation_status": "implemented",
       "engineering_gate_status": "passed",
-      "business_gate_status": "pending",
-      "result_count": 47982,
-      "applicable_count": 2594,
-      "clue_count": 1642,
+      "config_policy_status": "admin_only_read_only",
+      "result_count": 45074,
+      "applicable_count": 2618,
+      "clue_count": 660,
       "config_missing_count": 0,
-      "business_blocker": "manufacturer profiles pending business approval"
+      "parameter_source": "admin_parameter_table",
+      "parameter_editable": false
     },
     {
       "detector_id": "purchase_frequency_spike",
@@ -72,12 +76,13 @@
       "parameter_scope": "manufacturer_specific",
       "implementation_status": "implemented",
       "engineering_gate_status": "passed",
-      "business_gate_status": "pending",
-      "result_count": 47982,
-      "applicable_count": 2594,
-      "clue_count": 1,
+      "config_policy_status": "admin_only_read_only",
+      "result_count": 45074,
+      "applicable_count": 2618,
+      "clue_count": 25,
       "config_missing_count": 0,
-      "business_blocker": "manufacturer profiles pending business approval"
+      "parameter_source": "admin_parameter_table",
+      "parameter_editable": false
     },
     {
       "detector_id": "low_price_warning",
@@ -87,12 +92,13 @@
       "parameter_scope": "manufacturer_specific",
       "implementation_status": "implemented",
       "engineering_gate_status": "passed",
-      "business_gate_status": "pending",
-      "result_count": 47982,
-      "applicable_count": 0,
-      "clue_count": 0,
+      "config_policy_status": "admin_only_read_only",
+      "result_count": 45074,
+      "applicable_count": 130,
+      "clue_count": 11,
       "config_missing_count": 0,
-      "business_blocker": "manufacturer profiles pending business approval"
+      "parameter_source": "admin_parameter_table",
+      "parameter_editable": false
     },
     {
       "detector_id": "order_price_spread_warning",
@@ -102,12 +108,13 @@
       "parameter_scope": "manufacturer_specific",
       "implementation_status": "implemented",
       "engineering_gate_status": "passed",
-      "business_gate_status": "pending",
-      "result_count": 47982,
-      "applicable_count": 3276,
+      "config_policy_status": "admin_only_read_only",
+      "result_count": 45074,
+      "applicable_count": 7784,
       "clue_count": 0,
       "config_missing_count": 0,
-      "business_blocker": "manufacturer profiles pending business approval"
+      "parameter_source": "admin_parameter_table",
+      "parameter_editable": false
     },
     {
       "detector_id": "purchase_price_level_shift",
@@ -117,12 +124,13 @@
       "parameter_scope": "manufacturer_specific",
       "implementation_status": "implemented",
       "engineering_gate_status": "passed",
-      "business_gate_status": "pending",
-      "result_count": 47982,
-      "applicable_count": 2281,
-      "clue_count": 9,
+      "config_policy_status": "admin_only_read_only",
+      "result_count": 45074,
+      "applicable_count": 4381,
+      "clue_count": 57,
       "config_missing_count": 0,
-      "business_blocker": "manufacturer profiles pending business approval"
+      "parameter_source": "admin_parameter_table",
+      "parameter_editable": false
     },
     {
       "detector_id": "first_purchase_fact",
@@ -132,12 +140,13 @@
       "parameter_scope": "manufacturer_specific",
       "implementation_status": "implemented",
       "engineering_gate_status": "passed",
-      "business_gate_status": "pending",
-      "result_count": 47982,
-      "applicable_count": 0,
-      "clue_count": 0,
+      "config_policy_status": "admin_only_read_only",
+      "result_count": 45074,
+      "applicable_count": 5,
+      "clue_count": 5,
       "config_missing_count": 0,
-      "business_blocker": "manufacturer profiles pending business approval"
+      "parameter_source": "admin_parameter_table",
+      "parameter_editable": false
     },
     {
       "detector_id": "reactivated_purchase_fact",
@@ -147,12 +156,13 @@
       "parameter_scope": "manufacturer_specific",
       "implementation_status": "implemented",
       "engineering_gate_status": "passed",
-      "business_gate_status": "pending",
-      "result_count": 47982,
-      "applicable_count": 0,
-      "clue_count": 0,
+      "config_policy_status": "admin_only_read_only",
+      "result_count": 45074,
+      "applicable_count": 127,
+      "clue_count": 10,
       "config_missing_count": 0,
-      "business_blocker": "manufacturer profiles pending business approval"
+      "parameter_source": "admin_parameter_table",
+      "parameter_editable": false
     }
   ]
 }

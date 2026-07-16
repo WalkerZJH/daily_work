@@ -1,4 +1,4 @@
-"""Generate explicit manufacturer-specific Daily Detector config profiles."""
+"""Export a read-only preview of manufacturer snapshots from the admin parameter table."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from risk_result_contracts import write_production_parquet
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Generate manufacturer-specific Detector config profiles.")
+    parser = argparse.ArgumentParser(description="Export read-only admin Detector parameter snapshots.")
     parser.add_argument("--cleaned-input-batch", required=True)
     parser.add_argument("--output-path", required=True)
     parser.add_argument("--detector-config", default="configs/risk_algorithm_core/daily_detector_rules.yaml")
@@ -53,7 +53,9 @@ def main(argv: list[str] | None = None) -> int:
                 "profile_count": len(profiles),
                 "manufacturer_count": int(profiles["manufacturer_code"].nunique()),
                 "detector_count": int(profiles["detector_id"].nunique()),
-                "business_approval_status": "pending",
+                "parameter_source": "admin_parameter_table",
+                "parameter_editable": False,
+                "personalized_parameter_profiles": "deferred_not_implemented",
             },
             ensure_ascii=False,
         )

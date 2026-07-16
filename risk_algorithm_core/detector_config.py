@@ -16,6 +16,10 @@ class DailyDetectorConfig:
     config_version: str
     effective_from: str
     default_run_scope: str
+    config_authority: str
+    parameter_edit_policy: str
+    personalized_parameter_profiles: str
+    display_filter_policy: str
     detectors: dict[str, dict[str, Any]]
     raw: dict[str, Any]
 
@@ -40,6 +44,12 @@ def load_daily_detector_config(path: str | Path | None = None) -> DailyDetectorC
         config_version=str(data.get("config_version") or "daily_detector_rules_v1"),
         effective_from=str(data.get("effective_from") or ""),
         default_run_scope=str(data.get("default_run_scope") or "monthly_high_risk_entities"),
+        config_authority=str(data.get("config_authority") or "admin_only"),
+        parameter_edit_policy=str(data.get("parameter_edit_policy") or "read_only_for_current_stage"),
+        personalized_parameter_profiles=str(
+            data.get("personalized_parameter_profiles") or "deferred_not_implemented"
+        ),
+        display_filter_policy=str(data.get("display_filter_policy") or "request_only_no_persistence"),
         detectors={str(k): dict(v or {}) for k, v in dict(data.get("detectors", {})).items()},
         raw=data,
     )

@@ -88,17 +88,15 @@ def build_daily_detector_tables(
     manufacturers = scan_features.get("manufacturer_code", pd.Series(dtype="object")).dropna().astype(str).unique()
     profiles = config_profiles
     if profiles is None:
-        # Backward-compatible library use still creates explicit per-manufacturer
-        # rows. The production CLI always requires a persisted profile table.
+        # The admin parameter table is the only current-stage source of rule values.
+        # Per-manufacturer rows are immutable run snapshots, not editable profiles.
         profiles = build_manufacturer_config_profiles(
             manufacturers,
             config,
             detector_ids=selected_ids,
-            created_by="in_memory_test_profile_generator",
+            created_by="admin_parameter_table",
             created_at=created_at,
         )
-        profiles = profiles.copy()
-        profiles["effective_from"] = "1900-01-01"
 
     resolved_parts: list[pd.DataFrame] = []
     missing_by_detector: dict[str, set[str]] = {}

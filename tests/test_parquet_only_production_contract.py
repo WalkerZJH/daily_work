@@ -85,10 +85,22 @@ def test_daily_detector_rejects_the_removed_monthly_batch_output_parameter(tmp_p
             "--batch-dir", str(batch), "--raw-batch-dir", str(tmp_path / "raw"),
             "--observation-date", "2025-12-05", "--run-id", "fixture",
             "--detector-id", "purchase_interval_ipi",
-            "--detector-config-profiles", str(tmp_path / "profiles.parquet"),
         ])
     assert exc_info.value.code == 2
     assert "unrecognized arguments: --batch-dir" in capsys.readouterr().err
+
+
+def test_daily_detector_rejects_external_parameter_profile_input(tmp_path, capsys) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        run_daily_detector_main([
+            "--raw-batch-dir", str(tmp_path / "cleaned"),
+            "--observation-date", "2026-01-01",
+            "--run-id", "admin-only",
+            "--detector-id", "purchase_interval_ipi",
+            "--detector-config-profiles", str(tmp_path / "user-profiles.parquet"),
+        ])
+    assert exc_info.value.code == 2
+    assert "unrecognized arguments: --detector-config-profiles" in capsys.readouterr().err
 
 
 def test_registry_rebuild_uses_existing_parquet_batches(tmp_path) -> None:

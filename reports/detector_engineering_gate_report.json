@@ -1,14 +1,16 @@
 {
   "release": "A",
   "status": "passed",
-  "observation_date": "2026-07-16",
+  "observation_date": "2026-01-01",
+  "probability_report_month": "2025-12",
+  "observation_context_status": "ready",
   "component_count": 10,
-  "result_count": 479820,
-  "clue_count": 38593,
+  "result_count": 450740,
+  "clue_count": 26389,
   "manufacturer_count": 14,
   "config_profile_count": 140,
   "config_snapshot_count": 140,
   "config_missing_count": 0,
   "forbidden_causal_claim_count": 0,
-  "generated_at": "2026-07-16T04:44:30.187157+00:00"
+  "generated_at": "2026-07-16T06:08:15.383183+00:00"
 }

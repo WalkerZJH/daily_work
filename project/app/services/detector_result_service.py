@@ -39,9 +39,7 @@ _CLUE_DETAIL_COLUMNS = [
     "evidence_text", "evidence_payload", "is_monthly_high_risk_entity", "risk_entity_id",
     "monthly_risk_probability", "monthly_loss_value", "display_rank", "caveat", "created_at",
 ]
-CONFIG_EDIT_SEMANTICS = (
-    "规则参数调整后，将在下一次巡检运行后生效，历史结果不会被静默改写。"
-)
+CONFIG_EDIT_SEMANTICS = "当前阶段仅使用只读管理员参数表；不提供用户参数修改入口。"
 
 
 class DetectorResultService:
@@ -342,20 +340,20 @@ class DetectorResultService:
 
     def config_status(self) -> dict[str, Any]:
         runs = self._read_frame("list_daily_detector_runs")
-        profiles = self._read_frame("list_detector_config_profiles")
         latest = _latest_run(runs) if not runs.empty else {}
-        pending = profiles.loc[
-            ~profiles.get("business_approval_status", pd.Series("", index=profiles.index)).astype(str).eq("approved")
-        ] if not profiles.empty else profiles
         return {
             "effective_config_version": _text(latest.get("detector_config_version")) or None,
             "latest_run_id": _text(latest.get("detector_run_id")) or None,
             "latest_run_date": _text(latest.get("run_date")) or None,
-            "pending_config_version": "manufacturer_profiles_pending_business_approval" if not pending.empty else None,
-            "pending_config_exists": not pending.empty,
-            "pending_config_supported": not profiles.empty,
+            "pending_config_version": None,
+            "pending_config_exists": False,
+            "pending_config_supported": False,
             "next_run_required": False,
             "history_rewrite_allowed": False,
+            "parameter_source": "admin_parameter_table",
+            "parameter_editable": False,
+            "personalized_parameter_profiles": "deferred_not_implemented",
+            "display_filter_policy": "request_only_no_persistence",
             "config_edit_semantics": CONFIG_EDIT_SEMANTICS,
             "warnings": [] if not runs.empty else [MISSING_WARNING],
         }

@@ -70,19 +70,15 @@ def validate_detector_component_tables(
     if forbidden_found:
         raise ValueError(f"Detector component contains forbidden causal claims: {forbidden_found}")
 
-    business_pending = int(
-        (~profiles["business_approval_status"].astype(str).eq("approved")).sum()
-    )
     return {
         "engineering_gate_status": "passed",
-        "business_gate_status": "passed" if business_pending == 0 else "pending",
+        "config_policy_status": "admin_only_read_only",
         "detector_id": detector_id,
         "observation_date": observation_date,
         "result_count": int(len(results)),
         "clue_count": int(len(clues)),
         "manufacturer_count": int(len(result_manufacturers)),
         "config_profile_count": int(len(profiles)),
-        "business_approval_pending_profile_count": business_pending,
         "config_missing_count": 0,
         "forbidden_causal_claim_count": 0,
     }

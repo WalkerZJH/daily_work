@@ -8,7 +8,7 @@ from risk_algorithm_core.detector_component_validation import validate_detector_
 from tests.test_detector_release_a_rules import _all_rule_features
 
 
-def test_release_a_component_validation_passes_and_marks_business_pending() -> None:
+def test_release_a_component_validation_passes_with_read_only_admin_policy() -> None:
     tables = build_daily_detector_tables(
         risk_entities=pd.DataFrame(),
         scan_features=_all_rule_features(),
@@ -21,7 +21,7 @@ def test_release_a_component_validation_passes_and_marks_business_pending() -> N
         tables, detector_id="purchase_interval_ipi", observation_date="2026-07-16"
     )
     assert report["engineering_gate_status"] == "passed"
-    assert report["business_gate_status"] == "pending"
+    assert report["config_policy_status"] == "admin_only_read_only"
     assert report["config_missing_count"] == 0
 
 

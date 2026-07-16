@@ -33,8 +33,6 @@ def test_daily_detector_snapshot_uses_only_orders_as_of_observation_date() -> No
 
 def test_daily_detector_stage_publishes_independent_batch_without_monthly_runner(tmp_path) -> None:
     from production_pipeline.run_daily_detector import main
-    from risk_algorithm_core.detector_config import load_daily_detector_config
-    from risk_algorithm_core.detector_config_profiles import build_manufacturer_config_profiles
     from risk_model_core.repositories import ParquetRiskResultRepository
 
     raw = tmp_path / "raw"
@@ -65,17 +63,10 @@ def test_daily_detector_stage_publishes_independent_batch_without_monthly_runner
         ]
     )
     write_production_parquet(orders, raw / "orders.parquet")
-    profiles = build_manufacturer_config_profiles(
-        ["m1"], load_daily_detector_config(), detector_ids=["purchase_interval_ipi"]
-    )
-    profiles["effective_from"] = "1900-01-01"
-    profile_path = tmp_path / "profiles.parquet"
-    write_production_parquet(profiles, profile_path)
-
     assert main([
         "--output-root", str(tmp_path / "results"), "--raw-batch-dir", str(raw),
         "--observation-date", "2025-02-20", "--run-id", "fixture",
-        "--detector-id", "purchase_interval_ipi", "--detector-config-profiles", str(profile_path),
+        "--detector-id", "purchase_interval_ipi",
     ]) == 0
     batch = tmp_path / "results" / "detector_run_date=2025-02-20" / "detector_id=purchase_interval_ipi" / "batch_id=2025-02-20-fixture"
     clues = pd.read_parquet(batch / "daily_detector_clues.parquet")
@@ -86,6 +77,9 @@ def test_daily_detector_stage_publishes_independent_batch_without_monthly_runner
     repository = ParquetRiskResultRepository(batch)
     assert repository.manifest().report_type == "daily_detector_component"
     assert len(repository.list_daily_detector_runs()) == 1
+    profiles = repository.list_detector_config_profiles()
+    assert set(profiles["generation_method"]) == {"admin_parameter_table_snapshot"}
+    assert "business_approval_status" not in profiles.columns
 
 
 def test_independent_detector_run_is_available_without_monthly_batch_and_never_date_falls_back(tmp_path) -> None:

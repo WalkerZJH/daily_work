@@ -1,12 +1,11 @@
 {
   "release": "A",
-  "status": "pending",
-  "approved_profile_count": 0,
-  "pending_profile_count": 140,
-  "blockers": [
-    "manufacturer-specific thresholds require business approval",
-    "price semantics and thresholds require business review",
-    "same-day fact detectors require a date with complete same-day cleaned orders for acceptance"
-  ],
-  "generated_at": "2026-07-16T04:44:30.187157+00:00"
+  "status": "not_applicable",
+  "parameter_source": "admin_parameter_table",
+  "parameter_editable": false,
+  "display_filter_policy": "request_only_no_persistence",
+  "personalized_parameter_profiles": "deferred_not_implemented",
+  "blockers": [],
+  "note": "No approval workflow is required. The 140 rows are immutable run snapshots of admin values.",
+  "generated_at": "2026-07-16T06:08:15.383183+00:00"
 }

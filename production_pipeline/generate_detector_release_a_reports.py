@@ -10,7 +10,6 @@ from pathlib import Path
 import pandas as pd
 
 from risk_algorithm_core.detector_config import load_daily_detector_config
-from risk_algorithm_core.detector_config_profiles import load_detector_config_profiles
 from risk_algorithm_core.detector_input import load_cleaned_detector_orders
 from risk_model_core.repositories import CompositeDetectorResultRepository
 from risk_result_contracts import write_production_parquet
@@ -19,13 +18,11 @@ from risk_result_contracts import write_production_parquet
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Generate Detector Release A reports.")
     parser.add_argument("--cleaned-input-batch", required=True)
-    parser.add_argument("--config-profiles", required=True)
     parser.add_argument("--detector-date-partition", required=True)
     parser.add_argument("--output-dir", default="reports")
     args = parser.parse_args(argv)
     payload = generate_reports(
         cleaned_input_batch=args.cleaned_input_batch,
-        config_profiles_path=args.config_profiles,
         detector_date_partition=args.detector_date_partition,
         output_dir=args.output_dir,
     )
@@ -36,14 +33,12 @@ def main(argv: list[str] | None = None) -> int:
 def generate_reports(
     *,
     cleaned_input_batch: str | Path,
-    config_profiles_path: str | Path,
     detector_date_partition: str | Path,
     output_dir: str | Path,
 ) -> dict[str, object]:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
     input_manifest, orders = load_cleaned_detector_orders(cleaned_input_batch)
-    profiles = load_detector_config_profiles(config_profiles_path)
     repository = CompositeDetectorResultRepository(detector_date_partition)
     config = load_daily_detector_config()
     catalog = repository.list_detector_catalog().drop_duplicates("detector_id")
@@ -51,7 +46,17 @@ def generate_reports(
     clues = repository.list_daily_detector_clues()
     runs = repository.list_daily_detector_runs()
     snapshots = repository.list_detector_run_config_snapshot()
+    profiles = repository.list_detector_config_profiles()
     observation_date = str(runs["run_date"].astype(str).max())
+    probability_report_month = str(runs["report_month"].astype(str).max())
+    data_as_of_date = pd.to_datetime(orders["order_date"], errors="coerce").max().date().isoformat()
+    registry_path = Path(detector_date_partition).parent / "observation_registry.parquet"
+    registry_context: dict[str, object] = {}
+    if registry_path.is_file():
+        registry = pd.read_parquet(registry_path)
+        exact = registry.loc[registry["observation_date"].astype(str).eq(observation_date)]
+        if not exact.empty:
+            registry_context = exact.iloc[0].to_dict()
     generated_at = datetime.now(timezone.utc).isoformat()
 
     eligibility_path = output / "detector_order_status_eligibility_matrix.parquet"
@@ -97,12 +102,13 @@ def generate_reports(
                 "parameter_scope": str(config.detectors[detector_id].get("parameter_scope")),
                 "implementation_status": "implemented",
                 "engineering_gate_status": validation.get("engineering_gate_status", "missing"),
-                "business_gate_status": validation.get("business_gate_status", "pending"),
+                "config_policy_status": validation.get("config_policy_status", "admin_only_read_only"),
                 "result_count": int(len(detector_results)),
                 "applicable_count": int(detector_results["eligibility_status"].astype(str).eq("applicable").sum()),
                 "clue_count": int(len(detector_clues)),
                 "config_missing_count": int(detector_results["eligibility_status"].astype(str).eq("config_missing").sum()),
-                "business_blocker": "manufacturer profiles pending business approval",
+                "parameter_source": "admin_parameter_table",
+                "parameter_editable": False,
             }
         )
     implementation_payload = {
@@ -194,16 +200,16 @@ def generate_reports(
 ## 当前能力
 
 - 已实现 10 个非配送 Detector，均可按 `--detector-id` 独立发布。
-- 14 家企业 × 10 个 Detector = {len(profiles):,} 条显式配置，无全局静默 fallback。
+- 14 家企业 × 10 个 Detector = {len(profiles):,} 条只读运行快照，数值唯一来自管理员参数表。
 - 本次观察日：{observation_date}；运行组件：{len(runs)}；结果：{len(results):,}；命中：{len(clues):,}。
 - config missing：{int(results['eligibility_status'].astype(str).eq('config_missing').sum())}。
-- registry 精确登记 Detector 日期；对应月度概率不存在时明确显示 unavailable。
+- registry 精确登记 `{observation_date}`，关联上一完整月 `{probability_report_month}`；当前状态：`{registry_context.get('context_status', 'registry_not_checked')}`。
 
 ## 严重问题与门禁结论
 
 - 工程门：通过。
-- 业务门：待定。当前企业参数为 `copied_template_unapproved`，必须完成业务验收。
-- 当前数据截至日早于观察日，因此当日型低价/首购/恢复采购规则没有命中，不得视为规则失效。
+- 配置策略：当前阶段只读管理员参数；无审批流程、无用户修改入口，账号 × 企业个性化参数支线暂不实现。
+- 清洗数据截至 `{data_as_of_date}`；本次观察日使用完整 2025 历史，并已在真实数据中覆盖低价、首购和恢复采购命中。
 - 曾发现长路径发布后无法被 Python/registry 重开；已增加发布前路径长度门禁，并以短路径重试成功验证。原长路径诊断目录保留。
 """
     (output / "detector_current_state_audit.md").write_text(current_state, encoding="utf-8")
@@ -212,6 +218,8 @@ def generate_reports(
         "release": "A",
         "status": "passed",
         "observation_date": observation_date,
+        "probability_report_month": probability_report_month,
+        "observation_context_status": registry_context.get("context_status"),
         "component_count": int(len(runs)),
         "result_count": int(len(results)),
         "clue_count": int(len(clues)),
@@ -225,14 +233,13 @@ def generate_reports(
     _write_json(output / "detector_engineering_gate_report.json", engineering_report)
     business_report = {
         "release": "A",
-        "status": "pending",
-        "approved_profile_count": int(profiles["business_approval_status"].astype(str).eq("approved").sum()),
-        "pending_profile_count": int((~profiles["business_approval_status"].astype(str).eq("approved")).sum()),
-        "blockers": [
-            "manufacturer-specific thresholds require business approval",
-            "price semantics and thresholds require business review",
-            "same-day fact detectors require a date with complete same-day cleaned orders for acceptance",
-        ],
+        "status": "not_applicable",
+        "parameter_source": "admin_parameter_table",
+        "parameter_editable": False,
+        "display_filter_policy": "request_only_no_persistence",
+        "personalized_parameter_profiles": "deferred_not_implemented",
+        "blockers": [],
+        "note": "No approval workflow is required. The 140 rows are immutable run snapshots of admin values.",
         "generated_at": generated_at,
     }
     _write_json(output / "detector_business_gate_report.json", business_report)
@@ -263,7 +270,7 @@ def generate_reports(
         "output_dir": str(output).replace("\\", "/"),
         "report_count": 9,
         "engineering_gate_status": "passed",
-        "business_gate_status": "pending",
+        "config_policy_status": "admin_only_read_only",
     }
 
 

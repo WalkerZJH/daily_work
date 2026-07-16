@@ -11,7 +11,6 @@ from pathlib import Path
 import pandas as pd
 
 from risk_algorithm_core.detector_config import load_daily_detector_config
-from risk_algorithm_core.detector_config_profiles import load_detector_config_profiles
 from risk_algorithm_core.detector_input import filter_detector_eligible_orders, load_cleaned_detector_orders
 
 from .detector_input_snapshot import build_detector_input_snapshot_from_prepared, prepare_detector_orders
@@ -31,7 +30,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--resume-existing", action="store_true")
     parser.add_argument("--detector-id", action="append", dest="detector_ids", required=True)
     parser.add_argument("--detector-config", default="configs/risk_algorithm_core/daily_detector_rules.yaml")
-    parser.add_argument("--detector-config-profiles", required=True)
     parser.add_argument("--manufacturer-code", action="append", dest="manufacturer_codes")
     args = parser.parse_args(argv)
     dates = pd.date_range(_date(args.start_date), _date(args.end_date), freq="D")
@@ -44,7 +42,6 @@ def main(argv: list[str] | None = None) -> int:
         orders = orders.loc[orders["manufacturer_code"].astype(str).isin(requested)].copy()
     prepared_orders = prepare_detector_orders(orders)
     detector_config = load_daily_detector_config(args.detector_config)
-    config_profiles = load_detector_config_profiles(args.detector_config_profiles)
     status_path = _status_path(args.output_root, args.run_id)
     results: list[dict[str, object]] = []
     for timestamp in dates:
@@ -75,7 +72,6 @@ def main(argv: list[str] | None = None) -> int:
                     run_id=args.run_id,
                     raw_batch_id=input_manifest.input_batch_id,
                     detector_config_path=args.detector_config,
-                    config_profiles=config_profiles,
                 )
             )
         _write_status(status_path, args, input_manifest.input_batch_id, results, complete=False)

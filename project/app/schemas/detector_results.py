@@ -266,5 +266,9 @@ class DetectorConfigStatusResponse(DetectorResultModel):
     pending_config_supported: bool
     next_run_required: bool
     history_rewrite_allowed: bool
+    parameter_source: str
+    parameter_editable: bool
+    personalized_parameter_profiles: str
+    display_filter_policy: str
     config_edit_semantics: str
     warnings: list[str]

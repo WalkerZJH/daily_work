@@ -6,7 +6,7 @@ from app.main import app
 from detector_result_test_utils import override_detector_service
 
 
-def test_detector_config_status_explains_next_run_semantics_without_rewriting_runs() -> None:
+def test_detector_config_status_declares_read_only_admin_parameters() -> None:
     with override_detector_service():
         response = TestClient(app).get("/api/v1/detectors/config-status")
 
@@ -19,5 +19,9 @@ def test_detector_config_status_explains_next_run_semantics_without_rewriting_ru
     assert payload["pending_config_exists"] is False
     assert payload["pending_config_supported"] is False
     assert payload["next_run_required"] is False
-    assert "下一次巡检运行后生效" in payload["config_edit_semantics"]
     assert payload["history_rewrite_allowed"] is False
+    assert payload["parameter_source"] == "admin_parameter_table"
+    assert payload["parameter_editable"] is False
+    assert payload["personalized_parameter_profiles"] == "deferred_not_implemented"
+    assert payload["display_filter_policy"] == "request_only_no_persistence"
+    assert "不提供用户参数修改入口" in payload["config_edit_semantics"]

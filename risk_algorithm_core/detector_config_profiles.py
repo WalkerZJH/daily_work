@@ -27,7 +27,6 @@ DETECTOR_CONFIG_PROFILE_COLUMNS = [
     "generation_method",
     "calibration_batch_id",
     "validation_status",
-    "business_approval_status",
     "created_at",
     "created_by",
     "status",
@@ -59,10 +58,10 @@ def build_manufacturer_config_profiles(
     *,
     detector_ids: Iterable[str] | None = None,
     calibration_batch_id: str | None = None,
-    created_by: str = "detector_profile_batch_generator",
+    created_by: str = "admin_parameter_table",
     created_at: str | None = None,
 ) -> pd.DataFrame:
-    """Generate explicit profiles without creating a global fallback."""
+    """Materialize read-only per-manufacturer snapshots from the admin parameter table."""
     selected = list(detector_ids or config.runnable_detector_ids())
     manufacturers = sorted({str(value).strip() for value in manufacturer_codes if str(value).strip()})
     now = created_at or datetime.now(timezone.utc).isoformat()
@@ -101,10 +100,9 @@ def build_manufacturer_config_profiles(
                     "effective_to": pd.NA,
                     "config_payload": payload_text,
                     "config_hash": config_hash,
-                    "generation_method": "copied_template_unapproved",
+                    "generation_method": "admin_parameter_table_snapshot",
                     "calibration_batch_id": calibration_batch_id or pd.NA,
                     "validation_status": "engineering_validated",
-                    "business_approval_status": "pending",
                     "created_at": now,
                     "created_by": created_by,
                     "status": "active",

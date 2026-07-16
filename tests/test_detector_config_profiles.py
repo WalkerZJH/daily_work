@@ -19,8 +19,8 @@ def test_profiles_are_explicit_per_manufacturer_and_never_global_fallback() -> N
     assert len(profiles) == 2
     assert set(profiles["manufacturer_code"]) == {"m1", "m2"}
     assert set(profiles["parameter_scope"]) == {"manufacturer_specific"}
-    assert set(profiles["generation_method"]) == {"copied_template_unapproved"}
-    assert set(profiles["business_approval_status"]) == {"pending"}
+    assert set(profiles["generation_method"]) == {"admin_parameter_table_snapshot"}
+    assert "business_approval_status" not in profiles.columns
 
     resolved, missing = resolve_detector_config_profiles(
         profiles,

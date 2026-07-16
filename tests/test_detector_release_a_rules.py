@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pandas as pd
-import pytest
 
 from production_pipeline.detector_input_snapshot import build_detector_input_snapshot
 from production_pipeline.run_daily_detector import materialize_detector_component_batch
 from risk_algorithm_core.daily_detector_runner import build_daily_detector_tables
 from risk_algorithm_core.detector_config import load_daily_detector_config
-from risk_algorithm_core.detector_config_profiles import build_manufacturer_config_profiles
 
 
 def _all_rule_features() -> pd.DataFrame:
@@ -153,21 +152,17 @@ def test_price_reference_is_grouped_by_drug_and_cleaned_purchase_unit() -> None:
     assert bottle["market_reference_price"] == 100
 
 
-def test_component_publish_blocks_missing_manufacturer_profile(tmp_path) -> None:
-    config = load_daily_detector_config()
-    profiles = build_manufacturer_config_profiles(
-        ["m1"], config, detector_ids=["purchase_interval_ipi"]
-    )
+def test_component_publish_materializes_admin_snapshot_for_requested_manufacturer(tmp_path) -> None:
     snapshot = _all_rule_features().copy()
     snapshot["manufacturer_code"] = "m2"
-    with pytest.raises(ValueError, match="configs are missing"):
-        materialize_detector_component_batch(
-            snapshot_frame=snapshot,
-            output_root=tmp_path,
-            observation_date="2026-07-16",
-            detector_id="purchase_interval_ipi",
-            run_id="missing-config",
-            raw_batch_id="clean-input",
-            config_profiles=profiles,
-        )
-    assert not list(tmp_path.glob("detector_run_date=*/detector_id=*/batch_id=*"))
+    result = materialize_detector_component_batch(
+        snapshot_frame=snapshot,
+        output_root=tmp_path,
+        observation_date="2026-07-16",
+        detector_id="purchase_interval_ipi",
+        run_id="admin-config",
+        raw_batch_id="clean-input",
+    )
+    profiles = pd.read_parquet(Path(str(result["batch_dir"])) / "detector_config_profiles.parquet")
+    assert set(profiles["manufacturer_code"]) == {"m2"}
+    assert set(profiles["generation_method"]) == {"admin_parameter_table_snapshot"}
