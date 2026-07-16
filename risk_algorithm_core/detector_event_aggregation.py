@@ -26,6 +26,7 @@ DETECTOR_EVENT_AGGREGATE_COLUMNS = [
     "generated_at",
 ]
 AGGREGATION_SCHEMA_VERSION = "detector_event_aggregation_v1"
+DetectorEventAggregationState = dict[tuple[str, str, str], dict[str, Any]]
 
 
 def build_detector_event_aggregates(
@@ -86,6 +87,63 @@ def build_detector_event_aggregates(
     return current[DETECTOR_EVENT_AGGREGATE_COLUMNS].sort_values(
         ["observation_date", *ENTITY_COLUMNS], kind="mergesort"
     ).reset_index(drop=True)
+
+
+def update_detector_event_aggregates(
+    detector_results: pd.DataFrame,
+    state: DetectorEventAggregationState,
+    *,
+    generated_at: str,
+) -> pd.DataFrame:
+    """Aggregate one observation date and update keyed cross-day counters in place."""
+    events = _normalize_hit_events(detector_results)
+    if events.empty:
+        return pd.DataFrame(columns=DETECTOR_EVENT_AGGREGATE_COLUMNS)
+    observation_dates = sorted(events["observation_date"].unique())
+    if len(observation_dates) != 1:
+        raise ValueError(f"Streaming Detector aggregation requires one date, got {observation_dates}")
+    observation_date = str(observation_dates[0])
+    daily = (
+        events.groupby(ENTITY_COLUMNS, sort=True)["detector_id"]
+        .agg(_joined_detector_ids)
+        .reset_index(name="current_detector_ids")
+    )
+    rows: list[dict[str, Any]] = []
+    for row in daily.itertuples(index=False):
+        key = tuple(str(getattr(row, column)) for column in ENTITY_COLUMNS)
+        current_ids = _split_detector_ids(row.current_detector_ids)
+        entry = state.get(key)
+        if entry is None:
+            entry = {
+                "cumulative_hit_count": 0,
+                "cumulative_hit_day_count": 0,
+                "historical_detector_ids": set(),
+                "first_hit_date": observation_date,
+            }
+            state[key] = entry
+        entry["cumulative_hit_count"] += len(current_ids)
+        entry["cumulative_hit_day_count"] += 1
+        entry["historical_detector_ids"].update(current_ids)
+        manufacturer_code, hospital_code, drug_code = key
+        rows.append({
+            "detector_event_aggregate_id": (
+                f"{observation_date}|{manufacturer_code}|{hospital_code}|{drug_code}"
+            ),
+            "observation_date": observation_date,
+            "manufacturer_code": manufacturer_code,
+            "hospital_code": hospital_code,
+            "drug_code": drug_code,
+            "current_detector_count": len(current_ids),
+            "current_detector_ids": "|".join(sorted(current_ids)),
+            "cumulative_hit_count": entry["cumulative_hit_count"],
+            "cumulative_hit_day_count": entry["cumulative_hit_day_count"],
+            "historical_detector_ids": "|".join(sorted(entry["historical_detector_ids"])),
+            "first_hit_date": entry["first_hit_date"],
+            "last_hit_date": observation_date,
+            "aggregation_schema_version": AGGREGATION_SCHEMA_VERSION,
+            "generated_at": generated_at,
+        })
+    return pd.DataFrame(rows, columns=DETECTOR_EVENT_AGGREGATE_COLUMNS)
 
 
 def validate_detector_event_aggregates(frame: pd.DataFrame) -> dict[str, Any]:

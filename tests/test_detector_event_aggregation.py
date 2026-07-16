@@ -9,6 +9,7 @@ from production_pipeline.materialize_detector_event_aggregates import main as ma
 from production_pipeline.run_daily_detector import materialize_detector_component_batch
 from risk_algorithm_core.detector_event_aggregation import (
     build_detector_event_aggregates,
+    update_detector_event_aggregates,
     validate_detector_event_aggregates,
 )
 
@@ -48,6 +49,20 @@ def test_event_aggregation_counts_unique_date_detector_events_and_history() -> N
     assert day_three["first_hit_date"] == "2025-01-01"
     assert day_three["last_hit_date"] == "2025-01-03"
     assert validate_detector_event_aggregates(aggregates)["engineering_gate_status"] == "passed"
+
+    state = {}
+    streamed = pd.concat([
+        update_detector_event_aggregates(
+            frame, state, generated_at="2025-02-01T00:00:00+00:00"
+        )
+        for _, frame in _events().groupby("observation_date", sort=True)
+    ], ignore_index=True)
+    columns = [column for column in aggregates.columns if column != "generated_at"]
+    pd.testing.assert_frame_equal(
+        streamed[columns].reset_index(drop=True),
+        aggregates[columns].reset_index(drop=True),
+        check_dtype=False,
+    )
 
 
 def _snapshot() -> pd.DataFrame:
