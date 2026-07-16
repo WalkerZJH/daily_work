@@ -46,15 +46,28 @@ def main(argv: list[str] | None = None) -> int:
     results: list[dict[str, object]] = []
     for timestamp in dates:
         observation_date = timestamp.date().isoformat()
-        snapshot = build_detector_input_snapshot_from_prepared(prepared_orders, observation_date)
-        for detector_id in args.detector_ids:
-            existing_component = _published_component_batch_dir(
+        existing_by_detector = {
+            detector_id: _published_component_batch_dir(
                 args.output_root,
                 observation_date,
                 detector_id,
                 detector_config.detector_version(detector_id),
                 args.run_id,
             )
+            for detector_id in args.detector_ids
+        }
+        if args.resume_existing and all(path.exists() for path in existing_by_detector.values()):
+            results.extend({
+                "observation_date": observation_date,
+                "detector_id": detector_id,
+                "status": "already_published",
+                "batch_dir": str(existing_by_detector[detector_id]).replace("\\", "/"),
+            } for detector_id in args.detector_ids)
+            _write_status(status_path, args, input_manifest.input_batch_id, results, complete=False)
+            continue
+        snapshot = build_detector_input_snapshot_from_prepared(prepared_orders, observation_date)
+        for detector_id in args.detector_ids:
+            existing_component = existing_by_detector[detector_id]
             if existing_component.exists() and args.resume_existing:
                 results.append({
                     "observation_date": observation_date,
