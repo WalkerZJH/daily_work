@@ -220,7 +220,11 @@ def _build_results(
         for row in resolved_profiles.itertuples(index=False)
     }
     rows: list[dict[str, Any]] = []
-    for feature in scan_features.to_dict(orient="records"):
+    feature_records = scan_features.attrs.get("_daily_detector_feature_records")
+    if feature_records is None:
+        feature_records = scan_features.to_dict(orient="records")
+        scan_features.attrs["_daily_detector_feature_records"] = feature_records
+    for feature in feature_records:
         manufacturer = str(feature.get("manufacturer_code") or "")
         entity_key = _lookup_key(feature)
         for detector_id in enabled_catalog["detector_id"].astype(str):

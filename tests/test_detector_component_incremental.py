@@ -105,3 +105,27 @@ def test_windows_publish_path_gate_rejects_unreadable_final_path(monkeypatch, tm
     too_long = tmp_path.joinpath(*(["very-long-detector-segment"] * 12))
     with pytest.raises(ValueError, match="too long"):
         _validate_windows_readable_publish_path(too_long)
+
+
+def test_repeated_detector_components_reuse_one_snapshot_record_conversion(monkeypatch) -> None:
+    from risk_algorithm_core.daily_detector_runner import build_daily_detector_tables
+
+    snapshot = _snapshot()
+    original = pd.DataFrame.to_dict
+    conversions = 0
+
+    def counted_to_dict(frame, *args, **kwargs):
+        nonlocal conversions
+        orient = kwargs.get("orient", args[0] if args else "dict")
+        if frame is snapshot and orient == "records":
+            conversions += 1
+        return original(frame, *args, **kwargs)
+
+    monkeypatch.setattr(pd.DataFrame, "to_dict", counted_to_dict)
+    for detector_id in ["purchase_interval_ipi", "purchase_quantity_trend"]:
+        build_daily_detector_tables(
+            risk_entities=pd.DataFrame(), scan_features=snapshot, report_month="2025-12",
+            run_date="2025-12-31", source_raw_batch_id="clean-fixture",
+            detector_ids=[detector_id],
+        )
+    assert conversions == 1
