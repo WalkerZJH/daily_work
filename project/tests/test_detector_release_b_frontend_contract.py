@@ -40,6 +40,21 @@ def test_clues_uses_accessible_detector_cards_with_explicit_query_events() -> No
     assert "@click=\"toggleFamily(family.id)\"" in source
 
 
+def test_detector_cards_use_bright_family_colors_and_stable_focused_rows() -> None:
+    source = (ROOT / "front_end/src/modules/risk-worklist/DetectorCardFilterPanel.vue").read_text(encoding="utf-8")
+    for family_class, color in [
+        ("detector-family-card--price", "#2563eb"),
+        ("detector-family-card--fulfillment", "#059669"),
+        ("detector-family-card--terminal", "#f97316"),
+        ("detector-family-card--sales", "#e11d48"),
+    ]:
+        assert family_class in source
+        assert color in source
+    assert ".detector-family-grid--focused { grid-template-columns: repeat(3" in source
+    assert ".detector-family-card--focused { grid-column: 1 / -1; grid-row: 1" in source
+    assert ".detector-family-card--compact { grid-row: 2" in source
+
+
 def test_clue_link_passes_full_entity_key_and_detail_keeps_clue_only_compatibility() -> None:
     list_source = (ROOT / "front_end/src/modules/risk-worklist/RiskEntityListView.vue").read_text(encoding="utf-8")
     detail_source = (ROOT / "front_end/src/modules/risk-worklist/RiskEntityDetailView.vue").read_text(encoding="utf-8")

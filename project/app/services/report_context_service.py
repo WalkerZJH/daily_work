@@ -5,12 +5,101 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from risk_model_core import ParquetRiskResultRepository, RiskResultRepository, open_detector_result_repository  # noqa: E402
 from app.services.result_batch_discovery import latest_monthly_batch
+
+
+class StableEntityDisplayLookupRepository:
+    """Resolve names by exact entity codes, preferring rows with real display names."""
+
+    def __init__(
+        self,
+        primary: RiskResultRepository | None,
+        fallback: RiskResultRepository | None,
+    ):
+        self.primary = primary
+        self.fallback = fallback
+
+    def load_entity_display_lookup(self, **filters: Any) -> pd.DataFrame:
+        requested_month = filters.get("report_month")
+        frames: list[pd.DataFrame] = []
+        if self.primary is not None:
+            frame = _safe_display_lookup(self.primary, filters)
+            if not frame.empty:
+                frame = frame.copy()
+                frame["_lookup_priority"] = 1
+                frames.append(frame)
+        if self.fallback is not None and self.fallback is not self.primary:
+            stable_filters = {key: value for key, value in filters.items() if key != "report_month"}
+            frame = _safe_display_lookup(self.fallback, stable_filters)
+            if not frame.empty:
+                frame = frame.copy()
+                if requested_month is not None:
+                    frame["report_month"] = str(requested_month)
+                frame["_lookup_priority"] = 0
+                frames.append(frame)
+        if not frames:
+            return pd.DataFrame()
+        combined = pd.concat(frames, ignore_index=True)
+        key_columns = [
+            column
+            for column in ["manufacturer_code", "hospital_code", "drug_code"]
+            if column in combined.columns
+        ]
+        if len(key_columns) != 3:
+            return combined.drop(columns=["_lookup_priority"], errors="ignore")
+        for column in key_columns:
+            combined[column] = combined[column].map(_clean_lookup_text)
+        combined["_display_name_score"] = combined.apply(_display_name_score, axis=1)
+        combined = combined.sort_values(
+            ["_display_name_score", "_lookup_priority"],
+            ascending=[False, False],
+            kind="mergesort",
+        )
+        return combined.drop_duplicates(key_columns, keep="first").drop(
+            columns=["_lookup_priority", "_display_name_score"],
+            errors="ignore",
+        )
+
+
+def _safe_display_lookup(
+    repository: RiskResultRepository,
+    filters: dict[str, Any],
+) -> pd.DataFrame:
+    try:
+        frame = repository.load_entity_display_lookup(**filters)
+    except (FileNotFoundError, NotImplementedError, ValueError, AttributeError, KeyError):
+        return pd.DataFrame()
+    return frame if isinstance(frame, pd.DataFrame) else pd.DataFrame(frame)
+
+
+def _clean_lookup_text(value: Any) -> str:
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    return "" if value is None else str(value).strip()
+
+
+def _display_name_score(row: pd.Series) -> int:
+    score = 0
+    for name_column, code_column in [
+        ("manufacturer_display_name", "manufacturer_code"),
+        ("hospital_display_name", "hospital_code"),
+        ("drug_display_name", "drug_code"),
+    ]:
+        name = _clean_lookup_text(row.get(name_column))
+        code = _clean_lookup_text(row.get(code_column))
+        if name and name != code:
+            score += 1
+    return score
 
 
 class ReportContextService:
@@ -88,11 +177,24 @@ class ReportContextService:
         return (
             open_detector_result_repository(
                 path,
-                display_lookup_repository=self.probability_repository(context),
+                display_lookup_repository=self.display_lookup_repository(context),
             )
             if path.exists()
             else None
         )
+
+    def display_lookup_repository(self, context: dict[str, Any]) -> Any:
+        primary = self.probability_repository(context)
+        fallback: RiskResultRepository | None = None
+        if self.batch_root is not None:
+            stable_batch = latest_monthly_batch(self.batch_root)
+            if stable_batch is not None and stable_batch.exists():
+                primary_path = getattr(primary, "batch_dir", None)
+                if primary_path is None or Path(primary_path).resolve() != stable_batch.resolve():
+                    fallback = ParquetRiskResultRepository(stable_batch)
+        if fallback is None:
+            return primary
+        return StableEntityDisplayLookupRepository(primary, fallback)
 
     def _resolve_observation_context(
         self,

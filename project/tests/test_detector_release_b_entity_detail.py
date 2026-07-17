@@ -8,7 +8,7 @@ import pandas as pd
 
 from app.main import app
 from app.services.detector_result_service import DetectorResultService
-from app.services.report_context_service import ReportContextService
+from app.services.report_context_service import ReportContextService, StableEntityDisplayLookupRepository
 from project.tests.detector_result_test_utils import make_detector_repository
 from risk_algorithm_core.detector_catalog import build_detector_catalog
 from risk_model_core.repositories import CompositeDetectorResultRepository
@@ -176,6 +176,74 @@ def test_implemented_catalog_has_stable_release_b_chinese_fields() -> None:
     assert implemented["detector_family_name_zh"].str.strip().ne("").all()
     quantity = implemented.loc[implemented["detector_id"].eq("purchase_quantity_trend")].iloc[0]
     assert "简单比例规则 v1" in quantity["detector_description_zh"]
+
+
+def test_api_catalog_upgrades_legacy_english_rows_to_canonical_chinese_copy() -> None:
+    repository = make_detector_repository()
+    legacy = repository.tables["detector_catalog"].iloc[[0]].copy()
+    legacy.loc[:, "detector_id"] = "first_purchase_fact"
+    legacy.loc[:, "detector_family"] = "purchase_fact"
+    legacy.loc[:, "detector_name"] = "First normal purchase fact"
+    repository.tables["detector_catalog"] = legacy
+
+    item = DetectorResultService(repository).catalog()["items"][0]
+
+    assert item["detector_name_zh"] == "首次采购事实"
+    assert item["detector_description_zh"] == "记录对象首次发生正常完成采购的事实。"
+    assert item["detector_family_name_zh"] == "采购事实"
+
+
+def test_stable_display_lookup_fills_exact_codes_from_latest_monthly_master() -> None:
+    primary = make_detector_repository()
+    fallback = make_detector_repository()
+    primary.tables["entity_display_lookup"] = pd.DataFrame(
+        [
+            {
+                "report_month": "2025-11",
+                "manufacturer_code": "m1",
+                "manufacturer_display_name": "m1",
+                "hospital_code": "h1",
+                "hospital_display_name": "h1",
+                "drug_code": "d1",
+                "drug_display_name": "d1",
+            }
+        ]
+    )
+    fallback.tables["entity_display_lookup"] = pd.DataFrame(
+        [
+            {
+                "report_month": "2025-12",
+                "manufacturer_code": "m1",
+                "manufacturer_display_name": "哈药集团制药六厂",
+                "hospital_code": "h1",
+                "hospital_display_name": "定兴县内章镇卫生院",
+                "drug_code": "d1",
+                "drug_display_name": "脑安片",
+            },
+            {
+                "report_month": "2025-12",
+                "manufacturer_code": "m2",
+                "manufacturer_display_name": "不得串入的企业",
+                "hospital_code": "h2",
+                "hospital_display_name": "不得串入的医院",
+                "drug_code": "d2",
+                "drug_display_name": "不得串入的药品",
+            },
+        ]
+    )
+    lookup = StableEntityDisplayLookupRepository(primary, fallback).load_entity_display_lookup(
+        report_month="2025-11",
+        manufacturer_codes=["m1"],
+        hospital_code=["h1"],
+        drug_code=["d1"],
+    )
+
+    assert len(lookup) == 1
+    row = lookup.iloc[0]
+    assert row["report_month"] == "2025-11"
+    assert row["manufacturer_display_name"] == "哈药集团制药六厂"
+    assert row["hospital_display_name"] == "定兴县内章镇卫生院"
+    assert row["drug_display_name"] == "脑安片"
 
 
 def test_stable_sample_names_and_leading_zero_codes_are_preserved() -> None:

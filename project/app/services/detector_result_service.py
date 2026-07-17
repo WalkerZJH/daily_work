@@ -20,6 +20,10 @@ from risk_model_core import (  # noqa: E402
     open_detector_result_repository,
 )
 from risk_model_core.manifest import RiskResultManifest  # noqa: E402
+from risk_algorithm_core.detector_catalog import (  # noqa: E402
+    DETECTOR_FAMILY_NAMES_ZH,
+    DETECTOR_RELEASE_B_LABELS,
+)
 from app.services.result_batch_discovery import latest_detector_batch
 
 SOURCE = "risk_model_core"
@@ -550,15 +554,26 @@ def _default_batch_dir() -> str | Path | None:
 
 
 def _catalog_item(row: pd.Series) -> dict[str, Any]:
+    detector_id = _text(row.get("detector_id"))
+    detector_family = _text(row.get("detector_family"))
+    canonical_name_zh, canonical_description_zh = DETECTOR_RELEASE_B_LABELS.get(
+        detector_id,
+        ("", ""),
+    )
     return {
-        "detector_id": _text(row.get("detector_id")),
-        "detector_family": _text(row.get("detector_family")),
+        "detector_id": detector_id,
+        "detector_family": detector_family,
         "detector_name": _text(row.get("detector_name")),
         "detector_name_en": _text(row.get("detector_name_en")) or _text(row.get("detector_name")),
-        "detector_name_zh": _text(row.get("detector_name_zh")) or _text(row.get("detector_name")),
-        "detector_description_zh": _text(row.get("detector_description_zh")) or None,
-        "detector_family_name_zh": _text(row.get("detector_family_name_zh"))
-        or _detector_family_label(_text(row.get("detector_family"))),
+        "detector_name_zh": canonical_name_zh
+        or _text(row.get("detector_name_zh"))
+        or _text(row.get("detector_name")),
+        "detector_description_zh": canonical_description_zh
+        or _text(row.get("detector_description_zh"))
+        or None,
+        "detector_family_name_zh": DETECTOR_FAMILY_NAMES_ZH.get(detector_family)
+        or _text(row.get("detector_family_name_zh"))
+        or _detector_family_label(detector_family),
         "status": _text(row.get("status")),
         "enabled_by_default": _bool(row.get("enabled_by_default")),
         "method": _text(row.get("method")),
@@ -884,7 +899,17 @@ def _merge_entity_display_lookup(frame: pd.DataFrame, repository: RiskResultRepo
         return frame
     try:
         report_month = repository.manifest().report_month
-        lookup = repository.load_entity_display_lookup(report_month=report_month)
+        lookup_filters: dict[str, Any] = {"report_month": report_month}
+        for column, filter_name in [
+            ("manufacturer_code", "manufacturer_codes"),
+            ("hospital_code", "hospital_code"),
+            ("drug_code", "drug_code"),
+        ]:
+            if column in frame.columns:
+                values = sorted({_text(value) for value in frame[column] if _text(value)})
+                if values:
+                    lookup_filters[filter_name] = values
+        lookup = repository.load_entity_display_lookup(**lookup_filters)
     except (FileNotFoundError, NotImplementedError, ValueError, AttributeError, KeyError):
         return frame
     out = frame.copy()
