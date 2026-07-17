@@ -18,6 +18,9 @@ import {
 } from '../monthly-demo/pageDataAdapter'
 
 const params = new URLSearchParams(window.location.search)
+const hasExplicitObservationDate = Boolean(
+  params.get('observation_date') || params.get('observationDate') || params.get('run_date')
+)
 const draftQuery = reactive(
   normalizeWorkbenchQuery({
     backendBaseUrl: params.get('backendBaseUrl'),
@@ -169,6 +172,11 @@ function applyLoadedOptions(loadedOptions, fallbackQuery = query) {
 async function loadOptions() {
   const loadedOptions = await loadWorkbenchOptions(draftQuery)
   applyLoadedOptions(loadedOptions, draftQuery)
+  if (!hasExplicitObservationDate && loadedOptions?.initialObservationDate) {
+    draftQuery.observationDate = loadedOptions.initialObservationDate
+    draftQuery.runDate = loadedOptions.initialObservationDate
+    draftQuery.detectorRunDate = loadedOptions.initialObservationDate
+  }
 }
 
 async function submitQuery(targetPage = 1) {

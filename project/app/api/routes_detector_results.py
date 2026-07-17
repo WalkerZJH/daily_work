@@ -28,6 +28,12 @@ router = APIRouter(prefix="/api/v1", tags=["detector-results"])
 logger = logging.getLogger(__name__)
 
 
+def _is_true(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "y"}
+
+
 def get_detector_result_service() -> DetectorResultService:
     return build_default_detector_result_service()
 
@@ -52,10 +58,52 @@ def detector_runs(
 @router.get("/daily-detector/dates")
 def daily_detector_dates(
     service: Annotated[DetectorResultService, Depends(get_detector_result_service)],
+    report_context_service: Annotated[ReportContextService, Depends(get_report_context_service)],
     report_month: str | None = None,
-    limit: int = Query(default=100, ge=1, le=500),
+    limit: int = Query(default=500, ge=1, le=500),
 ) -> dict:
-    return service.run_dates(report_month=report_month, limit=limit)
+    if report_context_service.repository is None or report_context_service.batch_root is None:
+        return service.run_dates(report_month=report_month, limit=limit)
+
+    try:
+        contexts = report_context_service.repository.list_available_observation_contexts(
+            batch_root=report_context_service.batch_root,
+        )
+    except (FileNotFoundError, ValueError, KeyError, NotImplementedError, AttributeError):
+        return service.run_dates(report_month=report_month, limit=limit)
+    if contexts.empty or "detector_run_date" not in contexts:
+        return service.run_dates(report_month=report_month, limit=limit)
+
+    available = contexts.copy()
+    if "detector_run_available" in available:
+        available = available.loc[available["detector_run_available"].map(_is_true)]
+    if report_month and "probability_report_month" in available:
+        available = available.loc[
+            available["probability_report_month"].astype(str).eq(str(report_month))
+        ]
+    available = available.sort_values("detector_run_date", ascending=False)
+    available = available.drop_duplicates(subset=["detector_run_date"]).head(limit)
+    items = [
+        {
+            "detector_run_id": str(row.get("detector_run_id") or ""),
+            "run_date": str(row.get("detector_run_date") or ""),
+            "report_month": str(row.get("probability_report_month") or ""),
+            "status": "ready",
+            "detector_config_version": None,
+            "clue_count": None,
+            "attached_high_risk_count": None,
+        }
+        for _, row in available.iterrows()
+    ]
+    return {
+        "ready": bool(items),
+        "source": "observation_registry",
+        "items": items,
+        "semantic_caveats": [
+            "Detector dates are exact immutable daily facts; monthly model probabilities do not change daily."
+        ],
+        "warnings": [] if items else ["DAILY_DETECTOR_RESULT_BATCH_NOT_AVAILABLE"],
+    }
 
 
 @router.get("/daily-detector/status", response_model=DailyDetectorStatusResponse)

@@ -1,5 +1,5 @@
 param(
-  [int]$BackendPort = 8000,
+  [int]$BackendPort = 18080,
   [int]$FrontendPort = 5173
 )
 
@@ -18,8 +18,7 @@ if (-not (Test-Path $backendScript) -or -not (Test-Path $frontendScript)) {
 Write-Host "Starting backend and frontend in two PowerShell windows."
 Write-Host "Backend: http://127.0.0.1:$BackendPort/docs"
 Write-Host "Frontend: http://127.0.0.1:$FrontendPort"
-Write-Host "If port 8000 is occupied, use: .\scripts\dev_start.ps1 -BackendPort 8001"
+Write-Host "If port $BackendPort is occupied, use: .\scripts\dev_start.ps1 -BackendPort 18081"
 
 Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-File", "`"$backendScript`"", "-Port", "$BackendPort" -WorkingDirectory $repoRoot -WindowStyle Normal
 Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-File", "`"$frontendScript`"", "-Port", "$FrontendPort" -WorkingDirectory $repoRoot -WindowStyle Normal
-

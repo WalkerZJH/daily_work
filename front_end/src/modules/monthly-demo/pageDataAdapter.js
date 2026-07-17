@@ -184,6 +184,7 @@ export function createEmptyWorkbenchOptions(query = {}) {
     manufacturerOptions: currentManufacturerOption(normalized),
     defaultManufacturerCode: normalized.manufacturerCode,
     dailyDetectorDateOptions: [{ runDate: normalized.observationDate, label: normalized.observationDate }],
+    initialObservationDate: normalized.observationDate,
     detectorCatalog: [],
     reportMonthOptions: normalized.probabilityReportMonth ? [normalized.probabilityReportMonth] : [],
     horizonOptions,
@@ -373,17 +374,29 @@ export async function loadWorkbenchOptions(query = {}, { allowDemo = false } = {
     tryLoad(() => api(normalizedQuery).getDetectorCatalog(), mapDetectorCatalogPayload)
   ])
   const fallback = createEmptyWorkbenchOptions(normalizedQuery)
+  const dailyDetectorDateOptions = context?.availableDetectorRunDates?.length
+    ? context.availableDetectorRunDates.map((date) => ({ runDate: date, label: date }))
+    : fallback.dailyDetectorDateOptions
   return {
     ...fallback,
     manufacturerOptions: manufacturers?.manufacturerOptions?.length ? manufacturers.manufacturerOptions : fallback.manufacturerOptions,
     defaultManufacturerCode: manufacturers?.defaultManufacturerCode || fallback.defaultManufacturerCode,
-    dailyDetectorDateOptions: context?.availableDetectorRunDates?.length
-      ? context.availableDetectorRunDates.map((date) => ({ runDate: date, label: date }))
-      : fallback.dailyDetectorDateOptions,
+    dailyDetectorDateOptions,
+    initialObservationDate: selectInitialObservationDate(
+      dailyDetectorDateOptions.map((item) => item.runDate),
+      normalizedQuery.observationDate
+    ),
     detectorCatalog: catalog?.detectorCatalog || fallback.detectorCatalog,
     reportMonthOptions: context?.availableReportMonths || fallback.reportMonthOptions,
     sourceLabel: manufacturers || context ? '后端数据' : '接口未就绪'
   }
+}
+
+export function selectInitialObservationDate(availableDates = [], requestedDate = '', today = defaultRunDate()) {
+  const dates = [...new Set((availableDates || []).filter(Boolean).map(String))].sort().reverse()
+  if (requestedDate && dates.includes(String(requestedDate))) return String(requestedDate)
+  const currentYearStart = `${String(today).slice(0, 4)}-01-01`
+  return dates.find((date) => date < currentYearStart) || dates[0] || String(requestedDate || today)
 }
 
 export async function loadWorkbenchData(query = {}, { allowDemo = false } = {}) {

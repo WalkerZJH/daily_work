@@ -15,6 +15,9 @@ import {
 } from '../monthly-demo/pageDataAdapter'
 
 const params = new URLSearchParams(window.location.search)
+const hasExplicitObservationDate = Boolean(
+  params.get('observation_date') || params.get('observationDate') || params.get('run_date')
+)
 const draftQuery = reactive(normalizeWorkbenchQuery({
   backendBaseUrl: params.get('backendBaseUrl'),
   userId: params.get('user_id') || params.get('userId'),
@@ -67,6 +70,11 @@ function cluesHref() {
 async function loadOptions() {
   const loaded = await loadWorkbenchOptions(draftQuery)
   options.value = loaded || createEmptyWorkbenchOptions(draftQuery)
+  if (!hasExplicitObservationDate && loaded?.initialObservationDate) {
+    draftQuery.observationDate = loaded.initialObservationDate
+    draftQuery.runDate = loaded.initialObservationDate
+    draftQuery.detectorRunDate = loaded.initialObservationDate
+  }
 }
 
 async function submitQuery() {
